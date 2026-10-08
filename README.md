@@ -66,8 +66,7 @@ gradle assembleRelease        # needs JDK 17 + Android SDK, Gradle 8.9
 The web app lives in [`web/index.html`](web/index.html) and is packed into the APK as-is.
 Every push builds an APK in **Actions**; every `v*` tag publishes a release.
 
-To sign releases with your own key, add these repository secrets:
-`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
+Releases are signed with the permanent Kwallet key (repository secret `KWALLET_SIGNING`), so every update installs over the previous one.
 
 ## Support Kwallet
 
