@@ -16,7 +16,11 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.graphics.Color
 import android.widget.FrameLayout
-import androidx.activity.ComponentActivity
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
+import org.json.JSONObject
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
@@ -32,7 +36,7 @@ import androidx.webkit.WebViewAssetLoader
  * context (WebCrypto, Clipboard API). Nothing is ever loaded from the network:
  * the app has no INTERNET permission and every non-asset request is refused.
  */
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     private lateinit var web: WebView
     private lateinit var root: FrameLayout
@@ -123,6 +127,8 @@ class MainActivity : ComponentActivity() {
         web.addJavascriptInterface(HarkNative(this,
             onBars = { top, bottom -> runOnUiThread { applyBars(top, bottom) } },
             insetsJson = { insetCss },
+            bio = { bioStatus() },
+            bioPrompt = { t -> runOnUiThread { bioAuth(t) } },
             onAwake = { on -> runOnUiThread { web.keepScreenOn = on } }), "HarkNative")
         tuneWebView(this, web)
 
@@ -156,6 +162,38 @@ class MainActivity : ComponentActivity() {
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+    }
+
+    private val BIO = BiometricManager.Authenticators.BIOMETRIC_WEAK
+
+    private fun bioStatus(): String = when (BiometricManager.from(this).canAuthenticate(BIO)) {
+        BiometricManager.BIOMETRIC_SUCCESS -> "ok"
+        BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> "unenrolled"
+        else -> "none"   // no sensor, broken sensor, or unavailable: the app stays on PIN only
+    }
+
+    private fun bioResult(r: String) = web.evaluateJavascript("window.kwBioDone&&kwBioDone(${JSONObject.quote(r)})", null)
+
+    private fun bioAuth(title: String) {
+        if (bioStatus() != "ok") { bioResult("fail"); return }
+        val prompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) { bioResult("ok") }
+            override fun onAuthenticationError(code: Int, msg: CharSequence) {
+                bioResult(when (code) {
+                    BiometricPrompt.ERROR_NEGATIVE_BUTTON, BiometricPrompt.ERROR_USER_CANCELED, BiometricPrompt.ERROR_CANCELED -> "cancel"
+                    BiometricPrompt.ERROR_LOCKOUT, BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> "lockout"
+                    else -> "fail:$msg"
+                })
+            }
+        })
+        val info = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(title)
+            .setSubtitle("Kwallet")
+            .setNegativeButtonText("Use PIN")
+            .setAllowedAuthenticators(BIO)
+            .setConfirmationRequired(false)
+            .build()
+        try { prompt.authenticate(info) } catch (_: Exception) { bioResult("fail") }
     }
 
     /** Called by the page with the colours under the status bar and the navigation bar. */
