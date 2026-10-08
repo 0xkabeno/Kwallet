@@ -37,24 +37,32 @@ jobs:
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "Kwallet v$V"
 
-      - name: Release keystore (optional)
+      - name: Release keystore
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KWALLET_SIGNING: ${{ secrets.KWALLET_SIGNING }}
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/kwallet.jks"
-            echo "KW_KEYSTORE=$RUNNER_TEMP/kwallet.jks" >> "$GITHUB_ENV"
-            echo "Signing with the release keystore"
+          if [ -n "$KWALLET_SIGNING" ]; then
+            PASS="${KWALLET_SIGNING%%:*}"
+            echo "::add-mask::$PASS"
+            echo "${KWALLET_SIGNING#*:}" | tr -d ' \n\r' | base64 -d > "$RUNNER_TEMP/kwallet.p12"
+            {
+              echo "KW_KEYSTORE=$RUNNER_TEMP/kwallet.p12"
+              echo "KW_STORE_PASSWORD=$PASS"
+              echo "KW_KEY_PASSWORD=$PASS"
+              echo "KW_KEY_ALIAS=kwallet"
+            } >> "$GITHUB_ENV"
+            echo "Signing with the permanent Kwallet key"
           else
-            echo "::warning::No KEYSTORE_BASE64 secret - APK is signed with a temporary debug key"
+            echo "::warning::KWALLET_SIGNING secret missing - APK signed with a temporary debug key"
           fi
 
       - name: Build
-        env:
-          KW_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KW_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KW_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: gradle --no-daemon assembleRelease
+
+      - name: Verify signature
+        run: |
+          APKSIGNER=$(ls $ANDROID_HOME/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk | head -5
 
       - name: Package
         run: |
