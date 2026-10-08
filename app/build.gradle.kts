@@ -26,6 +26,7 @@ android {
             val ks = System.getenv("KW_KEYSTORE")
             if (ks != null && file(ks).exists()) {
                 storeFile = file(ks)
+                storeType = if (ks.endsWith(".p12")) "pkcs12" else "jks"
                 storePassword = System.getenv("KW_STORE_PASSWORD")
                 keyAlias = System.getenv("KW_KEY_ALIAS")
                 keyPassword = System.getenv("KW_KEY_PASSWORD")
