@@ -14,8 +14,15 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.graphics.Color
+import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.webkit.WebViewAssetLoader
 
@@ -28,6 +35,7 @@ import androidx.webkit.WebViewAssetLoader
 class MainActivity : ComponentActivity() {
 
     private lateinit var web: WebView
+    private lateinit var root: FrameLayout
     private var fileCallback: ValueCallback<Array<Uri>>? = null
 
     private val pickFile = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
@@ -38,6 +46,11 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Edge-to-edge: the system draws its own bars (gesture pill, status icons) over the app's surface
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
 
         val assets = WebViewAssetLoader.Builder()
@@ -46,6 +59,7 @@ class MainActivity : ComponentActivity() {
 
         web = WebView(this)
         web.setBackgroundColor(0xFFDDF869.toInt())
+        web.isHapticFeedbackEnabled = true
         with(web.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -88,9 +102,19 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        web.addJavascriptInterface(HarkNative(this), "HarkNative")
+        web.addJavascriptInterface(HarkNative(this) { color, dark -> runOnUiThread { applyBars(color, dark) } }, "HarkNative")
         tuneWebView(this, web)
-        setContentView(web)
+
+        root = FrameLayout(this)
+        root.setBackgroundColor(0xFFDDF869.toInt())
+        root.addView(web, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            v.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
+            WindowInsetsCompat.CONSUMED
+        }
+        setContentView(root)
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -105,6 +129,15 @@ class MainActivity : ComponentActivity() {
         else web.loadUrl("https://appassets.androidplatform.net/assets/index.html")
     }
 
+    /** Called by the page: system bars take the colour of the screen on show; icons flip for contrast. */
+    private fun applyBars(color: Int, dark: Boolean) {
+        root.setBackgroundColor(color)
+        web.setBackgroundColor(color)
+        val c = WindowCompat.getInsetsController(window, root)
+        c.isAppearanceLightStatusBars = !dark
+        c.isAppearanceLightNavigationBars = !dark
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         web.saveState(outState)
@@ -117,7 +150,9 @@ class MainActivity : ComponentActivity() {
 
 /** Smooth rendering: GPU layer, pre-raster, highest refresh rate, no overscroll glow. */
 fun tuneWebView(activity: Activity, webView: WebView) {
-    webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+    // WebView is already GPU-composited; forcing a View hardware layer adds an extra
+    // full-screen texture copy every frame (the main cause of scroll jank) - so don't.
+    if (Build.VERSION.SDK_INT >= 26) webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
     if (Build.VERSION.SDK_INT >= 23) webView.settings.offscreenPreRaster = true
     webView.isVerticalScrollBarEnabled = false
     webView.overScrollMode = View.OVER_SCROLL_NEVER
