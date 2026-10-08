@@ -17,7 +17,15 @@ import org.json.JSONArray
 import java.io.File
 
 /** JavaScript bridge exposed to the page as window.HarkNative */
-class HarkNative(private val ctx: Context, private val onBars: (Int, Boolean) -> Unit = { _, _ -> }) {
+class HarkNative(
+    private val ctx: Context,
+    private val onBars: (Int, Boolean) -> Unit = { _, _ -> },
+    private val onAwake: (Boolean) -> Unit = { }
+) {
+
+    /** Screen Wake Lock for the WebView (Chrome has navigator.wakeLock, WebView doesn't). */
+    @JavascriptInterface
+    fun keepAwake(on: Boolean) { onAwake(on) }
 
     /** "#rrggbb" of the screen on show, and whether it is dark. */
     @JavascriptInterface
