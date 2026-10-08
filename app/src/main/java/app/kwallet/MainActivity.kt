@@ -68,7 +68,11 @@ class MainActivity : ComponentActivity() {
             allowContentAccess = true
             mediaPlaybackRequiresUserGesture = false
             cacheMode = WebSettings.LOAD_NO_CACHE
-            textZoom = 100
+            // Same layout rules as Chrome: honour the page's <meta viewport> and the
+            // phone's system font size, so the app sizes exactly like the HTML in a browser.
+            useWideViewPort = true
+            loadWithOverviewMode = false
+            textZoom = (resources.configuration.fontScale * 100f).toInt().coerceIn(85, 200)
             setSupportZoom(false)
             builtInZoomControls = false
             displayZoomControls = false
@@ -97,12 +101,16 @@ class MainActivity : ComponentActivity() {
                 val i = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
                     type = "*/*"
+                    val types = params.acceptTypes.flatMap { it.split(",") }.map { it.trim() }.filter { it.contains("/") }
+                    if (types.isNotEmpty()) putExtra(Intent.EXTRA_MIME_TYPES, (types + "application/octet-stream").distinct().toTypedArray())
                 }
                 return try { pickFile.launch(i); true } catch (_: Exception) { fileCallback = null; false }
             }
         }
 
-        web.addJavascriptInterface(HarkNative(this) { color, dark -> runOnUiThread { applyBars(color, dark) } }, "HarkNative")
+        web.addJavascriptInterface(HarkNative(this,
+            onBars = { color, dark -> runOnUiThread { applyBars(color, dark) } },
+            onAwake = { on -> runOnUiThread { web.keepScreenOn = on } }), "HarkNative")
         tuneWebView(this, web)
 
         root = FrameLayout(this)
@@ -148,12 +156,14 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() { web.destroy(); super.onDestroy() }
 }
 
-/** Smooth rendering: GPU layer, pre-raster, highest refresh rate, no overscroll glow. */
+/** Smooth rendering like Chrome: highest refresh rate, no overscroll glow. */
 fun tuneWebView(activity: Activity, webView: WebView) {
     // WebView is already GPU-composited; forcing a View hardware layer adds an extra
     // full-screen texture copy every frame (the main cause of scroll jank) - so don't.
     if (Build.VERSION.SDK_INT >= 26) webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
-    if (Build.VERSION.SDK_INT >= 23) webView.settings.offscreenPreRaster = true
+    // No offscreen pre-raster: Chrome doesn't do it, and on long pages it rasterises
+    // everything up front (memory spikes, slower first paint, dropped frames).
+    webView.settings.offscreenPreRaster = false
     webView.isVerticalScrollBarEnabled = false
     webView.overScrollMode = View.OVER_SCROLL_NEVER
     if (Build.VERSION.SDK_INT >= 23) {
