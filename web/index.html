@@ -2194,7 +2194,28 @@
 .kw-hidden-note { padding: 18px 14px; text-align: center; opacity: .7; font-size: 14px; line-height: 1.45; }
 
 /* ===== v3.53 Saved keys vault (Material 3) ===== */
-.kpv-bar { display: flex; gap: 8px; margin: 8px 0 2px; flex-wrap: wrap; }
+.kpv-ib { flex: none; position: relative; width: 38px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text); display: inline-grid; place-items: center; cursor: pointer; padding: 0; }
+.kpv-ib svg { width: 19px; height: 19px; }
+.kpv-ib b { position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: #1b2230; font: 600 10px/16px 'Roboto', sans-serif; text-align: center; }
+[data-theme="light"] .kpv-ib b { color: #fff; }
+.kpv-ib b:empty, .kpv-ib b.z { display: none; }
+.kpv-ib:active { transform: scale(.94); }
+.priv-hide .kpv-ib { opacity: .34; filter: grayscale(1); }
+.kw-xin { position: relative; flex: 1; min-width: 0; display: flex; }
+.kw-xin > input { flex: 1; min-width: 0; padding-right: 30px !important; }
+.kw-xin .clear-import { position: absolute; right: 6px; top: 50%; margin: -11px 0 0 !important; align-self: auto !important; }
+.kpv-eic { display: block; width: 40px; height: 40px; margin: 0 auto 10px; color: var(--text-muted); opacity: .6; }
+.kpv-eic svg { width: 40px; height: 40px; }
+.kpv-empty small { font-size: 12.5px; opacity: .8; }
+.kpv-x svg, .kpv-eye svg { width: 20px; height: 20px; }
+.kpv-x, .kpv-eye { display: grid; place-items: center; }
+.kpv-search svg { width: 20px; height: 20px; flex: none; color: var(--text-muted); }
+.kpv-fab svg { width: 20px; height: 20px; margin-right: 6px; vertical-align: -4px; }
+.kpv-nt { margin-top: 4px; font: 400 13px/18px 'Roboto', sans-serif; color: var(--text); opacity: .85; white-space: pre-wrap; word-break: break-word; }
+.kpv-f textarea.kpv-note { -webkit-text-security: none; font-family: 'Roboto', system-ui, sans-serif; font-size: 14px; min-height: 52px; }
+.kpv-warn { display: flex; gap: 12px; margin: 8px 0 6px; padding: 14px; border-radius: 12px; background: color-mix(in srgb, var(--danger) 12%, transparent); font: 400 13.5px/19px 'Roboto', sans-serif; }
+.kpv-warn svg { flex: none; width: 22px; height: 22px; color: var(--danger); }
+.kpv-fill.danger { background: var(--danger); color: #fff; }
 .kpv-tonal { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border-radius: 18px; border: 0; cursor: pointer;
   background: color-mix(in srgb, var(--accent) 16%, var(--bg-card)); color: var(--text); font: 500 14px/20px 'Roboto', system-ui, sans-serif; }
 .kpv-tonal b { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--accent); color: #1b2230; font-size: 12px; line-height: 20px; text-align: center; }
@@ -2239,7 +2260,6 @@
 .kpv-chains { display: flex; flex-wrap: wrap; gap: 8px; }
 .kpv-cc { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); font: 500 13px 'Roboto', sans-serif; cursor: pointer; }
 .kpv-cc.on { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: transparent; }
-.kpv-cc.on::before { content: '\2713  '; }
 .kpv-msg { min-height: 20px; margin: 10px 2px 0; font: 400 13px/18px 'Roboto', sans-serif; color: var(--text-muted); word-break: break-all; }
 .kpv-msg.err { color: var(--danger); } .kpv-msg.ok { color: #1e8e3e; }
 .kpv-btns { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px 4px; }
@@ -2255,6 +2275,26 @@
 @keyframes kwAppIn { from { opacity: .0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
 .app.kw-enter { animation: kwAppIn .52s cubic-bezier(.22,1,.36,1) both; }
 @media (prefers-reduced-motion: reduce) { .app.kw-enter { animation: none; } }
+
+/* v3.55 compact Saved keys sheet */
+.kpv-h { padding: 2px 8px 2px 20px; } .kpv-h h2 { font-size: 20px; line-height: 26px; }
+.kpv-sub { padding: 0 20px 6px; font-size: 12.5px; }
+.kpv-card { gap: 12px; padding: 12px; border-radius: 14px; }
+.kpv-av { width: 36px; height: 36px; border-radius: 18px; font-size: 11px; }
+.kpv-name { font-size: 15px; }
+.kpv-acts { margin-top: 8px; gap: 6px; } .kpv-chip { height: 30px; padding: 0 10px; font-size: 12.5px; }
+.kpv-fab { height: 48px; border-radius: 14px; margin: 6px 16px 0; }
+.kpv-form { padding: 0 16px 4px; }
+.kpv-f { margin: 12px 0 2px; }
+.kpv-f input, .kpv-f textarea { padding: 11px 42px 11px 14px; font-size: 14.5px; }
+.kpv-f input:focus, .kpv-f textarea:focus { padding: 10px 41px 10px 13px; }
+.kpv-f textarea { min-height: 60px; }
+.kpv-lbl { margin: 12px 0 6px; font-size: 12.5px; }
+.kpv-chains { gap: 6px; } .kpv-cc { height: 30px; padding: 0 11px; font-size: 12.5px; border-radius: 8px; }
+.kpv-cc.on { background: var(--accent); color: #1b2230; border-color: transparent; }
+[data-theme="light"] .kpv-cc.on { color: #fff; }
+.kpv-btns { padding: 10px 16px 2px; }
+.kpv-eye { top: 4px; }
 </style>
 </head>
 <body data-theme="light">
@@ -2958,9 +2998,9 @@ window.FX = (function(){
         <input type="text" id="pk-import-input" placeholder="Paste a private key…" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="go" inputmode="text"
           oninput="onPkInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();runPkImport();}">
         <button type="button" class="btn btn-p" onclick="runPkImport()">Show</button>
-        <button type="button" class="btn" onclick="clearPkImport()">Clear</button>
+        <button type="button" class="kpv-ib" onclick="KwVault.add()" title="Save this key" aria-label="Save this key"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2zm-4 9v3h-2v-3H8v-2h3V7h2v3h3v2h-3z"/></svg></button>
+        <button type="button" class="kpv-ib" onclick="KwVault.open()" title="Saved keys" aria-label="Saved keys"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12.65 10A6 6 0 1 0 12.65 14H17v4h4v-4h2v-4H12.65zM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg><b id="kpv-count">0</b></button>
       </div>
-      <div class="kpv-bar"><button type="button" class="kpv-tonal" onclick="KwVault.add()"><span class="kpv-i">+</span>Save a key</button><button type="button" class="kpv-tonal kpv-open" onclick="KwVault.open()">Saved keys <b id="kpv-count">0</b></button></div>
       <div class="search-meta" id="pk-import-meta"></div>
       <div class="addr-search-hits" id="pk-import-result"></div>
     </div>
@@ -9924,7 +9964,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.54';
+const APP_VERSION = '3.55';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -17483,12 +17523,21 @@ window.kwBack = function () {
   ];
   function ch(id) { for (var i = 0; i < CH.length; i++) if (CH[i][0] === id) return CH[i]; return CH[CH.length - 1]; }
   var items = [];
+  function sv(d) { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="' + d + '"/></svg>'; }
+  var IC = {
+    x: sv('M18.3 5.7a1 1 0 0 0-1.4 0L12 10.6 7.1 5.7a1 1 0 0 0-1.4 1.4l4.9 4.9-4.9 4.9a1 1 0 1 0 1.4 1.4l4.9-4.9 4.9 4.9a1 1 0 0 0 1.4-1.4L13.4 12l4.9-4.9a1 1 0 0 0 0-1.4z'),
+    eye: sv('M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z'),
+    key: sv('M12.65 10A6 6 0 1 0 12.65 14H17v4h4v-4h2v-4H12.65zM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4z'),
+    search: sv('M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'),
+    plus: sv('M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z'),
+    warn: sv('M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z')
+  };
   function load() { try { items = JSON.parse(localStorage.getItem(KEY) || '[]') || []; } catch (e) { items = []; } if (!Array.isArray(items)) items = []; }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) { toast('Storage is full. Key not saved'); return false; }
     count(); return true;
   }
-  function count() { var c = document.getElementById('kpv-count'); if (c) c.textContent = String(items.length); }
+  function count() { var c = document.getElementById('kpv-count'); if (c) { c.textContent = String(items.length); c.classList.toggle('z', !items.length); } }
   function toast(t) { try { showToast(t); } catch (e) {} }
   function E(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function locked() { if (window.kwHidden && kwHidden()) { toast('Hide mode is on. Tap Show to unlock'); try { buzz([20, 30, 20]); } catch (e) {} return true; } return false; }
@@ -17519,18 +17568,19 @@ window.kwBack = function () {
   function render() {
     var box = document.getElementById('kpv-in'); if (!box) return;
     if (view === 'list') {
-      var list = items.filter(function (it) { if (!q) return true; var s = (it.name + ' ' + ch(it.chain)[1] + ' ' + (it.addr || '')).toLowerCase(); return s.indexOf(q.toLowerCase()) >= 0; });
-      var h = '<div class="kpv-h"><h2>Saved keys</h2><button type="button" class="kpv-x" data-a="close" aria-label="Close">\u2715</button></div>'
+      var list = items.filter(function (it) { if (!q) return true; var s = (it.name + ' ' + ch(it.chain)[1] + ' ' + (it.addr || '') + ' ' + (it.note || '')).toLowerCase(); return s.indexOf(q.toLowerCase()) >= 0; });
+      var h = '<div class="kpv-h"><h2>Saved keys</h2><button type="button" class="kpv-x" data-a="close" aria-label="Close">' + IC.x + '</button></div>'
         + '<div class="kpv-sub">Stored only on this phone. Erased only by Clear.</div>';
-      if (items.length > 3) h += '<div class="kpv-search">\u2315<input id="kpv-q" placeholder="Search by name, chain or address" value="' + E(q) + '"></div>';
+      if (items.length > 3) h += '<div class="kpv-search">' + IC.search + '<input id="kpv-q" placeholder="Search by name, chain or address" value="' + E(q) + '"></div>';
       h += '<div class="kpv-list">';
-      if (!items.length) h += '<div class="kpv-empty"><big>\uD83D\uDD11</big>No saved keys yet.<br>Add one and give it a name you will remember.</div>';
+      if (!items.length) h += '<div class="kpv-empty"><span class="kpv-eic">' + IC.key + '</span>No saved keys yet<br><small>Add a key and give it a name</small></div>';
       else if (!list.length) h += '<div class="kpv-empty">No key matches \u201c' + E(q) + '\u201d</div>';
       list.forEach(function (it) {
         var c = ch(it.chain);
         h += '<div class="kpv-card"><div class="kpv-av" style="--c:' + c[2] + '">' + E(c[1].slice(0, 4)) + '</div><div class="kpv-body">'
           + '<div class="kpv-name">' + E(it.name) + '</div>'
           + '<div class="kpv-meta">' + E(c[1]) + ' \u00b7 saved ' + E(String(it.t || '').slice(0, 10)) + '</div>'
+          + (it.note ? '<div class="kpv-nt">' + E(it.note) + '</div>' : '')
           + (it.addr ? '<div class="kpv-addr">' + E(it.addr) + '</div>' : '')
           + (shown[it.id] ? '<div class="kpv-key">' + E(it.pk) + '</div>' : '')
           + '<div class="kpv-acts">'
@@ -17540,18 +17590,28 @@ window.kwBack = function () {
           + '<button type="button" class="kpv-chip" data-a="ed" data-id="' + it.id + '">Edit</button>'
           + '</div></div></div>';
       });
-      h += '</div><button type="button" class="kpv-fab" data-a="new">+ Add a key</button>';
+      h += '</div><button type="button" class="kpv-fab" data-a="new">' + IC.plus + 'Add a key</button>';
       box.innerHTML = h;
       var qi = document.getElementById('kpv-q');
       if (qi) qi.addEventListener('input', function () { q = qi.value; var p = qi.selectionStart; render(); var n = document.getElementById('kpv-q'); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} } });
+    } else if (view === 'del') {
+      var dz = items.filter(function (x) { return x.id === editId; })[0] || { name: '' };
+      box.innerHTML = '<div class="kpv-h"><h2>Delete key?</h2><button type="button" class="kpv-x" data-a="delno" aria-label="Back">' + IC.x + '</button></div>'
+        + '<div class="kpv-form"><div class="kpv-warn">' + IC.warn + '<div><b>\u201c' + E(dz.name) + '\u201d will be erased from this phone.</b><br>This can\u2019t be undone. Make sure the key is backed up somewhere else.</div></div>'
+        + '<div class="kpv-f"><label>Type yes to confirm</label><input id="kpv-yes" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="yes"></div></div>'
+        + '<div class="kpv-btns"><button type="button" class="kpv-txt" data-a="delno">Cancel</button><button type="button" class="kpv-fill danger" data-a="delgo" id="kpv-delgo" disabled>Delete</button></div>';
+      var y = document.getElementById('kpv-yes');
+      y.addEventListener('input', function () { var ok = y.value.trim().toLowerCase() === 'yes'; document.getElementById('kpv-delgo').disabled = !ok; if (ok) { try { FX.tick(1400); FX.buzz(12); } catch (x) {} } });
+      setTimeout(function () { try { y.focus(); } catch (x) {} }, 60);
     } else {
       var it = editId ? items.filter(function (x) { return x.id === editId; })[0] : null;
-      var h2 = '<div class="kpv-h"><h2>' + (it ? 'Edit key' : 'Add a key') + '</h2><button type="button" class="kpv-x" data-a="back" aria-label="Back">\u2715</button></div><div class="kpv-form">'
+      var h2 = '<div class="kpv-h"><h2>' + (it ? 'Edit key' : 'Add a key') + '</h2><button type="button" class="kpv-x" data-a="back" aria-label="Back">' + IC.x + '</button></div><div class="kpv-form">'
         + '<div class="kpv-f"><label>Name</label><input id="kpv-name" maxlength="60" placeholder="e.g. Main ETH, Trading SOL" value="' + E(it ? it.name : '') + '"></div>'
         + '<div class="kpv-lbl">Chain</div><div class="kpv-chains">'
         + CH.map(function (c) { return '<button type="button" class="kpv-cc' + (c[0] === selChain ? ' on' : '') + '" data-a="chain" data-c="' + c[0] + '">' + E(c[1]) + '</button>'; }).join('')
         + '</div><div class="kpv-f" style="margin-top:20px"><label>Private key</label><textarea id="kpv-pk" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="Paste the private key">' + E(it ? it.pk : (window.__kpvPrefill || '')) + '</textarea>'
-        + '<button type="button" class="kpv-eye" data-a="eye" aria-label="Show key">\uD83D\uDC41</button></div>'
+        + '<button type="button" class="kpv-eye" data-a="eye" aria-label="Show key">' + IC.eye + '</button></div>'
+        + '<div class="kpv-f"><label>Note (optional)</label><textarea id="kpv-note" class="kpv-note" maxlength="300" placeholder="Anything to remember about this key">' + E(it && it.note ? it.note : '') + '</textarea></div>'
         + '<div class="kpv-msg" id="kpv-msg"></div></div>'
         + '<div class="kpv-btns">' + (it ? '<button type="button" class="kpv-txt warn" data-a="del">Delete</button>' : '')
         + '<button type="button" class="kpv-txt" data-a="back">Cancel</button><button type="button" class="kpv-fill" data-a="save">Save</button></div>';
@@ -17568,6 +17628,7 @@ window.kwBack = function () {
     catch (e) { m.className = 'kpv-msg err'; m.textContent = e.message || 'Not a valid key for ' + ch(selChain)[1]; }
   }
   function doSave() {
+    var note = (((document.getElementById('kpv-note') || {}).value) || '').trim().slice(0, 300);
     var n = (document.getElementById('kpv-name') || {}).value || '', pk = ((document.getElementById('kpv-pk') || {}).value || '').trim();
     var m = document.getElementById('kpv-msg');
     var addr;
@@ -17576,8 +17637,8 @@ window.kwBack = function () {
     var dup = items.filter(function (x) { return x.pk === pk && x.chain === selChain && x.id !== editId; })[0];
     if (dup) { if (m) { m.className = 'kpv-msg err'; m.textContent = 'Already saved as \u201c' + dup.name + '\u201d'; } return; }
     var stamp = (typeof logStamp === 'function') ? logStamp() : new Date().toISOString();
-    if (editId) items = items.map(function (x) { return x.id === editId ? { id: x.id, name: n, chain: selChain, pk: pk, addr: addr, t: x.t, u: stamp } : x; });
-    else items.unshift({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: n, chain: selChain, pk: pk, addr: addr, t: stamp });
+    if (editId) items = items.map(function (x) { return x.id === editId ? { id: x.id, name: n, chain: selChain, pk: pk, addr: addr, note: note, t: x.t, u: stamp } : x; });
+    else items.unshift({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: n, chain: selChain, pk: pk, addr: addr, note: note, t: stamp });
     if (!save()) return;
     try { pushActivity('pk', (editId ? 'Edited' : 'Saved') + ' key \u201c' + n + '\u201d \u00b7 ' + ch(selChain)[1] + (addr ? '\n' + addr : '')); } catch (e) {}
     try { FX.notify('pk'); } catch (e) {}
@@ -17596,13 +17657,19 @@ window.kwBack = function () {
     else if (a === 'chain') { selChain = b.getAttribute('data-c'); document.querySelectorAll('#kpv-ov .kpv-cc').forEach(function (x) { x.classList.toggle('on', x === b); }); check(); }
     else if (a === 'eye') { var t = document.getElementById('kpv-pk'); if (t) t.classList.toggle('vis'); }
     else if (a === 'save') doSave();
-    else if (a === 'del') {
-      if (Date.now() - delArm > 2500) { delArm = Date.now(); b.textContent = 'Tap again to delete'; return; }
-      var gone = items.filter(function (x) { return x.id === editId; })[0];
-      items = items.filter(function (x) { return x.id !== editId; }); save();
-      try { pushActivity('pk', 'Deleted key \u201c' + (gone ? gone.name : '') + '\u201d'); } catch (x) {}
-      toast('Key deleted'); view = 'list'; editId = null; render();
+    else if (a === 'del') { view = 'del'; render(); }
+    else if (a === 'delgo') {
+      var v = ((document.getElementById('kpv-yes') || {}).value || '').trim().toLowerCase(); if (v !== 'yes') return;
+      var fin = function () {
+        var gone = items.filter(function (x) { return x.id === editId; })[0];
+        items = items.filter(function (x) { return x.id !== editId; }); save();
+        try { FX.notify('erase'); FX.buzz([30, 60, 30]); } catch (x) {}
+        try { pushActivity('pk', 'Deleted key \u201c' + (gone ? gone.name : '') + '\u201d'); } catch (x) {}
+        toast('Key deleted'); view = 'list'; editId = null; render();
+      };
+      if (window.KwLock && KwLock.hasPin && KwLock.hasPin()) KwLock.verify(fin); else fin();
     }
+    else if (a === 'delno') { view = 'form'; render(); }
     else if (it && a === 'ca') copyToClipboard(it.addr).then(function () { toast('Address copied'); });
     else if (it && a === 'ck') copyToClipboard(it.pk).then(function () { toast('Key copied \u00b7 ' + it.name); try { FX.buzz(12); } catch (x) {} });
     else if (it && a === 'sk') { shown[id] = !shown[id]; render(); }
@@ -17726,6 +17793,31 @@ window.kwBack = function () {
     }).observe(kl, { attributes: true, attributeFilter: ['class'] });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hook); else hook();
+})();
+</script>
+<script>
+/* v3.55: little x clear buttons inside the Find and Key fields */
+(function () {
+  var X = '<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M18.3 5.7a1 1 0 0 0-1.4 0L12 10.6 7.1 5.7a1 1 0 0 0-1.4 1.4l4.9 4.9-4.9 4.9a1 1 0 1 0 1.4 1.4l4.9-4.9 4.9 4.9a1 1 0 1 0 1.4-1.4L13.4 12l4.9-4.9a1 1 0 0 0 0-1.4z"/></svg>';
+  function add(id, onClear) {
+    var inp = document.getElementById(id); if (!inp || inp.parentNode.classList.contains('kw-xin')) return;
+    var w = document.createElement('div'); w.className = 'kw-xin'; inp.parentNode.insertBefore(w, inp); w.appendChild(inp);
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'clear-import'; b.setAttribute('aria-label', 'Clear'); b.innerHTML = X; w.appendChild(b);
+    function sync() { b.classList.toggle('vis', !!inp.value); }
+    inp.addEventListener('input', sync); setInterval(sync, 500);
+    b.addEventListener('click', function (e) { e.preventDefault(); onClear(inp); inp.value = ''; sync(); try { FX.tick(900); FX.buzz(8); } catch (x) {} try { inp.focus({ preventScroll: true }); } catch (x) {} });
+    sync();
+  }
+  function init() {
+    add('addr-search-input', function () {
+      try { cancelAddressSearch(true); } catch (e) {}
+      try { setSearchMeta('', ''); } catch (e) {}
+      var h = document.getElementById('addr-search-hits'); if (h) h.innerHTML = '';
+      try { setSearchProgress(0, ''); showResume(false); } catch (e) {}
+    });
+    add('pk-import-input', function () { try { clearPkImport(); } catch (e) {} });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 </script>
 </body>
