@@ -37,6 +37,11 @@ class MainActivity : ComponentActivity() {
     private lateinit var web: WebView
     private lateinit var root: FrameLayout
     private var fileCallback: ValueCallback<Array<Uri>>? = null
+    @Volatile var insetCss = "{\"t\":0,\"r\":0,\"b\":0,\"l\":0}"
+
+    private fun pushInsets() {
+        if (::web.isInitialized) web.evaluateJavascript("window.kwInsets&&kwInsets($insetCss)", null)
+    }
 
     private val pickFile = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
         val uri = if (res.resultCode == Activity.RESULT_OK) res.data?.data else null
@@ -52,6 +57,11 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
         )
         super.onCreate(savedInstanceState)
+        // no grey/white scrim behind 3-button navigation: the page colour shows through
+        if (Build.VERSION.SDK_INT >= 29) {
+            window.isNavigationBarContrastEnforced = false
+            window.isStatusBarContrastEnforced = false
+        }
 
         val assets = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
@@ -85,6 +95,8 @@ class MainActivity : ComponentActivity() {
                     ?: if (request.url.scheme == "blob" || request.url.scheme == "data") null
                     else WebResourceResponse("text/plain", "utf-8", 403, "Offline", null, null)
 
+            override fun onPageFinished(view: WebView, url: String) { pushInsets() }
+
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val u = request.url
                 if (u.host == "appassets.androidplatform.net") return false
@@ -109,17 +121,26 @@ class MainActivity : ComponentActivity() {
         }
 
         web.addJavascriptInterface(HarkNative(this,
-            onBars = { color, dark -> runOnUiThread { applyBars(color, dark) } },
+            onBars = { top, bottom -> runOnUiThread { applyBars(top, bottom) } },
+            insetsJson = { insetCss },
             onAwake = { on -> runOnUiThread { web.keepScreenOn = on } }), "HarkNative")
         tuneWebView(this, web)
 
         root = FrameLayout(this)
         root.setBackgroundColor(0xFFDDF869.toInt())
         root.addView(web, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        // True edge-to-edge: the page draws under the status and navigation bars, so the bars
+        // show the page's own pixels (lime splash, white app, dark app). The page keeps its
+        // content clear of them with the --kw-sa* CSS variables pushed from here.
         ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            val imeOn = insets.isVisible(WindowInsetsCompat.Type.ime())
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-            v.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
+            // keyboard open: shrink the WebView above it (same as adjustResize)
+            v.setPadding(0, 0, 0, if (imeOn) ime.bottom else 0)
+            val d = resources.displayMetrics.density
+            insetCss = "{\"t\":${bars.top / d},\"r\":${bars.right / d},\"b\":${if (imeOn) 0f else bars.bottom / d},\"l\":${bars.left / d}}"
+            pushInsets()
             WindowInsetsCompat.CONSUMED
         }
         setContentView(root)
@@ -137,14 +158,17 @@ class MainActivity : ComponentActivity() {
         else web.loadUrl("https://appassets.androidplatform.net/assets/index.html")
     }
 
-    /** Called by the page: system bars take the colour of the screen on show; icons flip for contrast. */
-    private fun applyBars(color: Int, dark: Boolean) {
-        root.setBackgroundColor(color)
-        web.setBackgroundColor(color)
+    /** Called by the page with the colours under the status bar and the navigation bar. */
+    private fun applyBars(top: Int, bottom: Int) {
+        root.setBackgroundColor(bottom)
+        web.setBackgroundColor(top)
         val c = WindowCompat.getInsetsController(window, root)
-        c.isAppearanceLightStatusBars = !dark
-        c.isAppearanceLightNavigationBars = !dark
+        c.isAppearanceLightStatusBars = isLight(top)
+        c.isAppearanceLightNavigationBars = isLight(bottom)
     }
+
+    private fun isLight(c: Int): Boolean =
+        (0.299 * Color.red(c) + 0.587 * Color.green(c) + 0.114 * Color.blue(c)) / 255.0 >= 0.5
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
