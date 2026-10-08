@@ -1,9 +1,5 @@
 <resources>
     <style name="Theme.Kwallet" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/kw_lime</item>
-        <item name="android:statusBarColor">@color/kw_lime</item>
-        <item name="android:navigationBarColor">@color/kw_lime</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
     </style>
 </resources>
