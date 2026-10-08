@@ -17,7 +17,14 @@ import org.json.JSONArray
 import java.io.File
 
 /** JavaScript bridge exposed to the page as window.HarkNative */
-class HarkNative(private val ctx: Context) {
+class HarkNative(private val ctx: Context, private val onBars: (Int, Boolean) -> Unit = { _, _ -> }) {
+
+    /** "#rrggbb" of the screen on show, and whether it is dark. */
+    @JavascriptInterface
+    fun setBars(hex: String, dark: Boolean) {
+        try { onBars(android.graphics.Color.parseColor(hex), dark) } catch (_: Exception) {}
+    }
+
 
     /** "normal" | "vibrate" | "silent" — the page plays sounds only on "normal". */
     @JavascriptInterface
