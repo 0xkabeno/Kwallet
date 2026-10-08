@@ -17247,6 +17247,23 @@ window.kwBack = function () {
   document.addEventListener('transitionend', soon, true);
   push(); setTimeout(push, 400);
 })();
+
+/* ===== v3.49: Screen Wake Lock in the Android app (WebView lacks navigator.wakeLock) ===== */
+(function () {
+  if (!window.HarkNative || typeof HarkNative.keepAwake !== 'function') return;
+  if (navigator.wakeLock && navigator.wakeLock.request) return;
+  var held = 0;
+  function Lock() { this.released = false; this.type = 'screen'; this._l = []; held++; try { HarkNative.keepAwake(true); } catch (e) {} }
+  Lock.prototype.addEventListener = function (t, f) { if (t === 'release') this._l.push(f); };
+  Lock.prototype.removeEventListener = function (t, f) { this._l = this._l.filter(function (g) { return g !== f; }); };
+  Lock.prototype.release = function () {
+    if (this.released) return Promise.resolve(); this.released = true;
+    held = Math.max(0, held - 1); if (!held) { try { HarkNative.keepAwake(false); } catch (e) {} }
+    var self = this; this._l.forEach(function (f) { try { f.call(self, { type: 'release' }); } catch (e) {} });
+    return Promise.resolve();
+  };
+  try { Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: { request: function () { return Promise.resolve(new Lock()); } } }); } catch (e) {}
+})();
 </script>
 </body>
 </html>
