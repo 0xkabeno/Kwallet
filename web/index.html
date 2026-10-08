@@ -3,6 +3,22 @@
 <head>
 <script>(function(){var P={touchstart:1,touchmove:1,wheel:1,mousewheel:1},o=EventTarget.prototype.addEventListener;try{EventTarget.prototype.addEventListener=function(t,f,x){if(P[t]&&(x===undefined||typeof x==='boolean'))x={capture:!!x,passive:true};return o.call(this,t,f,x);};}catch(e){}})();</script>
 <meta charset="UTF-8">
+<script>
+/* v3.50: Android app draws edge-to-edge; the native shell tells us the system bar sizes */
+(function () {
+  try {
+    if (!window.HarkNative || typeof HarkNative.insets !== 'function') return;
+    var de = document.documentElement; de.classList.add('kw-e2e');
+    window.kwInsets = function (o) {
+      if (!o) return; var st = de.style;
+      st.setProperty('--kw-sat', (+o.t || 0) + 'px'); st.setProperty('--kw-sar', (+o.r || 0) + 'px');
+      st.setProperty('--kw-sab', (+o.b || 0) + 'px'); st.setProperty('--kw-sal', (+o.l || 0) + 'px');
+      try { window.dispatchEvent(new Event('kw-insets')); } catch (e) {}
+    };
+    kwInsets(JSON.parse(HarkNative.insets() || '{}'));
+  } catch (e) {}
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Kwallet</title>
 <meta name="theme-color" content="#0e1117">
@@ -1423,6 +1439,12 @@
     background: var(--bg);
   }
   .app { height: 100%; max-height: 100%; }
+  /* v3.50 edge-to-edge (Android app): the page canvas runs under the status and navigation
+     bars and paints them in the colour of the screen on show; the app itself stays clear of them */
+  html.kw-e2e { background: linear-gradient(to bottom, var(--kw-top, var(--bg)) 0 50%, var(--kw-bot, var(--bg)) 50% 100%) !important; }
+  html.kw-e2e body { top: var(--kw-sat, 0px); right: var(--kw-sar, 0px); bottom: var(--kw-sab, 0px); left: var(--kw-sal, 0px);
+    width: auto; height: auto; contain: layout; }
+  html.kw-e2e, html.kw-e2e body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
   .addr-search-strip input#addr-search-input { font-size: 16px; height: 34px; }
   .addr-search-strip input#addr-search-input::-webkit-search-cancel-button { display: none; }
   .addr-search-hits { contain: content; }
@@ -2056,22 +2078,23 @@
   white-space: nowrap; transform-origin: 50% 50%; }
 #kl-root .kl-brand::after { content: ''; position: absolute; top: -18%; bottom: -18%; left: 0; width: 38%; z-index: 3; pointer-events: none;
   background: linear-gradient(100deg, transparent, rgba(255,255,255,.6) 50%, transparent); mix-blend-mode: soft-light;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 22%, #000 78%, transparent); mask-image: linear-gradient(180deg, transparent, #000 22%, #000 78%, transparent);
   transform: translateX(-160%) skewX(-18deg); animation: klShine 1.5s ease 1.2s 1 both; }
 #kl-root .kl-brand.kl-noshine::after { animation: none; opacity: 0; }
 @keyframes klShine { to { transform: translateX(340%) skewX(-18deg); } }
 #kl-root .kl-k { position: relative; z-index: 2; display: inline-block; font-size: var(--kl-k); color: var(--kl-ink); top: calc(var(--kl-k) * .038);
-  letter-spacing: calc(var(--kl-k) * -0.035); will-change: transform; transform-origin: 50% 55%;
+  letter-spacing: calc(var(--kl-k) * -0.035); transform-origin: 50% 55%; text-rendering: geometricPrecision; backface-visibility: hidden;
   opacity: 0; animation: klKIn .8s var(--kl-ease) .1s forwards; }
 #kl-root .kl-w { position: relative; z-index: 1; display: inline-block; font-size: calc(var(--kl-k) * .9); color: #fff;
   letter-spacing: calc(var(--kl-k) * .012); margin-left: calc(var(--kl-k) * -0.02);
   -webkit-text-stroke: calc(var(--kl-k) * .085) var(--kl-ink); paint-order: stroke fill;
   text-shadow: calc(var(--kl-k) * .012) calc(var(--kl-k) * .05) 0 var(--kl-ink);
-  will-change: clip-path, opacity; opacity: 0; animation: klWIn .85s var(--kl-ease) .26s forwards; }
+  text-rendering: geometricPrecision; opacity: 0; animation: klWIn .85s var(--kl-ease) .26s forwards; }
 @keyframes klKIn { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
 @keyframes klWIn { from { opacity: 0; transform: translateX(12px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
 
 /* slogan + ring */
-#kl-root .kl-foot { position: absolute; left: 0; right: 0; bottom: max(44px, calc(env(safe-area-inset-bottom, 0px) + 32px));
+#kl-root .kl-foot { position: absolute; left: 0; right: 0; bottom: max(44px, calc(var(--kw-sab, env(safe-area-inset-bottom, 0px)) + 32px));
   display: flex; flex-direction: column; align-items: center; gap: 18px; }
 #kl-root .kl-slogan { font: 500 clamp(15px, 4.2vw, 18px)/1.2 'RobotoE','Roboto',system-ui,sans-serif; letter-spacing: .01em; color: rgba(34,51,72,.82);
   opacity: 0; animation: klRise .8s var(--kl-ease) .5s forwards; }
@@ -2092,7 +2115,7 @@
 #kl-root .kl-splash { position: absolute; inset: 0; transition: opacity .4s ease; }
 #kl-root.kl-pin .kl-foot { opacity: 0; transform: translateY(10px); transition: opacity .3s ease, transform .3s ease; }
 #kl-root .kl-pinbox { position: absolute; left: 0; right: 0; bottom: 0; top: 0; display: flex; flex-direction: column; align-items: center;
-  justify-content: flex-end; padding: 0 24px max(10vh, calc(env(safe-area-inset-bottom, 0px) + 40px));
+  justify-content: flex-end; padding: 0 24px max(10vh, calc(var(--kw-sab, env(safe-area-inset-bottom, 0px)) + 40px));
   opacity: 0; pointer-events: none; transform: translateY(24px); transition: opacity .45s ease .12s, transform .5s var(--kl-ease) .12s; }
 #kl-root.kl-pin .kl-pinbox { opacity: 1; pointer-events: auto; transform: none; }
 #kl-root .kl-pin-title { font: 400 24px/1.3 'RobotoE','Roboto',system-ui,sans-serif; letter-spacing: 0; color: var(--kl-ink); }
@@ -2129,12 +2152,12 @@
 #kl-root .kl-pill { position: absolute; left: 50%; top: 0; line-height: 1; white-space: nowrap; pointer-events: none;
   opacity: 0; transform: translate(-50%, 10px); transition: opacity .45s ease, transform .55s var(--kl-ease); }
 #kl-root.kl-pillin .kl-pill { opacity: 1; transform: translate(-50%, 0); }
-#kl-root .kl-pw { display: inline-block; font-size: clamp(40px, 12vw, 54px); font-weight: 900; color: #fff; letter-spacing: .013em;
+#kl-root .kl-pw { display: inline-block; text-rendering: geometricPrecision; font-size: clamp(40px, 12vw, 54px); font-weight: 900; color: #fff; letter-spacing: .013em;
   -webkit-text-stroke: .094em var(--kl-ink); paint-order: stroke fill; text-shadow: .014em .058em 0 var(--kl-ink); }
 
-#kl-root .kl-l { display: inline-block; transform-origin: 50% 70%; will-change: transform, opacity; }
 
-#kl-root .kl-l { display: inline-block; transform-origin: 0% 60%; will-change: transform, opacity; }
+
+
 #kl-root .kl-fd { position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: 24px;
   background: rgba(34,51,72,.38); opacity: 0; pointer-events: none; transition: opacity .18s ease; }
 #kl-root .kl-fd.kl-show { opacity: 1; pointer-events: auto; }
@@ -2247,7 +2270,7 @@
     coinsBox.appendChild(c); return { el: c };
   });
   var wrap = el('div', 'kl-brandwrap'); var brand = el('h1', 'kl-brand'); brand.setAttribute('aria-label', 'Kwallet');
-  var K = el('span', 'kl-k', 'K'), W = el('span', 'kl-w', 'wallet'.split('').map(function (ch) { return '<span class="kl-l">' + ch + '</span>'; }).join(''));
+  var K = el('span', 'kl-k', 'K'), W = el('span', 'kl-w', 'wallet');
   K.setAttribute('aria-hidden', 'true'); W.setAttribute('aria-hidden', 'true');
   brand.appendChild(K); brand.appendChild(W); wrap.appendChild(brand); root.appendChild(wrap);
   var foot = el('div', 'kl-foot');
@@ -2276,7 +2299,7 @@
   });
   pinbox.appendChild(title); pinbox.appendChild(sub); pinbox.appendChild(dots); pinbox.appendChild(pad);
   root.appendChild(pinbox);
-  (document.body || document.documentElement).appendChild(root);
+  (document.documentElement.classList.contains('kw-e2e') ? document.documentElement : (document.body || document.documentElement)).appendChild(root);
   try { document.documentElement.style.overflow = 'hidden'; } catch (e) {}
 
   /* ---------- sizing: keep the tall brand, never wider than 90vw ---------- */
@@ -2411,7 +2434,7 @@
     var kR = K.getBoundingClientRect();
     var h0 = kR.height / ks, layTop = kR.top - ky - (1 - ks) * 0.55 * h0;
     var toS = clamp((VH * 0.15) / h0 * 1.0, 0.7, 1.05);
-    var fromY = ky, toY = Math.max(18, VH * 0.045) - layTop - (1 - toS) * 0.55 * h0, fromS = ks, t0 = performance.now();
+    var fromY = ky, toY = Math.max(18, VH * 0.045) + (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kw-sat')) || 0) - layTop - (1 - toS) * 0.55 * h0, fromS = ks, t0 = performance.now();
     if (!window.crypto || !crypto.subtle) { unlockDone(); return; }
     setupPin(); SND.pending = false;
     root.classList.add('kl-pin'); setAmbient(0.2, 700);
@@ -9772,7 +9795,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.49';
+const APP_VERSION = '3.50';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -17222,29 +17245,45 @@ window.kwBack = function () {
   return false;
 };
 
-/* ===== v3.49: native Android system bars follow the screen on show ===== */
+/* ===== v3.50: native Android system bars follow the screen on show =====
+   Top and bottom are sampled separately: lime splash -> lime bars, white app -> white bars,
+   dark app -> dark bars, an open sheet -> the sheet colour under the navigation bar. */
 (function () {
   if (!window.HarkNative || typeof HarkNative.setBars !== 'function') return;
-  var last = '';
-  function rgb2hex(c) {
-    var m = String(c).match(/\d+(\.\d+)?/g); if (!m || m.length < 3) return '';
-    if (m.length > 3 && +m[3] === 0) return '';
-    return '#' + m.slice(0, 3).map(function (v) { return ('0' + (+v | 0).toString(16)).slice(-2); }).join('');
+  var de = document.documentElement, last = '';
+  function parse(c) { var m = String(c).match(/[\d.]+/g); if (!m || m.length < 3) return null; return [+m[0], +m[1], +m[2], m.length > 3 ? +m[3] : 1]; }
+  function hex(a) { return '#' + a.slice(0, 3).map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); }
+  function bgAt(x, y, base) {
+    var el = document.elementFromPoint(x, y), layers = [];
+    while (el && el.nodeType === 1) {
+      var c = parse(getComputedStyle(el).backgroundColor);
+      if (c && c[3] > 0) { layers.push(c); if (c[3] >= 0.99) break; }
+      el = el.parentElement;
+    }
+    var out = base.slice();
+    for (var i = layers.length - 1; i >= 0; i--) { var c = layers[i], a = c[3]; out = [out[0] * (1 - a) + c[0] * a, out[1] * (1 - a) + c[1] * a, out[2] * (1 - a) + c[2] * a, 1]; }
+    return hex(out);
   }
-  function lum(h) { var n = parseInt(h.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255; }
   function push() {
-    var kl = document.getElementById('kl-root'), c = '';
-    if (kl && kl.style.display !== 'none' && !kl.classList.contains('kl-out')) c = rgb2hex(getComputedStyle(kl).backgroundColor);
-    if (!c) c = rgb2hex(getComputedStyle(document.body).backgroundColor) || '#ffffff';
-    if (c === last) return; last = c;
-    try { HarkNative.setBars(c, lum(c) < 0.5); } catch (e) {}
+    var top, bot, kl = document.getElementById('kl-root');
+    if (kl && kl.style.display !== 'none' && !kl.classList.contains('kl-out')) { top = bot = '#ddf869'; }
+    else {
+      var base = parse(getComputedStyle(document.body).backgroundColor) || [255, 255, 255, 1];
+      if (base[3] < 0.99) base = [255, 255, 255, 1];
+      var r = document.body.getBoundingClientRect(), x = Math.max(1, r.left + r.width / 2);
+      top = bgAt(x, r.top + 1, base); bot = bgAt(x, r.bottom - 2, base);
+    }
+    var k = top + bot; if (k === last) return; last = k;
+    de.style.setProperty('--kw-top', top); de.style.setProperty('--kw-bot', bot);
+    try { HarkNative.setBars(top, bot); } catch (e) {}
   }
-  var q = 0; function soon() { if (!q) q = requestAnimationFrame(function () { q = 0; push(); }); }
-  var mo = new MutationObserver(soon);
-  mo.observe(document.body, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+  var q = 0, t2 = 0;
+  function soon() { if (!q) q = requestAnimationFrame(function () { q = 0; push(); }); clearTimeout(t2); t2 = setTimeout(push, 380); }
+  new MutationObserver(soon).observe(document.body, { attributes: true, subtree: true, attributeFilter: ['data-theme', 'class', 'hidden'] });
   var kl = document.getElementById('kl-root');
-  if (kl) mo.observe(kl, { attributes: true, attributeFilter: ['class', 'style'] });
+  if (kl) new MutationObserver(soon).observe(kl, { attributes: true, attributeFilter: ['class', 'style'] });
   document.addEventListener('transitionend', soon, true);
+  window.addEventListener('kw-insets', soon); window.addEventListener('resize', soon);
   push(); setTimeout(push, 400);
 })();
 
