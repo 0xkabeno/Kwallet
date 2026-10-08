@@ -9772,7 +9772,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.48';
+const APP_VERSION = '3.49';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -17221,6 +17221,32 @@ window.kwBack = function () {
   if (k && !k.hidden) { togglePkImport(false); return true; }
   return false;
 };
+
+/* ===== v3.49: native Android system bars follow the screen on show ===== */
+(function () {
+  if (!window.HarkNative || typeof HarkNative.setBars !== 'function') return;
+  var last = '';
+  function rgb2hex(c) {
+    var m = String(c).match(/\d+(\.\d+)?/g); if (!m || m.length < 3) return '';
+    if (m.length > 3 && +m[3] === 0) return '';
+    return '#' + m.slice(0, 3).map(function (v) { return ('0' + (+v | 0).toString(16)).slice(-2); }).join('');
+  }
+  function lum(h) { var n = parseInt(h.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255; }
+  function push() {
+    var kl = document.getElementById('kl-root'), c = '';
+    if (kl && kl.style.display !== 'none' && !kl.classList.contains('kl-out')) c = rgb2hex(getComputedStyle(kl).backgroundColor);
+    if (!c) c = rgb2hex(getComputedStyle(document.body).backgroundColor) || '#ffffff';
+    if (c === last) return; last = c;
+    try { HarkNative.setBars(c, lum(c) < 0.5); } catch (e) {}
+  }
+  var q = 0; function soon() { if (!q) q = requestAnimationFrame(function () { q = 0; push(); }); }
+  var mo = new MutationObserver(soon);
+  mo.observe(document.body, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+  var kl = document.getElementById('kl-root');
+  if (kl) mo.observe(kl, { attributes: true, attributeFilter: ['class', 'style'] });
+  document.addEventListener('transitionend', soon, true);
+  push(); setTimeout(push, 400);
+})();
 </script>
 </body>
 </html>
