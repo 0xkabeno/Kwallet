@@ -1,5 +1,5 @@
 <resources>
-    <style name="Theme.Kwallet" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Theme.Kwallet" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">@color/kw_lime</item>
         <item name="android:windowSplashScreenBackground">@color/kw_lime</item>
         <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
