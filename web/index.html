@@ -2184,6 +2184,14 @@
 #kl-root .kl-fd-go:disabled { background: rgba(34,51,72,.12); color: rgba(34,51,72,.38); cursor: default; }
 #kl-root .kl-fd-fill { position: absolute; inset: 0; background: rgba(0,0,0,.28); transform: scaleX(0); transform-origin: left; }
 #kl-root .kl-fd-lb { position: relative; }
+
+/* v3.52 hide mode: everything that would show or export a secret is locked */
+.priv-hide .seed, .priv-hide .line.pk .txt, .priv-hide #import-area { pointer-events: none; -webkit-touch-callout: none; }
+.priv-hide .seed, .priv-hide .line.pk .txt { filter: blur(9px) saturate(.4); }
+.priv-hide [onclick="copySeed()"], .priv-hide [onclick="clearSeed()"], .priv-hide #pp-chip, .priv-hide #btn-import, .priv-hide #btn-last-word,
+.priv-hide #imp-wrap, .priv-hide #btn-pk-toggle, .priv-hide #btn-backup, .priv-hide #btn-export, .priv-hide #btn-seed-qr,
+.priv-hide .btn-k, .priv-hide .btn-s, .priv-hide .btn-v { opacity: .34 !important; filter: grayscale(1); }
+.kw-hidden-note { padding: 18px 14px; text-align: center; opacity: .7; font-size: 14px; line-height: 1.45; }
 </style>
 </head>
 <body data-theme="light">
@@ -9852,7 +9860,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.51';
+const APP_VERSION = '3.52';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -17374,6 +17382,93 @@ window.kwBack = function () {
     return Promise.resolve();
   };
   try { Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: { request: function () { return Promise.resolve(new Lock()); } } }); } catch (e) {}
+})();
+</script>
+
+<script>
+/* ===== v3.52: Hide mode = locked mode. Pages, undo/redo, Gen, chains, Find and Addr stay usable;
+   nothing shows, copies, exports or logs a seed or key until Show is unlocked with PIN or biometrics. ===== */
+(function () {
+  function hidden() { return !!document.querySelector('.app.priv-hide'); }
+  window.kwHidden = hidden;
+  var lastNote = 0;
+  function blocked() {
+    try { buzz([20, 30, 20]); } catch (e) {}
+    if (Date.now() - lastNote > 900) { lastNote = Date.now(); try { showToast('Hide mode is on. Tap Show to unlock'); } catch (e) {} }
+    return false;
+  }
+  var LOCKED = ['copySeed', 'clearSeed', 'openPassphraseModal', 'importSeed', 'calcLastWordFromImport', 'togglePkImport', 'runPkImport',
+    'copyPkRow', 'openExportModal', 'runExport', 'openBackupModal', 'showSeedQR', 'regenerateSameLength'];
+  function wrapAll() {
+    LOCKED.forEach(function (n) {
+      var f = window[n]; if (typeof f !== 'function' || f.__kwHide) return;
+      var w = function () { if (hidden()) return blocked(); return f.apply(this, arguments); };
+      w.__kwHide = 1; window[n] = w;
+    });
+    var cf = window.copyField;
+    if (typeof cf === 'function' && !cf.__kwHide) {
+      var w2 = function (i, type) { if (hidden() && type !== 'addr') return blocked(); return cf.apply(this, arguments); };
+      w2.__kwHide = 1; window.copyField = w2;
+    }
+    var ra = window.renderActivityLog;
+    if (typeof ra === 'function' && !ra.__kwHide) {
+      var w3 = function () {
+        var r = ra.apply(this, arguments); maskLog(); return r;
+      };
+      w3.__kwHide = 1; window.renderActivityLog = w3;
+    }
+    var tp = window.togglePrivacy;
+    if (typeof tp === 'function' && !tp.__kwHide) {
+      var w4 = function () {
+        var self = this, args = arguments;
+        var go = function () { tp.apply(self, args); refresh(); };
+        if (hidden() && window.KwLock && KwLock.hasPin()) { KwLock.verify(go); return; }   /* Show needs PIN or biometrics */
+        go();
+      };
+      w4.__kwHide = 1; window.togglePrivacy = w4;
+    }
+  }
+  function maskLog() {
+    if (!hidden()) return;
+    var sd = document.getElementById('log-seeds');
+    if (sd) sd.innerHTML = '<div class="kw-hidden-note">Seed history is locked while Hide is on.<br>Tap Show and unlock to see it.</div>';
+    var ac = document.getElementById('log-actions');
+    if (ac) ac.querySelectorAll('.detail, .lg-t1, .lg-note').forEach(function (d) { d.textContent = scrub(d.textContent); });
+  }
+  var sa = window.showActivityLog;
+  if (typeof sa === 'function') window.showActivityLog = function () { var r = sa.apply(this, arguments); maskLog(); return r; };
+  /* anything that could be a secret: hex keys, long base58 keys, runs of 12+ lowercase words */
+  function scrub(t) {
+    return String(t || '')
+      .replace(/\b(0x)?[0-9a-fA-F]{60,}\b/g, '••••••')
+      .replace(/\b(?:[a-z]{3,8}\s+){11,}[a-z]{3,8}\b/g, '•••• seed hidden ••••');
+  }
+  function refresh() {
+    var on = hidden();
+    var ia = document.getElementById('import-area');
+    if (ia) { ia.readOnly = on; if (on) { try { ia.blur(); } catch (e) {} } }
+    var pks = document.getElementById('pk-import-strip'); if (on && pks && !pks.hidden) { pks.hidden = true; var r = document.getElementById('pk-import-result'); if (r) r.innerHTML = ''; var pi = document.getElementById('pk-import-input'); if (pi) pi.value = ''; }
+    ['pp-modal', 'export-modal', 'backup-modal', 'qr-overlay', 'seed-qr-overlay'].forEach(function (id) { var m = document.getElementById(id); if (on && m) m.classList.remove('show'); });
+    var lo = document.getElementById('log-overlay'); if (lo && lo.classList.contains('show')) try { renderActivityLog(); } catch (e) {}
+    try { if (window.__syncTop) __syncTop(); } catch (e) {}
+  }
+  /* last line of defence: no copy, long-press or drag out of the seed / key areas while hidden */
+  ['copy', 'cut', 'contextmenu', 'dragstart', 'selectstart'].forEach(function (ev) {
+    document.addEventListener(ev, function (e) {
+      if (!hidden()) return;
+      var t = e.target && e.target.closest ? e.target : (e.target && e.target.parentElement);
+      if (t && t.closest && t.closest('.seed, #seed-display, .line.pk, #log-seeds, #import-area')) { e.preventDefault(); e.stopPropagation(); }
+    }, true);
+  });
+  /* the seed-card buttons with no id: catch the tap before its inline onclick */
+  document.addEventListener('click', function (e) {
+    if (!hidden()) return;
+    var b = e.target && e.target.closest && e.target.closest('#imp-wrap, #pp-chip, #btn-seed-qr, #btn-backup, #btn-export, #btn-pk-toggle');
+    if (b) { e.preventDefault(); e.stopImmediatePropagation(); blocked(); }
+  }, true);
+  function init() { wrapAll(); refresh(); setTimeout(function () { wrapAll(); refresh(); }, 400); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  window.addEventListener('load', function () { wrapAll(); refresh(); });
 })();
 </script>
 </body>
