@@ -21,6 +21,8 @@ class HarkNative(
     private val ctx: Context,
     private val onBars: (Int, Int) -> Unit = { _, _ -> },
     private val insetsJson: () -> String = { "{}" },
+    private val bio: () -> String = { "none" },
+    private val bioPrompt: (String) -> Unit = { },
     private val onAwake: (Boolean) -> Unit = { }
 ) {
 
@@ -33,6 +35,14 @@ class HarkNative(
     fun setBars(top: String, bottom: String) {
         try { onBars(android.graphics.Color.parseColor(top), android.graphics.Color.parseColor(bottom)) } catch (_: Exception) {}
     }
+
+    /** "ok" | "unenrolled" | "none": can this phone unlock with fingerprint / face right now? */
+    @JavascriptInterface
+    fun bioStatus(): String = try { bio() } catch (_: Exception) { "none" }
+
+    /** Shows the system biometric sheet; the result comes back through window.kwBioDone(r). */
+    @JavascriptInterface
+    fun bioAuth(title: String) { bioPrompt(title) }
 
     /** System bar and cutout insets in CSS px: {"t":..,"r":..,"b":..,"l":..} */
     @JavascriptInterface
