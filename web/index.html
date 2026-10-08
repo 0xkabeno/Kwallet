@@ -2192,6 +2192,64 @@
 .priv-hide #imp-wrap, .priv-hide #btn-pk-toggle, .priv-hide #btn-backup, .priv-hide #btn-export, .priv-hide #btn-seed-qr,
 .priv-hide .btn-k, .priv-hide .btn-s, .priv-hide .btn-v { opacity: .34 !important; filter: grayscale(1); }
 .kw-hidden-note { padding: 18px 14px; text-align: center; opacity: .7; font-size: 14px; line-height: 1.45; }
+
+/* ===== v3.53 Saved keys vault (Material 3) ===== */
+.kpv-bar { display: flex; gap: 8px; margin: 8px 0 2px; flex-wrap: wrap; }
+.kpv-tonal { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border-radius: 18px; border: 0; cursor: pointer;
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg-card)); color: var(--text); font: 500 14px/20px 'Roboto', system-ui, sans-serif; }
+.kpv-tonal b { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--accent); color: #1b2230; font-size: 12px; line-height: 20px; text-align: center; }
+[data-theme="light"] .kpv-tonal b { color: #fff; }
+.kpv-i { font-size: 20px; line-height: 1; margin-top: -2px; }
+.kpv-ov { position: fixed; inset: 0; z-index: 9100; background: rgba(0,0,0,.4); display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.kpv-ov.show { opacity: 1; pointer-events: auto; }
+.kpv { width: 100%; max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; background: var(--bg-card); color: var(--text);
+  border-radius: 28px 28px 0 0; transform: translateY(40px); transition: transform .28s cubic-bezier(.2,.9,.3,1); padding-bottom: calc(12px + var(--kw-inset-b, 0px)); box-shadow: 0 -8px 30px rgba(0,0,0,.25); }
+.kpv-ov.show .kpv { transform: none; }
+.kpv-grab { width: 32px; height: 4px; border-radius: 2px; background: var(--text-muted); opacity: .4; margin: 10px auto 4px; }
+.kpv-h { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 24px; }
+.kpv-h h2 { flex: 1; margin: 0; font: 400 22px/28px 'Roboto', system-ui, sans-serif; }
+.kpv-x { width: 40px; height: 40px; border-radius: 20px; border: 0; background: transparent; color: var(--text); font-size: 22px; cursor: pointer; }
+.kpv-sub { padding: 0 24px 8px; color: var(--text-muted); font: 400 13px/18px 'Roboto', system-ui, sans-serif; }
+.kpv-search { margin: 4px 16px 8px; display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 16px; border-radius: 24px; background: var(--bg-input); }
+.kpv-search input { flex: 1; border: 0; outline: 0; background: transparent; color: var(--text); font: 400 15px 'Roboto', system-ui, sans-serif; }
+.kpv-list { overflow-y: auto; padding: 0 12px 8px; flex: 1; }
+.kpv-card { display: flex; gap: 14px; align-items: flex-start; padding: 14px 12px; border-radius: 16px; margin-bottom: 6px; background: var(--bg-input); }
+.kpv-av { flex: none; width: 40px; height: 40px; border-radius: 20px; display: grid; place-items: center; font: 600 12px 'Roboto', sans-serif; color: #fff; background: var(--c, #5f6368); }
+.kpv-body { flex: 1; min-width: 0; }
+.kpv-name { font: 500 16px/22px 'Roboto', system-ui, sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kpv-meta { font: 400 12px/16px 'Roboto', sans-serif; color: var(--text-muted); margin-top: 2px; }
+.kpv-addr, .kpv-key { font: 400 12.5px/18px 'Roboto Mono', ui-monospace, monospace; word-break: break-all; margin-top: 6px; }
+.kpv-key { color: var(--danger); }
+.kpv-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.kpv-chip { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); font: 500 13px 'Roboto', sans-serif; cursor: pointer; }
+.kpv-chip.warn { color: var(--danger); }
+.kpv-empty { text-align: center; padding: 36px 24px; color: var(--text-muted); font: 400 14px/20px 'Roboto', sans-serif; }
+.kpv-empty big { display: block; font-size: 40px; margin-bottom: 8px; }
+.kpv-fab { margin: 6px 16px 0; height: 56px; align-self: stretch; flex: none; padding: 0 20px; border-radius: 16px; border: 0; background: var(--accent); color: #1b2230; font: 500 15px 'Roboto', sans-serif; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+[data-theme="light"] .kpv-fab { color: #fff; }
+.kpv-form { padding: 4px 20px 6px; overflow-y: auto; }
+.kpv-f { position: relative; margin: 14px 0 4px; }
+.kpv-f label { position: absolute; left: 12px; top: -8px; padding: 0 4px; background: var(--bg-card); color: var(--text-muted); font: 400 12px 'Roboto', sans-serif; }
+.kpv-f input, .kpv-f textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text); padding: 14px 44px 14px 16px; font: 400 15px 'Roboto', system-ui, sans-serif; outline: 0; resize: none; }
+.kpv-f textarea { font-family: 'Roboto Mono', ui-monospace, monospace; font-size: 13px; min-height: 76px; -webkit-text-security: disc; }
+.kpv-f textarea.vis { -webkit-text-security: none; }
+.kpv-f input:focus, .kpv-f textarea:focus { border: 2px solid var(--accent); padding: 13px 43px 13px 15px; }
+.kpv-eye { position: absolute; right: 6px; top: 8px; width: 36px; height: 36px; border: 0; border-radius: 18px; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 16px; }
+.kpv-lbl { margin: 16px 0 8px; color: var(--text-muted); font: 500 13px 'Roboto', sans-serif; }
+.kpv-chains { display: flex; flex-wrap: wrap; gap: 8px; }
+.kpv-cc { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); font: 500 13px 'Roboto', sans-serif; cursor: pointer; }
+.kpv-cc.on { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: transparent; }
+.kpv-cc.on::before { content: '\2713  '; }
+.kpv-msg { min-height: 20px; margin: 10px 2px 0; font: 400 13px/18px 'Roboto', sans-serif; color: var(--text-muted); word-break: break-all; }
+.kpv-msg.err { color: var(--danger); } .kpv-msg.ok { color: #1e8e3e; }
+.kpv-btns { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px 4px; }
+.kpv-txt { height: 40px; padding: 0 16px; border-radius: 20px; border: 0; background: transparent; color: var(--accent); font: 500 14px 'Roboto', sans-serif; cursor: pointer; }
+[data-theme="dark"] .kpv-txt, :root:not([data-theme="light"]) .kpv-txt { color: var(--text); }
+.kpv-txt.warn { color: var(--danger) !important; margin-right: auto; }
+.kpv-fill { height: 40px; padding: 0 24px; border-radius: 20px; border: 0; background: var(--accent); color: #1b2230; font: 500 14px 'Roboto', sans-serif; cursor: pointer; }
+[data-theme="light"] .kpv-fill { color: #fff; }
+.kpv-fill:disabled { opacity: .38; }
+.priv-hide .kpv-bar { opacity: .34; filter: grayscale(1); }
 </style>
 </head>
 <body data-theme="light">
@@ -2897,6 +2955,7 @@ window.FX = (function(){
         <button type="button" class="btn btn-p" onclick="runPkImport()">Show</button>
         <button type="button" class="btn" onclick="clearPkImport()">Clear</button>
       </div>
+      <div class="kpv-bar"><button type="button" class="kpv-tonal" onclick="KwVault.add()"><span class="kpv-i">+</span>Save a key</button><button type="button" class="kpv-tonal kpv-open" onclick="KwVault.open()">Saved keys <b id="kpv-count">0</b></button></div>
       <div class="search-meta" id="pk-import-meta"></div>
       <div class="addr-search-hits" id="pk-import-result"></div>
     </div>
@@ -9843,7 +9902,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 <script>
 const PAGE = 6;
 const STORAGE_KEY = 'wallet-gen-state-v2';
-const MAX_HISTORY = 500;
+const MAX_HISTORY = 100000; // v3.53: every seed is kept until the user runs Clear
 
 const DEFAULT_PATH = {
   eth: "m/44'/60'/0'/0/{i}",
@@ -9860,7 +9919,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.52';
+const APP_VERSION = '3.53';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -9868,7 +9927,7 @@ let clickOrder = {}; // key -> order number (1,2,3...)
 let clickSeq = 0;
 let activityLog = [];   // {t, kind, detail}
 let seedCopyLog = [];   // {t, seed, type, note}
-const MAX_LOG = 400;
+const MAX_LOG = 20000;
 let currentPage = 0; // page of PAGE indices
 let seedHistory = [];
 let redoStack = []; // forward history for the Redo button; cleared by any new Gen/Import action
@@ -9907,7 +9966,10 @@ function _saveStateNow() {
     if (json === window.__lastSavedJson) return; // skip identical writes
     window.__lastSavedJson = json;
     localStorage.setItem(STORAGE_KEY, json);
-  } catch (e) {}
+  } catch (e) {
+    window.__lastSavedJson = null;
+    if (!window.__quotaWarned) { window.__quotaWarned = 1; try { showToast('Storage is full. Make a Backup so no history is lost'); } catch (x) {} }
+  }
 }
 
 function loadState() {
@@ -10117,6 +10179,7 @@ function applySnapshot(s) {
 function activateSeed(next, type) {
   if (window.__deriving) { showToast('Deriving\u2026 please wait'); return; }
   if (currentMnemonic && currentMnemonic === next) { showToast('This seed is already active'); return; }
+  keepRedoInHistory(true);
   if (currentMnemonic && currentMnemonic !== next) {
     pushHistory(snapshotState());
   }
@@ -10124,7 +10187,7 @@ function activateSeed(next, type) {
   currentSeedType = type || 'bip39';
   currentPassphrase = ''; // a new seed always starts without a passphrase
   clearSeedCache();
-  redoStack = []; // a new Gen/Import action invalidates the redo future
+  keepRedoInHistory(); // v3.53: never drop seeds; the redo future moves into Undo history
   currentPage = 0;
   startIndex = 0;
   copiedState = {};
@@ -10160,6 +10223,20 @@ function activateSeed(next, type) {
   updateRedoButton();
   saveStateFlush(); // persist immediately: seed + full undo history
   deriveAddresses();
+}
+
+/* v3.53: a new Gen / Import / passphrase used to wipe the Redo list, losing those seeds and their marks.
+   Now the redo seeds are folded into Undo history (farthest first) so nothing is ever lost.
+   Undo order after a new seed: the seed you left, then the seeds you had undone, then older ones. */
+function keepRedoInHistory(before) {
+  if (!redoStack.length) return;
+  var fut = redoStack.slice(); redoStack = [];
+  for (var i = 0; i < fut.length; i++) {
+    var e = fut[i]; if (!e || !e.m) continue;
+    if (currentMnemonic && e.m === currentMnemonic && (e.pp || '') === (currentPassphrase || '')) continue;
+    seedHistory.push(e);
+  }
+  if (seedHistory.length > MAX_HISTORY) seedHistory = seedHistory.slice(-MAX_HISTORY);
 }
 
 function pushHistory(s) {
@@ -12819,6 +12896,7 @@ function wipeAfterExport() {
   seedCopyLog = [];
   if (typeof clearSeedCache === 'function') clearSeedCache();
   try { __seedPngMemo = {}; } catch (e) {}
+  try { localStorage.removeItem('kw-pk-vault'); if (window.KwVault) KwVault.reload(); } catch (e) {}
   try {
     localStorage.removeItem(typeof STORAGE_KEY !== 'undefined' ? STORAGE_KEY : 'wallet-gen-state-v2');
   } catch (e) {}
@@ -12937,6 +13015,7 @@ function confirmClear() {
   activityLog = [];
   seedCopyLog = [];
   clearSeedCache();
+  try { localStorage.removeItem('kw-pk-vault'); if (window.KwVault) KwVault.reload(); } catch (e) {}
   try { __seedPngMemo = {}; } catch (e) {}
   window.__lastSavedJson = null;
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
@@ -13688,8 +13767,8 @@ function applyPassphrase(pp) {
   if (window.__deriving) { showToast('Deriving\u2026 please wait'); return; }
   if (!currentMnemonic || currentSeedType !== 'bip39') { closePassphraseModal(); return; }
   if (pp === (currentPassphrase || '')) { closePassphraseModal(); return; }
+  keepRedoInHistory(true);
   pushHistory(snapshotState()); // Undo returns to the previous passphrase (with its marks)
-  redoStack = [];
   currentPassphrase = pp;
   clearSeedCache();
   currentPage = 0; startIndex = 0;
@@ -17310,6 +17389,7 @@ function togglePathFind(force){
 
 /* ===== v3.48: Android back button (called by the APK) ===== */
 window.kwBack = function () {
+  if (window.KwVault && KwVault.isOpen()) { KwVault.back(); return true; }
   var open = Array.prototype.filter.call(document.querySelectorAll('.show'), function (e) {
     return !/toast/i.test(e.id + ' ' + e.className) && getComputedStyle(e).position === 'fixed';
   });
@@ -17386,6 +17466,162 @@ window.kwBack = function () {
 </script>
 
 <script>
+/* ===== v3.53: Saved keys — store named private keys for any chain, on this device only.
+   Erased only by Clear (full erase) like everything else. Never written to the activity log. ===== */
+(function () {
+  var KEY = 'kw-pk-vault';
+  var CH = [
+    ['eth', 'ETH', '#627eea', 'evm'], ['bsc', 'BNB', '#d4a20b', 'evm'], ['pol', 'POL', '#8247e5', 'evm'], ['arb', 'ARB', '#2d374b', 'evm'],
+    ['base', 'BASE', '#0052ff', 'evm'], ['op', 'OP', '#ff0420', 'evm'], ['sol', 'SOL', '#9945ff', 'sol'], ['btc', 'BTC', '#f7931a', 'btc'],
+    ['trx', 'TRX', '#eb0029', 'trx'], ['sui', 'SUI', '#4da2ff', ''], ['xrp', 'XRP', '#23292f', ''], ['ada', 'ADA', '#0033ad', ''],
+    ['xmr', 'XMR', '#f26822', ''], ['other', 'Other', '#5f6368', '']
+  ];
+  function ch(id) { for (var i = 0; i < CH.length; i++) if (CH[i][0] === id) return CH[i]; return CH[CH.length - 1]; }
+  var items = [];
+  function load() { try { items = JSON.parse(localStorage.getItem(KEY) || '[]') || []; } catch (e) { items = []; } if (!Array.isArray(items)) items = []; }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) { toast('Storage is full. Key not saved'); return false; }
+    count(); return true;
+  }
+  function count() { var c = document.getElementById('kpv-count'); if (c) c.textContent = String(items.length); }
+  function toast(t) { try { showToast(t); } catch (e) {} }
+  function E(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function locked() { if (window.kwHidden && kwHidden()) { toast('Hide mode is on. Tap Show to unlock'); try { buzz([20, 30, 20]); } catch (e) {} return true; } return false; }
+
+  /* address for the chains this build can derive from a single key; others are stored as-is */
+  function derive(chain, raw) {
+    var kind = ch(chain)[3];
+    raw = String(raw || '').trim();
+    if (!raw) throw new Error('Paste the private key');
+    if (kind === 'evm') { var h = _pkHexNormalize(raw); if (!h) throw new Error('Needs a 64-character hex key'); return _pkDeriveEthTrxFromHex(h).eth.address; }
+    if (kind === 'trx') { var h2 = _pkHexNormalize(raw); if (!h2) throw new Error('Needs a 64-character hex key'); var t = _pkDeriveEthTrxFromHex(h2).trx; if (!t) throw new Error('Tron address unavailable'); return t.address; }
+    if (kind === 'btc') return _pkDeriveBtcFromWifOrHex(raw).btc.address_native_segwit;
+    if (kind === 'sol') return _pkDeriveSolFromSecret(raw).sol.address;
+    if (raw.length < 16) throw new Error('That key looks too short');
+    return '';
+  }
+  function short(a) { a = String(a || ''); return a.length > 22 ? a.slice(0, 10) + '\u2026' + a.slice(-8) : a; }
+
+  var ov, view = 'list', editId = null, selChain = 'eth', shown = {}, q = '';
+  function build() {
+    if (ov) return;
+    ov = document.createElement('div'); ov.className = 'kpv-ov'; ov.id = 'kpv-ov';
+    ov.innerHTML = '<div class="kpv" role="dialog" aria-label="Saved keys"><div class="kpv-grab"></div><div id="kpv-in"></div></div>';
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    document.body.appendChild(ov);
+  }
+  function close() { if (ov) ov.classList.remove('show'); shown = {}; }
+  function render() {
+    var box = document.getElementById('kpv-in'); if (!box) return;
+    if (view === 'list') {
+      var list = items.filter(function (it) { if (!q) return true; var s = (it.name + ' ' + ch(it.chain)[1] + ' ' + (it.addr || '')).toLowerCase(); return s.indexOf(q.toLowerCase()) >= 0; });
+      var h = '<div class="kpv-h"><h2>Saved keys</h2><button type="button" class="kpv-x" data-a="close" aria-label="Close">\u2715</button></div>'
+        + '<div class="kpv-sub">Stored only on this phone. Erased only by Clear.</div>';
+      if (items.length > 3) h += '<div class="kpv-search">\u2315<input id="kpv-q" placeholder="Search by name, chain or address" value="' + E(q) + '"></div>';
+      h += '<div class="kpv-list">';
+      if (!items.length) h += '<div class="kpv-empty"><big>\uD83D\uDD11</big>No saved keys yet.<br>Add one and give it a name you will remember.</div>';
+      else if (!list.length) h += '<div class="kpv-empty">No key matches \u201c' + E(q) + '\u201d</div>';
+      list.forEach(function (it) {
+        var c = ch(it.chain);
+        h += '<div class="kpv-card"><div class="kpv-av" style="--c:' + c[2] + '">' + E(c[1].slice(0, 4)) + '</div><div class="kpv-body">'
+          + '<div class="kpv-name">' + E(it.name) + '</div>'
+          + '<div class="kpv-meta">' + E(c[1]) + ' \u00b7 saved ' + E(String(it.t || '').slice(0, 10)) + '</div>'
+          + (it.addr ? '<div class="kpv-addr">' + E(it.addr) + '</div>' : '')
+          + (shown[it.id] ? '<div class="kpv-key">' + E(it.pk) + '</div>' : '')
+          + '<div class="kpv-acts">'
+          + (it.addr ? '<button type="button" class="kpv-chip" data-a="ca" data-id="' + it.id + '">Copy address</button>' : '')
+          + '<button type="button" class="kpv-chip warn" data-a="ck" data-id="' + it.id + '">Copy key</button>'
+          + '<button type="button" class="kpv-chip" data-a="sk" data-id="' + it.id + '">' + (shown[it.id] ? 'Hide key' : 'Show key') + '</button>'
+          + '<button type="button" class="kpv-chip" data-a="ed" data-id="' + it.id + '">Edit</button>'
+          + '</div></div></div>';
+      });
+      h += '</div><button type="button" class="kpv-fab" data-a="new">+ Add a key</button>';
+      box.innerHTML = h;
+      var qi = document.getElementById('kpv-q');
+      if (qi) qi.addEventListener('input', function () { q = qi.value; var p = qi.selectionStart; render(); var n = document.getElementById('kpv-q'); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} } });
+    } else {
+      var it = editId ? items.filter(function (x) { return x.id === editId; })[0] : null;
+      var h2 = '<div class="kpv-h"><h2>' + (it ? 'Edit key' : 'Add a key') + '</h2><button type="button" class="kpv-x" data-a="back" aria-label="Back">\u2715</button></div><div class="kpv-form">'
+        + '<div class="kpv-f"><label>Name</label><input id="kpv-name" maxlength="60" placeholder="e.g. Main ETH, Trading SOL" value="' + E(it ? it.name : '') + '"></div>'
+        + '<div class="kpv-lbl">Chain</div><div class="kpv-chains">'
+        + CH.map(function (c) { return '<button type="button" class="kpv-cc' + (c[0] === selChain ? ' on' : '') + '" data-a="chain" data-c="' + c[0] + '">' + E(c[1]) + '</button>'; }).join('')
+        + '</div><div class="kpv-f" style="margin-top:20px"><label>Private key</label><textarea id="kpv-pk" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="Paste the private key">' + E(it ? it.pk : (window.__kpvPrefill || '')) + '</textarea>'
+        + '<button type="button" class="kpv-eye" data-a="eye" aria-label="Show key">\uD83D\uDC41</button></div>'
+        + '<div class="kpv-msg" id="kpv-msg"></div></div>'
+        + '<div class="kpv-btns">' + (it ? '<button type="button" class="kpv-txt warn" data-a="del">Delete</button>' : '')
+        + '<button type="button" class="kpv-txt" data-a="back">Cancel</button><button type="button" class="kpv-fill" data-a="save">Save</button></div>';
+      box.innerHTML = h2; window.__kpvPrefill = '';
+      var pk = document.getElementById('kpv-pk'); if (pk) pk.addEventListener('input', check);
+      check();
+      setTimeout(function () { var n = document.getElementById('kpv-name'); if (n && !n.value) try { n.focus(); } catch (e) {} }, 60);
+    }
+  }
+  function check() {
+    var pk = document.getElementById('kpv-pk'), m = document.getElementById('kpv-msg'); if (!pk || !m) return;
+    if (!pk.value.trim()) { m.className = 'kpv-msg'; m.textContent = ''; return; }
+    try { var a = derive(selChain, pk.value); m.className = 'kpv-msg ok'; m.textContent = a ? 'Address: ' + a : 'Key looks fine. Address is not shown for ' + ch(selChain)[1] + '.'; }
+    catch (e) { m.className = 'kpv-msg err'; m.textContent = e.message || 'Not a valid key for ' + ch(selChain)[1]; }
+  }
+  function doSave() {
+    var n = (document.getElementById('kpv-name') || {}).value || '', pk = ((document.getElementById('kpv-pk') || {}).value || '').trim();
+    var m = document.getElementById('kpv-msg');
+    var addr;
+    try { addr = derive(selChain, pk); } catch (e) { if (m) { m.className = 'kpv-msg err'; m.textContent = e.message; } try { buzz([20, 30, 20]); } catch (x) {} return; }
+    n = n.trim() || (ch(selChain)[1] + ' key ' + (items.length + 1));
+    var dup = items.filter(function (x) { return x.pk === pk && x.chain === selChain && x.id !== editId; })[0];
+    if (dup) { if (m) { m.className = 'kpv-msg err'; m.textContent = 'Already saved as \u201c' + dup.name + '\u201d'; } return; }
+    var stamp = (typeof logStamp === 'function') ? logStamp() : new Date().toISOString();
+    if (editId) items = items.map(function (x) { return x.id === editId ? { id: x.id, name: n, chain: selChain, pk: pk, addr: addr, t: x.t, u: stamp } : x; });
+    else items.unshift({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: n, chain: selChain, pk: pk, addr: addr, t: stamp });
+    if (!save()) return;
+    try { pushActivity('pk', (editId ? 'Edited' : 'Saved') + ' key \u201c' + n + '\u201d \u00b7 ' + ch(selChain)[1] + (addr ? '\n' + addr : '')); } catch (e) {}
+    try { FX.notify('pk'); } catch (e) {}
+    toast(editId ? 'Key updated' : 'Key saved');
+    view = 'list'; editId = null; render();
+  }
+  var delArm = 0;
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest && e.target.closest('#kpv-ov [data-a]'); if (!b) return;
+    var a = b.getAttribute('data-a'), id = b.getAttribute('data-id');
+    var it = id ? items.filter(function (x) { return x.id === id; })[0] : null;
+    try { FX.tick(900); } catch (x) {}
+    if (a === 'close') close();
+    else if (a === 'new') { view = 'form'; editId = null; selChain = (typeof currentNetwork !== 'undefined' && ch(currentNetwork)[0] === currentNetwork) ? currentNetwork : 'eth'; render(); }
+    else if (a === 'back') { view = 'list'; editId = null; render(); }
+    else if (a === 'chain') { selChain = b.getAttribute('data-c'); document.querySelectorAll('#kpv-ov .kpv-cc').forEach(function (x) { x.classList.toggle('on', x === b); }); check(); }
+    else if (a === 'eye') { var t = document.getElementById('kpv-pk'); if (t) t.classList.toggle('vis'); }
+    else if (a === 'save') doSave();
+    else if (a === 'del') {
+      if (Date.now() - delArm > 2500) { delArm = Date.now(); b.textContent = 'Tap again to delete'; return; }
+      var gone = items.filter(function (x) { return x.id === editId; })[0];
+      items = items.filter(function (x) { return x.id !== editId; }); save();
+      try { pushActivity('pk', 'Deleted key \u201c' + (gone ? gone.name : '') + '\u201d'); } catch (x) {}
+      toast('Key deleted'); view = 'list'; editId = null; render();
+    }
+    else if (it && a === 'ca') copyToClipboard(it.addr).then(function () { toast('Address copied'); });
+    else if (it && a === 'ck') copyToClipboard(it.pk).then(function () { toast('Key copied \u00b7 ' + it.name); try { FX.buzz(12); } catch (x) {} });
+    else if (it && a === 'sk') { shown[id] = !shown[id]; render(); }
+    else if (it && a === 'ed') { view = 'form'; editId = id; selChain = it.chain; render(); }
+  });
+  window.KwVault = {
+    open: function () { if (locked()) return; build(); load(); view = 'list'; render(); requestAnimationFrame(function () { ov.classList.add('show'); }); },
+    add: function () {
+      if (locked()) return; build(); load();
+      var v = ((document.getElementById('pk-import-input') || {}).value || '').trim();
+      window.__kpvPrefill = v; view = 'form'; editId = null;
+      selChain = (typeof currentNetwork !== 'undefined' && ch(currentNetwork)[0] === currentNetwork) ? currentNetwork : 'eth';
+      if (v && !_pkHexNormalize(v)) { try { _pkDeriveSolFromSecret(v); selChain = 'sol'; } catch (e) { if (/^[5KL]/.test(v)) selChain = 'btc'; } }
+      render(); requestAnimationFrame(function () { ov.classList.add('show'); });
+    },
+    close: close, reload: function () { load(); count(); if (ov && ov.classList.contains('show')) render(); },
+    isOpen: function () { return !!(ov && ov.classList.contains('show')); },
+    back: function () { if (view === 'form') { view = 'list'; editId = null; render(); } else close(); }
+  };
+  load(); if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', count); else count();
+})();
+</script>
+
+<script>
 /* ===== v3.52: Hide mode = locked mode. Pages, undo/redo, Gen, chains, Find and Addr stay usable;
    nothing shows, copies, exports or logs a seed or key until Show is unlocked with PIN or biometrics. ===== */
 (function () {
@@ -17450,6 +17686,7 @@ window.kwBack = function () {
     var pks = document.getElementById('pk-import-strip'); if (on && pks && !pks.hidden) { pks.hidden = true; var r = document.getElementById('pk-import-result'); if (r) r.innerHTML = ''; var pi = document.getElementById('pk-import-input'); if (pi) pi.value = ''; }
     ['pp-modal', 'export-modal', 'backup-modal', 'qr-overlay', 'seed-qr-overlay'].forEach(function (id) { var m = document.getElementById(id); if (on && m) m.classList.remove('show'); });
     var lo = document.getElementById('log-overlay'); if (lo && lo.classList.contains('show')) try { renderActivityLog(); } catch (e) {}
+    if (on && window.KwVault) KwVault.close();
     try { if (window.__syncTop) __syncTop(); } catch (e) {}
   }
   /* last line of defence: no copy, long-press or drag out of the seed / key areas while hidden */
