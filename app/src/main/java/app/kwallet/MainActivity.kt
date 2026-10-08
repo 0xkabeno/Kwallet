@@ -15,6 +15,10 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.graphics.Color
+import android.animation.ArgbEvaluator
+import android.animation.ValueAnimator
+import android.view.ViewTreeObserver
+import android.view.animation.PathInterpolator
 import android.widget.FrameLayout
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -37,6 +41,7 @@ import androidx.webkit.WebViewAssetLoader
  * the app has no INTERNET permission and every non-asset request is refused.
  */
 class MainActivity : FragmentActivity() {
+    private val LIME = 0xFFDDF869.toInt()
 
     private lateinit var web: WebView
     private lateinit var root: FrameLayout
@@ -57,10 +62,19 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Edge-to-edge: the system draws its own bars (gesture pill, status icons) over the app's surface
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
+            // launch screen is lime: dark icons from the very first frame, never a flip on start
+            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
         )
         super.onCreate(savedInstanceState)
+        // Android 12+: the system splash fades into the app instead of cutting
+        if (Build.VERSION.SDK_INT >= 31) {
+            splashScreen.setOnExitAnimationListener { v ->
+                v.animate().alpha(0f).setDuration(260).setInterpolator(PathInterpolator(.2f, 0f, 0f, 1f))
+                    .withEndAction { v.remove() }.start()
+            }
+        }
+        paintBars(LIME, LIME)
         // no grey/white scrim behind 3-button navigation: the page colour shows through
         if (Build.VERSION.SDK_INT >= 29) {
             window.isNavigationBarContrastEnforced = false
@@ -99,7 +113,8 @@ class MainActivity : FragmentActivity() {
                     ?: if (request.url.scheme == "blob" || request.url.scheme == "data") null
                     else WebResourceResponse("text/plain", "utf-8", 403, "Offline", null, null)
 
-            override fun onPageFinished(view: WebView, url: String) { pushInsets() }
+            override fun onPageFinished(view: WebView, url: String) { pushInsets(); pageReady = true; root.invalidate() }
+            override fun onPageCommitVisible(view: WebView, url: String) { pageReady = true; root.invalidate() }
 
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val u = request.url
@@ -150,6 +165,14 @@ class MainActivity : FragmentActivity() {
             WindowInsetsCompat.CONSUMED
         }
         setContentView(root)
+        // hold the first frame until the page has painted (max 1.2 s): no blank flash on open
+        val t0 = System.currentTimeMillis()
+        root.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                if (pageReady || System.currentTimeMillis() - t0 > 1200) { root.viewTreeObserver.removeOnPreDrawListener(this); return true }
+                return false
+            }
+        })
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -196,13 +219,36 @@ class MainActivity : FragmentActivity() {
         try { prompt.authenticate(info) } catch (_: Exception) { bioResult("fail") }
     }
 
-    /** Called by the page with the colours under the status bar and the navigation bar. */
+    /** Called by the page with the colours under the status bar and the navigation bar.
+     *  v3.54: the bars glide to the new colour (same timing as the page's own fade) and the
+     *  icons flip at the midpoint, so nothing sticks on lime or snaps on open. */
+    @Volatile private var pageReady = false
+    private var curTop = LIME; private var curBot = LIME
+    private var barAnim: ValueAnimator? = null
     private fun applyBars(top: Int, bottom: Int) {
-        root.setBackgroundColor(bottom)
-        web.setBackgroundColor(top)
-        val c = WindowCompat.getInsetsController(window, root)
-        c.isAppearanceLightStatusBars = isLight(top)
-        c.isAppearanceLightNavigationBars = isLight(bottom)
+        if (top == curTop && bottom == curBot && barAnim?.isRunning != true) return
+        barAnim?.cancel()
+        val fromT = curTop; val fromB = curBot; val ev = ArgbEvaluator()
+        barAnim = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 420
+            interpolator = PathInterpolator(.22f, 1f, .36f, 1f)
+            addUpdateListener { a ->
+                val f = a.animatedValue as Float
+                paintBars(ev.evaluate(f, fromT, top) as Int, ev.evaluate(f, fromB, bottom) as Int)
+            }
+            start()
+        }
+        curTop = top; curBot = bottom
+    }
+    private fun paintBars(top: Int, bottom: Int) {
+        if (::root.isInitialized) root.setBackgroundColor(bottom)
+        if (::web.isInitialized) web.setBackgroundColor(top)
+        @Suppress("DEPRECATION")
+        if (Build.VERSION.SDK_INT < 35) { window.statusBarColor = top; window.navigationBarColor = bottom }
+        val c = WindowCompat.getInsetsController(window, window.decorView)
+        val lt = isLight(top); val lb = isLight(bottom)
+        if (c.isAppearanceLightStatusBars != lt) c.isAppearanceLightStatusBars = lt
+        if (c.isAppearanceLightNavigationBars != lb) c.isAppearanceLightNavigationBars = lb
     }
 
     private fun isLight(c: Int): Boolean =
