@@ -19,7 +19,8 @@ import java.io.File
 /** JavaScript bridge exposed to the page as window.HarkNative */
 class HarkNative(
     private val ctx: Context,
-    private val onBars: (Int, Boolean) -> Unit = { _, _ -> },
+    private val onBars: (Int, Int) -> Unit = { _, _ -> },
+    private val insetsJson: () -> String = { "{}" },
     private val onAwake: (Boolean) -> Unit = { }
 ) {
 
@@ -27,12 +28,15 @@ class HarkNative(
     @JavascriptInterface
     fun keepAwake(on: Boolean) { onAwake(on) }
 
-    /** "#rrggbb" of the screen on show, and whether it is dark. */
+    /** "#rrggbb" under the status bar and under the navigation bar; icons flip for contrast. */
     @JavascriptInterface
-    fun setBars(hex: String, dark: Boolean) {
-        try { onBars(android.graphics.Color.parseColor(hex), dark) } catch (_: Exception) {}
+    fun setBars(top: String, bottom: String) {
+        try { onBars(android.graphics.Color.parseColor(top), android.graphics.Color.parseColor(bottom)) } catch (_: Exception) {}
     }
 
+    /** System bar and cutout insets in CSS px: {"t":..,"r":..,"b":..,"l":..} */
+    @JavascriptInterface
+    fun insets(): String = insetsJson()
 
     /** "normal" | "vibrate" | "silent" — the page plays sounds only on "normal". */
     @JavascriptInterface
