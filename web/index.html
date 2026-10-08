@@ -2250,6 +2250,11 @@
 [data-theme="light"] .kpv-fill { color: #fff; }
 .kpv-fill:disabled { opacity: .38; }
 .priv-hide .kpv-bar { opacity: .34; filter: grayscale(1); }
+
+/* v3.54: the app rises in under the fading launch screen */
+@keyframes kwAppIn { from { opacity: .0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+.app.kw-enter { animation: kwAppIn .52s cubic-bezier(.22,1,.36,1) both; }
+@media (prefers-reduced-motion: reduce) { .app.kw-enter { animation: none; } }
 </style>
 </head>
 <body data-theme="light">
@@ -9919,7 +9924,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.53';
+const APP_VERSION = '3.54';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -17706,6 +17711,21 @@ window.kwBack = function () {
   function init() { wrapAll(); refresh(); setTimeout(function () { wrapAll(); refresh(); }, 400); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   window.addEventListener('load', function () { wrapAll(); refresh(); });
+})();
+</script>
+<script>
+/* v3.54: smooth hand-off from launch screen to app */
+(function () {
+  function hook() {
+    var kl = document.getElementById('kl-root'), app = document.querySelector('.app'); if (!kl || !app) return setTimeout(hook, 60);
+    var was = kl.classList.contains('kl-out');
+    new MutationObserver(function () {
+      var now = kl.classList.contains('kl-out');
+      if (now && !was) { app.classList.remove('kw-enter'); void app.offsetWidth; app.classList.add('kw-enter'); setTimeout(function () { app.classList.remove('kw-enter'); }, 600); }
+      was = now;
+    }).observe(kl, { attributes: true, attributeFilter: ['class'] });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hook); else hook();
 })();
 </script>
 </body>
