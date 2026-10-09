@@ -2504,8 +2504,7 @@ body.md3 .item.copied-addr .hl { color: var(--greyed) !important; }
 
 /* ===== motion: transform/opacity only, so it stays on the GPU ===== */
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
-::view-transition-new(root) { z-index: 2; } ::view-transition-old(root) { z-index: 1; transform-origin: 50% 40%; }
-::view-transition-group(root) { background: #000; }
+::view-transition-new(root) { z-index: 2; } ::view-transition-old(root) { z-index: 1; }
 /* sliding selection pill, same motion as the chain selector, for every segmented control */
 .kw-slid { position: relative !important; isolation: isolate; }
 .kw-slid .kw-slide { position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; background: var(--accent); opacity: 0;
@@ -2517,20 +2516,13 @@ body.md3 .item.copied-addr .hl { color: var(--greyed) !important; }
 html.kw-theming body, html.kw-theming .top, html.kw-theming .panel, html.kw-theming .list-wrap, html.kw-theming .btn, html.kw-theming .seed,
 html.kw-theming .net, html.kw-theming .kws, html.kw-theming .kws-grp, html.kw-theming .modal, html.kw-theming .item {
   transition: background-color .45s ease, color .35s ease, border-color .45s ease !important; }
-@keyframes kwRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-@keyframes kwItem { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: none; } }
-@keyframes kwPop { from { opacity: 0; transform: translateY(10px) scale(.94); } to { opacity: 1; transform: none; } }
-.app > .panel, .app > .list-wrap { animation: kwRise .55s cubic-bezier(.2,.8,.2,1) both; }
-.app > .panel:nth-of-type(2), .app > .list-wrap { animation-delay: .08s; }
-.list-wrap .item { animation: kwItem .38s cubic-bezier(.2,.8,.2,1) both; }
-.list-wrap .item:nth-child(2) { animation-delay: .035s; } .list-wrap .item:nth-child(3) { animation-delay: .07s; }
-.list-wrap .item:nth-child(4) { animation-delay: .105s; } .list-wrap .item:nth-child(5) { animation-delay: .14s; } .list-wrap .item:nth-child(n+6) { animation-delay: .175s; }
-.modal { animation: kwPop .34s cubic-bezier(.34,1.3,.64,1) both; }
-.kws { transform: translateY(28px) scale(.96) !important; opacity: .4; transition: transform .42s cubic-bezier(.34,1.25,.64,1), opacity .25s ease !important; }
+@keyframes kwRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes kwPop { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+.app > .panel, .app > .list-wrap { animation: kwRise .32s cubic-bezier(.2,0,0,1) both; }
+.app > .panel:nth-of-type(2), .app > .list-wrap { animation-delay: .04s; }
+.modal { animation: kwPop .22s cubic-bezier(.2,0,0,1) both; }
+.kws { transform: translateY(18px) scale(.98) !important; opacity: 0; transition: transform .26s cubic-bezier(.2,0,0,1), opacity .16s linear !important; will-change: transform, opacity; }
 .kws-ov.show .kws { transform: none !important; opacity: 1; }
-.kws-ov.show .kws-grp, .kws-ov.show .kws-don, .kws-ov.show .kws-sec { animation: kwRise .45s cubic-bezier(.2,.8,.2,1) both; }
-.kws-ov.show .kws-don { animation-delay: .04s; } .kws-ov.show .kws-sec { animation-delay: .08s; } .kws-ov.show .kws-grp { animation-delay: .1s; }
-.kws-ov.show .kws-grp ~ .kws-sec { animation-delay: .14s; } .kws-ov.show .kws-grp ~ .kws-grp { animation-delay: .17s; }
 @media (prefers-reduced-motion: reduce) { .app > .panel, .app > .list-wrap, .list-wrap .item, .modal, .kws-grp, .kws-sec, .kws-don { animation: none !important; } }
 
 /* ===== Settings, compact grouped sheet ===== */
@@ -2605,11 +2597,8 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
         var vt = document.startViewTransition(fn), x = tap.x, y = tap.y,
           r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
         vt.ready.then(function () {
-          var E = 'cubic-bezier(.2,0,0,1)';
           de.animate({ clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + r + 'px at ' + x + 'px ' + y + 'px)'] },
-            { duration: 680, easing: E, pseudoElement: '::view-transition-new(root)' });
-          de.animate({ transform: ['scale(1)', 'scale(.965)'], opacity: [1, .55], filter: ['blur(0px)', 'blur(2px)'] },
-            { duration: 680, easing: E, pseudoElement: '::view-transition-old(root)' });
+            { duration: 460, easing: 'cubic-bezier(.3,0,0,1)', pseudoElement: '::view-transition-new(root)' });
         }, function () {});
         return;
       } catch (e) {}
@@ -2762,7 +2751,7 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
   root.appendChild(el('div', 'kl-bg')); root.appendChild(el('div', 'kl-aura'));
   var splash = el('div', 'kl-splash'); root.appendChild(splash);
   var coinsBox = el('div', 'kl-coins'); coinsBox.setAttribute('aria-hidden', 'true'); splash.appendChild(coinsBox);
-  var LIT_COIN = ORDER[Math.floor(Math.random() * ORDER.length)];
+  var LIT_COIN = (function () { try { var f = localStorage.getItem('kw-lit-test'); if (f && ORDER.indexOf(f) >= 0) return f; } catch (e) {} return ORDER[Math.floor(Math.random() * ORDER.length)]; })();
   var coins = ORDER.map(function (n) {
     /* one random mark per launch is painted like the original XRP: ink disc + brand-yellow mark */
     var lit = n === LIT_COIN, svgS;
@@ -2830,6 +2819,7 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
       var cell = CELLS[i], top = cell < 6, col = top ? cell % 3 : cell - 6, row = top ? Math.floor(cell / 3) : 0;
       var y0 = top ? VH * 0.05 : bandBot, y1 = top ? bandTop : footTop;
       var cw = VW / 3, ch = (y1 - y0) / (top ? 2 : 1);
+      if (ORDER[i] === LIT_COIN) size = Math.max(size, 62 * sc);
       size = Math.min(size, ch + 6, cw - 6);
       var best = null, bestD = -1;
       for (var tries = 0; tries < 40; tries++) {
@@ -2841,12 +2831,12 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
         if (d > 18 * sc) break;
       }
       placed.push(best);
-      var z = ORDER[i] === 'xrp' ? 0.92 + Math.random() * 0.08 : 0.55 + Math.random() * 0.45; /* depth: far marks are smaller, softer, slower */
+      var lit = ORDER[i] === LIT_COIN, z = lit ? 1 : ORDER[i] === 'xrp' ? 0.92 + Math.random() * 0.08 : 0.55 + Math.random() * 0.45; /* depth: far marks are smaller, softer, slower */
       function r(a, b) { return a + Math.random() * (b - a); }
       function sg() { return Math.random() < .5 ? -1 : 1; }
       var calm = ORDER[i] === 'xrp' ? 0.25 : 1; /* keep the XRP mark upright so it reads true */
       LAY.push({ x: best.x / VW, y: best.y / VH, s: best.s, z: z, rot: (Math.random() * 2 - 1) * 16 * calm,
-        op: (0.55 + 0.4 * z), blur: (1 - z) * 1.8, delay: Math.random() * 650,
+        op: lit ? 1 : (0.55 + 0.4 * z), blur: lit ? 0 : (1 - z) * 1.8, delay: Math.random() * 650,
         /* two slow, incommensurate sine pairs per axis = smooth, never-repeating wander */
         a1: r(10, 22) * sc, a2: r(4, 10) * sc, b1: r(10, 24) * sc, b2: r(4, 10) * sc,
         w1: r(.16, .3) * sg() * (0.6 + 0.4 * z), w2: r(.34, .55) * sg() * (0.6 + 0.4 * z),
@@ -10374,7 +10364,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.70';
+const APP_VERSION = '3.71';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
