@@ -2694,6 +2694,7 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
   function eoq(t) { return 1 - Math.pow(1 - t, 4); }
   function eob(t) { var c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
   function buzz(p) {
+    p = (Array.isArray(p) ? p : [p]).map(function (v, i) { return i % 2 ? v : Math.min(160, Math.round(Math.max(18, v * 2))); });
     try { if (window.HarkNative && HarkNative.vibrate) { HarkNative.vibrate(JSON.stringify(Array.isArray(p) ? p : [p])); return; } } catch (e) {}
     try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {}
   }
@@ -2711,6 +2712,9 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
     return actx;
   }
   function tone(f, at, dur, vol, type, glideTo) {
+    var __sv = (function(){ try { return +localStorage.getItem('kw-snd-set') || 0; } catch (e) { return 0; } })();
+    var __SP = [[1,null,1],[2,'sine',.8],[.6,'triangle',1.25],[1,'square',.7],[.75,'sawtooth',.9]][__sv] || [1,null,1];
+    f *= __SP[0]; if (__SP[1]) type = __SP[1]; dur *= __SP[2]; if (__sv === 3 || __sv === 4) vol = (vol || .1) * .55;
     var c = ac(); if (!c || c.state !== 'running') return; /* never queue: a suspended context would replay it later on top of the keypad */
     var t0 = c.currentTime + (at || 0), o = c.createOscillator(), g = c.createGain();
     o.type = type || 'sine'; o.frequency.setValueAtTime(f, t0);
@@ -3276,6 +3280,9 @@ window.FX = (function(){
     return ctx;
   }
   function tone(f, at, dur, vol, type){
+    var __sv = (function(){ try { return +localStorage.getItem('kw-snd-set') || 0; } catch (e) { return 0; } })();
+    var __SP = [[1,null,1],[2,'sine',.8],[.6,'triangle',1.25],[1,'square',.7],[.75,'sawtooth',.9]][__sv] || [1,null,1];
+    f *= __SP[0]; if (__SP[1]) type = __SP[1]; dur *= __SP[2]; if (__sv === 3 || __sv === 4) vol = (vol || .1) * .55;
     var c = ac(); if (!c) return;
     var t0 = c.currentTime + (at || 0), o = c.createOscillator(), g = c.createGain();
     o.type = type || 'sine'; o.frequency.setValueAtTime(f, t0);
@@ -3291,9 +3298,17 @@ window.FX = (function(){
     /* Haptics in every mode: native bridge vibrates with alarm/hardware-feedback attributes,
        which Android honours in Sound, Vibrate and Silent. Browser falls back to navigator.vibrate. */
     buzz: function(p){
+      p = (Array.isArray(p) ? p : [p]).map(function (v, i) { return i % 2 ? v : Math.min(160, Math.round(Math.max(18, v * 2))); });
       try { if (window.HarkNative && HarkNative.vibrate) { HarkNative.vibrate(JSON.stringify(Array.isArray(p) ? p : [p])); return; } } catch (e) {}
       try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {}
     },
+    SETS: ['Original', 'Crystal', 'Wood', 'Retro', 'Pulse'],
+    soundSet: function(){ try { return +localStorage.getItem('kw-snd-set') || 0; } catch (e) { return 0; } },
+    setSoundSet: function(i){ try { localStorage.setItem('kw-snd-set', String(i)); } catch (e) {} },
+    /* new seed: fast rising ratchet of ticks ending on a bright click */
+    seedGen: function(){ for (var i = 0; i < 6; i++) tone(700 + i * 110, i * .035, .028, .075, 'square'); tone(1900, .23, .06, .08, 'square'); tone(1320, .24, .18, .08); this.buzz([14, 22, 14, 22, 14, 40, 34]); },
+    /* switch seed (undo/redo/history): crisp double tick */
+    seedSwitch: function(){ tone(1150, 0, .03, .08, 'square'); tone(1500, .06, .035, .08, 'square'); this.buzz([16, 40, 24]); },
     /* short mechanical tick */
     tick: function(f){ tone(f || 900, 0, 0.03, 0.07, 'square'); },
     /* soft notification chimes, one per kind */
@@ -10382,7 +10397,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.81';
+const APP_VERSION = '3.82';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -12485,20 +12500,20 @@ async function generateMnemonic() {
         phrase = window.XmrMnemonic.generate();
       }
       await yieldToUi();
-      activateSeed(phrase, 'xmr');
+      activateSeed(phrase, 'xmr'); try { FX.seedGen(); } catch (x) {}
       return;
     }
     if (sel === 'poly') {
       const g = await polyGenerate();
       await yieldToUi();
-      activateSeed(g.phrase, 'poly');
+      activateSeed(g.phrase, 'poly'); try { FX.seedGen(); } catch (x) {}
       return;
     }
     const words = parseInt(sel, 10);
     const nbytes = strengthFromWords(words) / 8;
     const ent = await secureEntropy(nbytes);
     const next = ethers.Mnemonic.entropyToPhrase(ent);
-    activateSeed(next, 'bip39');
+    activateSeed(next, 'bip39'); try { FX.seedGen(); } catch (x) {}
   } catch (e) {
     showToast(e.message || String(e));
   }
@@ -12523,7 +12538,7 @@ function undoSeed() {
   }
   currentMnemonic = s.m || '';
   clearSeedCache();
-  applySnapshot(s); // full restore: network, path, page, start index, marks, badges
+  applySnapshot(s); // full restore: network, path, page, start index, marks, badges try { FX.seedSwitch(); } catch (x) {}
   updateSeedDisplay();
   updateUndoButton();
   updateRedoButton();
@@ -12543,7 +12558,7 @@ function redoSeed() {
   }
   currentMnemonic = s.m || '';
   clearSeedCache();
-  applySnapshot(s); // full restore: network, path, page, start index, marks, badges
+  applySnapshot(s); // full restore: network, path, page, start index, marks, badges try { FX.seedSwitch(); } catch (x) {}
   updateSeedDisplay();
   updateUndoButton();
   updateRedoButton();
@@ -13713,7 +13728,7 @@ function importSeed() {
     onImportInput();
     return;
   }
-  activateSeed(parsed.phrase, parsed.type);
+  activateSeed(parsed.phrase, parsed.type); try { FX.seedSwitch(); } catch (x) {}
   if (el) {
     el.value = '';
     el.rows = 1;
@@ -14176,7 +14191,7 @@ function classicCopy(text, resolve) {
 }
 
 function buzz(ms) {
-  try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {}
+  try { FX.buzz(ms); } catch (e) {}
 }
 
 function copySeed() {
@@ -14366,6 +14381,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       '<div class="kws-sec">Appearance</div><div class="kws-grp">' +
       row('kws-theme', I.theme, 'Theme', null, '<span class="kws-seg" role="radiogroup"><span data-t="light">Light</span><span data-t="dark">Dark</span></span>') +
       row('kws-md3', 'M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z', 'Material You', '', '<span class="kws-sw" aria-hidden="true"></span>') +
+      row('kws-snd', 'M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z', 'Sounds', '') +
       row('kws-replay', I.play, 'Play opening screen', null) +
       '</div><div class="kws-sec">Security</div><div class="kws-grp">' +
       row('kws-lock', I.lock, 'App lock', '', '<span class="kws-sw" aria-hidden="true"></span>') +
@@ -14405,6 +14421,8 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       clearTimeout(window.__kwThT); window.__kwThT = setTimeout(function () { try { toggleTheme(); } catch (x) {} setTimeout(sync, 60); }, 120);
     };
     $('kws-md3').onclick = function () { tick(); if (window.KwMd3) { KwMd3.set(!KwMd3.on()); try { FX.buzz(10); } catch (x) {} } sync(); };
+    $('kws-snd').onclick = function () { tick(); var o = FX.SETS.map(function (n, i) { return [String(i), n + (i ? '' : ' (default)')]; });
+      chooseLive('Sound set', o, String(FX.soundSet()), function (v) { FX.setSoundSet(+v); sync(); toast(FX.SETS[+v] + ' sounds'); }, function (v) { try { localStorage.setItem('kw-snd-set', v); } catch (x) {} FX.seedGen(); }); };
     $('kws-replay').onclick = function () { closeSettings(); if (window.KwLock && KwLock.replay) KwLock.replay(); };
     document.addEventListener('kwallet-pinmode', sync);
   }
@@ -14423,6 +14441,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       $('kws-bio').disabled = !on && !bon;
       $('kws-bio-s').textContent = st === 'ok' ? (bon ? 'Fingerprint or face. PIN stays as backup' : 'Off. PIN only') : (st === 'unenrolled' ? 'No fingerprint or face set up on this phone' : 'Not available on this phone');
     }
+    if ($('kws-snd-s')) $('kws-snd-s').textContent = FX.SETS[FX.soundSet()] + (FX.soundOn() ? '' : ' \u00b7 sound is off');
     var th = document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
     ov.querySelectorAll('.kws-seg').forEach(function (g) { g.setAttribute('data-v', th); });
     ov.querySelectorAll('.kws-seg [data-t]').forEach(function (x) { var o = x.getAttribute('data-t') === th; x.classList.toggle('on', o); x.setAttribute('aria-checked', o ? 'true' : 'false'); });
@@ -14445,6 +14464,21 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       var o = e.target.closest('.kwd-opt');
       if (o) { tick(); var v = o.getAttribute('data-v'); close(); if (v !== val) setTimeout(function () { done(v); }, 120); return; }
       if (e.target === d || e.target.closest('.kwd-act')) close();
+    });
+  }
+  function chooseLive(t, opts, val, done, preview) {
+    var d = document.createElement('div'), pick = val; d.className = 'kwd-ov';
+    d.innerHTML = '<div class="kwd" role="dialog" aria-modal="true"><h3>' + t + '</h3><div role="radiogroup">' +
+      opts.map(function (o) { return '<button type="button" class="kwd-opt' + (o[0] === val ? ' on' : '') + '" role="radio" aria-checked="' + (o[0] === val) + '" data-v="' + o[0] + '"><span class="kwd-r"></span>' + o[1] + '</button>'; }).join('') +
+      '</div><div class="kwd-act"><button type="button" data-a="x">Cancel</button><button type="button" data-a="ok">Done</button></div></div>';
+    document.body.appendChild(d); void d.offsetWidth; d.classList.add('show');
+    var close = function (ok) { d.classList.remove('show'); setTimeout(function () { d.remove(); }, 160);
+      if (ok) done(pick); else { try { localStorage.setItem('kw-snd-set', val); } catch (x) {} } };
+    d.addEventListener('click', function (e) {
+      var o = e.target.closest('.kwd-opt');
+      if (o) { pick = o.getAttribute('data-v'); d.querySelectorAll('.kwd-opt').forEach(function (x) { var on = x === o; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); }); preview(pick); return; }
+      var a = e.target.closest('[data-a]'); if (a) { close(a.getAttribute('data-a') === 'ok'); return; }
+      if (e.target === d) close(false);
     });
   }
   window.openSettings = function () { if (!ov) build(); sync(); ov.classList.add('show'); };
