@@ -2071,6 +2071,11 @@
 #kl-root .kl-coin { position: absolute; left: 0; top: 0; width: 44px; height: 44px; opacity: 0;
   color: var(--kl-ink); will-change: transform, opacity; }
 #kl-root .kl-coin svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+#kl-root .kl-coin > svg { position: absolute; inset: 0; transition: opacity .55s cubic-bezier(.2,0,0,1), transform .7s cubic-bezier(.34,1.56,.64,1), filter .7s ease; }
+#kl-root .kl-coin .kl-lit { opacity: 0; transform: scale(.55) rotate(-25deg); color: var(--kl-ink); }
+#kl-root .kl-coin.on .kl-face { opacity: 0; transform: scale(1.25); }
+#kl-root .kl-coin.on .kl-lit { opacity: 1; transform: none; filter: drop-shadow(0 0 7px rgba(221,248,105,.95)) drop-shadow(0 0 16px rgba(255,255,255,.55)); }
+@media (prefers-reduced-motion: reduce) { #kl-root .kl-coin > svg { transition: opacity .3s linear; } }
 
 /* wordmark */
 #kl-root .kl-brandwrap { position: absolute; left: 0; right: 0; top: 50%; display: flex; justify-content: center;
@@ -2668,12 +2673,30 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
   var splash = el('div', 'kl-splash'); root.appendChild(splash);
   var coinsBox = el('div', 'kl-coins'); coinsBox.setAttribute('aria-hidden', 'true'); splash.appendChild(coinsBox);
   var coins = ORDER.map(function (n) {
-    var svgS = n === 'xrp'
-      ? '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><circle cx="16" cy="16" r="16"/><path fill="#DDF869" transform="translate(6.6 8.2) scale(.0367)" d="' + ICONS[n][1] + '"/></svg>'
-      : '<svg viewBox="' + ICONS[n][0] + '" shape-rendering="geometricPrecision"><path d="' + ICONS[n][1] + '"/></svg>';
+    /* v3.66: every mark has an ink face and a lit face (ink disc + brand-yellow mark); a random one lights up at a time */
+    var pad = n === 'xrp' ? 6.4 : 7.2, sz = 32 - pad * 2;
+    var svgS = '<svg class="kl-face" viewBox="' + ICONS[n][0] + '" shape-rendering="geometricPrecision"><path d="' + ICONS[n][1] + '"/></svg>'
+      + '<svg class="kl-lit" viewBox="0 0 32 32" shape-rendering="geometricPrecision"><circle cx="16" cy="16" r="16"/>'
+      + '<svg x="' + pad + '" y="' + pad + '" width="' + sz + '" height="' + sz + '" viewBox="' + ICONS[n][0] + '"><path fill="#DDF869" d="' + ICONS[n][1] + '"/></svg></svg>';
     var c = el('div', 'kl-coin', svgS);
     coinsBox.appendChild(c); return { el: c };
   });
+  /* random illumination: never the same mark twice in a row, sometimes two at once */
+  (function litLoop() {
+    var last = -1, n = coins.length;
+    function pick() { var i; do { i = Math.floor(Math.random() * n); } while (n > 1 && i === last); last = i; return i; }
+    function flash(i, hold) { var e = coins[i].el; e.classList.add('on'); setTimeout(function () { e.classList.remove('on'); }, hold); }
+    function step() {
+      if (!document.getElementById('kl-root')) return;
+      if (!document.hidden) {
+        var hold = 900 + Math.random() * 900;
+        flash(pick(), hold);
+        if (Math.random() < .28) setTimeout(function () { flash(pick(), 700 + Math.random() * 600); }, 180 + Math.random() * 320);
+      }
+      setTimeout(step, 650 + Math.random() * 900);
+    }
+    setTimeout(step, 900 + Math.random() * 600);
+  })();
   var wrap = el('div', 'kl-brandwrap'); var brand = el('h1', 'kl-brand'); brand.setAttribute('aria-label', 'Kwallet');
   var K = el('span', 'kl-k', 'K'), W = el('span', 'kl-w', 'wallet');
   K.setAttribute('aria-hidden', 'true'); W.setAttribute('aria-hidden', 'true');
@@ -10276,7 +10299,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.65';
+const APP_VERSION = '3.66';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
