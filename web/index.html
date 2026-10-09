@@ -2238,7 +2238,10 @@
 .kpv-sub { padding: 0 24px 8px; color: var(--text-muted); font: 400 13px/18px 'Roboto', system-ui, sans-serif; }
 .kpv-search { margin: 4px 16px 8px; display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 16px; border-radius: 24px; background: var(--bg-input); }
 .kpv-search input { flex: 1; border: 0; outline: 0; background: transparent; color: var(--text); font: 400 15px 'Roboto', system-ui, sans-serif; }
-.kpv-list { overflow-y: auto; padding: 0 12px 8px; flex: 1; }
+.kpv-list { overflow-y: auto; padding: 0 12px 8px; flex: 1 1 auto; min-height: 0; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
+#kpv-in { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+#kpv-in > .kpv-h, #kpv-in > .kpv-tabs, #kpv-in > .kpv-sub, #kpv-in > .kpv-search, #kpv-in > .kpv-btns, #kpv-in > .kpv-fab { flex-shrink: 0; }
+#kpv-in > .kpv-form { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .kpv-card { display: flex; gap: 14px; align-items: flex-start; padding: 14px 12px; border-radius: 16px; margin-bottom: 6px; background: var(--bg-input); }
 .kpv-av { flex: none; width: 40px; height: 40px; border-radius: 20px; display: grid; place-items: center; font: 600 12px 'Roboto', sans-serif; color: #fff; background: var(--c, #5f6368); }
 .kpv-body { flex: 1; min-width: 0; }
@@ -10647,7 +10650,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.84';
+const APP_VERSION = '3.85';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -18370,7 +18373,7 @@ window.kwBack = function () {
         var c = ch(it.chain);
         h += '<div class="kpv-card"><div class="kpv-av" style="--c:' + c[2] + '">' + E(c[1].slice(0, 4)) + '</div><div class="kpv-body">'
           + '<div class="kpv-name">' + E(it.name) + '</div>'
-          + '<div class="kpv-meta">' + E(c[1]) + ' \u00b7 saved ' + E(String(it.t || '').slice(0, 10)) + '</div>'
+          + '<div class="kpv-meta">' + E(c[1]) + ' \u00b7 saved ' + E(String(it.t || '')) + (it.u ? ' \u00b7 edited ' + E(String(it.u)) : '') + '</div>'
           + (it.note ? '<div class="kpv-nt">' + E(it.note) + '</div>' : '')
           + (it.addr ? '<div class="kpv-addr">' + E(it.addr) + '</div>' : '')
           + (shown[it.id] ? '<div class="kpv-key">' + E(it.pk) + '</div>' : '')
@@ -18434,7 +18437,7 @@ window.kwBack = function () {
       var act = cur && x.m === cur, imp = x.o === 'imp';
       h += '<div class="kpv-card"><div class="kpv-av" style="--c:' + (imp ? '#1a73e8' : x.o === 'old' ? '#5f6368' : '#188038') + '">' + (imp ? 'IMP' : x.o === 'old' ? 'OLD' : 'GEN') + '</div><div class="kpv-body">'
         + '<div class="kpv-name">' + E(slabel(x)) + (act ? ' <span class="kpv-act">Active</span>' : '') + '</div>'
-        + '<div class="kpv-meta">' + (imp ? 'Imported' : x.o === 'old' ? 'Earlier seed' : 'Generated') + (x.at ? ' ' + E(String(x.at).slice(0, 10)) : '') + '</div>'
+        + '<div class="kpv-meta">' + (imp ? 'Imported' : x.o === 'old' ? 'Earlier seed' : 'Generated') + (x.at ? ' ' + E(String(x.at)) : ' \u00b7 time not recorded') + (x.u && x.u !== x.at ? '<br>Last used ' + E(String(x.u)) : '') + '</div>'
         + (x.note ? '<div class="kpv-nt">' + E(x.note) + '</div>' : '')
         + '<div class="kpv-' + (shown[x.id] ? 'key' : 'addr') + '">' + E(shown[x.id] ? x.m : smask(x.m)) + '</div>'
         + '<div class="kpv-acts">'
