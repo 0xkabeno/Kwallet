@@ -2378,6 +2378,24 @@
 /* v3.58: confirm fields are always one compact line */
 .modal input.clear-yes { height: 44px !important; min-height: 44px !important; max-height: 44px !important; flex: none !important; padding: 0 14px !important; line-height: 44px !important; box-sizing: border-box !important; border-radius: 12px !important; font-size: 15px !important; resize: none; }
 #word-count { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+/* v3.59: word count opens in place, as a strip under the seed toolbar */
+.wc-menu.wc-inline { position: static !important; width: auto !important; min-width: 0 !important; padding: 0 !important; margin: 0 !important; border: 0 !important; box-shadow: none !important; background: transparent !important;
+  display: grid !important; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .22s cubic-bezier(.2,.8,.2,1), opacity .18s ease, margin .22s ease; animation: none !important; clip-path: none !important; transform: none !important; }
+.wc-menu.wc-inline.in { grid-template-rows: 1fr; opacity: 1; margin: 8px 0 2px !important; }
+.wc-menu.wc-inline.out { grid-template-rows: 0fr; opacity: 0; }
+.wc-inline .wc-in { overflow: hidden; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.wc-inline .wc-g { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.wc-inline .wc-g2 { grid-template-columns: repeat(2, 1fr); }
+.wc-inline button { all: unset; box-sizing: border-box; height: 46px !important; padding: 0 4px !important; border-radius: 12px !important; display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: var(--bg-input, #f1f3f4); border: 1px solid var(--border, #dadce0); color: var(--text, #1f1f1f); cursor: pointer; animation: none !important; transition: background .12s, transform .1s; -webkit-tap-highlight-color: transparent; }
+.wc-inline .wc-g2 button { flex-direction: row !important; gap: 6px; }
+.wc-inline button b { font: 600 16px/18px 'RobotoE','Roboto',system-ui,sans-serif; }
+.wc-inline button small { font: 400 10.5px/13px 'RobotoE','Roboto',system-ui,sans-serif !important; opacity: .65; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.wc-inline .wc-g2 button small { font-size: 12px !important; }
+.wc-inline button:active { transform: scale(.96); }
+.wc-inline button.on { background: var(--accent, #1a73e8) !important; border-color: var(--accent, #1a73e8) !important; color: #fff !important; }
+.wc-inline button.on small { opacity: .9; }
 </style>
 </head>
 <body data-theme="light">
@@ -2690,7 +2708,9 @@
       try { HarkNative.bioAuth(title || 'Unlock Kwallet'); } catch (e) { window.kwBioDone = null; cb('fail'); }
     }
   };
+  var noBioOnce = false;
   function askBio() {
+    if (noBioOnce) { noBioOnce = false; return; }
     if (busy || !root.classList.contains('kl-pin') || root.classList.contains('kl-out') || mode !== 'unlock' || !BIO.on()) return;
     if (lockState().until > Date.now()) return;
     busy = true;
@@ -2780,7 +2800,7 @@
   function lockNow(opts) {
     if (locked || !window.crypto || !crypto.subtle) return;
     locked = true; cancelable = !!(opts && opts.cancelable); onCancel = opts && opts.onCancel || null;
-    onOk = opts && opts.onOk || null; purpose = opts && opts.purpose || null; first = ''; entry = '';
+    onOk = opts && opts.onOk || null; purpose = opts && opts.purpose || null; first = ''; entry = ''; noBioOnce = !!(opts && opts.noBio);
     root.style.display = ''; void root.offsetWidth;
     root.classList.add('kl-done'); brand.classList.add('kl-noshine'); W.style.visibility = 'hidden';
     try { document.documentElement.style.overflow = 'hidden'; } catch (e) {}
@@ -2796,6 +2816,19 @@
     lock: function () { lockNow(); },
     /* ask for the current PIN before a sensitive change; runs ok() only after a correct PIN */
     verify: function (ok, cancel) { if (!stored()) { ok(); return; } lockNow({ cancelable: true, purpose: 'verify', onOk: ok, onCancel: cancel }); },
+    /* one step: the system biometric sheet alone when biometrics are on, else the PIN pad */
+    quick: function (ok, cancel) {
+      if (!stored()) { ok(); return; }
+      if (BIO.on() && !(lockState().until > Date.now())) {
+        BIO.ask('Show sensitive data', function (r) {
+          if (r === 'ok') { setLock({ n: 0, until: 0 }); ok(); }
+          else if (r === 'cancel') { if (cancel) cancel(); }
+          else lockNow({ cancelable: true, purpose: 'verify', onOk: ok, onCancel: cancel, noBio: true });
+        });
+        return;
+      }
+      lockNow({ cancelable: true, purpose: 'verify', onOk: ok, onCancel: cancel });
+    },
     change: function (done) { var go = function () { lockNow({ cancelable: true, purpose: 'create', onOk: done }); }; KwLock.verify(go); },
     /* full erase: PIN, lockout, lock mode and last-active stamp */
     /* replay the opening in place (no reload), so the tap that asked for it also lets the sound play */
@@ -10047,7 +10080,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.58';
+const APP_VERSION = '3.59';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -17854,7 +17887,7 @@ window.kwBack = function () {
       var w4 = function () {
         var self = this, args = arguments;
         var go = function () { tp.apply(self, args); refresh(); };
-        if (hidden() && window.KwLock && KwLock.hasPin()) { KwLock.verify(go); return; }   /* Show needs PIN or biometrics */
+        if (hidden() && window.KwLock && KwLock.hasPin()) { (KwLock.quick || KwLock.verify)(go); return; }   /* Show needs PIN or biometrics */
         go();
       };
       w4.__kwHide = 1; window.togglePrivacy = w4;
@@ -17949,40 +17982,38 @@ window.kwBack = function () {
 (function () {
   var L = { '12': 'Standard', '15': '', '18': '', '21': '', '24': 'Max security', 'poly': 'Polyseed', 'xmr': 'Monero' };
   function open(sel) {
-    if (document.querySelector('.wc-menu')) return;
-    var r = sel.getBoundingClientRect();
-    var sc = document.createElement('div'); sc.className = 'wc-scrim';
-    var m = document.createElement('div'); m.className = 'wc-menu'; m.setAttribute('role', 'listbox');
-    var h = '';
-    Array.prototype.forEach.call(sel.options, function (o, i) {
-      if (o.value === 'poly') h += '<hr>';
-      var nm = o.value === 'poly' ? '16 words' : o.value === 'xmr' ? '25 words' : o.value + ' words';
-      h += '<button type="button" role="option" data-v="' + o.value + '"' + (o.value === sel.value ? ' class="on" aria-selected="true"' : '') + '><span>' + nm + '</span><small>' + (L[o.value] || '') + '</small></button>';
+    var ex = document.querySelector('.wc-menu'); if (ex) { ex.__close && ex.__close(); return; }
+    var row = sel.closest('.row') || sel.parentNode;
+    var m = document.createElement('div'); m.className = 'wc-menu wc-inline'; m.setAttribute('role', 'listbox');
+    var h = '<div class="wc-in"><div class="wc-g">';
+    Array.prototype.forEach.call(sel.options, function (o) {
+      if (o.value === 'poly') h += '</div><div class="wc-g wc-g2">';
+      var n = o.value === 'poly' ? '16' : o.value === 'xmr' ? '25' : o.value;
+      h += '<button type="button" role="option" data-v="' + o.value + '"' + (o.value === sel.value ? ' class="on" aria-selected="true"' : '') + '><b>' + n + '</b><small>' + (L[o.value] || 'words') + '</small></button>';
     });
-    m.innerHTML = h;
-    document.body.appendChild(sc); document.body.appendChild(m);
-    var w = m.offsetWidth, x = Math.min(Math.max(8, r.left), innerWidth - w - 8), y = r.bottom + 4;
-    if (y + m.offsetHeight > innerHeight - 8) { y = Math.max(8, r.top - m.offsetHeight - 4); m.classList.add('up'); }
-    m.style.left = x + 'px'; m.style.top = y + 'px';
-    Array.prototype.forEach.call(m.querySelectorAll('button'), function (b, i) { b.style.animationDelay = (i * 14) + 'ms'; });
-    sel.classList.add('wc-open');
+    m.innerHTML = h + '</div></div>';
+    row.parentNode.insertBefore(m, row.nextSibling);
+    void m.offsetHeight; m.classList.add('in'); sel.classList.add('wc-open');
     try { FX.tick(1200); FX.buzz(8); } catch (e) {}
-    function close() { sel.classList.remove('wc-open'); m.classList.add('out'); sc.remove(); setTimeout(function () { m.remove(); }, 120); document.removeEventListener('keydown', esc); }
+    function close() { sel.classList.remove('wc-open'); m.classList.remove('in'); m.classList.add('out'); document.removeEventListener('keydown', esc); document.removeEventListener('pointerdown', away, true); setTimeout(function () { m.remove(); }, 200); }
+    m.__close = close;
     function esc(e) { if (e.key === 'Escape') close(); }
-    document.addEventListener('keydown', esc);
-    sc.addEventListener('click', close);
+    function away(e) { if (!m.contains(e.target) && !hit(e)) close(); }
+    document.addEventListener('keydown', esc); setTimeout(function () { document.addEventListener('pointerdown', away, true); }, 0);
     m.addEventListener('click', function (e) {
       var b = e.target.closest('button[data-v]'); if (!b) return;
-      var v = b.getAttribute('data-v'); close();
+      var v = b.getAttribute('data-v');
+      m.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      setTimeout(close, 90);
       if (v !== sel.value) { sel.value = v; sel.dispatchEvent(new Event('input', { bubbles: true })); sel.dispatchEvent(new Event('change', { bubbles: true })); try { FX.buzz(10); } catch (x) {} }
     });
   }
   function hit(e) { var sel = document.getElementById('word-count'); if (!sel) return null; var r = sel.getBoundingClientRect(); return (r.width && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) ? sel : null; }
   var downAt = 0;
-  document.addEventListener('pointerdown', function (e) { var sel = hit(e); if (!sel || document.querySelector('.wc-menu')) return; e.preventDefault(); downAt = Date.now(); open(sel); }, true);
+  document.addEventListener('pointerdown', function (e) { var sel = hit(e); if (!sel) return; e.preventDefault(); if (Date.now() - downAt < 350) return; downAt = Date.now(); open(sel); }, true);
   document.addEventListener('click', function (e) { if (hit(e)) { e.preventDefault(); e.stopPropagation(); } }, true);
-  ['mousedown','touchstart','touchend'].forEach(function (t) { document.addEventListener(t, function (e) { var pt = e.changedTouches ? e.changedTouches[0] : e; if (hit(pt)) { e.preventDefault(); if (t === 'touchend' && !document.querySelector('.wc-menu')) open(hit(pt)); } }, { capture: true, passive: false }); });
-  var _wc = document.getElementById('word-count'); if (_wc) { _wc.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); if (!document.querySelector('.wc-menu')) open(_wc); } }); }
+  ['mousedown','touchstart','touchend'].forEach(function (t) { document.addEventListener(t, function (e) { var pt = e.changedTouches ? e.changedTouches[0] : e; if (hit(pt)) { e.preventDefault();  } }, { capture: true, passive: false }); });
+  var _wc = document.getElementById('word-count'); if (_wc) { _wc.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); open(_wc); } }); }
 })();
 </script>
 </body>
