@@ -3270,13 +3270,20 @@ window.KwDB = (function () {
   function lockState() { try { return JSON.parse(localStorage.getItem(LOCK) || '{"n":0,"until":0}'); } catch (e) { return { n: 0, until: 0 }; } }
   function setLock(s) { try { localStorage.setItem(LOCK, JSON.stringify(s)); } catch (e) {} }
   function paint() { var d = dots.children; for (var i = 0; i < d.length; i++) d[i].classList.toggle('on', i < entry.length); if (alpha && !entry && pin_in) pin_in.value = ''; }
-  function W() { return alpha ? 'passcode' : 'PIN'; }
+  function pinWord() { return alpha ? 'passcode' : 'PIN'; }
   function say(t, err) { sub.textContent = t || ''; sub.classList.toggle('kl-err', !!err); }
+  /* v3.87: a bug in the lock screen can never freeze start-up again; it falls back to the plain PIN pad */
   function setupPin() {
+    try { setupPin0(); } catch (e) {
+      try { alpha = false; root.classList.remove('kl-alpha'); title.textContent = stored() ? 'Enter PIN' : 'Create a PIN'; say(''); entry = ''; paint(); } catch (x) {}
+      try { console.error('lock screen', e); } catch (x) {}
+    }
+  }
+  function setupPin0() {
     var s = stored(); mode = (s && purpose !== 'create') ? 'unlock' : 'create';
     alpha = (mode === 'unlock' ? curKind() : newKind) === 'pass';
     root.classList.toggle('kl-alpha', alpha);
-    title.textContent = mode === 'unlock' ? (purpose === 'verify' ? 'Enter current ' + W() : 'Enter ' + W()) : (purpose === 'create' && s ? 'New ' + W() : 'Create a ' + W());
+    title.textContent = mode === 'unlock' ? (purpose === 'verify' ? 'Enter current ' + pinWord() : 'Enter ' + pinWord()) : (purpose === 'create' && s ? 'New ' + pinWord() : 'Create a ' + pinWord());
     say(mode === 'unlock' ? (purpose === 'verify' ? 'Confirm it is you' : '') : (alpha ? PASS_MIN + '+ characters. Letters, numbers, symbols' : '6 digits to open Kwallet on this device'));
     var fg = document.getElementById('kl-forgot');
     var useBio = mode === 'unlock' && BIO.on() && purpose !== 'bio';
@@ -3339,14 +3346,14 @@ window.KwDB = (function () {
   function complete() {
     busy = true;
     if (mode === 'create') {
-      first = entry; entry = ''; mode = 'confirm'; title.textContent = 'Confirm ' + W(); say(alpha ? 'Enter the same passcode again' : 'Enter the same 6 digits again'); paint(); SND.step(); busy = false; if (alpha) setTimeout(function () { try { pin_in.focus(); } catch (e) {} }, 60); return;
+      first = entry; entry = ''; mode = 'confirm'; title.textContent = 'Confirm ' + pinWord(); say(alpha ? 'Enter the same passcode again' : 'Enter the same 6 digits again'); paint(); SND.step(); busy = false; if (alpha) setTimeout(function () { try { pin_in.focus(); } catch (e) {} }, 60); return;
     }
     if (mode === 'confirm') {
-      if (entry !== first) { mode = 'create'; first = ''; title.textContent = purpose === 'create' && stored() ? 'New ' + W() : 'Create a ' + W(); shake((alpha ? "Passcodes" : "PINs") + " didn't match. Start again"); busy = false; return; }
+      if (entry !== first) { mode = 'create'; first = ''; title.textContent = purpose === 'create' && stored() ? 'New ' + pinWord() : 'Create a ' + pinWord(); shake((alpha ? "Passcodes" : "PINs") + " didn't match. Start again"); busy = false; return; }
       var firstPin = !stored();
       KwDB.setPin(entry).then(function () {
         localStorage.setItem(KEY, JSON.stringify({ v: 2 })); try { localStorage.setItem(KIND, newKind); } catch (x) {} setLock({ n: 0, until: 0 });
-        var w0 = W(); success(); setTimeout(function () { try { showToast(firstPin ? (w0 === 'PIN' ? 'PIN' : 'Passcode') + ' set. Your data is now encrypted' : (w0 === 'PIN' ? 'PIN' : 'Passcode') + ' changed. Data re-locked with it'); } catch (x) {} }, 900);
+        var w0 = pinWord(); success(); setTimeout(function () { try { showToast(firstPin ? (w0 === 'PIN' ? 'PIN' : 'Passcode') + ' set. Your data is now encrypted' : (w0 === 'PIN' ? 'PIN' : 'Passcode') + ' changed. Data re-locked with it'); } catch (x) {} }, 900);
         if (firstPin && BIO.status() === 'ok' && localStorage.getItem(BIO_KEY) == null) setTimeout(offerBio, 1100);
       }).catch(function () { busy = false; shake('Could not save PIN'); });
       return;
@@ -3368,7 +3375,7 @@ window.KwDB = (function () {
       var L = lockState(); L.n = (L.n || 0) + 1;
       if (L.n >= 5) { L.until = Date.now() + 30000 * Math.pow(2, Math.min(L.n - 5, 5)); }
       setLock(L); busy = false;
-      shake(L.n >= 5 ? 'Wrong ' + W() : 'Wrong ' + W() + ' · ' + (5 - L.n) + (5 - L.n === 1 ? ' try' : ' tries') + ' left');
+      shake(L.n >= 5 ? 'Wrong ' + pinWord() : 'Wrong ' + pinWord() + ' · ' + (5 - L.n) + (5 - L.n === 1 ? ' try' : ' tries') + ' left');
       setTimeout(checkLock, 420);
     });
   }
@@ -10729,7 +10736,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.86';
+const APP_VERSION = '3.87';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
