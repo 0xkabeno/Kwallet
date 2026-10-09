@@ -2762,7 +2762,10 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
   var coins = ORDER.map(function (n) {
     var lit = n === LIT_COIN, svgS;
     /* one random mark per launch is lit: the plain flat glyph in brand yellow, no disc */
-    svgS = '<svg viewBox="' + ICONS[n][0] + '" shape-rendering="geometricPrecision"><path' + (lit ? ' fill="#DDF869"' : '') + ' d="' + ICONS[n][1] + '"/></svg>';
+    /* knockout coins (disc with the glyph cut out) light like the first-build XRP: the disc keeps its plain tone and the glyph inside fills with yellow */
+    var KO = { bitcoin: 11.2, monero: 11.2 };
+    if (lit && KO[n]) svgS = '<svg viewBox="' + ICONS[n][0] + '" shape-rendering="geometricPrecision"><circle cx="12" cy="12" r="' + KO[n] + '" fill="#DDF869"/><path d="' + ICONS[n][1] + '"/></svg>';
+    else svgS = '<svg viewBox="' + ICONS[n][0] + '" shape-rendering="geometricPrecision"><path' + (lit ? ' fill="#DDF869"' : '') + ' d="' + ICONS[n][1] + '"/></svg>';
     var c = el('div', lit ? 'kl-coin kl-lit' : 'kl-coin', svgS);
     coinsBox.appendChild(c); return { el: c };
   });
@@ -10370,7 +10373,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.76';
+const APP_VERSION = '3.77';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
