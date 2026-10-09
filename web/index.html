@@ -2424,6 +2424,131 @@
 .wc-inline button b { display: block; line-height: 18px !important; }
 .wc-inline button small, .wc-inline .wc-g2 button small { display: block; line-height: 12px !important; margin-top: 2px; font-size: 9.5px !important; }
 </style>
+<style id="kw-design">
+/* ===== v3.62 design system: one token set for Light, Dark and Material You ===== */
+body[data-theme="light"] {
+  --md-primary: #0b57d0; --md-on-primary: #ffffff; --md-pc: #d3e3fd; --md-opc: #041e49;
+  --md-sc2: #c2e7ff; --md-osc2: #001d35;
+  --md-bg: #f6f8fc; --md-surf: #ffffff; --md-sc-low: #f8fafd; --md-sc: #f0f4f9; --md-sc-high: #e9eef6; --md-sc-hi2: #dde3ea;
+  --md-on: #1f1f1f; --md-on-var: #444746; --md-outline: #747775; --md-ov: #c4c7c5;
+  --md-ok: #146c2e; --md-on-ok: #ffffff; --md-ok-c: #c4eed0; --md-on-ok-c: #072711;
+  --md-err: #b3261e; --md-on-err: #ffffff; --md-err-c: #f9dedc; --md-on-err-c: #410e0b;
+  --md-shadow: 0 1px 2px rgba(60,64,67,.12), 0 1px 3px 1px rgba(60,64,67,.06);
+}
+body[data-theme="dark"] {
+  --md-primary: #a8c7fa; --md-on-primary: #062e6f; --md-pc: #0842a0; --md-opc: #d3e3fd;
+  --md-sc2: #004a77; --md-osc2: #c2e7ff;
+  --md-bg: #111318; --md-surf: #1b1d22; --md-sc-low: #16181d; --md-sc: #1f2127; --md-sc-high: #272a30; --md-sc-hi2: #32353b;
+  --md-on: #e3e3e3; --md-on-var: #c4c7c5; --md-outline: #8e918f; --md-ov: #3a3d42;
+  --md-ok: #6dd58c; --md-on-ok: #00391a; --md-ok-c: #0f5223; --md-on-ok-c: #c4eed0;
+  --md-err: #f2b8b5; --md-on-err: #601410; --md-err-c: #8c1d18; --md-on-err-c: #f9dedc;
+  --md-shadow: none;
+}
+body[data-theme] {
+  --bg: var(--md-bg); --bg-card: var(--md-surf); --bg-input: var(--md-sc); --border: var(--md-ov);
+  --text: var(--md-on); --text-muted: var(--md-on-var); --accent: var(--md-primary); --accent-hover: var(--md-primary);
+  --danger: var(--md-err); --greyed: var(--md-outline); --row-hover: var(--md-sc);
+  --btn-addr-bg: var(--md-ok); --btn-pk-bg: var(--md-err);
+  --r-panel: 20px; --r-btn: 12px; --r-field: 14px; --r-chip: 10px;
+  --kw-font: 'Google Sans Text','Google Sans','Product Sans','RobotoE','Roboto',system-ui,sans-serif;
+  --kw-font-d: 'Google Sans','Product Sans','RobotoE','Roboto',system-ui,sans-serif;
+}
+/* Material You expressive: rounder, bouncier, wallpaper colours (palette set by script) */
+body.md3[data-theme] { --r-panel: 28px; --r-btn: 20px; --r-field: 22px; --r-chip: 14px; }
+
+html, body { background: var(--md-bg) !important; color: var(--md-on); font-family: var(--kw-font) !important; }
+.app { gap: 8px !important; }
+
+/* top bar */
+.net { background: var(--md-sc-high) !important; border: 0 !important; border-radius: 999px !important; padding: 3px !important; box-shadow: none !important; }
+.net button { color: var(--md-on-var) !important; border-radius: 999px !important; font: 500 12.5px/1 var(--kw-font-d) !important; letter-spacing: .1px; }
+.net button.on { background: var(--md-primary) !important; color: var(--md-on-primary) !important; box-shadow: none !important; }
+.icon-btn { color: var(--md-on-var) !important; font-family: var(--kw-font) !important; }
+.icon-btn.on, .icon-btn[aria-pressed="true"] { color: var(--md-opc) !important; }
+
+/* panels */
+.panel, .list-wrap { background: var(--md-surf) !important; border: 0 !important; border-radius: var(--r-panel) !important; box-shadow: var(--md-shadow) !important; }
+body[data-theme="dark"] .panel, body[data-theme="dark"] .list-wrap { background: var(--md-sc-low) !important; outline: 1px solid var(--md-ov); outline-offset: -1px; }
+
+/* buttons */
+.btn { border-radius: var(--r-btn) !important; border: 0 !important; background: var(--md-sc-high) !important; color: var(--md-on) !important;
+  font: 500 14px/1 var(--kw-font-d) !important; letter-spacing: .1px; box-shadow: none !important; transition: border-radius .25s cubic-bezier(.34,1.56,.64,1), background .15s, transform .12s !important; }
+.btn:disabled { background: color-mix(in srgb, var(--md-on) 6%, transparent) !important; color: color-mix(in srgb, var(--md-on) 38%, transparent) !important; }
+.btn-p, .btn.btn-p { background: var(--md-primary) !important; color: var(--md-on-primary) !important; }
+.btn-p:disabled { background: color-mix(in srgb, var(--md-on) 10%, transparent) !important; color: color-mix(in srgb, var(--md-on) 38%, transparent) !important; }
+.btn-copy, .btn.btn-copy { background: var(--md-ok-c) !important; color: var(--md-on-ok-c) !important; }
+.btn-d, .btn.btn-d { background: var(--md-err-c) !important; color: var(--md-on-err-c) !important; }
+.btn-last { background: transparent !important; color: var(--md-primary) !important; outline: 1px solid var(--md-ov) !important; outline-offset: -1px; }
+.btn-last:disabled { color: color-mix(in srgb, var(--md-on) 38%, transparent) !important; }
+body.md3 .btn:not(:disabled):active { border-radius: 10px !important; }
+.btn-gen .dice { filter: saturate(.9); }
+.top-select { border-radius: var(--r-btn) !important; background: var(--md-sc-high) !important; border: 0 !important; color: var(--md-on) !important; font: 500 16px/1 var(--kw-font-d) !important; }
+.top-select.wc-open, #word-count.wc-open { background: var(--md-pc) !important; color: var(--md-opc) !important; box-shadow: none !important; }
+
+/* seed + import fields */
+.seed-wrap, #import-area, .imp-wrap { background: var(--md-sc) !important; border-color: transparent !important; border-radius: var(--r-field) !important; color: var(--md-on) !important; }
+.seed { color: var(--md-on) !important; }
+.seed-wrap, .seed-wrap .seed, .imp-wrap, #import-area { border: 0 !important; box-shadow: none !important; outline: 0; }
+.seed-wrap:focus-within, .imp-wrap:focus-within { box-shadow: inset 0 0 0 2px var(--md-primary) !important; }
+.wc-chip { background: var(--md-ok-c) !important; color: var(--md-on-ok-c) !important; border-radius: 8px !important; font: 500 12px/1 var(--kw-font) !important; }
+.pp-chip { background: transparent !important; border: 1px solid var(--md-ov) !important; color: var(--md-on-var) !important; border-radius: 8px !important; font-family: var(--kw-font) !important; }
+
+/* word-count chips follow the palette */
+.wc-inline button { border-color: var(--md-ov) !important; color: var(--md-on) !important; border-radius: var(--r-chip) !important; }
+.wc-inline button small, .wc-inline .wc-g2 button small { color: var(--md-on-var) !important; }
+.wc-inline button.on { background: var(--md-pc) !important; border-color: var(--md-pc) !important; color: var(--md-opc) !important; }
+.wc-inline button.on small { color: var(--md-opc) !important; opacity: .8 !important; }
+
+/* list rows */
+.addr-row, .row-item, .lrow { border-color: var(--md-ov) !important; }
+.btn.btn-a { background: var(--md-ok) !important; color: var(--md-on-ok) !important; border-radius: var(--r-chip) !important; }
+.btn.btn-k { background: var(--md-err) !important; color: var(--md-on-err) !important; border-radius: var(--r-chip) !important; }
+.btn.btn-s, .btn.btn-v { background: var(--md-pc) !important; color: var(--md-opc) !important; border-radius: var(--r-chip) !important; }
+.btn.btn-p.btn-gen:disabled { background: var(--md-primary) !important; color: var(--md-on-primary) !important; opacity: 1 !important; }
+
+/* inputs in strips */
+.addr-search-strip input, .pk-import-strip input, #path-input, .path-input { background: var(--md-sc) !important; border-color: transparent !important; color: var(--md-on) !important; }
+.addr-search-strip input:focus, .pk-import-strip input:focus { outline: 2px solid var(--md-primary) !important; outline-offset: -2px; }
+
+/* ===== Settings, compact grouped sheet ===== */
+.kws { background: var(--md-sc-low) !important; border-radius: 28px !important; padding: 4px 0 14px !important; width: min(400px, 100%) !important; }
+body[data-theme="light"] .kws { background: var(--md-bg) !important; }
+.kws-head { height: 52px !important; padding: 0 8px 0 20px !important; }
+.kws-head h2 { font: 400 22px/28px var(--kw-font-d) !important; color: var(--md-on) !important; }
+.kws-sec { padding: 14px 28px 6px !important; font: 500 12.5px/16px var(--kw-font) !important; letter-spacing: .4px; color: var(--md-primary) !important; text-transform: none; }
+.kws-grp { margin: 0 12px; background: var(--md-surf); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; gap: 2px; padding: 2px 0; }
+body[data-theme="dark"] .kws-grp { background: var(--md-sc); }
+body.md3 .kws-grp { border-radius: 24px; }
+.kws-row { min-height: 56px !important; padding: 8px 16px !important; gap: 14px !important; font: 400 15px/20px var(--kw-font) !important; color: var(--md-on) !important; border-radius: 0 !important; }
+.kws-row + .kws-row { box-shadow: 0 -1px 0 color-mix(in srgb, var(--md-ov) 60%, transparent); }
+.kws-row .kws-ic { width: 36px; height: 36px; flex: 0 0 36px !important; border-radius: 12px; background: var(--md-sc-high); color: var(--md-on-var) !important; }
+body.md3 .kws-row .kws-ic { border-radius: 50%; background: var(--md-pc); color: var(--md-opc) !important; }
+.kws-row .kws-ic svg { width: 20px !important; height: 20px !important; }
+.kws-row .kws-s { font-size: 12.5px !important; line-height: 16px !important; color: var(--md-on-var) !important; margin-top: 1px; }
+.kws-row:active { background: color-mix(in srgb, var(--md-on) 8%, transparent) !important; }
+.kws-sw { flex: 0 0 48px !important; height: 28px !important; border-radius: 14px !important; border: 2px solid var(--md-outline) !important; background: var(--md-sc-high) !important; }
+.kws-sw::after { top: 5px !important; left: 5px !important; width: 14px !important; height: 14px !important; background: var(--md-outline) !important; transition: all .25s cubic-bezier(.34,1.56,.64,1) !important; }
+.kws-row.on .kws-sw { background: var(--md-primary) !important; border-color: var(--md-primary) !important; }
+.kws-row.on .kws-sw::after { left: 22px !important; top: 2px !important; width: 20px !important; height: 20px !important; background: var(--md-on-primary) !important; }
+.kws-seg { display: inline-flex; flex: 0 0 auto; padding: 0; border: 1px solid var(--md-outline); border-radius: 999px; overflow: hidden; }
+.kws-seg span { padding: 0 12px; height: 32px; display: grid; place-items: center; font: 500 13px/1 var(--kw-font-d); color: var(--md-on); transition: background .15s; }
+.kws-seg span + span { border-left: 1px solid var(--md-outline); }
+.kws-seg span.on { background: var(--md-sc2); color: var(--md-osc2); }
+.kws-don { margin: 2px 12px 4px !important; padding: 10px 6px 4px !important; border-radius: 20px !important; }
+body.md3 .kws-don { background: var(--md-pc) !important; color: var(--md-opc) !important; border-radius: 24px !important; }
+body.md3 .kws-don-b { background: var(--md-opc) !important; color: var(--md-pc) !important; }
+body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
+.kwd { background: var(--md-sc-high) !important; color: var(--md-on) !important; }
+.kwd * { font-family: var(--kw-font) !important; }
+
+/* modals follow the palette */
+.modal { background: var(--md-sc-high) !important; color: var(--md-on) !important; border-radius: 28px !important; border: 0 !important; }
+body[data-theme="light"] .modal { background: var(--md-surf) !important; }
+
+/* smooth theme swap */
+body.kw-swap, body.kw-swap * { transition: background-color .3s ease, color .3s ease, border-color .3s ease, outline-color .3s ease !important; }
+@media (prefers-reduced-motion: reduce) { body.kw-swap, body.kw-swap * { transition: none !important; } }
+</style>
 </head>
 <body data-theme="light">
 <script>(function () {
@@ -10116,7 +10241,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.61';
+const APP_VERSION = '3.62';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -14097,14 +14222,16 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
     ov.innerHTML = '<div class="kws" role="dialog" aria-modal="true" aria-label="Settings">' +
       '<div class="kws-head"><h2>Settings</h2><button type="button" class="kws-x" aria-label="Close">' + sv(I.x) + '</button></div>' +
       donateCard() +
-      '<div class="kws-sec">Security</div>' +
+      '<div class="kws-sec">Appearance</div><div class="kws-grp">' +
+      row('kws-theme', I.theme, 'Theme', null, '<span class="kws-seg" role="radiogroup"><span data-t="light">Light</span><span data-t="dark">Dark</span></span>') +
+      row('kws-md3', 'M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z', 'Material You', '', '<span class="kws-sw" aria-hidden="true"></span>') +
+      row('kws-replay', I.play, 'Play opening screen', null) +
+      '</div><div class="kws-sec">Security</div><div class="kws-grp">' +
       row('kws-lock', I.lock, 'App lock', '', '<span class="kws-sw" aria-hidden="true"></span>') +
+      (window.HarkNative && HarkNative.bioStatus ? row('kws-bio', I.fp, 'Biometric unlock', '', '<span class="kws-sw" aria-hidden="true"></span>') : '') +
       row('kws-time', I.timer, 'Lock after', '') +
       row('kws-change', I.pin, 'Change PIN', null) +
-      (window.HarkNative && HarkNative.bioStatus ? row('kws-bio', I.fp, 'Unlock with biometrics', '', '<span class="kws-sw" aria-hidden="true"></span>') : '') +
-      '<div class="kws-sec">Display</div>' +
-      row('kws-theme', I.theme, 'Theme', '') +
-      row('kws-replay', I.play, 'Play opening screen', null) +
+      '</div>' +
       '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function (e) { if (e.target === ov) closeSettings(); });
@@ -14128,10 +14255,13 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       B.ask('Turn on biometric unlock', function (r) { if (r === 'ok') { B.set(true); toast('Biometric unlock on'); } sync(); });
     };
     $('kws-change').onclick = function () { tick(); if (has()) KwLock.change(function () { toast('PIN changed'); sync(); }); };
-    $('kws-theme').onclick = function () {
-      tick(); var light = document.body.getAttribute('data-theme') === 'light';
-      choose('Theme', [['light', 'Light'], ['dark', 'Dark']], light ? 'light' : 'dark', function (v) { if ((v === 'light') !== light) { try { toggleTheme(); } catch (e) {} } sync(); });
+    $('kws-theme').onclick = function (e) {
+      tick(); var cur = document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+      var t = e.target.closest && e.target.closest('[data-t]'), v = t ? t.getAttribute('data-t') : (cur === 'light' ? 'dark' : 'light');
+      if (v !== cur) { try { toggleTheme(); } catch (x) {} }
+      sync();
     };
+    $('kws-md3').onclick = function () { tick(); if (window.KwMd3) { KwMd3.set(!KwMd3.on()); try { FX.buzz(10); } catch (x) {} } sync(); };
     $('kws-replay').onclick = function () { closeSettings(); if (window.KwLock && KwLock.replay) KwLock.replay(); };
     document.addEventListener('kwallet-pinmode', sync);
   }
@@ -14150,7 +14280,10 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       $('kws-bio').disabled = !on && !bon;
       $('kws-bio-s').textContent = st === 'ok' ? (bon ? 'Fingerprint or face. PIN stays as backup' : 'Off. PIN only') : (st === 'unenrolled' ? 'No fingerprint or face set up on this phone' : 'Not available on this phone');
     }
-    $('kws-theme-s').textContent = document.body.getAttribute('data-theme') === 'light' ? 'Light' : 'Dark';
+    var th = document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    ov.querySelectorAll('.kws-seg [data-t]').forEach(function (x) { var o = x.getAttribute('data-t') === th; x.classList.toggle('on', o); x.setAttribute('aria-checked', o ? 'true' : 'false'); });
+    if ($('kws-md3') && window.KwMd3) { var mo = KwMd3.on(); $('kws-md3').classList.toggle('on', mo); $('kws-md3').setAttribute('aria-pressed', mo ? 'true' : 'false');
+      $('kws-md3-s').textContent = KwMd3.isNative() ? (mo ? 'Colours from your wallpaper' : 'Off. Classic colours') : (mo ? 'Expressive shapes and tonal colours' : 'Off. Classic colours'); }
   }
   function setMode(m) {
     var p = cur(); if (!window.KwLock || (m === p && (m === 'off' || has()))) return;
@@ -18066,6 +18199,56 @@ window.kwBack = function () {
     }, true);
   }
   if (document.readyState === 'complete') setTimeout(bind, 0); else window.addEventListener('load', function () { setTimeout(bind, 0); });
+})();
+</script>
+<script>
+/* v3.62 Material You: one toggle. Wallpaper palette from the Android app (12+), else a baseline seed. */
+(function () {
+  var KEY = 'kw-md3', b = document.body;
+  function on() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
+  function hsl(h, s, l) { s /= 100; l /= 100; var k = function (n) { return (n + h / 30) % 12; }, a = s * Math.min(l, 1 - l);
+    var f = function (n) { return l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); };
+    return '#' + [f(0), f(8), f(4)].map(function (x) { return ('0' + Math.round(x * 255).toString(16)).slice(-2); }).join(''); }
+  var TONES = [0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000];
+  function L(t) { return t === 10 ? 99 : t === 50 ? 95 : 100 - t / 10; }
+  function fake() {
+    var hue = 262, mk = function (s) { var o = {}; TONES.forEach(function (t) { o[t] = hsl(hue, s, L(t)); }); return o; };
+    return { a1: mk(48), a2: mk(16), a3: mk(30), n1: mk(5), n2: mk(9) };
+  }
+  var cache = null;
+  function palette() {
+    if (cache) return cache;
+    try { if (window.HarkNative && HarkNative.dynamicColors) { var p = JSON.parse(String(HarkNative.dynamicColors()) || '{}'); if (p.a1 && p.a1['500']) { cache = p; cache.native = true; return cache; } } } catch (e) {}
+    return (cache = fake());
+  }
+  function mix(a, c, w) { var p = function (h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }, x = p(a), y = p(c);
+    return '#' + x.map(function (v, i) { return ('0' + Math.round(v * (1 - w) + y[i] * w).toString(16)).slice(-2); }).join(''); }
+  var VARS = ['--md-primary','--md-on-primary','--md-pc','--md-opc','--md-sc2','--md-osc2','--md-bg','--md-surf','--md-sc-low','--md-sc','--md-sc-high','--md-sc-hi2','--md-on','--md-on-var','--md-outline','--md-ov'];
+  function apply() {
+    var md = on();
+    b.classList.toggle('md3', md);
+    if (!md) { VARS.forEach(function (v) { b.style.removeProperty(v); }); return; }
+    var P = palette(), a1 = P.a1, a2 = P.a2, n1 = P.n1, n2 = P.n2, dark = b.getAttribute('data-theme') === 'dark', s = {};
+    if (dark) s = { '--md-primary': a1[200], '--md-on-primary': a1[800], '--md-pc': a1[700], '--md-opc': a1[100], '--md-sc2': a2[700], '--md-osc2': a2[100],
+      '--md-bg': n1[900], '--md-sc-low': mix(n1[900], n2[800], .25), '--md-surf': mix(n1[900], n2[800], .4), '--md-sc': mix(n1[900], n2[800], .55), '--md-sc-high': mix(n1[900], n2[800], .8), '--md-sc-hi2': n2[700],
+      '--md-on': n1[100], '--md-on-var': n2[200], '--md-outline': n2[400], '--md-ov': n2[700] };
+    else s = { '--md-primary': a1[600], '--md-on-primary': a1[0], '--md-pc': a1[100], '--md-opc': a1[900], '--md-sc2': a2[100], '--md-osc2': a2[900],
+      '--md-bg': mix(n2[10], n2[50], .6), '--md-surf': n1[10], '--md-sc-low': n1[10], '--md-sc': n2[50], '--md-sc-high': mix(n2[50], n2[100], .6), '--md-sc-hi2': n2[100],
+      '--md-on': n1[900], '--md-on-var': n2[700], '--md-outline': n2[500], '--md-ov': n2[200] };
+    for (var k in s) b.style.setProperty(k, s[k]);
+  }
+  window.KwMd3 = {
+    on: on, isNative: function () { return !!palette().native; },
+    set: function (v) { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) {} b.classList.add('kw-swap'); apply(); setTimeout(function () { b.classList.remove('kw-swap'); }, 360); },
+    refresh: function () { cache = null; apply(); }
+  };
+  apply();
+  new MutationObserver(function (m) { for (var i = 0; i < m.length; i++) if (m[i].attributeName === 'data-theme') { apply(); break; } }).observe(b, { attributes: true, attributeFilter: ['data-theme'] });
+  /* a wallpaper change brings the app back with new colours */
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && on()) KwMd3.refresh(); });
+  /* smooth Light/Dark swap */
+  var tt = window.toggleTheme;
+  if (typeof tt === 'function') window.toggleTheme = function () { b.classList.add('kw-swap'); var r = tt.apply(this, arguments); setTimeout(function () { b.classList.remove('kw-swap'); }, 360); return r; };
 })();
 </script>
 </body>
