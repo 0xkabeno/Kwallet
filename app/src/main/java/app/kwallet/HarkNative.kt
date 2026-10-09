@@ -118,7 +118,11 @@ class HarkNative(
                 (ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
             else @Suppress("DEPRECATION") (ctx.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator)
             if (!vib.hasVibrator()) return
-            val effect = VibrationEffect.createWaveform(timings, -1)
+            /* v3.82: full-strength pulses (amplitude 255) on phones that support amplitude control */
+            val effect = if (vib.hasAmplitudeControl()) {
+                val amps = IntArray(timings.size) { i -> if (i % 2 == 1) 255 else 0 }
+                VibrationEffect.createWaveform(timings, amps, -1)
+            } else VibrationEffect.createWaveform(timings, -1)
             if (Build.VERSION.SDK_INT >= 33) {
                 vib.vibrate(effect, VibrationAttributes.createForUsage(VibrationAttributes.USAGE_ALARM))
             } else {
