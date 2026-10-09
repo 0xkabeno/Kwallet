@@ -2295,6 +2295,46 @@
 [data-theme="light"] .kpv-cc.on { color: #fff; }
 .kpv-btns { padding: 10px 16px 2px; }
 .kpv-eye { top: 4px; }
+
+/* v3.56 Find + Key rows: one rhythm, one height, one radius */
+.addr-search-strip, .pk-import-strip { padding: 12px 14px !important; }
+.addr-search-strip .addr-search-row, .pk-import-strip .addr-search-row { gap: 8px !important; align-items: center !important; }
+.addr-search-strip input#addr-search-input, .pk-import-strip #pk-import-input {
+  height: 44px !important; min-height: 44px !important; border-radius: 12px !important; padding: 0 40px 0 14px !important;
+  font-size: 14px !important; background: var(--bg-card) !important; border: 1px solid var(--border) !important; box-shadow: none !important;
+  font-family: 'RobotoMonoE', 'Roboto Mono', ui-monospace, monospace !important; letter-spacing: 0 !important; transition: border-color .15s, box-shadow .15s;
+}
+.addr-search-strip input#addr-search-input:focus, .pk-import-strip #pk-import-input:focus { outline: none !important; border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent) inset !important; }
+.addr-search-strip .addr-search-row > .btn, .pk-import-strip .addr-search-row > .btn { flex: none !important; height: 44px !important; min-height: 44px !important; min-width: 72px !important; padding: 0 16px !important; border-radius: 12px !important; font-size: 14px !important; font-weight: 600 !important; margin: 0 !important; }
+.pk-import-strip .kpv-ib { width: 44px !important; height: 44px !important; border-radius: 12px !important; }
+.kw-xin .clear-import { right: 9px !important; }
+.addr-search-strip .addr-search-opts { margin-top: 8px !important; gap: 8px !important; }
+.addr-search-strip .addr-search-opts .seg { height: 40px !important; border-radius: 12px !important; padding: 3px !important; box-sizing: border-box; }
+.addr-search-strip .addr-search-opts .seg button { border-radius: 9px !important; font-size: 13px !important; font-weight: 500; padding: 0 8px !important; }
+.addr-search-strip .addr-search-opts select { height: 40px !important; border-radius: 12px !important; font-size: 13px !important; padding: 0 30px 0 12px !important; box-sizing: border-box; }
+.addr-search-strip .search-meta { margin-top: 8px !important; font-size: 12px !important; }
+.addr-search-strip .addr-search-hits:empty { display: none; }
+.pk-import-strip .search-meta:empty, .pk-import-strip .addr-search-hits:empty { display: none !important; }
+.addr-search-strip .scan-track { margin-top: 10px !important; border-radius: 2px; }
+.addr-search-strip .addr-search-opts .seg { flex: 0 0 auto !important; }
+.addr-search-strip .addr-search-opts .seg button { white-space: nowrap !important; padding: 0 12px !important; flex: 0 0 auto !important; }
+.addr-search-strip .addr-search-opts select { flex: 1 1 0 !important; min-width: 0 !important; width: 0; text-overflow: ellipsis; white-space: nowrap; }
+.pk-import-strip #pk-import-input::placeholder, .addr-search-strip #addr-search-input::placeholder { font-family: 'Roboto', system-ui, sans-serif; letter-spacing: 0; opacity: .55; }
+/* v3.56 word-count drop-down menu */
+.panel > .row > #word-count { pointer-events: none; }
+.wc-menu { position: fixed; z-index: 9000; min-width: 176px; padding: 6px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0,0,0,.28), 0 2px 6px rgba(0,0,0,.16); transform-origin: top left; animation: wcIn .16s cubic-bezier(.2,0,0,1); }
+[data-theme="dark"] .wc-menu { background: #232c3b; }
+.wc-menu.out { animation: wcOut .12s ease forwards; }
+@keyframes wcIn { from { opacity: 0; transform: translateY(-6px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes wcOut { to { opacity: 0; transform: translateY(-4px) scale(.98); } }
+.wc-menu button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 14px; height: 42px; padding: 0 12px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--text); font: 500 14.5px/1 'Roboto', system-ui, sans-serif; cursor: pointer; text-align: left; }
+.wc-menu button small { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+.wc-menu button:active { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.wc-menu button.on { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--text); font-weight: 600; }
+.wc-menu hr { border: 0; height: 1px; background: var(--border); margin: 5px 6px; }
+.wc-scrim { position: fixed; inset: 0; z-index: 8999; }
 </style>
 </head>
 <body data-theme="light">
@@ -2995,7 +3035,7 @@ window.FX = (function(){
     </div>
     <div class="pk-import-strip" id="pk-import-strip" hidden>
       <div class="addr-search-row">
-        <input type="text" id="pk-import-input" placeholder="Paste a private key…" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="go" inputmode="text"
+        <input type="text" id="pk-import-input" placeholder="Private key…" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="go" inputmode="text"
           oninput="onPkInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();runPkImport();}">
         <button type="button" class="btn btn-p" onclick="runPkImport()">Show</button>
         <button type="button" class="kpv-ib" onclick="KwVault.add()" title="Save this key" aria-label="Save this key"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2zm-4 9v3h-2v-3H8v-2h3V7h2v3h3v2h-3z"/></svg></button>
@@ -9964,7 +10004,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.55';
+const APP_VERSION = '3.56';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -9978,6 +10018,32 @@ let seedHistory = [];
 let redoStack = []; // forward history for the Redo button; cleared by any new Gen/Import action
 let pathTpl = DEFAULT_PATH.eth;
 let startIndex = 0; // absolute start index for current view base
+/* v3.56 seed chambers: every seed keeps its own record (marks, click order, and a position per chain) */
+let posByNet = {};        // net -> { p, si, pt, pv }  where you were on each chain for the seed on screen
+let seedChambers = {};    // seedId -> snapshot (without phrase) so a seed seen again resumes exactly
+const CHAMBER_KEY = 'kw-chambers';
+const MAX_CHAMBERS = 400;
+function seedId(m, pp) { var str = String(m || '').trim().replace(/\s+/g, ' ') + '\u0000' + (pp || ''); var h1 = 0x811c9dc5, h2 = 0x01000193; for (var i = 0; i < str.length; i++) { var c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619); h2 = Math.imul(h2 ^ c, 2246822519) ^ (h2 >>> 13); } return (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36) + str.length.toString(36); }
+function rememberPos() { if (!currentNetwork) return; var pe = document.getElementById('path-tpl'); posByNet[currentNetwork] = { p: currentPage, si: startIndex, pt: pathTpl, pv: pe ? pe.value : '' }; }
+function recallPos(net) {
+  var q = posByNet[net];
+  if (q) { currentPage = Math.max(0, q.p | 0); startIndex = Math.max(0, q.si | 0); pathTpl = q.pt || DEFAULT_PATH[net] || DEFAULT_PATH.eth; }
+  else { currentPage = 0; startIndex = 0; pathTpl = DEFAULT_PATH[net] || DEFAULT_PATH.eth; }
+  try { var pe = document.getElementById('path-tpl'); if (pe) pe.value = (q && q.pv) ? q.pv : defaultExactPath(net, startIndex); } catch (e) {}
+  try { var f = document.getElementById('idx-from'); if (f) f.value = startIndex; } catch (e) {}
+}
+function loadChambers() { try { var c = JSON.parse(localStorage.getItem(CHAMBER_KEY) || '{}'); seedChambers = (c && typeof c === 'object') ? c : {}; } catch (e) { seedChambers = {}; } }
+function storeChamber() {
+  if (!currentMnemonic) return;
+  try {
+    var sn = snapshotState(); delete sn.m; sn.u = Date.now();
+    var id = seedId(currentMnemonic, currentPassphrase);
+    delete seedChambers[id]; seedChambers[id] = sn;
+    var ks = Object.keys(seedChambers); if (ks.length > MAX_CHAMBERS) ks.slice(0, ks.length - MAX_CHAMBERS).forEach(function (k) { delete seedChambers[k]; });
+    var j = JSON.stringify(seedChambers); if (j !== window.__lastChJson) { window.__lastChJson = j; localStorage.setItem(CHAMBER_KEY, j); }
+  } catch (e) {}
+}
+function wipeChambers() { seedChambers = {}; posByNet = {}; window.__lastChJson = null; try { localStorage.removeItem(CHAMBER_KEY); } catch (e) {} }
 
 let _saveTimer = 0;
 function saveState() {
@@ -9998,6 +10064,7 @@ function _saveStateNow() {
       page: currentPage,
       startIndex,
       pathTpl,
+      posByNet: (rememberPos(), posByNet),
       wordCount: document.getElementById('word-count').value,
       copied: copiedState,
       clickOrder: clickOrder,
@@ -10011,6 +10078,7 @@ function _saveStateNow() {
     if (json === window.__lastSavedJson) return; // skip identical writes
     window.__lastSavedJson = json;
     localStorage.setItem(STORAGE_KEY, json);
+    storeChamber();
   } catch (e) {
     window.__lastSavedJson = null;
     if (!window.__quotaWarned) { window.__quotaWarned = 1; try { showToast('Storage is full. Make a Backup so no history is lost'); } catch (x) {} }
@@ -10029,6 +10097,8 @@ function loadState() {
     currentPage = Math.max(0, data.page | 0);
     startIndex = Math.max(0, data.startIndex | 0);
     pathTpl = data.pathTpl || DEFAULT_PATH[currentNetwork];
+    posByNet = (data.posByNet && typeof data.posByNet === 'object') ? data.posByNet : {};
+    loadChambers();
     copiedState = data.copied || {};
     clickOrder = data.clickOrder || {};
     clickSeq = Number(data.clickSeq) || 0;
@@ -10048,7 +10118,8 @@ function loadState() {
         co: e.co || {},
         cq: Number(e.cq) || 0,
         wc: e.wc || '',
-        pp: typeof e.pp === 'string' ? e.pp : ''
+        pp: typeof e.pp === 'string' ? e.pp : '',
+        pn: (e.pn && typeof e.pn === 'object') ? e.pn : {}
       };
     }).filter(e => e && e.m);
     redoStack = (Array.isArray(data.redo) ? data.redo : []).map(e => {
@@ -10064,7 +10135,8 @@ function loadState() {
         co: e.co || {},
         cq: Number(e.cq) || 0,
         wc: e.wc || '',
-        pp: typeof e.pp === 'string' ? e.pp : ''
+        pp: typeof e.pp === 'string' ? e.pp : '',
+        pn: (e.pn && typeof e.pn === 'object') ? e.pn : {}
       };
     }).filter(e => e && e.m);
     activityLog = Array.isArray(data.activityLog) ? data.activityLog.slice(-MAX_LOG) : [];
@@ -10192,7 +10264,8 @@ function snapshotState() {
     co: Object.assign({}, clickOrder),
     cq: clickSeq,
     wc: document.getElementById('word-count').value,
-    pp: currentPassphrase
+    pp: currentPassphrase,
+    pn: JSON.parse(JSON.stringify((rememberPos(), posByNet)))
   };
 }
 
@@ -10211,7 +10284,9 @@ function applySnapshot(s) {
   clickOrder = Object.assign({}, s.co || {});
   clickSeq = Number(s.cq) || 0;
   pathTpl = s.pt || DEFAULT_PATH[currentNetwork] || DEFAULT_PATH.eth;
-  document.getElementById('path-tpl').value = (typeof defaultExactPath === 'function' ? defaultExactPath(currentNetwork, startIndex || 0) : pathTpl);
+  posByNet = (s.pn && typeof s.pn === 'object') ? JSON.parse(JSON.stringify(s.pn)) : {};
+  var _sp = posByNet[currentNetwork];
+  document.getElementById('path-tpl').value = (_sp && _sp.pv) ? _sp.pv : (typeof defaultExactPath === 'function' ? defaultExactPath(currentNetwork, startIndex || 0) : pathTpl);
   try { var _if = document.getElementById('idx-from'); if (_if) _if.value = startIndex; } catch (e) {}
   document.getElementById('word-count').value = s.wc ||
     (currentSeedType === 'xmr' ? 'xmr' : String(currentMnemonic.trim().split(/\s+/).length));
@@ -10238,6 +10313,14 @@ function activateSeed(next, type) {
   copiedState = {};
   clickOrder = {};
   clickSeq = 0;
+  posByNet = {};
+  var _ch = seedChambers[seedId(next, '')];
+  if (_ch) {
+    try { applySnapshot(_ch); } catch (e) {}
+    currentPassphrase = '';
+    pushActivity('seed', 'Seed resumed \u00b7 all earlier progress restored');
+    try { showToast('Welcome back \u00b7 progress restored'); } catch (e) {}
+  }
   var _wc = next.trim().split(/\s+/).filter(Boolean).length;
   var _label = (currentSeedType === 'xmr') ? 'XMR25' : (currentSeedType === 'poly' ? 'POLY16' : 'BIP39');
   pushActivity('seed', _label + ' activated · ' + _wc + ' words');
@@ -10370,6 +10453,7 @@ function clearImportField() {
 
 function switchNetwork(net) {
   if (net === currentNetwork) return;
+  rememberPos();
   currentNetwork = net;
   window.__xmrMajor = 0;
   document.getElementById('btn-eth').classList.toggle('on', net === 'eth');
@@ -10381,13 +10465,7 @@ function switchNetwork(net) {
   document.getElementById('btn-xrp').classList.toggle('on', net === 'xrp');
   document.getElementById('btn-ada').classList.toggle('on', net === 'ada');
   moveNetPill(net);
-  pathTpl = DEFAULT_PATH[net] || DEFAULT_PATH.eth;
-  currentPage = 0;
-  startIndex = 0;
-  try {
-    var pEl = document.getElementById('path-tpl');
-    if (pEl) pEl.value = defaultExactPath(net, 0);
-  } catch (e) {}
+  recallPos(net); // v3.56: each chain resumes where you left it on this seed
 
   setPathError('');
   var pe = document.getElementById('path-tpl');
@@ -12939,6 +13017,7 @@ function wipeAfterExport() {
   redoStack = [];
   activityLog = [];
   seedCopyLog = [];
+  wipeChambers();
   if (typeof clearSeedCache === 'function') clearSeedCache();
   try { __seedPngMemo = {}; } catch (e) {}
   try { localStorage.removeItem('kw-pk-vault'); if (window.KwVault) KwVault.reload(); } catch (e) {}
@@ -13059,6 +13138,7 @@ function confirmClear() {
   redoStack = [];
   activityLog = [];
   seedCopyLog = [];
+  wipeChambers();
   clearSeedCache();
   try { localStorage.removeItem('kw-pk-vault'); if (window.KwVault) KwVault.reload(); } catch (e) {}
   try { __seedPngMemo = {}; } catch (e) {}
@@ -17818,6 +17898,44 @@ window.kwBack = function () {
     add('pk-import-input', function () { try { clearPkImport(); } catch (e) {} });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script>
+/* v3.56 word-count drop-down (anchored menu instead of the system dialog) */
+(function () {
+  var L = { '12': 'Standard', '15': '', '18': '', '21': '', '24': 'Max security', 'poly': 'Polyseed', 'xmr': 'Monero' };
+  function open(sel) {
+    if (document.querySelector('.wc-menu')) return;
+    var r = sel.getBoundingClientRect();
+    var sc = document.createElement('div'); sc.className = 'wc-scrim';
+    var m = document.createElement('div'); m.className = 'wc-menu'; m.setAttribute('role', 'listbox');
+    var h = '';
+    Array.prototype.forEach.call(sel.options, function (o, i) {
+      if (o.value === 'poly') h += '<hr>';
+      var nm = o.value === 'poly' ? '16 words' : o.value === 'xmr' ? '25 words' : o.value + ' words';
+      h += '<button type="button" role="option" data-v="' + o.value + '"' + (o.value === sel.value ? ' class="on" aria-selected="true"' : '') + '><span>' + nm + '</span><small>' + (L[o.value] || '') + '</small></button>';
+    });
+    m.innerHTML = h;
+    document.body.appendChild(sc); document.body.appendChild(m);
+    var w = m.offsetWidth, x = Math.min(Math.max(8, r.left), innerWidth - w - 8), y = r.bottom + 6;
+    if (y + m.offsetHeight > innerHeight - 8) y = Math.max(8, r.top - m.offsetHeight - 6);
+    m.style.left = x + 'px'; m.style.top = y + 'px';
+    try { FX.tick(1200); FX.buzz(8); } catch (e) {}
+    function close() { m.classList.add('out'); sc.remove(); setTimeout(function () { m.remove(); }, 120); document.removeEventListener('keydown', esc); }
+    function esc(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', esc);
+    sc.addEventListener('click', close);
+    m.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-v]'); if (!b) return;
+      var v = b.getAttribute('data-v'); close();
+      if (v !== sel.value) { sel.value = v; sel.dispatchEvent(new Event('input', { bubbles: true })); sel.dispatchEvent(new Event('change', { bubbles: true })); try { FX.buzz(10); } catch (x) {} }
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var sel = document.getElementById('word-count'); if (!sel) return;
+    var r = sel.getBoundingClientRect();
+    if (r.width && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom && !document.querySelector('.wc-menu')) { e.preventDefault(); open(sel); }
+  }, true);
 })();
 </script>
 </body>
