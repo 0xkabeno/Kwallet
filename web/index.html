@@ -2374,6 +2374,10 @@
 @keyframes wcItem { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
 .panel > .row > #word-count.wc-open { border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent) inset !important; }
 @media (prefers-reduced-motion: reduce) { .wc-menu, .wc-menu button { animation: none !important; } }
+
+/* v3.58: confirm fields are always one compact line */
+.modal input.clear-yes { height: 44px !important; min-height: 44px !important; max-height: 44px !important; flex: none !important; padding: 0 14px !important; line-height: 44px !important; box-sizing: border-box !important; border-radius: 12px !important; font-size: 15px !important; resize: none; }
+#word-count { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 </style>
 </head>
 <body data-theme="light">
@@ -10043,7 +10047,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.57';
+const APP_VERSION = '3.58';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -17977,6 +17981,8 @@ window.kwBack = function () {
   var downAt = 0;
   document.addEventListener('pointerdown', function (e) { var sel = hit(e); if (!sel || document.querySelector('.wc-menu')) return; e.preventDefault(); downAt = Date.now(); open(sel); }, true);
   document.addEventListener('click', function (e) { if (hit(e)) { e.preventDefault(); e.stopPropagation(); } }, true);
+  ['mousedown','touchstart','touchend'].forEach(function (t) { document.addEventListener(t, function (e) { var pt = e.changedTouches ? e.changedTouches[0] : e; if (hit(pt)) { e.preventDefault(); if (t === 'touchend' && !document.querySelector('.wc-menu')) open(hit(pt)); } }, { capture: true, passive: false }); });
+  var _wc = document.getElementById('word-count'); if (_wc) { _wc.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); if (!document.querySelector('.wc-menu')) open(_wc); } }); }
 })();
 </script>
 </body>
