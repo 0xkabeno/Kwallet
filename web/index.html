@@ -2396,6 +2396,23 @@
 .wc-inline button:active { transform: scale(.96); }
 .wc-inline button.on { background: var(--accent, #1a73e8) !important; border-color: var(--accent, #1a73e8) !important; color: #fff !important; }
 .wc-inline button.on small { opacity: .9; }
+
+/* v3.60: word-count chips, Material 3 filter-chip look, one compact row */
+.wc-inline .wc-in { flex-direction: row !important; gap: 6px !important; }
+.wc-inline .wc-g { display: flex !important; gap: 6px !important; flex: 5 1 0; min-width: 0; }
+.wc-inline .wc-g2 { flex: 2 1 0; position: relative; padding-left: 7px; }
+.wc-inline .wc-g2::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 1px; background: var(--border, #dadce0); }
+.wc-inline button { flex: 1 1 0; min-width: 0; height: 44px !important; border-radius: 10px !important; flex-direction: column !important; gap: 0 !important;
+  background: transparent !important; border: 1px solid #c4c7c5 !important; color: #1f1f1f !important; font-family: 'Google Sans','Product Sans','RobotoE','Roboto',system-ui,sans-serif !important; }
+.wc-inline button b { font: 500 15px/18px 'Google Sans','Product Sans','RobotoE','Roboto',system-ui,sans-serif !important; letter-spacing: 0; color: inherit !important; font-variant-numeric: tabular-nums; }
+.wc-inline button small, .wc-inline .wc-g2 button small { font: 500 9.5px/12px 'RobotoE','Roboto',system-ui,sans-serif !important; letter-spacing: .2px; color: #444746 !important; opacity: 1 !important; text-transform: none; }
+.wc-inline button.on { background: #d3e3fd !important; border-color: #d3e3fd !important; color: #041e49 !important; }
+.wc-inline button.on small { color: #0b57d0 !important; }
+.wc-inline button:active { background: rgba(11,87,208,.08) !important; }
+[data-theme="dark"] .wc-inline button { border-color: #444746 !important; color: #e3e3e3 !important; }
+[data-theme="dark"] .wc-inline button small { color: #c4c7c5 !important; }
+[data-theme="dark"] .wc-inline button.on { background: #0842a0 !important; border-color: #0842a0 !important; color: #d3e3fd !important; }
+[data-theme="dark"] .wc-inline button.on small { color: #a8c7fa !important; }
 </style>
 </head>
 <body data-theme="light">
@@ -2704,7 +2721,8 @@
     on: function () { try { return localStorage.getItem(BIO_KEY) === '1' && !!stored() && BIO.status() === 'ok'; } catch (e) { return false; } },
     set: function (v) { try { if (v) localStorage.setItem(BIO_KEY, '1'); else localStorage.removeItem(BIO_KEY); } catch (e) {} },
     ask: function (title, cb) {
-      window.kwBioDone = function (r) { window.kwBioDone = null; cb(String(r || '')); };
+      window.__kwBioAt = Date.now(); window.__kwBioOpen = true;
+      window.kwBioDone = function (r) { window.kwBioDone = null; window.__kwBioOpen = false; window.__kwBioAt = Date.now(); cb(String(r || '')); };
       try { HarkNative.bioAuth(title || 'Unlock Kwallet'); } catch (e) { window.kwBioDone = null; cb('fail'); }
     }
   };
@@ -2856,6 +2874,8 @@
     if (document.hidden) { if (!locked) stamp(); return; }
     var m = pinMode();
     if (locked || m === 'off' || !stored()) return;
+    /* the system biometric sheet pauses the WebView; coming back from it is not leaving the app */
+    if (window.__kwBioOpen || Date.now() - (window.__kwBioAt || 0) < 4000) { stamp(); return; }
     if (Date.now() - lastActive() > graceMs(m)) lockNow();
   });
   window.addEventListener('pagehide', function () { if (!locked) stamp(); });
@@ -10080,7 +10100,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.59';
+const APP_VERSION = '3.60';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -17980,7 +18000,7 @@ window.kwBack = function () {
 <script>
 /* v3.56 word-count drop-down (anchored menu instead of the system dialog) */
 (function () {
-  var L = { '12': 'Standard', '15': '', '18': '', '21': '', '24': 'Max security', 'poly': 'Polyseed', 'xmr': 'Monero' };
+  var L = { '12': 'Standard', '15': 'words', '18': 'words', '21': 'words', '24': 'Strong', 'poly': 'Polyseed', 'xmr': 'Monero' };
   function open(sel) {
     var ex = document.querySelector('.wc-menu'); if (ex) { ex.__close && ex.__close(); return; }
     var row = sel.closest('.row') || sel.parentNode;
@@ -17989,7 +18009,7 @@ window.kwBack = function () {
     Array.prototype.forEach.call(sel.options, function (o) {
       if (o.value === 'poly') h += '</div><div class="wc-g wc-g2">';
       var n = o.value === 'poly' ? '16' : o.value === 'xmr' ? '25' : o.value;
-      h += '<button type="button" role="option" data-v="' + o.value + '"' + (o.value === sel.value ? ' class="on" aria-selected="true"' : '') + '><b>' + n + '</b><small>' + (L[o.value] || 'words') + '</small></button>';
+      h += '<button type="button" role="option" data-v="' + o.value + '"' + (o.value === sel.value ? ' class="on" aria-selected="true"' : '') + '><b>' + n + '</b><small>' + (L[o.value] || '') + '</small></button>';
     });
     m.innerHTML = h + '</div></div>';
     row.parentNode.insertBefore(m, row.nextSibling);
