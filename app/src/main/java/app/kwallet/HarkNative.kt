@@ -63,6 +63,15 @@ class HarkNative(
         } catch (_: Exception) { "{}" }
     }
 
+    /** Material You on/off: remembered natively so the next launch's system splash and window use the wallpaper colours too. */
+    @JavascriptInterface
+    fun setMd3(on: Boolean) {
+        try { ctx.getSharedPreferences("kw", Context.MODE_PRIVATE).edit().putBoolean("md3", on).apply() } catch (_: Exception) {}
+        if (Build.VERSION.SDK_INT >= 33 && ctx is android.app.Activity) {
+            try { ctx.splashScreen.setSplashScreenTheme(if (on) R.style.Theme_Kwallet_Md3 else 0) } catch (_: Exception) {}
+        }
+    }
+
     /** "dark" | "light": the phone's own dark-theme setting. */
     @JavascriptInterface
     fun systemDark(): Boolean = (ctx.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
