@@ -2071,6 +2071,10 @@
 #kl-root .kl-coin { position: absolute; left: 0; top: 0; width: 44px; height: 44px; opacity: 0;
   color: var(--kl-ink); will-change: transform, opacity; }
 #kl-root .kl-coin svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+#kl-root .kl-coin .kl-cg0 { stop-color: color-mix(in srgb, var(--kl-disc, var(--kl-ink)) 82%, #fff 18%); }
+#kl-root .kl-coin .kl-cg1 { stop-color: var(--kl-disc, var(--kl-ink)); }
+#kl-root .kl-coin.kl-lit { filter: drop-shadow(0 6px 14px rgba(0,0,0,.28)) drop-shadow(0 1px 2px rgba(0,0,0,.2)); }
+#kl-root .kl-ring .kl-disc { filter: drop-shadow(0 3px 6px rgba(0,0,0,.25)); }
 
 /* wordmark */
 #kl-root .kl-brandwrap { position: absolute; left: 0; right: 0; top: 50%; display: flex; justify-content: center;
@@ -2491,8 +2495,7 @@ body.md3 .item.copied-addr .hl { color: var(--greyed) !important; }
 .md3 #kl-root .kl-slogan { color: color-mix(in srgb, var(--kl-ink) 82%, transparent) !important; }
 /* dark Material You opening screen: same scene, night tones, brand-yellow marks on dark discs */
 .md3-dark #kl-root { --kl-disc: var(--md-kl-disc, #0d0e12); }
-.md3-dark #kl-root .kl-coin .kl-cd { fill: var(--kl-disc); stroke: color-mix(in srgb, var(--kl-ink) 22%, transparent); stroke-width: .8; }
-.md3-dark #kl-root .kl-ring .kl-disc { stroke: color-mix(in srgb, var(--kl-ink) 22%, transparent); stroke-width: 1; }
+
 .md3-dark #kl-root .kl-aura { background: radial-gradient(closest-side, color-mix(in srgb, var(--kl-ink) 14%, transparent), color-mix(in srgb, var(--kl-ink) 5%, transparent) 45%, transparent 72%); }
 .md3-dark #kl-root .kl-bg { background: radial-gradient(110% 70% at 50% -5%, color-mix(in srgb, var(--kl-ink) 9%, transparent), transparent 60%), radial-gradient(120% 80% at 50% 108%, var(--kl-lime-deep), transparent 62%); }
 .md3-dark #kl-root .kl-w, .md3-dark #kl-root .kl-pw { color: var(--kl-lime); }
@@ -2751,14 +2754,14 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
   root.appendChild(el('div', 'kl-bg')); root.appendChild(el('div', 'kl-aura'));
   var splash = el('div', 'kl-splash'); root.appendChild(splash);
   var coinsBox = el('div', 'kl-coins'); coinsBox.setAttribute('aria-hidden', 'true'); splash.appendChild(coinsBox);
-  var LIT_COIN = (function () { try { var f = localStorage.getItem('kw-lit-test'); if (f && ORDER.indexOf(f) >= 0) return f; } catch (e) {} return ORDER[Math.floor(Math.random() * ORDER.length)]; })();
+  var LIT_COIN = (function () { try { var f = localStorage.getItem('kw-lit-test'); if (f && ORDER.indexOf(f) >= 0) return f; } catch (e) {} if (Math.random() < .5) return 'xrp'; var o = ORDER.filter(function (n) { return n !== 'xrp'; }); return o[Math.floor(Math.random() * o.length)]; })();
   var coins = ORDER.map(function (n) {
     /* one random mark per launch is painted like the original XRP: ink disc + brand-yellow mark */
     var lit = n === LIT_COIN, svgS;
-    if (lit && n === 'xrp') svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><circle class="kl-cd" cx="16" cy="16" r="16"/><path fill="#DDF869" transform="translate(6.6 8.2) scale(.0367)" d="' + ICONS[n][1] + '"/></svg>';
-    else if (lit) svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><circle class="kl-cd" cx="16" cy="16" r="16"/><svg x="7.2" y="7.2" width="17.6" height="17.6" viewBox="' + ICONS[n][0] + '"><path fill="#DDF869" d="' + ICONS[n][1] + '"/></svg></svg>';
+    if (lit && n === 'xrp') svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><defs><radialGradient id="klcg" cx="32%" cy="26%" r="80%"><stop offset="0" class="kl-cg0"/><stop offset="1" class="kl-cg1"/></radialGradient></defs><circle class="kl-cd" cx="16" cy="16" r="16" fill="url(#klcg)"/><path fill="#DDF869" transform="translate(6.6 8.2) scale(.0367)" d="' + ICONS[n][1] + '"/></svg>';
+    else if (lit) svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><defs><radialGradient id="klcg" cx="32%" cy="26%" r="80%"><stop offset="0" class="kl-cg0"/><stop offset="1" class="kl-cg1"/></radialGradient></defs><circle class="kl-cd" cx="16" cy="16" r="16" fill="url(#klcg)"/><svg x="7.2" y="7.2" width="17.6" height="17.6" viewBox="' + ICONS[n][0] + '"><path fill="#DDF869" d="' + ICONS[n][1] + '"/></svg></svg>';
     else svgS = '<svg viewBox="' + ICONS[n][0] + '" shape-rendering="geometricPrecision"><path d="' + ICONS[n][1] + '"/></svg>';
-    var c = el('div', 'kl-coin', svgS);
+    var c = el('div', lit ? 'kl-coin kl-lit' : 'kl-coin', svgS);
     coinsBox.appendChild(c); return { el: c };
   });
   var wrap = el('div', 'kl-brandwrap'); var brand = el('h1', 'kl-brand'); brand.setAttribute('aria-label', 'Kwallet');
@@ -2826,8 +2829,8 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
         var x = col * cw + size / 2 + 34 + Math.random() * Math.max(4, cw - size - 68);
         var y = y0 + row * ch + size / 2 + 4 + Math.random() * Math.max(4, ch - size - 8);
         var d = 1e9;
-        for (var j = 0; j < placed.length; j++) { var q = placed[j]; d = Math.min(d, Math.hypot(q.x - x, q.y - y) - (q.s + size) * 0.5); }
-        if (d > bestD) { bestD = d; best = { x: x, y: y, s: size }; }
+        for (var j = 0; j < placed.length; j++) { var q = placed[j]; d = Math.min(d, Math.hypot(q.x - x, q.y - y) - (q.s + size) * 0.5 - ((q.lit || ORDER[i] === LIT_COIN) ? 40 * sc : 0)); }
+        if (d > bestD) { bestD = d; best = { x: x, y: y, s: size, lit: ORDER[i] === LIT_COIN }; }
         if (d > 18 * sc) break;
       }
       placed.push(best);
@@ -2835,7 +2838,7 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
       function r(a, b) { return a + Math.random() * (b - a); }
       function sg() { return Math.random() < .5 ? -1 : 1; }
       var calm = ORDER[i] === 'xrp' ? 0.25 : 1; /* keep the XRP mark upright so it reads true */
-      LAY.push({ x: best.x / VW, y: best.y / VH, s: best.s, z: z, rot: (Math.random() * 2 - 1) * 16 * calm,
+      LAY.push({ lit: lit, x: best.x / VW, y: best.y / VH, s: best.s, z: z, rot: (Math.random() * 2 - 1) * 16 * calm,
         op: lit ? 1 : (0.55 + 0.4 * z), blur: lit ? 0 : (1 - z) * 1.8, delay: Math.random() * 650,
         /* two slow, incommensurate sine pairs per axis = smooth, never-repeating wander */
         a1: r(10, 22) * sc, a2: r(4, 10) * sc, b1: r(10, 24) * sc, b2: r(4, 10) * sc,
@@ -2858,6 +2861,7 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
       var oy = Math.sin(tt * L.v1 + L.p3) * L.b1 + Math.sin(tt * L.v2 + L.p4) * L.b2;
       /* gentle depth parallax against the K's travel; marks never chase the K */
       var px = -kx * 0.05 * L.z;
+      if (L.lit) { ox *= .45; oy *= .45; }
       var x = L.x * VW + ox + px - L.s / 2, y = L.y * VH + oy + L.fromY * (1 - pe) - L.s / 2;
       var pb = p <= 0 ? 0 : eob(p); var s = (0.6 + 0.4 * pb) * (1 + 0.025 * Math.sin(tt * L.breathe + L.p2));
       var rot = L.rot + Math.sin(tt * L.ws + L.p1) * L.spin;
@@ -2871,7 +2875,7 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
     for (var i = 0; i < coins.length; i++) {
       var L = LAY[i], st = coins[i].el.style;
       st.width = st.height = L.s.toFixed(1) + 'px';
-      st.filter = L.blur > 0.35 ? 'blur(' + L.blur.toFixed(2) + 'px)' : '';
+      if (!L.lit) st.filter = L.blur > 0.35 ? 'blur(' + L.blur.toFixed(2) + 'px)' : '';
     }
   }
 
@@ -10364,7 +10368,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.71';
+const APP_VERSION = '3.72';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
