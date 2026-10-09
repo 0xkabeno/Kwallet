@@ -10,4 +10,9 @@
         <item name="android:windowSplashScreenBackground">@android:color/system_accent1_100</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/kw_splash_k_md3</item>
     </style>
+    <style name="Theme.Kwallet.Md3Dark" parent="Theme.Kwallet">
+        <item name="android:windowBackground">@android:color/system_neutral1_900</item>
+        <item name="android:windowSplashScreenBackground">@android:color/system_neutral1_900</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/kw_splash_k_md3_dark</item>
+    </style>
 </resources>
