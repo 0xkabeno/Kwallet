@@ -3,4 +3,5 @@
         <item name="android:windowBackground">@color/kw_lime</item>
     </style>
     <style name="Theme.Kwallet.Md3" parent="Theme.Kwallet" />
+    <style name="Theme.Kwallet.Md3Dark" parent="Theme.Kwallet" />
 </resources>
