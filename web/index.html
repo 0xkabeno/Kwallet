@@ -2125,15 +2125,23 @@
   opacity: 0; pointer-events: none; transform: translateY(24px); transition: opacity .45s ease .12s, transform .5s var(--kl-ease) .12s; }
 #kl-root.kl-pin .kl-pinbox { opacity: 1; pointer-events: auto; transform: none; }
 #kl-root .kl-pin-title { font: 400 24px/1.3 'RobotoE','Roboto',system-ui,sans-serif; letter-spacing: 0; color: var(--kl-ink); }
-#kl-root .kl-pin-sub { margin-top: 6px; min-height: 18px; font: 400 14px/1.3 'RobotoE','Roboto',system-ui,sans-serif; color: rgba(34,51,72,.66); text-align: center; }
+#kl-root .kl-pin-sub { margin-top: 6px; min-height: 18px; font: 400 14px/1.3 'RobotoE','Roboto',system-ui,sans-serif; color: rgba(34,51,72,.66); color: color-mix(in srgb, var(--kl-ink) 72%, transparent); text-align: center; padding: 0 24px; }
 #kl-root .kl-pin-sub.kl-err { color: #B3261E; }
 #kl-root .kl-passf, #kl-root .kl-prow { display: none; }
 #kl-root.kl-alpha .kl-dots, #kl-root.kl-alpha .kl-pad, #kl-root.kl-alpha .kl-alt { display: none; }
-#kl-root.kl-alpha .kl-passf { display: flex; align-items: center; gap: 10px; width: min(320px, 82vw); margin: 22px 0 14px; }
-#kl-root .kl-pass { flex: 1; min-width: 0; height: 52px; padding: 0 18px; border-radius: 26px; border: 2px solid var(--kl-ink); background: rgba(255,255,255,.55); color: var(--kl-ink); font: 500 18px 'RobotoE','Roboto',system-ui,sans-serif; letter-spacing: .08em; outline: none; }
-#kl-root .kl-pass:focus { background: rgba(255,255,255,.8); }
-#kl-root .kl-pgo { width: 52px; height: 52px; flex: none; border-radius: 26px; border: 0; background: var(--kl-ink); color: #fff; display: grid; place-items: center; }
-#kl-root .kl-pgo svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+#kl-root.kl-alpha .kl-passf { display: block; position: relative; width: min(340px, 86vw); margin: 22px 0 10px; }
+#kl-root .kl-pass { display: block; width: 100%; height: 56px; padding: 0 54px 0 18px; border-radius: 12px; border: 1.5px solid rgba(127,127,127,.45);
+  border-color: color-mix(in srgb, var(--kl-ink) 32%, transparent); background: color-mix(in srgb, var(--kl-ink) 7%, transparent);
+  color: var(--kl-ink); caret-color: var(--kl-ink); font: 400 17px/1 'RobotoE','Roboto',system-ui,sans-serif; letter-spacing: .02em; outline: none;
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease; -webkit-appearance: none; appearance: none; }
+#kl-root .kl-pass[type="password"] { letter-spacing: .14em; }
+#kl-root .kl-pass::placeholder { color: color-mix(in srgb, var(--kl-ink) 45%, transparent); letter-spacing: .02em; }
+#kl-root .kl-pass:focus { border-color: var(--kl-ink); box-shadow: 0 0 0 1px var(--kl-ink); background: color-mix(in srgb, var(--kl-ink) 10%, transparent); }
+#kl-root.kl-perr .kl-pass { border-color: #B3261E; box-shadow: 0 0 0 1px #B3261E; }
+#kl-root .kl-peye { position: absolute; right: 6px; top: 6px; width: 44px; height: 44px; border: 0; border-radius: 22px; background: transparent; color: var(--kl-ink); opacity: .72; display: grid; place-items: center; }
+#kl-root .kl-peye:active { background: color-mix(in srgb, var(--kl-ink) 12%, transparent); }
+#kl-root .kl-peye svg { width: 22px; height: 22px; fill: currentColor; }
+#kl-root .kl-pass-shake { animation: klShake .42s ease; }
 #kl-root.kl-alpha .kl-prow { display: flex; gap: 8px; }
 #kl-root .kl-palt { height: 40px; padding: 0 16px; border: 0; border-radius: 20px; background: transparent; color: var(--kl-ink); font: 500 14px 'RobotoE','Roboto',system-ui,sans-serif; }
 #kl-root .kl-palt:active { background: rgba(34,51,72,.1); } #kl-root .kl-palt[hidden] { display: none; }
@@ -3093,7 +3101,8 @@ window.KwDB = (function () {
   var alt = el('button', 'kl-alt', 'Forgot PIN?'); alt.type = 'button';
   alt.onclick = function () { if (!busy && root.classList.contains('kl-pin')) forgot(); };
   /* v3.86: long passcode entry (letters, numbers, symbols) */
-  var passf = el('form', 'kl-passf', '<input class="kl-pass" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="Passcode"><button type="submit" class="kl-pgo" aria-label="OK"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>');
+  var EYE_ON = '<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>', EYE_OFF = '<svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5c0 .65-.13 1.26-.36 1.83l2.92 2.92A11.82 11.82 0 0 0 23 12c-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.8 11.8 0 0 0 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55A2.82 2.82 0 0 0 9 12a3 3 0 0 0 3 3c.22 0 .44-.03.65-.08l1.55 1.55A4.97 4.97 0 0 1 12 17a5 5 0 0 1-5-5c0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16a3 3 0 0 0-3-3l-.17.01z"/></svg>';
+  var passf = el('form', 'kl-passf', '<input class="kl-pass" type="password" placeholder="Passcode" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-label="Passcode"><button type="button" class="kl-peye" aria-label="Show passcode">' + EYE_ON + '</button>');
   var prow = el('div', 'kl-prow', '<button type="button" class="kl-palt" data-p="bio">Use biometrics</button><button type="button" class="kl-palt" data-p="forgot">Forgot?</button>');
   var pin_in = passf.querySelector('.kl-pass');
   passf.addEventListener('submit', function (e) {
@@ -3101,9 +3110,15 @@ window.KwDB = (function () {
     var v = pin_in.value;
     if ((mode === 'create') && v.length < PASS_MIN) { shake('At least ' + PASS_MIN + ' characters'); return; }
     if (!v) return;
+    /* no second entry: the passcode can be shown with the eye before it is saved */
+    if (mode === 'create') { first = v; mode = 'confirm'; }
     entry = v; SND.key(); buzz(6); complete();
   });
-  pin_in.addEventListener('input', function () { if (sub.classList.contains('kl-err')) say(''); });
+  var peye = passf.querySelector('.kl-peye');
+  function eye(show) { pin_in.type = show ? 'text' : 'password'; peye.innerHTML = show ? EYE_OFF : EYE_ON; peye.setAttribute('aria-label', show ? 'Hide passcode' : 'Show passcode'); }
+  peye.addEventListener('pointerdown', function (e) { e.preventDefault(); });
+  peye.addEventListener('click', function () { eye(pin_in.type === 'password'); try { pin_in.focus(); } catch (e) {} });
+  pin_in.addEventListener('input', function () { root.classList.remove('kl-perr'); if (sub.classList.contains('kl-err')) say(''); });
   prow.addEventListener('click', function (e) { var b = e.target.closest('[data-p]'); if (b) press(b.getAttribute('data-p')); });
   pinbox.appendChild(title); pinbox.appendChild(sub); pinbox.appendChild(dots); pinbox.appendChild(passf); pinbox.appendChild(pad); pinbox.appendChild(prow); pinbox.appendChild(alt);
   root.appendChild(pinbox);
@@ -3284,7 +3299,7 @@ window.KwDB = (function () {
     alpha = (mode === 'unlock' ? curKind() : newKind) === 'pass';
     root.classList.toggle('kl-alpha', alpha);
     title.textContent = mode === 'unlock' ? (purpose === 'verify' ? 'Enter current ' + pinWord() : 'Enter ' + pinWord()) : (purpose === 'create' && s ? 'New ' + pinWord() : 'Create a ' + pinWord());
-    say(mode === 'unlock' ? (purpose === 'verify' ? 'Confirm it is you' : '') : (alpha ? PASS_MIN + '+ characters. Letters, numbers, symbols' : '6 digits to open Kwallet on this device'));
+    say(mode === 'unlock' ? (purpose === 'verify' ? 'Confirm it is you' : '') : (alpha ? 'At least ' + PASS_MIN + ' characters. Tap the eye to check it' : '6 digits to open Kwallet on this device'));
     var fg = document.getElementById('kl-forgot');
     var useBio = mode === 'unlock' && BIO.on() && purpose !== 'bio';
     fg.classList.toggle('kl-txt', !useBio || cancelable);
@@ -3296,7 +3311,7 @@ window.KwDB = (function () {
     entry = ''; paint(); checkLock();
     var pb = prow.querySelector('[data-p="bio"]'), pf = prow.querySelector('[data-p="forgot"]');
     pb.hidden = !(useBio && !cancelable); pf.textContent = cancelable ? 'Cancel' : 'Forgot?'; pf.hidden = !(cancelable || mode === 'unlock');
-    if (alpha) { pin_in.value = ''; if (!useBio) setTimeout(function () { try { pin_in.focus(); } catch (e) {} }, 380); }
+    if (alpha) { pin_in.value = ''; eye(false); root.classList.remove('kl-perr'); if (!useBio) setTimeout(function () { try { pin_in.focus(); } catch (e) {} }, 380); }
     if (useBio) { clearTimeout(bioT); bioT = setTimeout(askBio, 450); }
   }
   /* ---------- biometrics (Android app only; the PIN always stays as the backup) ---------- */
@@ -3340,7 +3355,10 @@ window.KwDB = (function () {
   }
   function shake(msg) {
     buzz([30, 40, 30]); SND.bad(); say(msg, true);
-    dots.classList.remove('kl-shake'); void dots.offsetWidth; dots.classList.add('kl-shake');
+    if (alpha) {
+      root.classList.add('kl-perr'); passf.classList.remove('kl-pass-shake'); void passf.offsetWidth; passf.classList.add('kl-pass-shake');
+      if (mode === 'create') return; /* keep what they typed while creating, so it can be fixed */
+    } else { dots.classList.remove('kl-shake'); void dots.offsetWidth; dots.classList.add('kl-shake'); }
     setTimeout(function () { entry = ''; paint(); }, 380);
   }
   function complete() {
@@ -3355,7 +3373,7 @@ window.KwDB = (function () {
         localStorage.setItem(KEY, JSON.stringify({ v: 2 })); try { localStorage.setItem(KIND, newKind); } catch (x) {} setLock({ n: 0, until: 0 });
         var w0 = pinWord(); success(); setTimeout(function () { try { showToast(firstPin ? (w0 === 'PIN' ? 'PIN' : 'Passcode') + ' set. Your data is now encrypted' : (w0 === 'PIN' ? 'PIN' : 'Passcode') + ' changed. Data re-locked with it'); } catch (x) {} }, 900);
         if (firstPin && BIO.status() === 'ok' && localStorage.getItem(BIO_KEY) == null) setTimeout(offerBio, 1100);
-      }).catch(function () { busy = false; shake('Could not save PIN'); });
+      }).catch(function () { busy = false; if (alpha) { mode = 'create'; first = ''; } shake('Could not save. Nothing was changed'); });
       return;
     }
     var s = stored();
@@ -10736,7 +10754,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.87';
+const APP_VERSION = '3.88';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
