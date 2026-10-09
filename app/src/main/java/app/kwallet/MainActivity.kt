@@ -261,7 +261,7 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onPause() { super.onPause(); web.onPause() }
-    override fun onResume() { super.onResume(); web.onResume() }
+    override fun onResume() { super.onResume(); web.onResume(); if (::web.isInitialized) tuneWebView(this, web) }  // OEMs drop back to 60 Hz after resume
     override fun onDestroy() { web.destroy(); super.onDestroy() }
 }
 
@@ -282,6 +282,7 @@ fun tuneWebView(activity: Activity, webView: WebView) {
         if (best != null) {
             val lp = activity.window.attributes
             lp.preferredDisplayModeId = best.modeId
+            lp.preferredRefreshRate = best.refreshRate   // some OEM skins (MIUI, One UI) read this one instead
             activity.window.attributes = lp
         }
     }
