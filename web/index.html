@@ -2297,6 +2297,9 @@
 .kpv-lbl { margin: 12px 0 6px; font-size: 12.5px; }
 .kpv-chains { gap: 6px; } .kpv-cc { height: 30px; padding: 0 11px; font-size: 12.5px; border-radius: 8px; }
 .kpv-cc.on { background: var(--accent); color: #1b2230; border-color: transparent; }
+.kpv-tabs { display: flex; gap: 6px; padding: 2px 20px 8px; } .kpv-tabs .kpv-cc { flex: 1; padding: 0 6px; }
+.kpv-tn { opacity: .7; font-weight: 400; margin-left: 2px; }
+.kpv-act { display: inline-block; vertical-align: 2px; margin-left: 6px; padding: 1px 7px; border-radius: 8px; font: 500 11px/16px 'Roboto', sans-serif; background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--text); }
 [data-theme="light"] .kpv-cc.on { color: #fff; }
 .kpv-btns { padding: 10px 16px 2px; }
 .kpv-eye { top: 4px; }
@@ -2773,6 +2776,146 @@ window.KwSnd = (function () {
   return { SETS: SETS, set: set, play: play };
 })();
 </script>
+<script>
+/* ===== v3.84 at-rest encryption (KwDB) =====
+   With App lock on, every seed, key, history and note is stored only as AES-256-GCM ciphertext.
+   Data key (random 256-bit) is wrapped by: PIN -> PBKDF2-SHA256 (310k) -> HMAC in the phone's Keystore (TEE/StrongBox),
+   and optionally by a Keystore key that only a strong fingerprint/face check can use.
+   Locked = nothing readable in storage and nothing loaded; the app starts only after the PIN or biometrics open it. */
+window.KwDB = (function () {
+  var SENS = { 'wallet-gen-state-v2': 1, 'kw-chambers': 1, 'kw-pk-vault': 1, 'kw-seed-book': 1 };
+  var META = 'kw-vault-v1', DATA = 'kw-vault-data', IT = 310000;
+  var P = Storage.prototype, rg = P.getItem, rs = P.setItem, rr = P.removeItem, LS = null;
+  try { LS = window.localStorage; } catch (e) {}
+  var M = null; try { M = JSON.parse(rg.call(LS, META) || 'null'); } catch (e) { M = null; }
+  var dek = null, dekRaw = null, map = null, q = [], flushing = null, dirty = false, gen = 0;
+  var S = window.crypto && crypto.subtle, te = new TextEncoder(), td = new TextDecoder();
+  function setMeta(m) { M = m; if (m) rs.call(LS, META, JSON.stringify(m)); else rr.call(LS, META); }
+  function sens(st, k) { return st === LS && M && SENS[k]; }
+  P.getItem = function (k) { if (sens(this, k)) return map ? (Object.prototype.hasOwnProperty.call(map, k) ? map[k] : null) : null; return rg.apply(this, arguments); };
+  P.setItem = function (k, v) { if (sens(this, k)) { if (map) { map[k] = String(v); save(); } return; } return rs.apply(this, arguments); };
+  P.removeItem = function (k) { if (sens(this, k)) { if (map) { delete map[k]; save(); } return; } return rr.apply(this, arguments); };
+  /* the app's start-up code (window load) waits until the data is open */
+  var wAdd = window.addEventListener;
+  window.addEventListener = function (t, fn, o) {
+    if (t === 'load' && typeof fn === 'function' && this === window) { var f0 = fn; fn = function (e) { var self = this; ready(function () { f0.call(self, e); }); }; }
+    return wAdd.call(this, t, fn, o);
+  };
+  function b64(u) { u = new Uint8Array(u); var s = ''; for (var i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
+  function ub64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+  function aes(raw) { return S.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']); }
+  function enc(key, bytes, aad) { var iv = crypto.getRandomValues(new Uint8Array(12)); return S.encrypt({ name: 'AES-GCM', iv: iv, additionalData: te.encode(aad) }, key, bytes).then(function (c) { return b64(iv) + '.' + b64(c); }); }
+  function dec(key, str, aad) { var p = String(str).split('.'); return S.decrypt({ name: 'AES-GCM', iv: ub64(p[0]), additionalData: te.encode(aad) }, key, ub64(p[1])); }
+  function tee(bytes) { try { if (window.HarkNative && HarkNative.teeMac) { var r = String(HarkNative.teeMac(b64(bytes)) || ''); if (r) return ub64(r); } } catch (e) {} return null; }
+  function kek(pin, m) {
+    return S.importKey('raw', te.encode(pin), 'PBKDF2', false, ['deriveBits']).then(function (k) {
+      return S.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: ub64(m.salt), iterations: m.it }, k, 256);
+    }).then(function (bits) {
+      var raw = new Uint8Array(bits);
+      if (m.tee) { var h = tee(raw); if (!h) throw new Error('tee'); raw = h; }
+      return aes(raw);
+    });
+  }
+  function ready(fn) { if (M && !map) q.push(fn); else fn(); }
+  function fire() {
+    var f = q; q = []; f.forEach(function (fn) { try { fn(); } catch (e) { try { console.error(e); } catch (x) {} } });
+    try { if (window.KwVault) KwVault.reload(); } catch (e) {}
+    try { document.dispatchEvent(new CustomEvent('kwdb-open')); } catch (e) {}
+  }
+  function openWith(raw) {
+    return aes(raw).then(function (k) {
+      var d = rg.call(LS, DATA);
+      return (d ? dec(k, d, 'data').then(function (b) { return JSON.parse(td.decode(b)); }) : Promise.resolve({})).then(function (m) {
+        if (map) return true;
+        dek = k; dekRaw = raw; map = (m && typeof m === 'object') ? m : {}; fire(); return true;
+      });
+    });
+  }
+  function save() { dirty = true; if (!flushing) flushing = run(); return flushing; }
+  function run() {
+    var g = gen;
+    return Promise.resolve().then(function loop() {
+      if (!dirty || !dek || g !== gen) { flushing = null; return; }
+      dirty = false;
+      return enc(dek, te.encode(JSON.stringify(map)), 'data').then(function (s) {
+        if (g !== gen || !M) return;
+        try { rs.call(LS, DATA, s); } catch (e) { try { showToast('Storage is full. Make a Backup so nothing is lost'); } catch (x) {} }
+      }).then(loop, function () { flushing = null; });
+    });
+  }
+  var bioOpen = false;
+  function bioCall(mode, data, title, cb) {
+    if (!(window.HarkNative && HarkNative.bioCrypt)) { cb('fail'); return; }
+    window.__kwBioAt = Date.now(); window.__kwBioOpen = true;
+    window.kwBioDone = function (r) { window.kwBioDone = null; window.__kwBioOpen = false; window.__kwBioAt = Date.now(); cb(String(r || '')); };
+    try { HarkNative.bioCrypt(mode, data, title); } catch (e) { window.kwBioDone = null; window.__kwBioOpen = false; cb('fail'); }
+  }
+  return {
+    state: function () { return !M ? 'plain' : (map ? 'open' : 'locked'); },
+    locked: function () { return !!(M && !map); },
+    ready: ready,
+    flush: function () { return flushing || Promise.resolve(); },
+    hardware: function () { return !!(M && M.tee); },
+    /* create the vault (moving plain data in) or re-wrap the same data key under a new PIN */
+    setPin: function (pin) {
+      if (!S) return Promise.reject(new Error('no crypto'));
+      if (M && !dekRaw) return Promise.reject(new Error('locked'));
+      var first = !M, raw = dekRaw || crypto.getRandomValues(new Uint8Array(32));
+      var m = { v: 1, salt: b64(crypto.getRandomValues(new Uint8Array(16))), it: IT, tee: !!tee(new Uint8Array(32)) };
+      if (M && M.wb) m.wb = M.wb;
+      return kek(pin, m).then(function (k) { return enc(k, raw, 'dek'); }).then(function (wp) {
+        m.wp = wp;
+        if (!first) { setMeta(m); return; }
+        var mm = {}; Object.keys(SENS).forEach(function (key) { var v = rg.call(LS, key); if (v != null) mm[key] = v; });
+        return aes(raw).then(function (dk) {
+          return enc(dk, te.encode(JSON.stringify(mm)), 'data').then(function (s) {
+            rs.call(LS, DATA, s); setMeta(m); dek = dk; dekRaw = raw; map = mm;
+            Object.keys(SENS).forEach(function (key) { rr.call(LS, key); });
+          });
+        });
+      });
+    },
+    /* true when the PIN opens the vault (also used to verify the PIN while already open) */
+    unlockPin: function (pin) {
+      if (!M || !S) return Promise.resolve(false);
+      return kek(pin, M).then(function (k) { return dec(k, M.wp, 'dek'); }).then(function (raw) {
+        return map ? true : openWith(new Uint8Array(raw));
+      }).catch(function () { return false; });
+    },
+    hasBio: function () { return !!(M && M.wb); },
+    enableBio: function (title, cb) {
+      if (!dekRaw) { cb('fail'); return; }
+      bioCall('enc', b64(dekRaw), title, function (r) {
+        if (r.indexOf('ok:') === 0) { var m = Object.assign({}, M); m.wb = r.slice(3); setMeta(m); cb('ok'); } else cb(r);
+      });
+    },
+    unlockBio: function (title, cb) {
+      if (!M || !M.wb) { cb('fail'); return; }
+      bioCall('dec', M.wb, title, function (r) {
+        if (r.indexOf('ok:') === 0) {
+          var raw; try { raw = ub64(r.slice(3)); } catch (e) { cb('fail'); return; }
+          if (map) { cb('ok'); return; }
+          openWith(raw).then(function () { cb('ok'); }, function () { cb('fail'); });
+          return;
+        }
+        if (r === 'invalid') { var m = Object.assign({}, M); delete m.wb; setMeta(m); }
+        cb(r);
+      });
+    },
+    clearBio: function () { if (M && M.wb) { var m = Object.assign({}, M); delete m.wb; setMeta(m); } try { HarkNative.bioClear(); } catch (e) {} },
+    /* App lock off: data goes back to plain storage on this phone */
+    disable: function () {
+      if (!M || !map) return false;
+      Object.keys(map).forEach(function (k) { try { rs.call(LS, k, map[k]); } catch (e) {} });
+      gen++; rr.call(LS, DATA); setMeta(null); dek = null; dekRaw = null; map = null; dirty = false;
+      try { HarkNative.bioClear(); } catch (e) {}
+      return true;
+    },
+    /* factory reset */
+    wipe: function () { gen++; rr.call(LS, DATA); setMeta(null); dek = null; dekRaw = null; map = null; dirty = false; try { HarkNative.bioClear(); } catch (e) {} }
+  };
+})();
+</script>
 <script>(function () {
   'use strict';
   if (/nosplash/.test(location.hash) || window.__klMounted) return;
@@ -3092,12 +3235,12 @@ window.KwSnd = (function () {
   var bioT = 0, BIO_KEY = 'kw-bio';
   var BIO = {
     status: function () { try { return (window.HarkNative && HarkNative.bioStatus) ? String(HarkNative.bioStatus()) : 'none'; } catch (e) { return 'none'; } },
-    on: function () { try { return localStorage.getItem(BIO_KEY) === '1' && !!stored() && BIO.status() === 'ok'; } catch (e) { return false; } },
-    set: function (v) { try { if (v) localStorage.setItem(BIO_KEY, '1'); else localStorage.removeItem(BIO_KEY); } catch (e) {} },
+    on: function () { try { return localStorage.getItem(BIO_KEY) === '1' && !!stored() && BIO.status() === 'ok' && KwDB.hasBio(); } catch (e) { return false; } },
+    set: function (v) { try { if (v) localStorage.setItem(BIO_KEY, '1'); else { localStorage.removeItem(BIO_KEY); KwDB.clearBio(); } } catch (e) {} },
+    /* v3.84: biometrics release the data key from the Keystore (unlock / verify), or seal it there (turning biometrics on) */
     ask: function (title, cb) {
-      window.__kwBioAt = Date.now(); window.__kwBioOpen = true;
-      window.kwBioDone = function (r) { window.kwBioDone = null; window.__kwBioOpen = false; window.__kwBioAt = Date.now(); cb(String(r || '')); };
-      try { HarkNative.bioAuth(title || 'Unlock Kwallet'); } catch (e) { window.kwBioDone = null; cb('fail'); }
+      if (KwDB.hasBio()) KwDB.unlockBio(title || 'Unlock Kwallet', cb);
+      else KwDB.enableBio(title || 'Turn on biometric unlock', cb);
     }
   };
   var noBioOnce = false;
@@ -3111,6 +3254,7 @@ window.KwSnd = (function () {
       if (r === 'ok') { setLock({ n: 0, until: 0 }); entry = ''; paint(); success(); return; }
       if (r.indexOf('fail') === 0 && r.length > 5) say(r.slice(5), true);
       else if (r === 'lockout') say('Biometrics locked. Use your PIN', true);
+      else if (r === 'invalid') { say('Fingerprints changed. Use your PIN, then turn biometrics on again', true); try { localStorage.removeItem(BIO_KEY); } catch (x) {} }
     });
   }
   var lockTimer = null;
@@ -3138,18 +3282,26 @@ window.KwSnd = (function () {
     }
     if (mode === 'confirm') {
       if (entry !== first) { mode = 'create'; first = ''; title.textContent = purpose === 'create' && stored() ? 'New PIN' : 'Create a PIN'; shake("PINs didn't match. Start again"); busy = false; return; }
-      var salt = crypto.getRandomValues(new Uint8Array(16));
-      derive(entry, salt).then(function (h) {
-        var firstPin = !stored();
-        localStorage.setItem(KEY, JSON.stringify({ v: 1, salt: hex(salt), hash: h, it: 150000 })); setLock({ n: 0, until: 0 });
-        success();
+      var firstPin = !stored();
+      KwDB.setPin(entry).then(function () {
+        localStorage.setItem(KEY, JSON.stringify({ v: 2 })); setLock({ n: 0, until: 0 });
+        success(); setTimeout(function () { try { showToast(firstPin ? 'PIN set. Your data is now encrypted' : 'PIN changed. Data re-locked with the new PIN'); } catch (x) {} }, 900);
         if (firstPin && BIO.status() === 'ok' && localStorage.getItem(BIO_KEY) == null) setTimeout(offerBio, 1100);
       }).catch(function () { busy = false; shake('Could not save PIN'); });
       return;
     }
     var s = stored();
-    derive(entry, unhex(s.salt)).then(function (h) {
-      if (h === s.hash) { setLock({ n: 0, until: 0 }); success(); return; }
+    /* v3.84: the PIN is checked by opening the encrypted data; a v1 PIN (hash only) is upgraded to encryption on first use */
+    var chk = s.v === 2 ? KwDB.unlockPin(entry) : derive(entry, unhex(s.salt)).then(function (h) {
+      if (h !== s.hash) return false;
+      return KwDB.setPin(entry).then(function () {
+        localStorage.setItem(KEY, JSON.stringify({ v: 2 }));
+        if (localStorage.getItem(BIO_KEY) === '1' && BIO.status() === 'ok') setTimeout(offerBio, 1400);
+        return true;
+      }, function () { return true; });
+    });
+    chk.then(function (good) {
+      if (good) { setLock({ n: 0, until: 0 }); success(); return; }
       var L = lockState(); L.n = (L.n || 0) + 1;
       if (L.n >= 5) { L.until = Date.now() + 30000 * Math.pow(2, Math.min(L.n - 5, 5)); }
       setLock(L); busy = false;
@@ -3242,10 +3394,11 @@ window.KwSnd = (function () {
       boot();
     },
     bio: BIO,
-    reset: function () { [KEY, LOCK, MODE_KEY, LAST_KEY, BIO_KEY].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} }); },
+    reset: function () { try { KwDB.wipe(); } catch (e) {} [KEY, LOCK, MODE_KEY, LAST_KEY, BIO_KEY].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} }); },
     setMode: function (m) {
       var prev = pinMode();
       try { localStorage.setItem(MODE_KEY, m); } catch (e) {}
+      if (m === 'off' && stored()) { try { KwDB.disable(); } catch (e) {} [KEY, BIO_KEY].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} }); }
       if (m !== 'off' && !stored()) lockNow({ cancelable: true, purpose: 'create', onOk: function () { document.dispatchEvent(new CustomEvent('kwallet-pinmode')); }, onCancel: function () { try { localStorage.setItem(MODE_KEY, prev === 'off' || !stored() ? 'off' : prev); } catch (e) {} document.dispatchEvent(new CustomEvent('kwallet-pinmode')); } });
       stamp();
     }
@@ -3327,7 +3480,7 @@ window.KwSnd = (function () {
       go.onclick = function () {
         if (inp.value.trim().toLowerCase() !== 'yes') return;
         buzz([30, 60, 30, 60, 60]); SND.erase();
-        try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+        try { KwDB.wipe(); localStorage.clear(); sessionStorage.clear(); } catch (e) {}
         setTimeout(function () { location.reload(); }, 300);
       };
     }
@@ -3341,7 +3494,8 @@ window.KwSnd = (function () {
   function boot() {
     VW = window.innerWidth; VH = window.innerHeight; fit(); layout(); sizeCoins();
     var m = pinMode(), has = !!stored();
-    needPin = !!(window.crypto && crypto.subtle) && m !== 'off' && (!has || m === 'open' || Date.now() - lastActive() > graceMs(m));
+    needPin = !!(window.crypto && crypto.subtle) && m !== 'off' && (!has || m === 'open' || Date.now() - lastActive() > graceMs(m) || KwDB.locked() || (stored() || {}).v !== 2);
+    if (!needPin && KwDB.locked()) needPin = true;
     var now = performance.now(); coinT0 = now; progT0 = now + 600;
     if (reduce) {
       W.style.display = 'none'; arc.style.strokeDashoffset = 0; coinsBox.style.display = 'none';
@@ -10493,7 +10647,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.83';
+const APP_VERSION = '3.84';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -12597,20 +12751,20 @@ async function generateMnemonic() {
         phrase = window.XmrMnemonic.generate();
       }
       await yieldToUi();
-      activateSeed(phrase, 'xmr'); try { FX.seedGen(); } catch (x) {}
+      activateSeed(phrase, 'xmr'); try { FX.seedGen(); } catch (x) {} try { KwSeeds.record(phrase, 'xmr', 'gen'); } catch (x) {}
       return;
     }
     if (sel === 'poly') {
       const g = await polyGenerate();
       await yieldToUi();
-      activateSeed(g.phrase, 'poly'); try { FX.seedGen(); } catch (x) {}
+      activateSeed(g.phrase, 'poly'); try { FX.seedGen(); } catch (x) {} try { KwSeeds.record(g.phrase, 'poly', 'gen'); } catch (x) {}
       return;
     }
     const words = parseInt(sel, 10);
     const nbytes = strengthFromWords(words) / 8;
     const ent = await secureEntropy(nbytes);
     const next = ethers.Mnemonic.entropyToPhrase(ent);
-    activateSeed(next, 'bip39'); try { FX.seedGen(); } catch (x) {}
+    activateSeed(next, 'bip39'); try { FX.seedGen(); } catch (x) {} try { KwSeeds.record(next, 'bip39', 'gen'); } catch (x) {}
   } catch (e) {
     showToast(e.message || String(e));
   }
@@ -13510,7 +13664,7 @@ function wipeAfterExport() {
   wipeChambers();
   if (typeof clearSeedCache === 'function') clearSeedCache();
   try { __seedPngMemo = {}; } catch (e) {}
-  try { localStorage.removeItem('kw-pk-vault'); if (window.KwVault) KwVault.reload(); } catch (e) {}
+  try { localStorage.removeItem('kw-pk-vault'); localStorage.removeItem('kw-seed-book'); if (window.KwVault) KwVault.reload(); } catch (e) {}
   try {
     localStorage.removeItem(typeof STORAGE_KEY !== 'undefined' ? STORAGE_KEY : 'wallet-gen-state-v2');
   } catch (e) {}
@@ -13630,7 +13784,7 @@ function confirmClear() {
   seedCopyLog = [];
   wipeChambers();
   clearSeedCache();
-  try { localStorage.removeItem('kw-pk-vault'); if (window.KwVault) KwVault.reload(); } catch (e) {}
+  try { localStorage.removeItem('kw-pk-vault'); localStorage.removeItem('kw-seed-book'); if (window.KwVault) KwVault.reload(); } catch (e) {}
   try { __seedPngMemo = {}; } catch (e) {}
   window.__lastSavedJson = null;
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
@@ -13825,7 +13979,7 @@ function importSeed() {
     onImportInput();
     return;
   }
-  activateSeed(parsed.phrase, parsed.type); try { FX.seedSwitch(); } catch (x) {}
+  activateSeed(parsed.phrase, parsed.type); try { FX.seedSwitch(); } catch (x) {} try { KwSeeds.record(parsed.phrase, parsed.type, 'imp'); } catch (x) {}
   if (el) {
     el.value = '';
     el.rows = 1;
@@ -14529,7 +14683,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
     var m = cur(), on = m !== 'off' && has();
     if (on) lastOn = m;
     $('kws-lock').classList.toggle('on', on); $('kws-lock').setAttribute('aria-pressed', on ? 'true' : 'false');
-    $('kws-lock-s').textContent = on ? 'Ask for PIN to open Kwallet' : 'Off';
+    $('kws-lock-s').textContent = on ? (window.KwDB && KwDB.state() !== 'plain' ? 'Data encrypted. PIN or biometrics to open' : 'Ask for PIN to open Kwallet') : 'Off. Data not encrypted';
     $('kws-time').disabled = !on; $('kws-time-s').textContent = on ? name(m) : name(lastOn);
     $('kws-change').disabled = !has();
     if ($('kws-bio')) {
@@ -14547,7 +14701,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
   }
   function setMode(m) {
     var p = cur(); if (!window.KwLock || (m === p && (m === 'off' || has()))) return;
-    var apply = function () { KwLock.setMode(m); sync(); try { pushActivity('act', 'App lock: ' + (m === 'off' ? 'off' : name(m))); } catch (e) {} };
+    var apply = function () { KwLock.setMode(m); sync(); if (m === 'off') toast('App lock off. Data on this phone is no longer encrypted'); try { pushActivity('act', 'App lock: ' + (m === 'off' ? 'off' : name(m))); } catch (e) {} };
     if (has()) KwLock.verify(apply, sync); else apply();   /* changing the lock asks for the current PIN */
   }
   function choose(t, opts, val, done) {
@@ -17812,7 +17966,7 @@ function togglePathFind(force){
       sessionStorage.setItem('bk-restored', '1');
     } catch (e) { toast('Restore failed: ' + (e && e.message ? e.message : e)); return; }
     FX.buzz([30, 60, 30, 60, 60]); FX.notify('erase');
-    setTimeout(function(){ location.reload(); }, 350);
+    setTimeout(function(){ KwDB.flush().then(function () { location.reload(); }); }, 350);
   }
   window.bkTab = function(w){
     try { var ex = $('bk-export'); if (ex && !ex.parentNode.classList.contains('bk-stack')) { var st = document.createElement('div'); st.className = 'bk-stack'; ex.parentNode.insertBefore(st, ex); st.appendChild(ex); st.appendChild($('bk-save')); st.appendChild($('bk-restore')); } } catch (e) {}
@@ -18157,7 +18311,34 @@ window.kwBack = function () {
   }
   function short(a) { a = String(a || ''); return a.length > 22 ? a.slice(0, 10) + '\u2026' + a.slice(-8) : a; }
 
-  var ov, view = 'list', editId = null, selChain = 'eth', shown = {}, q = '';
+  var ov, view = 'list', editId = null, selChain = 'eth', shown = {}, q = '', tab = 'keys';
+  /* v3.84 seed book: every generated or imported seed, with where it came from and a note */
+  var SKEY = 'kw-seed-book', seeds = null;
+  function sget() {
+    if (seeds) return seeds;
+    var v = null; try { v = JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (e) {}
+    seeds = Array.isArray(v) ? v : [];
+    if (!Array.isArray(v)) { /* first run: seeds from before v3.84 have no recorded origin */
+      var seen = {}, add = function (m, t) { m = String(m || '').trim(); if (!m || seen[m]) return; seen[m] = 1; seeds.push({ id: 's' + Math.random().toString(36).slice(2, 10), m: m, t: t || (typeof detectSeedType === 'function' ? detectSeedType(m) : 'bip39'), o: 'old', at: '', note: '' }); };
+      try { if (typeof currentMnemonic !== 'undefined' && currentMnemonic) add(currentMnemonic, currentSeedType); } catch (e) {}
+      try { (seedHistory || []).slice().reverse().forEach(function (e) { if (e) add(e.m, e.t); }); } catch (e) {}
+      if (seeds.length) ssave();
+    }
+    return seeds;
+  }
+  function ssave() { try { localStorage.setItem(SKEY, JSON.stringify(seeds || [])); } catch (e) { toast('Storage is full. Seed note not saved'); return false; } return true; }
+  function slabel(x) { var n = String(x.m).trim().split(/\s+/).length; return x.t === 'xmr' ? 'Monero \u00b7 25 words' : x.t === 'poly' ? 'Polyseed \u00b7 16 words' : 'BIP39 \u00b7 ' + n + ' words'; }
+  function smask(m) { var w = String(m).trim().split(/\s+/); return w[0] + ' \u2022\u2022\u2022\u2022 ' + w[w.length - 1]; }
+  window.KwSeeds = {
+    record: function (m, t, o) {
+      m = String(m || '').trim(); if (!m) return; sget();
+      var st = (typeof logStamp === 'function') ? logStamp() : new Date().toISOString();
+      var ex = seeds.filter(function (x) { return x.m === m; })[0];
+      if (ex) { ex.u = st; if (ex.o === 'old') { ex.o = o; ex.at = st; } }
+      else seeds.unshift({ id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), m: m, t: t || 'bip39', o: o, at: st, note: '' });
+      ssave();
+    }
+  };
   function build() {
     if (ov) return;
     ov = document.createElement('div'); ov.className = 'kpv-ov'; ov.id = 'kpv-ov';
@@ -18168,10 +18349,19 @@ window.kwBack = function () {
   function close() { if (ov) ov.classList.remove('show'); shown = {}; }
   function render() {
     var box = document.getElementById('kpv-in'); if (!box) return;
+    if (view === 'list' && tab !== 'keys') { renderSeeds(box); return; }
+    if (view === 'snote') {
+      var sx = sget().filter(function (x) { return x.id === editId; })[0] || { note: '', m: '' };
+      box.innerHTML = '<div class="kpv-h"><h2>Seed note</h2><button type="button" class="kpv-x" data-a="sback" aria-label="Back">' + IC.x + '</button></div><div class="kpv-form">'
+        + '<div class="kpv-sub" style="padding:0 0 12px">' + E(slabel(sx)) + ' \u00b7 ' + E(smask(sx.m)) + '</div>'
+        + '<div class="kpv-f"><label>Note</label><textarea id="kpv-snote" class="kpv-note" maxlength="300" placeholder="e.g. Main savings, airdrop wallet, given to\u2026">' + E(sx.note || '') + '</textarea></div></div>'
+        + '<div class="kpv-btns"><button type="button" class="kpv-txt" data-a="sback">Cancel</button><button type="button" class="kpv-fill" data-a="snsave">Save</button></div>';
+      setTimeout(function () { var n = document.getElementById('kpv-snote'); if (n) try { n.focus(); } catch (e) {} }, 60);
+      return;
+    }
     if (view === 'list') {
       var list = items.filter(function (it) { if (!q) return true; var s = (it.name + ' ' + ch(it.chain)[1] + ' ' + (it.addr || '') + ' ' + (it.note || '')).toLowerCase(); return s.indexOf(q.toLowerCase()) >= 0; });
-      var h = '<div class="kpv-h"><h2>Saved keys</h2><button type="button" class="kpv-x" data-a="close" aria-label="Close">' + IC.x + '</button></div>'
-        + '<div class="kpv-sub">Stored only on this phone. Erased only by Clear.</div>';
+      var h = head();
       if (items.length > 3) h += '<div class="kpv-search">' + IC.search + '<input id="kpv-q" placeholder="Search by name, chain or address" value="' + E(q) + '"></div>';
       h += '<div class="kpv-list">';
       if (!items.length) h += '<div class="kpv-empty"><span class="kpv-eic">' + IC.key + '</span>No saved keys yet<br><small>Add a key and give it a name</small></div>';
@@ -18222,6 +18412,42 @@ window.kwBack = function () {
       setTimeout(function () { var n = document.getElementById('kpv-name'); if (n && !n.value) try { n.focus(); } catch (e) {} }, 60);
     }
   }
+  function head() {
+    var sb = sget(), ni = sb.filter(function (x) { return x.o === 'imp'; }).length, ng = sb.length - ni;
+    var T = [['keys', 'Keys', items.length], ['imp', 'Imported', ni], ['gen', 'Generated', ng]];
+    return '<div class="kpv-h"><h2>Saved keys</h2><button type="button" class="kpv-x" data-a="close" aria-label="Close">' + IC.x + '</button></div>'
+      + '<div class="kpv-tabs" role="tablist">' + T.map(function (t) { return '<button type="button" role="tab" aria-selected="' + (tab === t[0]) + '" class="kpv-cc' + (tab === t[0] ? ' on' : '') + '" data-a="tab" data-t="' + t[0] + '">' + t[1] + ' <span class="kpv-tn">' + t[2] + '</span></button>'; }).join('') + '</div>'
+      + '<div class="kpv-sub">' + (tab === 'keys' ? 'Stored only on this phone. Erased only by Clear.' : tab === 'imp' ? 'Seeds you imported. Tap Note to label one.' : 'Seeds made on this phone with Gen. Tap Note to label one.') + '</div>';
+  }
+  function renderSeeds(box) {
+    var all = sget(), cur = (typeof currentMnemonic !== 'undefined' ? String(currentMnemonic || '').trim() : '');
+    var mine = all.filter(function (x) { return tab === 'imp' ? x.o === 'imp' : x.o !== 'imp'; });
+    var list = mine.filter(function (x) { if (!q) return true; return (slabel(x) + ' ' + (x.note || '')).toLowerCase().indexOf(q.toLowerCase()) >= 0; });
+    var h = head();
+    if (mine.length > 3) h += '<div class="kpv-search">' + IC.search + '<input id="kpv-q" placeholder="Search by note or type" value="' + E(q) + '"></div>';
+    h += '<div class="kpv-list">';
+    if (!mine.length) h += '<div class="kpv-empty"><span class="kpv-eic">' + IC.key + '</span>' + (tab === 'imp' ? 'No imported seeds yet<br><small>Seeds you import will show here</small>' : 'No generated seeds yet<br><small>Tap Gen and the seed shows here</small>') + '</div>';
+    else if (!list.length) h += '<div class="kpv-empty">No seed matches \u201c' + E(q) + '\u201d</div>';
+    var oldHead = false;
+    list.forEach(function (x) {
+      if (x.o === 'old' && !oldHead) { oldHead = true; h += '<div class="kpv-sub" style="padding:10px 4px 4px">Earlier seeds \u00b7 origin not recorded before v3.84</div>'; }
+      var act = cur && x.m === cur, imp = x.o === 'imp';
+      h += '<div class="kpv-card"><div class="kpv-av" style="--c:' + (imp ? '#1a73e8' : x.o === 'old' ? '#5f6368' : '#188038') + '">' + (imp ? 'IMP' : x.o === 'old' ? 'OLD' : 'GEN') + '</div><div class="kpv-body">'
+        + '<div class="kpv-name">' + E(slabel(x)) + (act ? ' <span class="kpv-act">Active</span>' : '') + '</div>'
+        + '<div class="kpv-meta">' + (imp ? 'Imported' : x.o === 'old' ? 'Earlier seed' : 'Generated') + (x.at ? ' ' + E(String(x.at).slice(0, 10)) : '') + '</div>'
+        + (x.note ? '<div class="kpv-nt">' + E(x.note) + '</div>' : '')
+        + '<div class="kpv-' + (shown[x.id] ? 'key' : 'addr') + '">' + E(shown[x.id] ? x.m : smask(x.m)) + '</div>'
+        + '<div class="kpv-acts">'
+        + (act ? '' : '<button type="button" class="kpv-chip" data-a="suse" data-id="' + x.id + '">Use</button>')
+        + '<button type="button" class="kpv-chip warn" data-a="scopy" data-id="' + x.id + '">Copy seed</button>'
+        + '<button type="button" class="kpv-chip" data-a="sshow" data-id="' + x.id + '">' + (shown[x.id] ? 'Hide' : 'Show') + '</button>'
+        + '<button type="button" class="kpv-chip" data-a="snote" data-id="' + x.id + '">' + (x.note ? 'Edit note' : 'Add note') + '</button>'
+        + '</div></div></div>';
+    });
+    box.innerHTML = h + '</div>';
+    var qi = document.getElementById('kpv-q');
+    if (qi) qi.addEventListener('input', function () { q = qi.value; var p = qi.selectionStart; render(); var n = document.getElementById('kpv-q'); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} } });
+  }
   function check() {
     var pk = document.getElementById('kpv-pk'), m = document.getElementById('kpv-msg'); if (!pk || !m) return;
     if (!pk.value.trim()) { m.className = 'kpv-msg'; m.textContent = ''; return; }
@@ -18252,6 +18478,17 @@ window.kwBack = function () {
     var a = b.getAttribute('data-a'), id = b.getAttribute('data-id');
     var it = id ? items.filter(function (x) { return x.id === id; })[0] : null;
     try { FX.tick(900); } catch (x) {}
+    var sx = id ? sget().filter(function (x) { return x.id === id; })[0] : null;
+    if (a === 'tab') { tab = b.getAttribute('data-t'); q = ''; view = 'list'; render(); return; }
+    if (a === 'sback') { view = 'list'; editId = null; render(); return; }
+    if (a === 'snsave') { var s2 = sget().filter(function (x) { return x.id === editId; })[0]; if (s2) { s2.note = (((document.getElementById('kpv-snote') || {}).value) || '').trim().slice(0, 300); if (ssave()) toast(s2.note ? 'Note saved' : 'Note removed'); } view = 'list'; editId = null; render(); return; }
+    if (sx && a === 'snote') { view = 'snote'; editId = id; render(); return; }
+    if (sx && a === 'sshow') { shown[id] = !shown[id]; render(); return; }
+    if (sx && a === 'scopy') { copyToClipboard(sx.m).then(function () { toast('Seed copied'); try { FX.buzz([20, 50, 20]); } catch (x) {} try { if (typeof pushSeedCopy === 'function') pushSeedCopy(sx.m, sx.t === 'xmr' ? 'xmr25' : sx.t === 'poly' ? 'poly16' : 'bip39-' + sx.m.split(/\s+/).length, 'Saved keys \u00b7 ' + (sx.o === 'imp' ? 'Imported' : 'Generated')); } catch (x) {} }); return; }
+    if (sx && a === 'suse') {
+      if (window.__deriving) { toast('Deriving\u2026 please wait'); return; }
+      close(); try { activateSeed(sx.m, sx.t); FX.seedSwitch(); toast((sx.note ? sx.note : slabel(sx)) + ' active'); } catch (x) {} return;
+    }
     if (a === 'close') close();
     else if (a === 'new') { view = 'form'; editId = null; selChain = (typeof currentNetwork !== 'undefined' && ch(currentNetwork)[0] === currentNetwork) ? currentNetwork : 'eth'; render(); }
     else if (a === 'back') { view = 'list'; editId = null; render(); }
@@ -18277,7 +18514,7 @@ window.kwBack = function () {
     else if (it && a === 'ed') { view = 'form'; editId = id; selChain = it.chain; render(); }
   });
   window.KwVault = {
-    open: function () { if (locked()) return; build(); load(); view = 'list'; render(); requestAnimationFrame(function () { ov.classList.add('show'); }); },
+    open: function () { if (locked()) return; build(); load(); seeds = null; view = 'list'; render(); requestAnimationFrame(function () { ov.classList.add('show'); }); },
     add: function () {
       if (locked()) return; build(); load();
       var v = ((document.getElementById('pk-import-input') || {}).value || '').trim();
@@ -18286,7 +18523,7 @@ window.kwBack = function () {
       if (v && !_pkHexNormalize(v)) { try { _pkDeriveSolFromSecret(v); selChain = 'sol'; } catch (e) { if (/^[5KL]/.test(v)) selChain = 'btc'; } }
       render(); requestAnimationFrame(function () { ov.classList.add('show'); });
     },
-    close: close, reload: function () { load(); count(); if (ov && ov.classList.contains('show')) render(); },
+    close: close, reload: function () { load(); seeds = null; count(); if (ov && ov.classList.contains('show')) render(); },
     isOpen: function () { return !!(ov && ov.classList.contains('show')); },
     back: function () { if (view === 'form') { view = 'list'; editId = null; render(); } else close(); }
   };
