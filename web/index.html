@@ -2071,10 +2071,8 @@
 #kl-root .kl-coin { position: absolute; left: 0; top: 0; width: 44px; height: 44px; opacity: 0;
   color: var(--kl-ink); will-change: transform, opacity; }
 #kl-root .kl-coin svg { width: 100%; height: 100%; display: block; fill: currentColor; }
-#kl-root .kl-coin .kl-cg0 { stop-color: color-mix(in srgb, var(--kl-disc, var(--kl-ink)) 82%, #fff 18%); }
-#kl-root .kl-coin .kl-cg1 { stop-color: var(--kl-disc, var(--kl-ink)); }
-#kl-root .kl-coin.kl-lit { filter: drop-shadow(0 6px 14px rgba(0,0,0,.28)) drop-shadow(0 1px 2px rgba(0,0,0,.2)); }
-#kl-root .kl-ring .kl-disc { filter: drop-shadow(0 3px 6px rgba(0,0,0,.25)); }
+#kl-root .kl-coin .kl-cd { fill: var(--kl-disc, var(--kl-ink)); stroke: none; }
+#kl-root .kl-coin.kl-lit, #kl-root .kl-ring .kl-disc { filter: none !important; }
 
 /* wordmark */
 #kl-root .kl-brandwrap { position: absolute; left: 0; right: 0; top: 50%; display: flex; justify-content: center;
@@ -2758,8 +2756,8 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
   var coins = ORDER.map(function (n) {
     /* one random mark per launch is painted like the original XRP: ink disc + brand-yellow mark */
     var lit = n === LIT_COIN, svgS;
-    if (lit && n === 'xrp') svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><defs><radialGradient id="klcg" cx="32%" cy="26%" r="80%"><stop offset="0" class="kl-cg0"/><stop offset="1" class="kl-cg1"/></radialGradient></defs><circle class="kl-cd" cx="16" cy="16" r="16" fill="url(#klcg)"/><path fill="#DDF869" transform="translate(6.6 8.2) scale(.0367)" d="' + ICONS[n][1] + '"/></svg>';
-    else if (lit) svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><defs><radialGradient id="klcg" cx="32%" cy="26%" r="80%"><stop offset="0" class="kl-cg0"/><stop offset="1" class="kl-cg1"/></radialGradient></defs><circle class="kl-cd" cx="16" cy="16" r="16" fill="url(#klcg)"/><svg x="7.2" y="7.2" width="17.6" height="17.6" viewBox="' + ICONS[n][0] + '"><path fill="#DDF869" d="' + ICONS[n][1] + '"/></svg></svg>';
+    if (lit && n === 'xrp') svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><circle class="kl-cd" cx="16" cy="16" r="16"/><path fill="#DDF869" transform="translate(6.6 8.2) scale(.0367)" d="' + ICONS[n][1] + '"/></svg>';
+    else if (lit) svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><circle class="kl-cd" cx="16" cy="16" r="16"/><svg x="7.2" y="7.2" width="17.6" height="17.6" viewBox="' + ICONS[n][0] + '"><path fill="#DDF869" d="' + ICONS[n][1] + '"/></svg></svg>';
     else svgS = '<svg viewBox="' + ICONS[n][0] + '" shape-rendering="geometricPrecision"><path d="' + ICONS[n][1] + '"/></svg>';
     var c = el('div', lit ? 'kl-coin kl-lit' : 'kl-coin', svgS);
     coinsBox.appendChild(c); return { el: c };
@@ -10368,7 +10366,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.72';
+const APP_VERSION = '3.73';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
