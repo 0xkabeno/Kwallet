@@ -41,7 +41,7 @@ import androidx.webkit.WebViewAssetLoader
  * the app has no INTERNET permission and every non-asset request is refused.
  */
 class MainActivity : FragmentActivity() {
-    private val LIME = 0xFFDDF869.toInt()
+    private var LIME = 0xFFDDF869.toInt()
 
     private lateinit var web: WebView
     private lateinit var root: FrameLayout
@@ -67,6 +67,11 @@ class MainActivity : FragmentActivity() {
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
         )
         super.onCreate(savedInstanceState)
+        // Material You chosen in Settings: the window behind the page uses the wallpaper colour, never a lime flash
+        if (Build.VERSION.SDK_INT >= 31 && getSharedPreferences("kw", MODE_PRIVATE).getBoolean("md3", false)) {
+            LIME = getColor(android.R.color.system_accent1_100)
+            window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(LIME))
+        }
         // Android 12+: the system splash fades into the app instead of cutting
         if (Build.VERSION.SDK_INT >= 31) {
             splashScreen.setOnExitAnimationListener { v ->
@@ -86,7 +91,7 @@ class MainActivity : FragmentActivity() {
             .build()
 
         web = WebView(this)
-        web.setBackgroundColor(0xFFDDF869.toInt())
+        web.setBackgroundColor(LIME)
         web.isHapticFeedbackEnabled = true
         with(web.settings) {
             javaScriptEnabled = true
@@ -148,7 +153,7 @@ class MainActivity : FragmentActivity() {
         tuneWebView(this, web)
 
         root = FrameLayout(this)
-        root.setBackgroundColor(0xFFDDF869.toInt())
+        root.setBackgroundColor(LIME)
         root.addView(web, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         // True edge-to-edge: the page draws under the status and navigation bars, so the bars
         // show the page's own pixels (lime splash, white app, dark app). The page keeps its
