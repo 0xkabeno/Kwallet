@@ -2457,9 +2457,10 @@ body.md3 {
 body.md3, html:has(body.md3) { background: var(--md-bg) !important; }
 
 /* top bar */
-body.md3 .net { background: var(--md-sc-high) !important; border: 0 !important; border-radius: 999px !important; }
-body.md3 .net button { color: var(--md-on-var) !important; border-radius: 999px !important; }
-body.md3 .net button.on { background: var(--md-primary) !important; color: var(--md-on-primary) !important; }
+/* chain selector: original sliding pill and motion, only recoloured */
+body.md3 .net { background: var(--md-sc) !important; border-color: var(--md-ov) !important; }
+body.md3 .net button { color: var(--md-on-var) !important; }
+body.md3 .net button.on { color: var(--md-on-primary) !important; }
 body.md3 .icon-btn { color: var(--md-on-var) !important; }
 
 /* panels */
@@ -2480,9 +2481,7 @@ body.md3 .wc-inline button.on { background: var(--md-pc) !important; border-colo
 body.md3 .modal { background: var(--md-sc-high) !important; color: var(--md-on) !important; border-radius: 28px !important; border-color: transparent !important; }
 
 /* brand mark, highlights */
-body.md3 .top h1.kbrand { background: var(--md-pc) !important; border-radius: 12px !important; }
-body.md3 .kbrand .kb-k { color: var(--md-opc) !important; }
-body.md3 .kbrand .kb-w { -webkit-text-stroke-color: var(--md-opc) !important; text-shadow: none; }
+/* Kwallet logo stays the brand original in every theme */
 body.md3 .hl { color: var(--md-primary) !important; }
 body.md3 .item.copied-addr .hl { color: var(--greyed) !important; }
 /* opening screen + PIN follow the wallpaper too */
@@ -10277,7 +10276,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.64';
+const APP_VERSION = '3.65';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
