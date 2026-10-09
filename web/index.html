@@ -2104,7 +2104,7 @@
 #kl-root .kl-ring .kl-track { fill: none; stroke: color-mix(in srgb, var(--kl-ink) 13%, transparent); stroke-width: 2.6; }
 #kl-root .kl-ring .kl-arc { fill: none; stroke: var(--kl-ink); stroke-width: 2.8; stroke-linecap: round;
   transform: rotate(-90deg); transform-origin: 23px 23px; }
-#kl-root .kl-ring .kl-disc { fill: var(--kl-ink); transform-origin: 23px 23px; transform: scale(0); }
+#kl-root .kl-ring .kl-disc { fill: var(--kl-disc, var(--kl-ink)); transform-origin: 23px 23px; transform: scale(0); }
 #kl-root .kl-ring .kl-check { fill: none; stroke: #DDF869; stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round;
   stroke-dasharray: 24; stroke-dashoffset: 24; opacity: 0; }
 #kl-root.kl-done .kl-ring .kl-disc { transform: scale(1); transition: transform .38s cubic-bezier(.34,1.56,.64,1); }
@@ -2489,10 +2489,23 @@ body.md3 .item.copied-addr .hl { color: var(--greyed) !important; }
 /* opening screen + PIN follow the wallpaper too */
 .md3 #kl-root { --kl-lime: var(--md-kl-bg, #e9ddff); --kl-lime-deep: var(--md-kl-deep, #d0bcff); --kl-ink: var(--md-kl-ink, #21005d); }
 .md3 #kl-root .kl-slogan { color: color-mix(in srgb, var(--kl-ink) 82%, transparent) !important; }
+/* dark Material You opening screen: same scene, night tones, brand-yellow marks on dark discs */
+.md3-dark #kl-root { --kl-disc: var(--md-kl-disc, #0d0e12); }
+.md3-dark #kl-root .kl-coin .kl-cd { fill: var(--kl-disc); stroke: color-mix(in srgb, var(--kl-ink) 22%, transparent); stroke-width: .8; }
+.md3-dark #kl-root .kl-ring .kl-disc { stroke: color-mix(in srgb, var(--kl-ink) 22%, transparent); stroke-width: 1; }
+.md3-dark #kl-root .kl-aura { background: radial-gradient(closest-side, color-mix(in srgb, var(--kl-ink) 14%, transparent), color-mix(in srgb, var(--kl-ink) 5%, transparent) 45%, transparent 72%); }
+.md3-dark #kl-root .kl-bg { background: radial-gradient(110% 70% at 50% -5%, color-mix(in srgb, var(--kl-ink) 9%, transparent), transparent 60%), radial-gradient(120% 80% at 50% 108%, var(--kl-lime-deep), transparent 62%); }
+.md3-dark #kl-root .kl-w, .md3-dark #kl-root .kl-pw { color: var(--kl-lime); }
+.md3-dark #kl-root .kl-brand::after { background: linear-gradient(100deg, transparent, rgba(255,255,255,.35) 50%, transparent); }
+.md3-dark #kl-root .kl-key { background: color-mix(in srgb, var(--kl-ink) 9%, transparent) !important; }
+.md3-dark #kl-root .kl-key.kl-ghost { background: transparent !important; }
+.md3-dark #kl-root .kl-key.kl-press { background: var(--kl-ink) !important; color: var(--kl-lime) !important; }
+.md3-dark #kl-root .kl-fd-card, .md3-dark #kl-root .kl-fd-card input { background: color-mix(in srgb, var(--kl-lime) 70%, var(--kl-ink) 10%) !important; color: var(--kl-ink) !important; }
 
 /* ===== motion: transform/opacity only, so it stays on the GPU ===== */
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
-::view-transition-new(root) { z-index: 2; } ::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; } ::view-transition-old(root) { z-index: 1; transform-origin: 50% 40%; }
+::view-transition-group(root) { background: #000; }
 /* sliding selection pill, same motion as the chain selector, for every segmented control */
 .kw-slid { position: relative !important; isolation: isolate; }
 .kw-slid .kw-slide { position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; background: var(--accent); opacity: 0;
@@ -2542,7 +2555,9 @@ body.md3 .kws-row .kws-ic { border-radius: 50%; background: var(--md-pc); color:
 .kws-row.on .kws-sw::after { left: 22px !important; top: 2px !important; width: 20px !important; height: 20px !important; background: var(--md-on-primary) !important; }
 .kws-seg { position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; flex: 0 0 auto; padding: 3px; border-radius: 999px; background: var(--md-sc-high); isolation: isolate; cursor: pointer; }
 .kws-seg::before { content: ''; position: absolute; z-index: -1; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 999px;
-  background: var(--md-primary); box-shadow: 0 1px 3px rgba(0,0,0,.18); transition: transform .34s cubic-bezier(.34,1.36,.64,1); will-change: transform; }
+  background: var(--md-primary); box-shadow: 0 1px 3px rgba(0,0,0,.18); transition: transform .38s cubic-bezier(.2,0,0,1); will-change: transform; }
+.kws-seg.kws-go::before { animation: kwsStretch .38s cubic-bezier(.2,0,0,1); }
+@keyframes kwsStretch { 0% { scale: 1 1; } 45% { scale: 1.22 .9; } 100% { scale: 1 1; } }
 .kws-seg[data-v="dark"]::before { transform: translateX(100%); }
 .kws-seg span { min-width: 54px; padding: 0 12px; height: 30px; display: grid; place-items: center; border-radius: 999px; font: 500 13px/1 var(--kw-font-d); color: var(--md-on-var); transition: color .25s ease; }
 .kws-seg span.on { color: var(--md-on-primary); }
@@ -2590,8 +2605,11 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
         var vt = document.startViewTransition(fn), x = tap.x, y = tap.y,
           r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
         vt.ready.then(function () {
+          var E = 'cubic-bezier(.2,0,0,1)';
           de.animate({ clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + r + 'px at ' + x + 'px ' + y + 'px)'] },
-            { duration: 620, easing: 'cubic-bezier(.4,0,.2,1)', pseudoElement: '::view-transition-new(root)' });
+            { duration: 680, easing: E, pseudoElement: '::view-transition-new(root)' });
+          de.animate({ transform: ['scale(1)', 'scale(.965)'], opacity: [1, .55], filter: ['blur(0px)', 'blur(2px)'] },
+            { duration: 680, easing: E, pseudoElement: '::view-transition-old(root)' });
         }, function () {});
         return;
       } catch (e) {}
@@ -2603,7 +2621,7 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
     var md = on();
     b.classList.toggle('md3', md); document.documentElement.classList.toggle('md3', md);
     var de = document.documentElement.style;
-    if (!md) { VARS.forEach(function (v) { b.style.removeProperty(v); }); ['--md-kl-bg','--md-kl-deep','--md-kl-ink'].forEach(function (v) { de.removeProperty(v); }); return; }
+    if (!md) { document.documentElement.classList.remove('md3-dark'); VARS.forEach(function (v) { b.style.removeProperty(v); }); ['--md-kl-bg','--md-kl-deep','--md-kl-ink','--md-kl-disc'].forEach(function (v) { de.removeProperty(v); }); try { if (window.HarkNative && HarkNative.setDark) HarkNative.setDark(b.getAttribute('data-theme') === 'dark'); } catch (e) {} return; }
     var P = palette(), a1 = P.a1, a2 = P.a2, n1 = P.n1, n2 = P.n2, dark = b.getAttribute('data-theme') === 'dark', s = {};
     if (dark) s = { '--md-primary': a1[200], '--md-on-primary': a1[800], '--md-pc': a1[700], '--md-opc': a1[100], '--md-sc2': a2[700], '--md-osc2': a2[100],
       '--md-bg': n1[900], '--md-sc-low': mix(n1[900], n2[800], .25), '--md-surf': mix(n1[900], n2[800], .4), '--md-sc': mix(n1[900], n2[800], .55), '--md-sc-high': mix(n1[900], n2[800], .8), '--md-sc-hi2': n2[700],
@@ -2613,7 +2631,10 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
       '--md-on': n1[900], '--md-on-var': n2[700], '--md-outline': n2[500], '--md-ov': n2[200] };
     for (var k in s) b.style.setProperty(k, s[k]);
     /* opening screen: same tones the Android splash uses (accent1 100 / 200 / 900) */
-    de.setProperty('--md-kl-bg', a1[100]); de.setProperty('--md-kl-deep', a1[200]); de.setProperty('--md-kl-ink', a1[900]);
+    document.documentElement.classList.toggle('md3-dark', dark);
+    if (dark) { de.setProperty('--md-kl-bg', mix(n1[900], a1[800], .28)); de.setProperty('--md-kl-deep', mix(n1[900], a1[700], .5)); de.setProperty('--md-kl-ink', a1[100]); de.setProperty('--md-kl-disc', mix(n1[900], '#000000', .55)); }
+    else { de.setProperty('--md-kl-bg', a1[100]); de.setProperty('--md-kl-deep', a1[200]); de.setProperty('--md-kl-ink', a1[900]); de.removeProperty('--md-kl-disc'); }
+    try { if (window.HarkNative && HarkNative.setDark) HarkNative.setDark(dark); } catch (e) {}
   }
   function tellNative(v) { try { if (window.HarkNative && HarkNative.setMd3) HarkNative.setMd3(!!v); } catch (e) {} }
   window.KwMd3 = {
@@ -2745,8 +2766,8 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
   var coins = ORDER.map(function (n) {
     /* one random mark per launch is painted like the original XRP: ink disc + brand-yellow mark */
     var lit = n === LIT_COIN, svgS;
-    if (lit && n === 'xrp') svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><circle cx="16" cy="16" r="16"/><path fill="#DDF869" transform="translate(6.6 8.2) scale(.0367)" d="' + ICONS[n][1] + '"/></svg>';
-    else if (lit) svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><circle cx="16" cy="16" r="16"/><svg x="7.2" y="7.2" width="17.6" height="17.6" viewBox="' + ICONS[n][0] + '"><path fill="#DDF869" d="' + ICONS[n][1] + '"/></svg></svg>';
+    if (lit && n === 'xrp') svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><circle class="kl-cd" cx="16" cy="16" r="16"/><path fill="#DDF869" transform="translate(6.6 8.2) scale(.0367)" d="' + ICONS[n][1] + '"/></svg>';
+    else if (lit) svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><circle class="kl-cd" cx="16" cy="16" r="16"/><svg x="7.2" y="7.2" width="17.6" height="17.6" viewBox="' + ICONS[n][0] + '"><path fill="#DDF869" d="' + ICONS[n][1] + '"/></svg></svg>';
     else svgS = '<svg viewBox="' + ICONS[n][0] + '" shape-rendering="geometricPrecision"><path d="' + ICONS[n][1] + '"/></svg>';
     var c = el('div', 'kl-coin', svgS);
     coinsBox.appendChild(c); return { el: c };
@@ -10353,7 +10374,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.69';
+const APP_VERSION = '3.70';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -14371,9 +14392,9 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       tick(); var cur = document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
       var t = e.target.closest && e.target.closest('[data-t]'), v = t ? t.getAttribute('data-t') : (cur === 'light' ? 'dark' : 'light');
       if (v === cur) return;
-      var g = ov.querySelector('.kws-seg'); if (g) { g.setAttribute('data-v', v); g.querySelectorAll('[data-t]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-t') === v); }); }
+      var g = ov.querySelector('.kws-seg'); if (g) { if (g.getAttribute('data-v') !== v) { g.classList.remove('kws-go'); void g.offsetWidth; g.classList.add('kws-go'); } g.setAttribute('data-v', v); g.querySelectorAll('[data-t]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-t') === v); }); }
       try { FX.buzz(8); } catch (x) {}
-      clearTimeout(window.__kwThT); window.__kwThT = setTimeout(function () { try { toggleTheme(); } catch (x) {} setTimeout(sync, 60); }, 150);
+      clearTimeout(window.__kwThT); window.__kwThT = setTimeout(function () { try { toggleTheme(); } catch (x) {} setTimeout(sync, 60); }, 120);
     };
     $('kws-md3').onclick = function () { tick(); if (window.KwMd3) { KwMd3.set(!KwMd3.on()); try { FX.buzz(10); } catch (x) {} } sync(); };
     $('kws-replay').onclick = function () { closeSettings(); if (window.KwLock && KwLock.replay) KwLock.replay(); };
