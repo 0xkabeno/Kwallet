@@ -68,8 +68,11 @@ class MainActivity : FragmentActivity() {
         )
         super.onCreate(savedInstanceState)
         // Material You chosen in Settings: the window behind the page uses the wallpaper colour, never a lime flash
-        if (Build.VERSION.SDK_INT >= 31 && getSharedPreferences("kw", MODE_PRIVATE).getBoolean("md3", false)) {
-            LIME = getColor(android.R.color.system_accent1_100)
+        val kwp = getSharedPreferences("kw", MODE_PRIVATE)
+        if (Build.VERSION.SDK_INT >= 31 && kwp.getBoolean("md3", false)) {
+            LIME = if (kwp.getBoolean("dark", false))
+                androidx.core.graphics.ColorUtils.blendARGB(getColor(android.R.color.system_neutral1_900), getColor(android.R.color.system_accent1_800), .28f)
+            else getColor(android.R.color.system_accent1_100)
             window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(LIME))
         }
         // Android 12+: the system splash fades into the app instead of cutting
