@@ -152,7 +152,8 @@ class MainActivity : FragmentActivity() {
             insetsJson = { insetCss },
             bio = { bioStatus() },
             bioPrompt = { t -> runOnUiThread { bioAuth(t) } },
-            onAwake = { on -> runOnUiThread { web.keepScreenOn = on } }), "HarkNative")
+            onAwake = { on -> runOnUiThread { web.keepScreenOn = on } },
+            bioCryptCb = { mode, data, title -> runOnUiThread { bioCrypt(mode, data, title) } }), "HarkNative")
         tuneWebView(this, web)
 
         root = FrameLayout(this)
@@ -195,7 +196,7 @@ class MainActivity : FragmentActivity() {
         else web.loadUrl("https://appassets.androidplatform.net/assets/index.html")
     }
 
-    private val BIO = BiometricManager.Authenticators.BIOMETRIC_WEAK
+    private val BIO = BiometricManager.Authenticators.BIOMETRIC_STRONG
 
     private fun bioStatus(): String = when (BiometricManager.from(this).canAuthenticate(BIO)) {
         BiometricManager.BIOMETRIC_SUCCESS -> "ok"
@@ -226,6 +227,46 @@ class MainActivity : FragmentActivity() {
             .setConfirmationRequired(false)
             .build()
         try { prompt.authenticate(info) } catch (_: Exception) { bioResult("fail") }
+    }
+
+    private fun b64(b: ByteArray) = android.util.Base64.encodeToString(b, android.util.Base64.NO_WRAP)
+    private fun ub64(s: String) = android.util.Base64.decode(s, android.util.Base64.NO_WRAP)
+
+    /** v3.84: biometric sheet bound to a Keystore cipher. "enc": data = base64 data key -> "ok:<iv>:<ct>".
+     *  "dec": data = "<iv>:<ct>" -> "ok:<base64 data key>". "invalid" when fingerprints changed (key revoked). */
+    private fun bioCrypt(mode: String, data: String, title: String) {
+        if (bioStatus() != "ok") { bioResult("fail"); return }
+        val enc = mode == "enc"
+        val parts = data.split(":")
+        val cipher = try {
+            if (enc) KwKeys.bioCipher(true, null) else KwKeys.bioCipher(false, ub64(parts[0]))
+        } catch (_: android.security.keystore.KeyPermanentlyInvalidatedException) { KwKeys.deleteBio(); bioResult("invalid"); return
+        } catch (_: Exception) { bioResult(if (enc) "fail" else "invalid"); return }
+        val prompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                try {
+                    val c = result.cryptoObject?.cipher ?: throw IllegalStateException()
+                    bioResult(if (enc) { val ct = c.doFinal(ub64(data)); "ok:" + b64(c.iv) + ":" + b64(ct) }
+                              else "ok:" + b64(c.doFinal(ub64(parts[1]))))
+                } catch (_: Exception) { bioResult("fail") }
+            }
+            override fun onAuthenticationError(code: Int, msg: CharSequence) {
+                bioResult(when (code) {
+                    BiometricPrompt.ERROR_NEGATIVE_BUTTON -> "pin"
+                    BiometricPrompt.ERROR_USER_CANCELED, BiometricPrompt.ERROR_CANCELED -> "cancel"
+                    BiometricPrompt.ERROR_LOCKOUT, BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> "lockout"
+                    else -> "fail:$msg"
+                })
+            }
+        })
+        val info = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(title)
+            .setSubtitle("Kwallet")
+            .setNegativeButtonText("Use PIN")
+            .setAllowedAuthenticators(BIO)
+            .setConfirmationRequired(false)
+            .build()
+        try { prompt.authenticate(info, BiometricPrompt.CryptoObject(cipher)) } catch (_: Exception) { bioResult("fail") }
     }
 
     /** Called by the page with the colours under the status bar and the navigation bar.
