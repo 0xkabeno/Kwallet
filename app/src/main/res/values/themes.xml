@@ -2,4 +2,5 @@
     <style name="Theme.Kwallet" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">@color/kw_lime</item>
     </style>
+    <style name="Theme.Kwallet.Md3" parent="Theme.Kwallet" />
 </resources>
