@@ -68,7 +68,23 @@ class HarkNative(
     fun setMd3(on: Boolean) {
         try { ctx.getSharedPreferences("kw", Context.MODE_PRIVATE).edit().putBoolean("md3", on).apply() } catch (_: Exception) {}
         if (Build.VERSION.SDK_INT >= 33 && ctx is android.app.Activity) {
-            try { ctx.splashScreen.setSplashScreenTheme(if (on) R.style.Theme_Kwallet_Md3 else 0) } catch (_: Exception) {}
+            try { ctx.splashScreen.setSplashScreenTheme(splashTheme()) } catch (_: Exception) {}
+        }
+    }
+
+    private fun splashTheme(): Int {
+        val p = ctx.getSharedPreferences("kw", Context.MODE_PRIVATE)
+        return if (!p.getBoolean("md3", false)) 0 else if (p.getBoolean("dark", false)) R.style.Theme_Kwallet_Md3Dark else R.style.Theme_Kwallet_Md3
+    }
+
+    /** App theme light/dark: lets the next launch open on the dark Material You splash. */
+    @JavascriptInterface
+    fun setDark(dark: Boolean) {
+        val p = ctx.getSharedPreferences("kw", Context.MODE_PRIVATE)
+        if (p.getBoolean("dark", false) == dark) return
+        try { p.edit().putBoolean("dark", dark).apply() } catch (_: Exception) {}
+        if (Build.VERSION.SDK_INT >= 33 && ctx is android.app.Activity) {
+            try { ctx.splashScreen.setSplashScreenTheme(splashTheme()) } catch (_: Exception) {}
         }
     }
 
