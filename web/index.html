@@ -2431,11 +2431,12 @@
 body:not(.md3)[data-theme="light"] { --md-on-primary: #ffffff; --md-pc: #e8f0fe; --md-opc: #174ea6; }
 body:not(.md3)[data-theme="dark"]  { --md-on-primary: #223348; --md-pc: #2b3a1c; --md-opc: #DDF869; }
 body {
+  --r-panel: 28px; --r-btn: 20px; --r-field: 22px; --r-chip: 14px;
   --kw-font: 'RobotoE','Roboto',system-ui,sans-serif; --kw-font-d: 'RobotoE','Roboto',system-ui,sans-serif;
 }
 body:not(.md3) {
   --md-primary: var(--accent); --md-sc2: var(--md-pc); --md-osc2: var(--md-opc);
-  --md-bg: var(--bg); --md-surf: var(--bg-card); --md-sc-low: var(--bg-card); --md-sc: var(--bg-input); --md-sc-high: var(--bg-input);
+  --md-bg: var(--bg); --md-surf: var(--bg-card); --md-sc-low: var(--bg-card); --md-sc: color-mix(in srgb, var(--accent) 7%, var(--bg-card)); --md-sc-high: color-mix(in srgb, var(--accent) 12%, var(--bg-card));
   --md-on: var(--text); --md-on-var: var(--text-muted); --md-outline: var(--greyed); --md-ov: var(--border);
 }
 body.md3[data-theme="light"] {
@@ -2452,33 +2453,32 @@ body.md3 {
   --bg: var(--md-bg); --bg-card: var(--md-surf); --bg-input: var(--md-sc); --border: var(--md-ov);
   --text: var(--md-on); --text-muted: var(--md-on-var); --accent: var(--md-primary); --accent-hover: var(--md-primary);
   --greyed: var(--md-outline); --row-hover: var(--md-sc);
-  --r-panel: 28px; --r-btn: 20px; --r-field: 22px; --r-chip: 14px;
 }
 body.md3, html:has(body.md3) { background: var(--md-bg) !important; }
 
 /* top bar */
 /* chain selector: original sliding pill and motion, only recoloured */
-body.md3 .net { background: var(--md-sc) !important; border-color: var(--md-ov) !important; }
-body.md3 .net button { color: var(--md-on-var) !important; }
-body.md3 .net button.on { color: var(--md-on-primary) !important; }
-body.md3 .icon-btn { color: var(--md-on-var) !important; }
+body .net { background: var(--md-sc) !important; border-color: var(--md-ov) !important; }
+body .net button { color: var(--md-on-var) !important; }
+body .net button.on { color: var(--md-on-primary) !important; }
+body .icon-btn { color: var(--md-on-var) !important; }
 
 /* panels */
-body.md3 .panel, body.md3 .list-wrap { background: var(--md-surf) !important; border-color: transparent !important; border-radius: var(--r-panel) !important; }
+body .panel, body .list-wrap { background: var(--md-surf) !important; border-color: transparent !important; border-radius: var(--r-panel) !important; }
 
 /* buttons: shapes and tonal colours; Copy / Clear / Addr / PK keep Kwallet's solid green and red */
-body.md3 .btn { border-radius: var(--r-btn) !important; }
-body.md3 .btn:not(.btn-p):not(.btn-copy):not(.btn-d):not(.btn-a):not(.btn-k):not(.btn-last) { background: var(--md-sc-high) !important; border-color: transparent !important; color: var(--md-on) !important; }
-body.md3 .btn-p { background: var(--md-primary) !important; border-color: var(--md-primary) !important; color: var(--md-on-primary) !important; }
-body.md3 .btn-last { background: transparent !important; color: var(--md-primary) !important; border-color: var(--md-ov) !important; }
-body.md3 .btn.btn-a, body.md3 .btn.btn-k { border-radius: var(--r-chip) !important; }
-body.md3 .top-select { border-radius: var(--r-btn) !important; background: var(--md-sc-high) !important; border-color: transparent !important; color: var(--md-on) !important; }
+body .btn { border-radius: var(--r-btn) !important; }
+body .btn:not(.btn-p):not(.btn-copy):not(.btn-d):not(.btn-a):not(.btn-k):not(.btn-last) { background: var(--md-sc-high) !important; border-color: transparent !important; color: var(--md-on) !important; }
+body .btn-p { background: var(--md-primary) !important; border-color: var(--md-primary) !important; color: var(--md-on-primary) !important; }
+body .btn-last { background: transparent !important; color: var(--md-primary) !important; border-color: var(--md-ov) !important; }
+body .btn.btn-a, body .btn.btn-k { border-radius: var(--r-chip) !important; }
+body .top-select { border-radius: var(--r-btn) !important; background: var(--md-sc-high) !important; border-color: transparent !important; color: var(--md-on) !important; }
 
 /* fields */
-body.md3 .seed, body.md3 #import-area { background: var(--md-sc) !important; border-color: transparent !important; border-radius: var(--r-field) !important; color: var(--md-on) !important; }
-body.md3 .wc-inline button { border-radius: var(--r-chip) !important; }
-body.md3 .wc-inline button.on { background: var(--md-pc) !important; border-color: var(--md-pc) !important; color: var(--md-opc) !important; }
-body.md3 .modal { background: var(--md-sc-high) !important; color: var(--md-on) !important; border-radius: 28px !important; border-color: transparent !important; }
+body .seed, body #import-area { background: var(--md-sc) !important; border-color: transparent !important; border-radius: var(--r-field) !important; color: var(--md-on) !important; }
+body .wc-inline button { border-radius: var(--r-chip) !important; }
+body .wc-inline button.on { background: var(--md-pc) !important; border-color: var(--md-pc) !important; color: var(--md-opc) !important; }
+body .modal { background: var(--md-sc-high) !important; color: var(--md-on) !important; border-radius: 28px !important; border-color: transparent !important; }
 
 /* brand mark, highlights */
 /* Kwallet logo stays the brand original in every theme */
@@ -10300,7 +10300,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.67';
+const APP_VERSION = '3.68';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
