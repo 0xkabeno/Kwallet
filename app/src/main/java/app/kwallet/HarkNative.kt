@@ -44,6 +44,29 @@ class HarkNative(
     @JavascriptInterface
     fun bioAuth(title: String) { bioPrompt(title) }
 
+    /** Material You: the phone's wallpaper tonal palettes (Android 12+), as JSON {"a1":{"0":"#..",..},"a2":..,"a3":..,"n1":..,"n2":..}; "{}" before Android 12. */
+    @JavascriptInterface
+    fun dynamicColors(): String {
+        if (Build.VERSION.SDK_INT < 31) return "{}"
+        return try {
+            val out = org.json.JSONObject()
+            val tones = intArrayOf(0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000)
+            for ((key, name) in listOf("a1" to "accent1", "a2" to "accent2", "a3" to "accent3", "n1" to "neutral1", "n2" to "neutral2")) {
+                val o = org.json.JSONObject()
+                for (tn in tones) {
+                    val id = ctx.resources.getIdentifier("system_${name}_$tn", "color", "android")
+                    if (id != 0) o.put(tn.toString(), String.format("#%06X", 0xFFFFFF and ctx.getColor(id)))
+                }
+                out.put(key, o)
+            }
+            out.toString()
+        } catch (_: Exception) { "{}" }
+    }
+
+    /** "dark" | "light": the phone's own dark-theme setting. */
+    @JavascriptInterface
+    fun systemDark(): Boolean = (ctx.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+
     /** System bar and cutout insets in CSS px: {"t":..,"r":..,"b":..,"l":..} */
     @JavascriptInterface
     fun insets(): String = insetsJson()
