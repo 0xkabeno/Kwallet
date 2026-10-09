@@ -2758,9 +2758,8 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
   root.appendChild(el('div', 'kl-bg')); root.appendChild(el('div', 'kl-aura'));
   var splash = el('div', 'kl-splash'); root.appendChild(splash);
   var coinsBox = el('div', 'kl-coins'); coinsBox.setAttribute('aria-hidden', 'true'); splash.appendChild(coinsBox);
-  var LIT_COIN = (function () { try { var f = localStorage.getItem('kw-lit-test'); if (f && ORDER.indexOf(f) >= 0) return f; } catch (e) {} if (Math.random() < .5) return 'xrp'; var o = ORDER.filter(function (n) { return n !== 'xrp'; }); return o[Math.floor(Math.random() * o.length)]; })();
+  var LIT_COIN = (function () { try { var f = localStorage.getItem('kw-lit-test'); if (f && ORDER.indexOf(f) >= 0) return f; } catch (e) {} return ORDER[Math.floor(Math.random() * ORDER.length)]; })();
   var coins = ORDER.map(function (n) {
-    /* one random mark per launch is painted like the original XRP: ink disc + brand-yellow mark */
     var lit = n === LIT_COIN, svgS;
     /* one random mark per launch is lit: the plain flat glyph in brand yellow, no disc */
     svgS = '<svg viewBox="' + ICONS[n][0] + '" shape-rendering="geometricPrecision"><path' + (lit ? ' fill="#DDF869"' : '') + ' d="' + ICONS[n][1] + '"/></svg>';
