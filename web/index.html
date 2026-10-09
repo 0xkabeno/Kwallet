@@ -2425,90 +2425,73 @@
 .wc-inline button small, .wc-inline .wc-g2 button small { display: block; line-height: 12px !important; margin-top: 2px; font-size: 9.5px !important; }
 </style>
 <style id="kw-design">
-/* ===== v3.62 design system: one token set for Light, Dark and Material You ===== */
-body[data-theme="light"] {
-  --md-primary: #0b57d0; --md-on-primary: #ffffff; --md-pc: #d3e3fd; --md-opc: #041e49;
-  --md-sc2: #c2e7ff; --md-osc2: #001d35;
-  --md-bg: #f6f8fc; --md-surf: #ffffff; --md-sc-low: #f8fafd; --md-sc: #f0f4f9; --md-sc-high: #e9eef6; --md-sc-hi2: #dde3ea;
-  --md-on: #1f1f1f; --md-on-var: #444746; --md-outline: #747775; --md-ov: #c4c7c5;
-  --md-ok: #146c2e; --md-on-ok: #ffffff; --md-ok-c: #c4eed0; --md-on-ok-c: #072711;
-  --md-err: #b3261e; --md-on-err: #ffffff; --md-err-c: #f9dedc; --md-on-err-c: #410e0b;
-  --md-shadow: 0 1px 2px rgba(60,64,67,.12), 0 1px 3px 1px rgba(60,64,67,.06);
+/* ===== v3.64 design system =====
+   Default = Kwallet brand colours (original palette). Material You (body.md3, one toggle in Settings)
+   = wallpaper palette + expressive shapes across the whole app, opening screen included. */
+body:not(.md3)[data-theme="light"] { --md-on-primary: #ffffff; --md-pc: #e8f0fe; --md-opc: #174ea6; }
+body:not(.md3)[data-theme="dark"]  { --md-on-primary: #223348; --md-pc: #2b3a1c; --md-opc: #DDF869; }
+body {
+  --kw-font: 'RobotoE','Roboto',system-ui,sans-serif; --kw-font-d: 'RobotoE','Roboto',system-ui,sans-serif;
 }
-body[data-theme="dark"] {
-  --md-primary: #a8c7fa; --md-on-primary: #062e6f; --md-pc: #0842a0; --md-opc: #d3e3fd;
-  --md-sc2: #004a77; --md-osc2: #c2e7ff;
-  --md-bg: #111318; --md-surf: #1b1d22; --md-sc-low: #16181d; --md-sc: #1f2127; --md-sc-high: #272a30; --md-sc-hi2: #32353b;
-  --md-on: #e3e3e3; --md-on-var: #c4c7c5; --md-outline: #8e918f; --md-ov: #3a3d42;
-  --md-ok: #6dd58c; --md-on-ok: #00391a; --md-ok-c: #0f5223; --md-on-ok-c: #c4eed0;
-  --md-err: #f2b8b5; --md-on-err: #601410; --md-err-c: #8c1d18; --md-on-err-c: #f9dedc;
-  --md-shadow: none;
+body:not(.md3) {
+  --md-primary: var(--accent); --md-sc2: var(--md-pc); --md-osc2: var(--md-opc);
+  --md-bg: var(--bg); --md-surf: var(--bg-card); --md-sc-low: var(--bg-card); --md-sc: var(--bg-input); --md-sc-high: var(--bg-input);
+  --md-on: var(--text); --md-on-var: var(--text-muted); --md-outline: var(--greyed); --md-ov: var(--border);
 }
-body[data-theme] {
+body.md3[data-theme="light"] {
+  --md-primary: #65558f; --md-on-primary: #ffffff; --md-pc: #e9ddff; --md-opc: #21005d; --md-sc2: #e8def8; --md-osc2: #1d192b;
+  --md-bg: #f7f2fa; --md-surf: #fffbfe; --md-sc-low: #fffbfe; --md-sc: #f3edf7; --md-sc-high: #ece6f0; --md-sc-hi2: #e6e0e9;
+  --md-on: #1d1b20; --md-on-var: #49454f; --md-outline: #79747e; --md-ov: #cac4d0;
+}
+body.md3[data-theme="dark"] {
+  --md-primary: #d0bcff; --md-on-primary: #381e72; --md-pc: #4f378b; --md-opc: #eaddff; --md-sc2: #4a4458; --md-osc2: #e8def8;
+  --md-bg: #141218; --md-surf: #1d1b20; --md-sc-low: #1d1b20; --md-sc: #211f26; --md-sc-high: #2b2930; --md-sc-hi2: #36343b;
+  --md-on: #e6e0e9; --md-on-var: #cac4d0; --md-outline: #938f99; --md-ov: #49454f;
+}
+body.md3 {
   --bg: var(--md-bg); --bg-card: var(--md-surf); --bg-input: var(--md-sc); --border: var(--md-ov);
   --text: var(--md-on); --text-muted: var(--md-on-var); --accent: var(--md-primary); --accent-hover: var(--md-primary);
-  --danger: var(--md-err); --greyed: var(--md-outline); --row-hover: var(--md-sc);
-  --btn-addr-bg: var(--md-ok); --btn-pk-bg: var(--md-err);
-  --r-panel: 20px; --r-btn: 12px; --r-field: 14px; --r-chip: 10px;
-  --kw-font: 'Google Sans Text','Google Sans','Product Sans','RobotoE','Roboto',system-ui,sans-serif;
-  --kw-font-d: 'Google Sans','Product Sans','RobotoE','Roboto',system-ui,sans-serif;
+  --greyed: var(--md-outline); --row-hover: var(--md-sc);
+  --r-panel: 28px; --r-btn: 20px; --r-field: 22px; --r-chip: 14px;
 }
-/* Material You expressive: rounder, bouncier, wallpaper colours (palette set by script) */
-body.md3[data-theme] { --r-panel: 28px; --r-btn: 20px; --r-field: 22px; --r-chip: 14px; }
-
-html, body { background: var(--md-bg) !important; color: var(--md-on); font-family: var(--kw-font) !important; }
-.app { gap: 8px !important; }
+body.md3, html:has(body.md3) { background: var(--md-bg) !important; }
 
 /* top bar */
-.net { background: var(--md-sc-high) !important; border: 0 !important; border-radius: 999px !important; padding: 3px !important; box-shadow: none !important; }
-.net button { color: var(--md-on-var) !important; border-radius: 999px !important; font: 500 12.5px/1 var(--kw-font-d) !important; letter-spacing: .1px; }
-.net button.on { background: var(--md-primary) !important; color: var(--md-on-primary) !important; box-shadow: none !important; }
-.icon-btn { color: var(--md-on-var) !important; font-family: var(--kw-font) !important; }
-.icon-btn.on, .icon-btn[aria-pressed="true"] { color: var(--md-opc) !important; }
+body.md3 .net { background: var(--md-sc-high) !important; border: 0 !important; border-radius: 999px !important; }
+body.md3 .net button { color: var(--md-on-var) !important; border-radius: 999px !important; }
+body.md3 .net button.on { background: var(--md-primary) !important; color: var(--md-on-primary) !important; }
+body.md3 .icon-btn { color: var(--md-on-var) !important; }
 
 /* panels */
-.panel, .list-wrap { background: var(--md-surf) !important; border: 0 !important; border-radius: var(--r-panel) !important; box-shadow: var(--md-shadow) !important; }
-body[data-theme="dark"] .panel, body[data-theme="dark"] .list-wrap { background: var(--md-sc-low) !important; outline: 1px solid var(--md-ov); outline-offset: -1px; }
+body.md3 .panel, body.md3 .list-wrap { background: var(--md-surf) !important; border-color: transparent !important; border-radius: var(--r-panel) !important; }
 
-/* buttons */
-.btn { border-radius: var(--r-btn) !important; border: 0 !important; background: var(--md-sc-high) !important; color: var(--md-on) !important;
-  font: 500 14px/1 var(--kw-font-d) !important; letter-spacing: .1px; box-shadow: none !important; transition: background-color .12s linear, transform .1s ease-out !important; }
-.btn:disabled { background: color-mix(in srgb, var(--md-on) 6%, transparent) !important; color: color-mix(in srgb, var(--md-on) 38%, transparent) !important; }
-.btn-p, .btn.btn-p { background: var(--md-primary) !important; color: var(--md-on-primary) !important; }
-.btn-p:disabled { background: color-mix(in srgb, var(--md-on) 10%, transparent) !important; color: color-mix(in srgb, var(--md-on) 38%, transparent) !important; }
-.btn-copy, .btn.btn-copy { background: var(--md-ok-c) !important; color: var(--md-on-ok-c) !important; }
-.btn-d, .btn.btn-d { background: var(--md-err-c) !important; color: var(--md-on-err-c) !important; }
-.btn-last { background: transparent !important; color: var(--md-primary) !important; outline: 1px solid var(--md-ov) !important; outline-offset: -1px; }
-.btn-last:disabled { color: color-mix(in srgb, var(--md-on) 38%, transparent) !important; }
-body.md3 .btn:not(:disabled):active { transform: scale(.96); }
-.btn-gen .dice { filter: saturate(.9); }
-.top-select { border-radius: var(--r-btn) !important; background: var(--md-sc-high) !important; border: 0 !important; color: var(--md-on) !important; font: 500 16px/1 var(--kw-font-d) !important; }
-.top-select.wc-open, #word-count.wc-open { background: var(--md-pc) !important; color: var(--md-opc) !important; box-shadow: none !important; }
+/* buttons: shapes and tonal colours; Copy / Clear / Addr / PK keep Kwallet's solid green and red */
+body.md3 .btn { border-radius: var(--r-btn) !important; }
+body.md3 .btn:not(.btn-p):not(.btn-copy):not(.btn-d):not(.btn-a):not(.btn-k):not(.btn-last) { background: var(--md-sc-high) !important; border-color: transparent !important; color: var(--md-on) !important; }
+body.md3 .btn-p { background: var(--md-primary) !important; border-color: var(--md-primary) !important; color: var(--md-on-primary) !important; }
+body.md3 .btn-last { background: transparent !important; color: var(--md-primary) !important; border-color: var(--md-ov) !important; }
+body.md3 .btn.btn-a, body.md3 .btn.btn-k { border-radius: var(--r-chip) !important; }
+body.md3 .top-select { border-radius: var(--r-btn) !important; background: var(--md-sc-high) !important; border-color: transparent !important; color: var(--md-on) !important; }
 
-/* seed + import fields */
-.seed-wrap, #import-area, .imp-wrap { background: var(--md-sc) !important; border-color: transparent !important; border-radius: var(--r-field) !important; color: var(--md-on) !important; }
-.seed { color: var(--md-on) !important; }
-.seed-wrap, .seed-wrap .seed, .imp-wrap, #import-area { border: 0 !important; box-shadow: none !important; outline: 0; }
-.seed-wrap:focus-within, .imp-wrap:focus-within { box-shadow: inset 0 0 0 2px var(--md-primary) !important; }
-.wc-chip { background: var(--md-ok-c) !important; color: var(--md-on-ok-c) !important; border-radius: 8px !important; font: 500 12px/1 var(--kw-font) !important; }
-.pp-chip { background: transparent !important; border: 1px solid var(--md-ov) !important; color: var(--md-on-var) !important; border-radius: 8px !important; font-family: var(--kw-font) !important; }
+/* fields */
+body.md3 .seed, body.md3 #import-area { background: var(--md-sc) !important; border-color: transparent !important; border-radius: var(--r-field) !important; color: var(--md-on) !important; }
+body.md3 .wc-inline button { border-radius: var(--r-chip) !important; }
+body.md3 .wc-inline button.on { background: var(--md-pc) !important; border-color: var(--md-pc) !important; color: var(--md-opc) !important; }
+body.md3 .modal { background: var(--md-sc-high) !important; color: var(--md-on) !important; border-radius: 28px !important; border-color: transparent !important; }
 
-/* word-count chips follow the palette */
-.wc-inline button { border-color: var(--md-ov) !important; color: var(--md-on) !important; border-radius: var(--r-chip) !important; }
-.wc-inline button small, .wc-inline .wc-g2 button small { color: var(--md-on-var) !important; }
-.wc-inline button.on { background: var(--md-pc) !important; border-color: var(--md-pc) !important; color: var(--md-opc) !important; }
-.wc-inline button.on small { color: var(--md-opc) !important; opacity: .8 !important; }
+/* brand mark, highlights */
+body.md3 .top h1.kbrand { background: var(--md-pc) !important; border-radius: 12px !important; }
+body.md3 .kbrand .kb-k { color: var(--md-opc) !important; }
+body.md3 .kbrand .kb-w { -webkit-text-stroke-color: var(--md-opc) !important; text-shadow: none; }
+body.md3 .hl { color: var(--md-primary) !important; }
+body.md3 .item.copied-addr .hl { color: var(--greyed) !important; }
+/* opening screen + PIN follow the wallpaper too */
+.md3 #kl-root { --kl-lime: var(--md-kl-bg, #e9ddff); --kl-lime-deep: var(--md-kl-deep, #d0bcff); --kl-ink: var(--md-kl-ink, #21005d); }
+.md3 #kl-root .kl-slogan { color: color-mix(in srgb, var(--kl-ink) 82%, transparent) !important; }
 
-/* list rows */
-.addr-row, .row-item, .lrow { border-color: var(--md-ov) !important; }
-.btn.btn-a { background: var(--md-ok) !important; color: var(--md-on-ok) !important; border-radius: var(--r-chip) !important; }
-.btn.btn-k { background: var(--md-err) !important; color: var(--md-on-err) !important; border-radius: var(--r-chip) !important; }
-.btn.btn-s, .btn.btn-v { background: var(--md-pc) !important; color: var(--md-opc) !important; border-radius: var(--r-chip) !important; }
-.btn.btn-p.btn-gen:disabled { background: var(--md-primary) !important; color: var(--md-on-primary) !important; opacity: 1 !important; }
-
-/* inputs in strips */
-.addr-search-strip input, .pk-import-strip input, #path-input, .path-input { background: var(--md-sc) !important; border-color: transparent !important; color: var(--md-on) !important; }
-.addr-search-strip input:focus, .pk-import-strip input:focus { outline: 2px solid var(--md-primary) !important; outline-offset: -2px; }
+/* theme swap: one GPU cross-fade */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .38s; animation-timing-function: cubic-bezier(.2,0,0,1); }
+@media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none; } }
 
 /* ===== Settings, compact grouped sheet ===== */
 .kws { background: var(--md-sc-low) !important; border-radius: 28px !important; padding: 4px 0 14px !important; width: min(400px, 100%) !important; }
@@ -2517,7 +2500,7 @@ body[data-theme="light"] .kws { background: var(--md-bg) !important; }
 .kws-head h2 { font: 400 22px/28px var(--kw-font-d) !important; color: var(--md-on) !important; }
 .kws-sec { padding: 14px 28px 6px !important; font: 500 12.5px/16px var(--kw-font) !important; letter-spacing: .4px; color: var(--md-primary) !important; text-transform: none; }
 .kws-grp { margin: 0 12px; background: var(--md-surf); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; gap: 2px; padding: 2px 0; }
-body[data-theme="dark"] .kws-grp { background: var(--md-sc); }
+body[data-theme="dark"]:not(.md3) .kws-grp { background: var(--md-sc); }
 body.md3 .kws-grp { border-radius: 24px; }
 .kws-row { min-height: 56px !important; padding: 8px 16px !important; gap: 14px !important; font: 400 15px/20px var(--kw-font) !important; color: var(--md-on) !important; border-radius: 0 !important; }
 .kws-row + .kws-row { box-shadow: 0 -1px 0 color-mix(in srgb, var(--md-ov) 60%, transparent); }
@@ -2541,22 +2524,69 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
 .kwd { background: var(--md-sc-high) !important; color: var(--md-on) !important; }
 .kwd * { font-family: var(--kw-font) !important; }
 
-/* modals follow the palette */
-.modal { background: var(--md-sc-high) !important; color: var(--md-on) !important; border-radius: 28px !important; border: 0 !important; }
-body[data-theme="light"] .modal { background: var(--md-surf) !important; }
-
-/* theme swap = one GPU cross-fade of two snapshots (View Transitions), no per-element transitions */
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; animation-timing-function: cubic-bezier(.2,0,0,1); }
-@media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none; } }
-/* performance: skip rendering off-screen rows, isolate repaints */
-.list .item, .list-wrap .item { content-visibility: auto; contain-intrinsic-size: auto 118px; }
-.kws-grp { contain: paint; }
-.list-wrap .list, #list { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
-.kws { contain: layout paint; overscroll-behavior: contain; }
-.kws-sw::after { will-change: auto; }
 </style>
 </head>
 <body data-theme="light">
+<script>
+/* v3.64 Material You: one toggle. Wallpaper palette from the Android app (12+), else a baseline seed. */
+(function () {
+  var KEY = 'kw-md3', b = document.body;
+  function on() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
+  function hsl(h, s, l) { s /= 100; l /= 100; var k = function (n) { return (n + h / 30) % 12; }, a = s * Math.min(l, 1 - l);
+    var f = function (n) { return l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); };
+    return '#' + [f(0), f(8), f(4)].map(function (x) { return ('0' + Math.round(x * 255).toString(16)).slice(-2); }).join(''); }
+  var TONES = [0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000];
+  function L(t) { return t === 10 ? 99 : t === 50 ? 95 : 100 - t / 10; }
+  function fake() {
+    var hue = 262, mk = function (s) { var o = {}; TONES.forEach(function (t) { o[t] = hsl(hue, s, L(t)); }); return o; };
+    return { a1: mk(48), a2: mk(16), a3: mk(30), n1: mk(5), n2: mk(9) };
+  }
+  var cache = null;
+  function palette() {
+    if (cache) return cache;
+    try { if (window.HarkNative && HarkNative.dynamicColors) { var p = JSON.parse(String(HarkNative.dynamicColors()) || '{}'); if (p.a1 && p.a1['500']) { cache = p; cache.native = true; return cache; } } } catch (e) {}
+    return (cache = fake());
+  }
+  function mix(a, c, w) { var p = function (h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }, x = p(a), y = p(c);
+    return '#' + x.map(function (v, i) { return ('0' + Math.round(v * (1 - w) + y[i] * w).toString(16)).slice(-2); }).join(''); }
+  var VARS = ['--md-primary','--md-on-primary','--md-pc','--md-opc','--md-sc2','--md-osc2','--md-bg','--md-surf','--md-sc-low','--md-sc','--md-sc-high','--md-sc-hi2','--md-on','--md-on-var','--md-outline','--md-ov'];
+  function swap(fn) {
+    if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) { try { document.startViewTransition(fn); return; } catch (e) {} }
+    fn();
+  }
+  function apply() {
+    var md = on();
+    b.classList.toggle('md3', md); document.documentElement.classList.toggle('md3', md);
+    var de = document.documentElement.style;
+    if (!md) { VARS.forEach(function (v) { b.style.removeProperty(v); }); ['--md-kl-bg','--md-kl-deep','--md-kl-ink'].forEach(function (v) { de.removeProperty(v); }); return; }
+    var P = palette(), a1 = P.a1, a2 = P.a2, n1 = P.n1, n2 = P.n2, dark = b.getAttribute('data-theme') === 'dark', s = {};
+    if (dark) s = { '--md-primary': a1[200], '--md-on-primary': a1[800], '--md-pc': a1[700], '--md-opc': a1[100], '--md-sc2': a2[700], '--md-osc2': a2[100],
+      '--md-bg': n1[900], '--md-sc-low': mix(n1[900], n2[800], .25), '--md-surf': mix(n1[900], n2[800], .4), '--md-sc': mix(n1[900], n2[800], .55), '--md-sc-high': mix(n1[900], n2[800], .8), '--md-sc-hi2': n2[700],
+      '--md-on': n1[100], '--md-on-var': n2[200], '--md-outline': n2[400], '--md-ov': n2[700] };
+    else s = { '--md-primary': a1[600], '--md-on-primary': a1[0], '--md-pc': a1[100], '--md-opc': a1[900], '--md-sc2': a2[100], '--md-osc2': a2[900],
+      '--md-bg': mix(n2[10], n2[50], .6), '--md-surf': n1[10], '--md-sc-low': n1[10], '--md-sc': n2[50], '--md-sc-high': mix(n2[50], n2[100], .6), '--md-sc-hi2': n2[100],
+      '--md-on': n1[900], '--md-on-var': n2[700], '--md-outline': n2[500], '--md-ov': n2[200] };
+    for (var k in s) b.style.setProperty(k, s[k]);
+    /* opening screen: same tones the Android splash uses (accent1 100 / 200 / 900) */
+    de.setProperty('--md-kl-bg', a1[100]); de.setProperty('--md-kl-deep', a1[200]); de.setProperty('--md-kl-ink', a1[900]);
+  }
+  function tellNative(v) { try { if (window.HarkNative && HarkNative.setMd3) HarkNative.setMd3(!!v); } catch (e) {} }
+  window.KwMd3 = {
+    on: on, isNative: function () { return !!palette().native; },
+    set: function (v) { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) {} tellNative(v); swap(apply); },
+    refresh: function () { cache = null; apply(); }
+  };
+  apply(); tellNative(on());
+  new MutationObserver(function (m) { for (var i = 0; i < m.length; i++) if (m[i].attributeName === 'data-theme') { apply(); break; } }).observe(b, { attributes: true, attributeFilter: ['data-theme'] });
+  /* a wallpaper change brings the app back with new colours */
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && on()) KwMd3.refresh(); });
+  /* smooth Light/Dark swap: a single compositor cross-fade */
+  document.addEventListener('DOMContentLoaded', function () {
+    var tt = window.toggleTheme;
+    if (typeof tt === 'function') window.toggleTheme = function () { var self = this, args = arguments; swap(function () { tt.apply(self, args); }); };
+  });
+})();
+</script>
 <script>(function () {
   'use strict';
   if (/nosplash/.test(location.hash) || window.__klMounted) return;
@@ -10247,7 +10277,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.63';
+const APP_VERSION = '3.64';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -17803,7 +17833,7 @@ window.kwBack = function () {
   }
   function push() {
     var top, bot, kl = document.getElementById('kl-root');
-    if (kl && kl.style.display !== 'none' && !kl.classList.contains('kl-out')) { top = bot = '#ddf869'; }
+    if (kl && kl.style.display !== 'none' && !kl.classList.contains('kl-out')) { var kc = parse(getComputedStyle(kl).backgroundColor); top = bot = kc ? hex(kc) : '#ddf869'; }
     else {
       var base = parse(getComputedStyle(document.body).backgroundColor) || [255, 255, 255, 1];
       if (base[3] < 0.99) base = [255, 255, 255, 1];
@@ -18205,60 +18235,6 @@ window.kwBack = function () {
     }, true);
   }
   if (document.readyState === 'complete') setTimeout(bind, 0); else window.addEventListener('load', function () { setTimeout(bind, 0); });
-})();
-</script>
-<script>
-/* v3.62 Material You: one toggle. Wallpaper palette from the Android app (12+), else a baseline seed. */
-(function () {
-  var KEY = 'kw-md3', b = document.body;
-  function on() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
-  function hsl(h, s, l) { s /= 100; l /= 100; var k = function (n) { return (n + h / 30) % 12; }, a = s * Math.min(l, 1 - l);
-    var f = function (n) { return l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); };
-    return '#' + [f(0), f(8), f(4)].map(function (x) { return ('0' + Math.round(x * 255).toString(16)).slice(-2); }).join(''); }
-  var TONES = [0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000];
-  function L(t) { return t === 10 ? 99 : t === 50 ? 95 : 100 - t / 10; }
-  function fake() {
-    var hue = 262, mk = function (s) { var o = {}; TONES.forEach(function (t) { o[t] = hsl(hue, s, L(t)); }); return o; };
-    return { a1: mk(48), a2: mk(16), a3: mk(30), n1: mk(5), n2: mk(9) };
-  }
-  var cache = null;
-  function palette() {
-    if (cache) return cache;
-    try { if (window.HarkNative && HarkNative.dynamicColors) { var p = JSON.parse(String(HarkNative.dynamicColors()) || '{}'); if (p.a1 && p.a1['500']) { cache = p; cache.native = true; return cache; } } } catch (e) {}
-    return (cache = fake());
-  }
-  function mix(a, c, w) { var p = function (h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }, x = p(a), y = p(c);
-    return '#' + x.map(function (v, i) { return ('0' + Math.round(v * (1 - w) + y[i] * w).toString(16)).slice(-2); }).join(''); }
-  var VARS = ['--md-primary','--md-on-primary','--md-pc','--md-opc','--md-sc2','--md-osc2','--md-bg','--md-surf','--md-sc-low','--md-sc','--md-sc-high','--md-sc-hi2','--md-on','--md-on-var','--md-outline','--md-ov'];
-  function swap(fn) {
-    if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) { try { document.startViewTransition(fn); return; } catch (e) {} }
-    fn();
-  }
-  function apply() {
-    var md = on();
-    b.classList.toggle('md3', md);
-    if (!md) { VARS.forEach(function (v) { b.style.removeProperty(v); }); return; }
-    var P = palette(), a1 = P.a1, a2 = P.a2, n1 = P.n1, n2 = P.n2, dark = b.getAttribute('data-theme') === 'dark', s = {};
-    if (dark) s = { '--md-primary': a1[200], '--md-on-primary': a1[800], '--md-pc': a1[700], '--md-opc': a1[100], '--md-sc2': a2[700], '--md-osc2': a2[100],
-      '--md-bg': n1[900], '--md-sc-low': mix(n1[900], n2[800], .25), '--md-surf': mix(n1[900], n2[800], .4), '--md-sc': mix(n1[900], n2[800], .55), '--md-sc-high': mix(n1[900], n2[800], .8), '--md-sc-hi2': n2[700],
-      '--md-on': n1[100], '--md-on-var': n2[200], '--md-outline': n2[400], '--md-ov': n2[700] };
-    else s = { '--md-primary': a1[600], '--md-on-primary': a1[0], '--md-pc': a1[100], '--md-opc': a1[900], '--md-sc2': a2[100], '--md-osc2': a2[900],
-      '--md-bg': mix(n2[10], n2[50], .6), '--md-surf': n1[10], '--md-sc-low': n1[10], '--md-sc': n2[50], '--md-sc-high': mix(n2[50], n2[100], .6), '--md-sc-hi2': n2[100],
-      '--md-on': n1[900], '--md-on-var': n2[700], '--md-outline': n2[500], '--md-ov': n2[200] };
-    for (var k in s) b.style.setProperty(k, s[k]);
-  }
-  window.KwMd3 = {
-    on: on, isNative: function () { return !!palette().native; },
-    set: function (v) { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) {} swap(apply); },
-    refresh: function () { cache = null; apply(); }
-  };
-  apply();
-  new MutationObserver(function (m) { for (var i = 0; i < m.length; i++) if (m[i].attributeName === 'data-theme') { apply(); break; } }).observe(b, { attributes: true, attributeFilter: ['data-theme'] });
-  /* a wallpaper change brings the app back with new colours */
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && on()) KwMd3.refresh(); });
-  /* smooth Light/Dark swap: a single compositor cross-fade */
-  var tt = window.toggleTheme;
-  if (typeof tt === 'function') window.toggleTheme = function () { var self = this, args = arguments; swap(function () { tt.apply(self, args); }); };
 })();
 </script>
 </body>
