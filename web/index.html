@@ -2505,7 +2505,7 @@ body.md3 .item.copied-addr .hl { color: var(--greyed) !important; }
 
 /* ===== motion: transform/opacity only, so it stays on the GPU ===== */
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
-::view-transition-new(root) { z-index: 2; } ::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; } ::view-transition-old(root) { z-index: 1; transform-origin: 50% 0%; }
 /* sliding selection pill, same motion as the chain selector, for every segmented control */
 .kw-slid { position: relative !important; isolation: isolate; }
 .kw-slid .kw-slide { position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; background: var(--accent); opacity: 0;
@@ -2598,8 +2598,14 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
         var vt = document.startViewTransition(fn), x = tap.x, y = tap.y,
           r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
         vt.ready.then(function () {
-          de.animate({ clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + r + 'px at ' + x + 'px ' + y + 'px)'] },
-            { duration: 460, easing: 'cubic-bezier(.3,0,0,1)', pseudoElement: '::view-transition-new(root)' });
+          /* same motion as the opening screen handing over to the PIN pad:
+             the old view glides up and settles smaller (ease-in-out, 650 ms),
+             the new one rises 24 px into place and fades in (kl-ease, 500 ms, 120 ms late) */
+          var up = Math.round(innerHeight * 0.06);
+          de.animate([{ transform: 'translateY(0) scale(1)', opacity: 1 }, { opacity: 1, offset: .55 }, { transform: 'translateY(' + -up + 'px) scale(.92)', opacity: 0 }],
+            { duration: 650, easing: 'cubic-bezier(.65,0,.35,1)', pseudoElement: '::view-transition-old(root)', fill: 'both' });
+          de.animate([{ transform: 'translateY(24px)', opacity: 0 }, { transform: 'none', opacity: 1 }],
+            { duration: 500, delay: 120, easing: 'cubic-bezier(.22,1,.36,1)', pseudoElement: '::view-transition-new(root)', fill: 'both' });
         }, function () {});
         return;
       } catch (e) {}
@@ -10366,7 +10372,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.73';
+const APP_VERSION = '3.74';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
