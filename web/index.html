@@ -2492,7 +2492,7 @@ body.md3 .item.copied-addr .hl { color: var(--greyed) !important; }
 .md3 #kl-root { --kl-lime: var(--md-kl-bg, #e9ddff); --kl-lime-deep: var(--md-kl-deep, #d0bcff); --kl-ink: var(--md-kl-ink, #21005d); }
 .md3 #kl-root .kl-slogan { color: color-mix(in srgb, var(--kl-ink) 82%, transparent) !important; }
 /* dark Material You opening screen: same scene, night tones, brand-yellow marks on dark discs */
-.md3-dark #kl-root { --kl-disc: var(--md-kl-disc, #0d0e12); }
+/* lit disc uses the same plain tone as the other marks, brand yellow inside */
 
 .md3-dark #kl-root .kl-aura { background: radial-gradient(closest-side, color-mix(in srgb, var(--kl-ink) 14%, transparent), color-mix(in srgb, var(--kl-ink) 5%, transparent) 45%, transparent 72%); }
 .md3-dark #kl-root .kl-bg { background: radial-gradient(110% 70% at 50% -5%, color-mix(in srgb, var(--kl-ink) 9%, transparent), transparent 60%), radial-gradient(120% 80% at 50% 108%, var(--kl-lime-deep), transparent 62%); }
@@ -10372,7 +10372,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.74';
+const APP_VERSION = '3.75';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
