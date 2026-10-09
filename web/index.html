@@ -2335,6 +2335,45 @@
 .wc-menu button.on { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--text); font-weight: 600; }
 .wc-menu hr { border: 0; height: 1px; background: var(--border); margin: 5px 6px; }
 .wc-scrim { position: fixed; inset: 0; z-index: 8999; }
+
+/* v3.57 hotfix: compact Settings donation rows with chain marks */
+.kws-don { padding: 12px 8px 6px !important; border-radius: 20px !important; }
+.kws-don-h { padding: 0 10px 4px !important; }
+.kws-don-h b { font-size: 15px !important; }
+.kws-don-r { height: 38px !important; gap: 10px !important; }
+.kws-don-b { flex: 0 0 26px !important; width: 26px; height: 26px; border-radius: 8px !important; display: grid !important; place-items: center; padding: 0 !important; }
+.kws-don-b svg { width: 15px; height: 15px; }
+.kws-don-a { font-size: 12.5px !important; }
+.kws-don-c { width: 32px !important; height: 32px !important; } .kws-don-c svg { width: 18px !important; height: 18px !important; }
+.kws-row { min-height: 52px !important; padding-top: 6px !important; padding-bottom: 6px !important; }
+.kws-sec { padding: 12px 24px 2px !important; }
+/* v3.57 compact Find + Key */
+.addr-search-strip, .pk-import-strip { padding: 8px 12px !important; }
+.addr-search-strip .addr-search-row, .pk-import-strip .addr-search-row { gap: 6px !important; }
+.addr-search-strip input#addr-search-input, .pk-import-strip #pk-import-input { height: 38px !important; min-height: 38px !important; border-radius: 10px !important; font-size: 13.5px !important; padding-left: 12px !important; }
+.addr-search-strip .addr-search-row > .btn, .pk-import-strip .addr-search-row > .btn { height: 38px !important; min-height: 38px !important; min-width: 60px !important; padding: 0 12px !important; border-radius: 10px !important; font-size: 13.5px !important; }
+.pk-import-strip .kpv-ib { width: 38px !important; height: 38px !important; border-radius: 10px !important; }
+.pk-import-strip .kpv-ib svg { width: 18px; height: 18px; }
+.addr-search-strip .addr-search-opts { margin-top: 6px !important; gap: 6px !important; }
+.addr-search-strip .addr-search-opts .seg, .addr-search-strip .addr-search-opts select { height: 34px !important; border-radius: 10px !important; font-size: 12.5px !important; }
+.addr-search-strip .addr-search-opts .seg { padding: 2px !important; } .addr-search-strip .addr-search-opts .seg button { border-radius: 8px !important; font-size: 12.5px !important; padding: 0 10px !important; }
+.addr-search-strip .scan-track { margin-top: 8px !important; }
+.addr-search-strip .search-meta { margin-top: 6px !important; font-size: 11.5px !important; }
+.addr-search-strip .search-meta:empty { display: none !important; }
+.addr-search-strip, .pk-import-strip { min-height: 0 !important; }
+/* v3.57 word-count menu: anchored, quick, unfolds from the picker */
+.wc-menu { min-width: 0 !important; width: 188px; padding: 4px !important; border-radius: 14px !important; transform-origin: top left;
+  animation: wcDrop .18s cubic-bezier(.05,.7,.1,1) !important; will-change: transform, opacity, clip-path; }
+.wc-menu.up { transform-origin: bottom left; animation-name: wcDropUp !important; }
+.wc-menu.out { animation: wcOut .1s ease forwards !important; }
+@keyframes wcDrop { from { opacity: .4; clip-path: inset(0 0 100% 0 round 14px); transform: translateY(-4px); } to { opacity: 1; clip-path: inset(0 0 0 0 round 14px); transform: none; } }
+@keyframes wcDropUp { from { opacity: .4; clip-path: inset(100% 0 0 0 round 14px); transform: translateY(4px); } to { opacity: 1; clip-path: inset(0 0 0 0 round 14px); transform: none; } }
+.wc-menu button { height: 38px !important; padding: 0 10px !important; font-size: 14px !important; border-radius: 10px !important; animation: wcItem .2s ease both; }
+.wc-menu button small { font-size: 11.5px !important; }
+.wc-menu hr { margin: 3px 6px !important; }
+@keyframes wcItem { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+.panel > .row > #word-count.wc-open { border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent) inset !important; }
+@media (prefers-reduced-motion: reduce) { .wc-menu, .wc-menu button { animation: none !important; } }
 </style>
 </head>
 <body data-theme="light">
@@ -10004,7 +10043,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.56';
+const APP_VERSION = '3.57';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -13970,12 +14009,13 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       (sub != null ? '<span class="kws-s" id="' + id + '-s">' + sub + '</span>' : '') + '</span>' + (tail || '') + '</button>';
   }
   var DONATE = [['ETH','EVM','0x00047b2663aB0cE43B6941E30247379Ac7980fc1'],['SOL','Solana','Fd6GYpjp91xkw1nR5teZuugfdUy7Kg6oKzZ4ENQTA6JM'],['BTC','Bitcoin','bc1q9xv9snra9p3n6sqj5d6l0p6z22aesc597f3jx8'],['XMR','Monero','48n3nYPQgXTZYdrmdxiLkVYS41y9eXFf4RsSm9oXDvbcggNVP6Zzj5NSrNnWjQZcTtaaRJxfrQxVqBG5TNkSU4WKNmeKET2']];
+  var DON_IC = {"ETH": ["0 0 24 24", "M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z"], "SOL": ["0 0 24 24", "m23.8764 18.0313-3.962 4.1393a.9201.9201 0 0 1-.306.2106.9407.9407 0 0 1-.367.0742H.4599a.4689.4689 0 0 1-.2522-.0733.4513.4513 0 0 1-.1696-.1962.4375.4375 0 0 1-.0314-.2545.4438.4438 0 0 1 .117-.2298l3.9649-4.1393a.92.92 0 0 1 .3052-.2102.9407.9407 0 0 1 .3658-.0746H23.54a.4692.4692 0 0 1 .2523.0734.4531.4531 0 0 1 .1697.196.438.438 0 0 1 .0313.2547.4442.4442 0 0 1-.1169.2297zm-3.962-8.3355a.9202.9202 0 0 0-.306-.2106.941.941 0 0 0-.367-.0742H.4599a.4687.4687 0 0 0-.2522.0734.4513.4513 0 0 0-.1696.1961.4376.4376 0 0 0-.0314.2546.444.444 0 0 0 .117.2297l3.9649 4.1394a.9204.9204 0 0 0 .3052.2102c.1154.049.24.0744.3658.0746H23.54a.469.469 0 0 0 .2523-.0734.453.453 0 0 0 .1697-.1961.4382.4382 0 0 0 .0313-.2546.4444.4444 0 0 0-.1169-.2297zM.46 6.7225h18.7815a.9411.9411 0 0 0 .367-.0742.9202.9202 0 0 0 .306-.2106l3.962-4.1394a.4442.4442 0 0 0 .117-.2297.4378.4378 0 0 0-.0314-.2546.453.453 0 0 0-.1697-.196.469.469 0 0 0-.2523-.0734H4.7596a.941.941 0 0 0-.3658.0745.9203.9203 0 0 0-.3052.2102L.1246 5.9687a.4438.4438 0 0 0-.1169.2295.4375.4375 0 0 0 .0312.2544.4512.4512 0 0 0 .1692.196.4689.4689 0 0 0 .2518.0739z"], "BTC": ["0 0 24 24", "M23.638 14.904c-1.602 6.43-8.113 10.34-14.542 8.736C2.67 22.05-1.244 15.525.362 9.105 1.962 2.67 8.475-1.243 14.9.358c6.43 1.605 10.342 8.115 8.738 14.548v-.002zm-6.35-4.613c.24-1.59-.974-2.45-2.64-3.03l.54-2.153-1.315-.33-.525 2.107c-.345-.087-.705-.167-1.064-.25l.526-2.127-1.32-.33-.54 2.165c-.285-.067-.565-.132-.84-.2l-1.815-.45-.35 1.407s.975.225.955.236c.535.136.63.486.615.766l-1.477 5.92c-.075.166-.24.406-.614.314.015.02-.96-.24-.96-.24l-.66 1.51 1.71.426.93.242-.54 2.19 1.32.327.54-2.17c.36.1.705.19 1.05.273l-.51 2.154 1.32.33.545-2.19c2.24.427 3.93.257 4.64-1.774.57-1.637-.03-2.58-1.217-3.196.854-.193 1.5-.76 1.68-1.93h.01zm-3.01 4.22c-.404 1.64-3.157.75-4.05.53l.72-2.9c.896.23 3.757.67 3.33 2.37zm.41-4.24c-.37 1.49-2.662.735-3.405.55l.654-2.64c.744.18 3.137.524 2.75 2.084v.006z"], "XMR": ["0 0 24 24", "M12 0C5.365 0 0 5.373 0 12.015c0 1.335.228 2.607.618 3.81h3.577V5.729L12 13.545l7.805-7.815v10.095h3.577c.389-1.203.618-2.475.618-3.81C24 5.375 18.635 0 12 0zm-1.788 15.307l-3.417-3.421v6.351H1.758C3.87 21.689 7.678 24 12 24s8.162-2.311 10.245-5.764h-5.04v-6.351l-3.386 3.421-1.788 1.79-1.814-1.79h-.005z"]};
   function short(a) { return a.length > 22 ? a.slice(0, 10) + '…' + a.slice(-8) : a; }
   function donateCard() {
     return '<div class="kws-don"><div class="kws-don-h"><b>Support Kwallet</b><span>Free and open source</span></div>' +
       DONATE.map(function (d, i) {
         return '<button type="button" class="kws-don-r" data-don="' + i + '" aria-label="Copy ' + d[0] + ' address">' +
-          '<b class="kws-don-b">' + d[0] + '</b><span class="kws-don-a">' + short(d[2]) + '</span>' +
+          '<span class="kws-don-b" title="' + d[1] + '"><svg viewBox="' + DON_IC[d[0]][0] + '" aria-hidden="true"><path fill="currentColor" d="' + DON_IC[d[0]][1] + '"/></svg></span><span class="kws-don-a">' + short(d[2]) + '</span>' +
           '<span class="kws-don-c">' + sv('M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z') + '</span></button>';
       }).join('') + '</div>';
   }
@@ -17917,11 +17957,13 @@ window.kwBack = function () {
     });
     m.innerHTML = h;
     document.body.appendChild(sc); document.body.appendChild(m);
-    var w = m.offsetWidth, x = Math.min(Math.max(8, r.left), innerWidth - w - 8), y = r.bottom + 6;
-    if (y + m.offsetHeight > innerHeight - 8) y = Math.max(8, r.top - m.offsetHeight - 6);
+    var w = m.offsetWidth, x = Math.min(Math.max(8, r.left), innerWidth - w - 8), y = r.bottom + 4;
+    if (y + m.offsetHeight > innerHeight - 8) { y = Math.max(8, r.top - m.offsetHeight - 4); m.classList.add('up'); }
     m.style.left = x + 'px'; m.style.top = y + 'px';
+    Array.prototype.forEach.call(m.querySelectorAll('button'), function (b, i) { b.style.animationDelay = (i * 14) + 'ms'; });
+    sel.classList.add('wc-open');
     try { FX.tick(1200); FX.buzz(8); } catch (e) {}
-    function close() { m.classList.add('out'); sc.remove(); setTimeout(function () { m.remove(); }, 120); document.removeEventListener('keydown', esc); }
+    function close() { sel.classList.remove('wc-open'); m.classList.add('out'); sc.remove(); setTimeout(function () { m.remove(); }, 120); document.removeEventListener('keydown', esc); }
     function esc(e) { if (e.key === 'Escape') close(); }
     document.addEventListener('keydown', esc);
     sc.addEventListener('click', close);
@@ -17931,11 +17973,10 @@ window.kwBack = function () {
       if (v !== sel.value) { sel.value = v; sel.dispatchEvent(new Event('input', { bubbles: true })); sel.dispatchEvent(new Event('change', { bubbles: true })); try { FX.buzz(10); } catch (x) {} }
     });
   }
-  document.addEventListener('click', function (e) {
-    var sel = document.getElementById('word-count'); if (!sel) return;
-    var r = sel.getBoundingClientRect();
-    if (r.width && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom && !document.querySelector('.wc-menu')) { e.preventDefault(); open(sel); }
-  }, true);
+  function hit(e) { var sel = document.getElementById('word-count'); if (!sel) return null; var r = sel.getBoundingClientRect(); return (r.width && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) ? sel : null; }
+  var downAt = 0;
+  document.addEventListener('pointerdown', function (e) { var sel = hit(e); if (!sel || document.querySelector('.wc-menu')) return; e.preventDefault(); downAt = Date.now(); open(sel); }, true);
+  document.addEventListener('click', function (e) { if (hit(e)) { e.preventDefault(); e.stopPropagation(); } }, true);
 })();
 </script>
 </body>
