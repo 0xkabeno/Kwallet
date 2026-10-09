@@ -23,8 +23,21 @@ class HarkNative(
     private val insetsJson: () -> String = { "{}" },
     private val bio: () -> String = { "none" },
     private val bioPrompt: (String) -> Unit = { },
-    private val onAwake: (Boolean) -> Unit = { }
+    private val onAwake: (Boolean) -> Unit = { },
+    private val bioCryptCb: (String, String, String) -> Unit = { _, _, _ -> }
 ) {
+
+    /** v3.84: HMAC-SHA256 with a non-exportable Keystore key (base64 in, base64 out; "" if unavailable). */
+    @JavascriptInterface
+    fun teeMac(b64: String): String = try { KwKeys.mac(Base64.decode(b64, Base64.NO_WRAP)) } catch (_: Exception) { "" }
+
+    /** v3.84: wrap ("enc") or unwrap ("dec") the data key behind a strong biometric check; result via window.kwBioDone. */
+    @JavascriptInterface
+    fun bioCrypt(mode: String, data: String, title: String) { bioCryptCb(mode, data, title) }
+
+    @JavascriptInterface
+    fun bioClear() { KwKeys.deleteBio() }
+
 
     /** Screen Wake Lock for the WebView (Chrome has navigator.wakeLock, WebView doesn't). */
     @JavascriptInterface
