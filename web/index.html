@@ -2472,7 +2472,7 @@ body[data-theme="dark"] .panel, body[data-theme="dark"] .list-wrap { background:
 
 /* buttons */
 .btn { border-radius: var(--r-btn) !important; border: 0 !important; background: var(--md-sc-high) !important; color: var(--md-on) !important;
-  font: 500 14px/1 var(--kw-font-d) !important; letter-spacing: .1px; box-shadow: none !important; transition: border-radius .25s cubic-bezier(.34,1.56,.64,1), background .15s, transform .12s !important; }
+  font: 500 14px/1 var(--kw-font-d) !important; letter-spacing: .1px; box-shadow: none !important; transition: background-color .12s linear, transform .1s ease-out !important; }
 .btn:disabled { background: color-mix(in srgb, var(--md-on) 6%, transparent) !important; color: color-mix(in srgb, var(--md-on) 38%, transparent) !important; }
 .btn-p, .btn.btn-p { background: var(--md-primary) !important; color: var(--md-on-primary) !important; }
 .btn-p:disabled { background: color-mix(in srgb, var(--md-on) 10%, transparent) !important; color: color-mix(in srgb, var(--md-on) 38%, transparent) !important; }
@@ -2480,7 +2480,7 @@ body[data-theme="dark"] .panel, body[data-theme="dark"] .list-wrap { background:
 .btn-d, .btn.btn-d { background: var(--md-err-c) !important; color: var(--md-on-err-c) !important; }
 .btn-last { background: transparent !important; color: var(--md-primary) !important; outline: 1px solid var(--md-ov) !important; outline-offset: -1px; }
 .btn-last:disabled { color: color-mix(in srgb, var(--md-on) 38%, transparent) !important; }
-body.md3 .btn:not(:disabled):active { border-radius: 10px !important; }
+body.md3 .btn:not(:disabled):active { transform: scale(.96); }
 .btn-gen .dice { filter: saturate(.9); }
 .top-select { border-radius: var(--r-btn) !important; background: var(--md-sc-high) !important; border: 0 !important; color: var(--md-on) !important; font: 500 16px/1 var(--kw-font-d) !important; }
 .top-select.wc-open, #word-count.wc-open { background: var(--md-pc) !important; color: var(--md-opc) !important; box-shadow: none !important; }
@@ -2545,9 +2545,15 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
 .modal { background: var(--md-sc-high) !important; color: var(--md-on) !important; border-radius: 28px !important; border: 0 !important; }
 body[data-theme="light"] .modal { background: var(--md-surf) !important; }
 
-/* smooth theme swap */
-body.kw-swap, body.kw-swap * { transition: background-color .3s ease, color .3s ease, border-color .3s ease, outline-color .3s ease !important; }
-@media (prefers-reduced-motion: reduce) { body.kw-swap, body.kw-swap * { transition: none !important; } }
+/* theme swap = one GPU cross-fade of two snapshots (View Transitions), no per-element transitions */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; animation-timing-function: cubic-bezier(.2,0,0,1); }
+@media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none; } }
+/* performance: skip rendering off-screen rows, isolate repaints */
+.list .item, .list-wrap .item { content-visibility: auto; contain-intrinsic-size: auto 118px; }
+.kws-grp { contain: paint; }
+.list-wrap .list, #list { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.kws { contain: layout paint; overscroll-behavior: contain; }
+.kws-sw::after { will-change: auto; }
 </style>
 </head>
 <body data-theme="light">
@@ -10241,7 +10247,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.62';
+const APP_VERSION = '3.63';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -18224,6 +18230,10 @@ window.kwBack = function () {
   function mix(a, c, w) { var p = function (h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }, x = p(a), y = p(c);
     return '#' + x.map(function (v, i) { return ('0' + Math.round(v * (1 - w) + y[i] * w).toString(16)).slice(-2); }).join(''); }
   var VARS = ['--md-primary','--md-on-primary','--md-pc','--md-opc','--md-sc2','--md-osc2','--md-bg','--md-surf','--md-sc-low','--md-sc','--md-sc-high','--md-sc-hi2','--md-on','--md-on-var','--md-outline','--md-ov'];
+  function swap(fn) {
+    if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) { try { document.startViewTransition(fn); return; } catch (e) {} }
+    fn();
+  }
   function apply() {
     var md = on();
     b.classList.toggle('md3', md);
@@ -18239,16 +18249,16 @@ window.kwBack = function () {
   }
   window.KwMd3 = {
     on: on, isNative: function () { return !!palette().native; },
-    set: function (v) { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) {} b.classList.add('kw-swap'); apply(); setTimeout(function () { b.classList.remove('kw-swap'); }, 360); },
+    set: function (v) { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) {} swap(apply); },
     refresh: function () { cache = null; apply(); }
   };
   apply();
   new MutationObserver(function (m) { for (var i = 0; i < m.length; i++) if (m[i].attributeName === 'data-theme') { apply(); break; } }).observe(b, { attributes: true, attributeFilter: ['data-theme'] });
   /* a wallpaper change brings the app back with new colours */
   document.addEventListener('visibilitychange', function () { if (!document.hidden && on()) KwMd3.refresh(); });
-  /* smooth Light/Dark swap */
+  /* smooth Light/Dark swap: a single compositor cross-fade */
   var tt = window.toggleTheme;
-  if (typeof tt === 'function') window.toggleTheme = function () { b.classList.add('kw-swap'); var r = tt.apply(this, arguments); setTimeout(function () { b.classList.remove('kw-swap'); }, 360); return r; };
+  if (typeof tt === 'function') window.toggleTheme = function () { var self = this, args = arguments; swap(function () { tt.apply(self, args); }); };
 })();
 </script>
 </body>
