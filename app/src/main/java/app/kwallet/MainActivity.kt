@@ -100,7 +100,7 @@ class MainActivity : FragmentActivity() {
             // phone's system font size, so the app sizes exactly like the HTML in a browser.
             useWideViewPort = true
             loadWithOverviewMode = false
-            textZoom = (resources.configuration.fontScale * 100f).toInt().coerceIn(85, 200)
+            textZoom = 100
             setSupportZoom(false)
             builtInZoomControls = false
             displayZoomControls = false
