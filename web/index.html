@@ -2073,6 +2073,7 @@
 #kl-root .kl-coin svg { width: 100%; height: 100%; display: block; fill: currentColor; }
 #kl-root .kl-coin .kl-cd { fill: var(--kl-disc, var(--kl-ink)); stroke: none; }
 #kl-root .kl-coin.kl-lit, #kl-root .kl-ring .kl-disc { filter: none !important; }
+#kl-root .kl-coin.kl-lit { color: color-mix(in srgb, var(--kl-ink) 92%, var(--kl-lime)); }
 
 /* wordmark */
 #kl-root .kl-brandwrap { position: absolute; left: 0; right: 0; top: 50%; display: flex; justify-content: center;
@@ -2768,7 +2769,8 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
     var SUI_DROP = 'M19.296 8.726L12.26.123a.336.336 0 0 0-.52 0L4.704 8.726l-.023.029a9.33 9.33 0 0 0-2.07 5.872C2.612 19.803 6.816 24 12 24s9.388-4.197 9.388-9.373a9.32 9.32 0 0 0-2.07-5.871z';
     var HOLE = { bitcoin: '<circle cx="12" cy="12" r="11.2"/>', monero: '<circle cx="12" cy="12" r="11.2"/>',
       sui: '<path d="M19.296 8.726L12.26.123a.336.336 0 0 0-.52 0L4.704 8.726l-.023.029a9.33 9.33 0 0 0-2.07 5.872C2.612 19.803 6.816 24 12 24s9.388-4.197 9.388-9.373a9.32 9.32 0 0 0-2.07-5.871z"/>' };
-    if (lit && n === 'sui') svgS = '<svg viewBox="0 0 24 24" shape-rendering="geometricPrecision"><defs><clipPath id="klsui"><path d="' + SUI_DROP + '"/></clipPath></defs><path d="' + SUI_DROP + '"/><path fill="#DDF869" d="' + ICONS[n][1] + '"/><path fill="none" stroke="currentColor" stroke-width="4.4" clip-path="url(#klsui)" d="' + SUI_DROP + '"/></svg>';
+    if (lit && n === 'sui') svgS = '<svg viewBox="0 0 24 24" shape-rendering="geometricPrecision"><defs><clipPath id="klsui"><path d="' + SUI_DROP + '"/></clipPath></defs><path d="' + SUI_DROP + '"/><path fill="#DDF869" d="' + ICONS[n][1] + '"/><path fill="none" stroke="currentColor" stroke-width="5" clip-path="url(#klsui)" d="' + SUI_DROP + '"/></svg>';
+    else if (lit && n === 'ethereum') svgS = '<svg viewBox="0 0 24 24" shape-rendering="geometricPrecision"><path fill="#DDF869" d="M12.056 0L19.42 12.227L19.313 13.62L11.943 24L4.58 13.62L4.69 12.223Z"/><path d="' + ICONS[n][1] + '"/></svg>';
     else if (lit && HOLE[n]) svgS = '<svg viewBox="' + ICONS[n][0] + '" shape-rendering="geometricPrecision"><g fill="#DDF869">' + HOLE[n] + '</g><path d="' + ICONS[n][1] + '"/></svg>';
     else if (lit && n === 'xrp') svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><circle cx="16" cy="16" r="16"/><path fill="#DDF869" transform="translate(6.6 8.2) scale(.0367)" d="' + ICONS[n][1] + '"/></svg>';
     else if (lit) svgS = '<svg viewBox="0 0 32 32" shape-rendering="geometricPrecision"><circle cx="16" cy="16" r="16"/><svg x="7.2" y="7.2" width="17.6" height="17.6" viewBox="' + ICONS[n][0] + '"><path fill="#DDF869" d="' + ICONS[n][1] + '"/></svg></svg>';
@@ -2829,13 +2831,13 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
     for (var c0 = 0; c0 < 9; c0++) if (c0 !== skip) CELLS.push(c0);
     var bandTop = VH * 0.47 - VH * 0.11, bandBot = VH * 0.47 + VH * 0.13, footTop = VH - 190;
     for (var i = 0; i < coins.length; i++) {
-      var size = (46 + Math.random() * 40) * sc; if (ORDER[i] === 'xrp') size = Math.max(size, 66 * sc);
+      var size = (50 + Math.random() * 42) * sc; if (ORDER[i] === 'xrp') size = Math.max(size, 70 * sc);
       /* stratified: 5 of 6 cells (3x2) above the wordmark, 3 cells below; random spot inside each */
       var cell = CELLS[i], top = cell < 6, col = top ? cell % 3 : cell - 6, row = top ? Math.floor(cell / 3) : 0;
       var y0 = top ? VH * 0.05 : bandBot, y1 = top ? bandTop : footTop;
       var cw = VW / 3, ch = (y1 - y0) / (top ? 2 : 1);
-      if (ORDER[i] === LIT_COIN) size = Math.max(size, 62 * sc);
-      size = Math.min(size, ch + 6, cw - 6);
+      if (ORDER[i] === LIT_COIN) size = Math.max(size, 67 * sc);
+      size = Math.min(size, ch + 10, cw - 4);
       var best = null, bestD = -1;
       for (var tries = 0; tries < 40; tries++) {
         var x = col * cw + size / 2 + 34 + Math.random() * Math.max(4, cw - size - 68);
@@ -10380,7 +10382,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.78';
+const APP_VERSION = '3.79';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
