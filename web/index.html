@@ -2413,6 +2413,16 @@
 [data-theme="dark"] .wc-inline button small { color: #c4c7c5 !important; }
 [data-theme="dark"] .wc-inline button.on { background: #0842a0 !important; border-color: #0842a0 !important; color: #d3e3fd !important; }
 [data-theme="dark"] .wc-inline button.on small { color: #a8c7fa !important; }
+
+/* v3.61: seven identical word-count chips, number over caption */
+.wc-inline .wc-in { display: grid !important; grid-template-columns: repeat(7, minmax(0, 1fr)) !important; gap: 6px !important; }
+.wc-inline .wc-g, .wc-inline .wc-g2 { display: contents !important; }
+.wc-inline .wc-g2::before { content: none !important; }
+.wc-inline button, .wc-inline .wc-g2 button { flex-direction: column !important; align-items: center !important; justify-content: center !important; gap: 0 !important; padding: 0 2px !important; height: 46px !important; }
+.wc-inline .wc-g2 button { border-style: dashed !important; }
+.wc-inline .wc-g2 button.on { border-style: solid !important; }
+.wc-inline button b { display: block; line-height: 18px !important; }
+.wc-inline button small, .wc-inline .wc-g2 button small { display: block; line-height: 12px !important; margin-top: 2px; font-size: 9.5px !important; }
 </style>
 </head>
 <body data-theme="light">
@@ -2834,19 +2844,25 @@
     lock: function () { lockNow(); },
     /* ask for the current PIN before a sensitive change; runs ok() only after a correct PIN */
     verify: function (ok, cancel) { if (!stored()) { ok(); return; } lockNow({ cancelable: true, purpose: 'verify', onOk: ok, onCancel: cancel }); },
-    /* one step: the system biometric sheet alone when biometrics are on, else the PIN pad */
-    quick: function (ok, cancel) {
-      if (!stored()) { ok(); return; }
-      if (BIO.on() && !(lockState().until > Date.now())) {
-        BIO.ask('Show sensitive data', function (r) {
-          if (r === 'ok') { setLock({ n: 0, until: 0 }); ok(); }
-          else if (r === 'cancel') { if (cancel) cancel(); }
-          else lockNow({ cancelable: true, purpose: 'verify', onOk: ok, onCancel: cancel, noBio: true });
-        });
-        return;
-      }
-      lockNow({ cancelable: true, purpose: 'verify', onOk: ok, onCancel: cancel });
-    },
+    /* reveal gate (v3.61, rewritten): exactly one prompt per Show tap.
+       Biometrics on: the system sheet only ("Use PIN" -> PIN pad, back -> stays hidden).
+       Biometrics off: the PIN pad only. Re-entrant taps while a prompt is up are ignored. */
+    reveal: (function () {
+      var pending = false;
+      return function (ok) {
+        if (!stored()) { ok(); return; }
+        if (pending || locked) return;
+        pending = true;
+        var done = function () { pending = false; ok(); }, stop = function () { pending = false; };
+        if (BIO.on() && !(lockState().until > Date.now())) {
+          BIO.ask('Show sensitive data', function (r) {
+            if (r === 'ok') { setLock({ n: 0, until: 0 }); done(); }
+            else if (r === 'cancel') stop();
+            else { pending = false; pending = true; lockNow({ cancelable: true, purpose: 'verify', onOk: done, onCancel: stop, noBio: true }); }
+          });
+        } else lockNow({ cancelable: true, purpose: 'verify', onOk: done, onCancel: stop, noBio: true });
+      };
+    })(),
     change: function (done) { var go = function () { lockNow({ cancelable: true, purpose: 'create', onOk: done }); }; KwLock.verify(go); },
     /* full erase: PIN, lockout, lock mode and last-active stamp */
     /* replay the opening in place (no reload), so the tap that asked for it also lets the sound play */
@@ -10100,7 +10116,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.60';
+const APP_VERSION = '3.61';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -17907,7 +17923,7 @@ window.kwBack = function () {
       var w4 = function () {
         var self = this, args = arguments;
         var go = function () { tp.apply(self, args); refresh(); };
-        if (hidden() && window.KwLock && KwLock.hasPin()) { (KwLock.quick || KwLock.verify)(go); return; }   /* Show needs PIN or biometrics */
+        if (hidden() && window.KwLock && KwLock.hasPin()) { KwLock.reveal(go); return; }   /* Show needs PIN or biometrics */
         go();
       };
       w4.__kwHide = 1; window.togglePrivacy = w4;
@@ -18000,7 +18016,7 @@ window.kwBack = function () {
 <script>
 /* v3.56 word-count drop-down (anchored menu instead of the system dialog) */
 (function () {
-  var L = { '12': 'Standard', '15': 'words', '18': 'words', '21': 'words', '24': 'Strong', 'poly': 'Polyseed', 'xmr': 'Monero' };
+  var L = { '12': 'Standard', '15': 'words', '18': 'words', '21': 'words', '24': 'Strong', 'poly': 'Poly', 'xmr': 'XMR' };
   function open(sel) {
     var ex = document.querySelector('.wc-menu'); if (ex) { ex.__close && ex.__close(); return; }
     var row = sel.closest('.row') || sel.parentNode;
@@ -18034,6 +18050,22 @@ window.kwBack = function () {
   document.addEventListener('click', function (e) { if (hit(e)) { e.preventDefault(); e.stopPropagation(); } }, true);
   ['mousedown','touchstart','touchend'].forEach(function (t) { document.addEventListener(t, function (e) { var pt = e.changedTouches ? e.changedTouches[0] : e; if (hit(pt)) { e.preventDefault();  } }, { capture: true, passive: false }); });
   var _wc = document.getElementById('word-count'); if (_wc) { _wc.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); open(_wc); } }); }
+})();
+</script>
+<script>
+/* v3.61: the Hide/Show button has one handler and ignores repeat taps */
+(function () {
+  function bind() {
+    var pb = document.getElementById('privacy-btn'); if (!pb || pb.__kwOne) return; pb.__kwOne = 1;
+    pb.removeAttribute('onclick'); pb.onclick = null;
+    var last = 0;
+    pb.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      var now = Date.now(); if (now - last < 700) return; last = now;
+      window.togglePrivacy();
+    }, true);
+  }
+  if (document.readyState === 'complete') setTimeout(bind, 0); else window.addEventListener('load', function () { setTimeout(bind, 0); });
 })();
 </script>
 </body>
