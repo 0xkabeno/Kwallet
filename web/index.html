@@ -2678,6 +2678,101 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
   addEventListener('resize', function () { document.querySelectorAll('.kw-slid').forEach(place); });
 })();
 </script>
+<script>
+/* v3.83 sound sets: Original (built-in voices) + 4 separately designed sets, fully synthesized offline */
+window.KwSnd = (function () {
+  var SETS = ['Original', 'Glass', 'Wood', 'Arcade', 'Bubble'], ctx = null, nbuf = null;
+  function set() { try { return +localStorage.getItem('kw-snd-set') || 0; } catch (e) { return 0; } }
+  function ok() {
+    try { if (localStorage.getItem('fx-sound') === '0') return false; } catch (e) {}
+    try { if (window.HarkNative && HarkNative.ringerMode && String(HarkNative.ringerMode()) !== 'normal') return false; } catch (e) {}
+    return true;
+  }
+  function ac() {
+    if (!ok()) return null;
+    try { if (!ctx) { var C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ctx = new C(); }
+      if (ctx.state === 'suspended') ctx.resume(); } catch (e) { return null; }
+    return ctx.state === 'running' ? ctx : null;
+  }
+  function env(c, g, t, a, d, v) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + d); }
+  function osc(c, type, f, at, d, v, f2, a) {
+    var t = c.currentTime + at, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d * .8);
+    env(c, g, t, a || .004, d, v); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + d + .03);
+  }
+  function bell(c, f, at, d, v, ratio, idx) { /* FM: glassy partials */
+    var t = c.currentTime + at, car = c.createOscillator(), mod = c.createOscillator(), mg = c.createGain(), g = c.createGain();
+    car.frequency.value = f; mod.frequency.value = f * (ratio || 3.5); mg.gain.setValueAtTime(f * (idx || 2), t); mg.gain.exponentialRampToValueAtTime(1, t + d);
+    mod.connect(mg); mg.connect(car.frequency); env(c, g, t, .003, d, v); car.connect(g); g.connect(c.destination);
+    car.start(t); mod.start(t); car.stop(t + d + .03); mod.stop(t + d + .03);
+  }
+  function noise(c, at, d, v, freq, q) {
+    if (!nbuf) { nbuf = c.createBuffer(1, c.sampleRate * .3 | 0, c.sampleRate); var a = nbuf.getChannelData(0); for (var i = 0; i < a.length; i++) a[i] = Math.random() * 2 - 1; }
+    var t = c.currentTime + at, s = c.createBufferSource(), bp = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = nbuf; bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = q || 4; env(c, g, t, .001, d, v);
+    s.connect(bp); bp.connect(g); g.connect(c.destination); s.start(t); s.stop(t + d + .02);
+  }
+  function mar(c, f, at, v) { osc(c, 'sine', f, at, .32, v); osc(c, 'sine', f * 4, at, .06, v * .35); noise(c, at, .012, v * .5, f * 3, 2); }
+  /* each set: click(level 0..1), chime(notes), down, fail, gen, sw, chain */
+  var V = {
+    1: { /* Glass: FM bells, high pentatonic, shimmering tails */
+      click: function (c, l) { bell(c, 2200 + l * 900, 0, .09, .05, 2.76, 1.2); },
+      chime: function (c, n) { n.forEach(function (f, i) { bell(c, f * 2, i * .085, .9, .06, 3.5, 2); }); },
+      down: function (c) { [1568, 1175, 784].forEach(function (f, i) { bell(c, f, i * .11, .8, .06, 3.5, 2.5); }); },
+      fail: function (c) { bell(c, 466, 0, .5, .07, 1.41, 3); bell(c, 440, .09, .6, .06, 1.41, 3); },
+      gen: function (c) { [1319, 1568, 1760, 2093, 2349, 2637, 3136].forEach(function (f, i) { bell(c, f, i * .045, .5, .045, 3.5, 1.6); }); bell(c, 2093, .34, 1.2, .07, 2, 2); },
+      sw: function (c) { bell(c, 1760, 0, .35, .06, 2.76, 1.4); bell(c, 2637, .07, .45, .055, 2.76, 1.4); },
+      chain: function (c) { bell(c, 1976, 0, .4, .06, 3.5, 1.5); }
+    },
+    2: { /* Wood: woodblocks, marimba, log drum */
+      click: function (c, l) { noise(c, 0, .018, .16, 1800 + l * 1600, 6); osc(c, 'triangle', 520 + l * 300, 0, .035, .07); },
+      chime: function (c, n) { n.forEach(function (f, i) { mar(c, f / 2, i * .09, .12); }); },
+      down: function (c) { [392, 330, 262, 196].forEach(function (f, i) { osc(c, 'sine', f, i * .1, .28, .13, f * .8); }); },
+      fail: function (c) { osc(c, 'sine', 160, 0, .25, .18, 110); noise(c, 0, .04, .12, 400, 2); },
+      gen: function (c) { for (var i = 0; i < 8; i++) { var t = .3 * (1 - Math.pow(.8, i)) / .2 * .2; noise(c, t, .02, .17, i % 2 ? 2600 : 1900, 7); } mar(c, 523, .33, .14); mar(c, 784, .33, .1); },
+      sw: function (c) { noise(c, 0, .02, .17, 2200, 7); noise(c, .075, .02, .17, 3000, 7); },
+      chain: function (c) { noise(c, 0, .022, .18, 2700, 8); osc(c, 'triangle', 880, 0, .04, .06); }
+    },
+    3: { /* Arcade: 8-bit square/pulse chip sounds */
+      click: function (c, l) { osc(c, 'square', 1000 + l * 800, 0, .025, .045); },
+      chime: function (c, n) { n.forEach(function (f, i) { osc(c, 'square', f, i * .06, .07, .05); }); osc(c, 'square', n[n.length - 1] * 2, n.length * .06, .16, .045); },
+      down: function (c) { osc(c, 'square', 900, 0, .35, .05, 120); },
+      fail: function (c) { osc(c, 'sawtooth', 140, 0, .14, .06); osc(c, 'sawtooth', 104, .16, .26, .06); },
+      gen: function (c) { osc(c, 'square', 260, 0, .3, .05, 1600); [1047, 1319, 1568, 2093].forEach(function (f, i) { osc(c, 'square', f, .3 + i * .05, .06, .05); }); },
+      sw: function (c) { osc(c, 'square', 988, 0, .05, .05); osc(c, 'square', 1319, .06, .09, .05); },
+      chain: function (c) { osc(c, 'square', 660, 0, .03, .05); osc(c, 'square', 1320, .035, .05, .045); }
+    },
+    4: { /* Bubble: water drops and bloops, pitch glides up */
+      click: function (c, l) { osc(c, 'sine', 380 + l * 300, 0, .05, .11, 1100 + l * 700); },
+      chime: function (c, n) { n.forEach(function (f, i) { osc(c, 'sine', f * .6, i * .09, .14, .11, f * 1.4); }); },
+      down: function (c) { [900, 700, 500].forEach(function (f, i) { osc(c, 'sine', f, i * .1, .16, .11, f * .45); }); },
+      fail: function (c) { osc(c, 'sine', 220, 0, .35, .13, 120); osc(c, 'sine', 230, .02, .35, .06, 115); },
+      gen: function (c) { for (var i = 0; i < 7; i++) { var f = 300 + i * 120 + Math.random() * 60; osc(c, 'sine', f, i * .05, .07, .1, f * 2.6); } osc(c, 'sine', 700, .38, .2, .12, 2100); },
+      sw: function (c) { osc(c, 'sine', 500, 0, .06, .11, 1300); osc(c, 'sine', 700, .08, .07, .11, 1800); },
+      chain: function (c) { osc(c, 'sine', 450, 0, .07, .12, 1500); }
+    }
+  };
+  var N = { addr: [880, 1175], pk: [659, 988], seed: [784, 988, 1319], step: [988], ok: [880, 1175, 1568], open: [523, 659, 784, 1047] };
+  /* returns true when a non-Original set handled the sound (caller then skips its own voice) */
+  function play(kind, arg) {
+    var s = set(); if (!s || !V[s]) return false;
+    var c = ac(); if (!c) return true; var v = V[s];
+    try {
+      if (kind === 'tick') v.click(c, Math.max(0, Math.min(1, ((arg || 900) - 700) / 800)));
+      else if (kind === 'key') v.click(c, .3);
+      else if (kind === 'back') v.click(c, 0);
+      else if (kind === 'erase') v.down(c);
+      else if (kind === 'bad') v.fail(c);
+      else if (kind === 'gen') v.gen(c);
+      else if (kind === 'sw') v.sw(c);
+      else if (kind === 'chain') v.chain(c);
+      else v.chime(c, N[kind] || N.addr);
+    } catch (e) {}
+    return true;
+  }
+  return { SETS: SETS, set: set, play: play };
+})();
+</script>
 <script>(function () {
   'use strict';
   if (/nosplash/.test(location.hash) || window.__klMounted) return;
@@ -2712,9 +2807,6 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
     return actx;
   }
   function tone(f, at, dur, vol, type, glideTo) {
-    var __sv = (function(){ try { return +localStorage.getItem('kw-snd-set') || 0; } catch (e) { return 0; } })();
-    var __SP = [[1,null,1],[2,'sine',.8],[.6,'triangle',1.25],[1,'square',.7],[.75,'sawtooth',.9]][__sv] || [1,null,1];
-    f *= __SP[0]; if (__SP[1]) type = __SP[1]; dur *= __SP[2]; if (__sv === 3 || __sv === 4) vol = (vol || .1) * .55;
     var c = ac(); if (!c || c.state !== 'running') return; /* never queue: a suspended context would replay it later on top of the keypad */
     var t0 = c.currentTime + (at || 0), o = c.createOscillator(), g = c.createGain();
     o.type = type || 'sine'; o.frequency.setValueAtTime(f, t0);
@@ -2743,6 +2835,8 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
     erase: function () { tone(440, 0, .14, .11); tone(330, .1, .26, .1); },
     bad: function () { tone(392, 0, .12, .09, 'triangle'); tone(293.66, .1, .26, .085, 'triangle'); }
   };
+  Object.keys(SND).forEach(function (k) { var f = SND[k]; if (typeof f !== 'function') return;
+    SND[k] = function (a) { if (k !== 'open' && window.KwSnd && KwSnd.play(k, a)) return; if (k === 'open' && window.KwSnd && KwSnd.set()) { var c = ac(); if (c && c.state === 'running') { KwSnd.play('open'); return; } } return f.apply(SND, arguments); }; });
   document.addEventListener('pointerdown', function () {
     var c = ac(); if (!c) return;
     var onSplash = SND.pending && !root.classList.contains('kl-pin') && !root.classList.contains('kl-out');
@@ -3280,9 +3374,6 @@ window.FX = (function(){
     return ctx;
   }
   function tone(f, at, dur, vol, type){
-    var __sv = (function(){ try { return +localStorage.getItem('kw-snd-set') || 0; } catch (e) { return 0; } })();
-    var __SP = [[1,null,1],[2,'sine',.8],[.6,'triangle',1.25],[1,'square',.7],[.75,'sawtooth',.9]][__sv] || [1,null,1];
-    f *= __SP[0]; if (__SP[1]) type = __SP[1]; dur *= __SP[2]; if (__sv === 3 || __sv === 4) vol = (vol || .1) * .55;
     var c = ac(); if (!c) return;
     var t0 = c.currentTime + (at || 0), o = c.createOscillator(), g = c.createGain();
     o.type = type || 'sine'; o.frequency.setValueAtTime(f, t0);
@@ -3297,22 +3388,27 @@ window.FX = (function(){
     ringerMode: ringer,
     /* Haptics in every mode: native bridge vibrates with alarm/hardware-feedback attributes,
        which Android honours in Sound, Vibrate and Silent. Browser falls back to navigator.vibrate. */
-    buzz: function(p){
+    buzz: function(p, prio){
+      var now = Date.now(); if (!prio && now < (window.__kwHapT || 0)) return;
+      if (prio) window.__kwHapT = now + (Array.isArray(p) ? p.reduce(function (a, b) { return a + b; }, 0) : p) * (Array.isArray(p) ? 1 : 1) + 120;
       p = (Array.isArray(p) ? p : [p]).map(function (v, i) { return i % 2 ? v : Math.min(160, Math.round(Math.max(18, v * 2))); });
       try { if (window.HarkNative && HarkNative.vibrate) { HarkNative.vibrate(JSON.stringify(Array.isArray(p) ? p : [p])); return; } } catch (e) {}
       try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {}
     },
-    SETS: ['Original', 'Crystal', 'Wood', 'Retro', 'Pulse'],
+    SETS: (window.KwSnd ? KwSnd.SETS : ['Original']),
     soundSet: function(){ try { return +localStorage.getItem('kw-snd-set') || 0; } catch (e) { return 0; } },
     setSoundSet: function(i){ try { localStorage.setItem('kw-snd-set', String(i)); } catch (e) {} },
     /* new seed: fast rising ratchet of ticks ending on a bright click */
-    seedGen: function(){ for (var i = 0; i < 6; i++) tone(700 + i * 110, i * .035, .028, .075, 'square'); tone(1900, .23, .06, .08, 'square'); tone(1320, .24, .18, .08); this.buzz([14, 22, 14, 22, 14, 40, 34]); },
+    seedGen: function(){ this.buzz([70, 45, 110], 1); if (window.KwSnd && KwSnd.play('gen')) return; for (var i = 0; i < 6; i++) tone(700 + i * 110, i * .035, .028, .075, 'square'); tone(1900, .23, .06, .08, 'square'); tone(1320, .24, .18, .08); },
     /* switch seed (undo/redo/history): crisp double tick */
-    seedSwitch: function(){ tone(1150, 0, .03, .08, 'square'); tone(1500, .06, .035, .08, 'square'); this.buzz([16, 40, 24]); },
+    seedSwitch: function(){ this.buzz([40, 50, 60], 1); if (window.KwSnd && KwSnd.play('sw')) return; tone(1150, 0, .03, .08, 'square'); tone(1500, .06, .035, .08, 'square'); },
+    /* chain switch: one firm tick + solid tap */
+    chain: function(){ this.buzz(45, 1); if (window.KwSnd && KwSnd.play('chain')) return; tone(1250, 0, .03, .085, 'square'); tone(1880, .035, .04, .05, 'square'); },
     /* short mechanical tick */
-    tick: function(f){ tone(f || 900, 0, 0.03, 0.07, 'square'); },
+    tick: function(f){ if (window.KwSnd && KwSnd.play('tick', f)) return; tone(f || 900, 0, 0.03, 0.07, 'square'); },
     /* soft notification chimes, one per kind */
     notify: function(kind){
+      if (window.KwSnd && KwSnd.play(kind === 'erase' ? 'erase' : (kind || 'addr'))) return;
       if (kind === 'seed')  { tone(660, 0, .12, .11); tone(880, .07, .12, .1); tone(1320, .14, .22, .09); }
       else if (kind === 'pk')   { tone(520, 0, .12, .11); tone(780, .08, .2, .1); }
       else if (kind === 'erase'){ tone(440, 0, .14, .11); tone(330, .1, .26, .1); }
@@ -10397,7 +10493,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.82';
+const APP_VERSION = '3.83';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -10846,6 +10942,7 @@ function clearImportField() {
 
 function switchNetwork(net) {
   if (net === currentNetwork) return;
+  try { FX.chain(); } catch (e) {}
   rememberPos();
   currentNetwork = net;
   window.__xmrMajor = 0;
