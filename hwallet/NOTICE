@@ -32,3 +32,6 @@ Monero symbol - The Monero Project, https://getmonero.org/press-kit/
 
 Kwallet (the offline signer in app/ and web/) is a separate program under the MIT
 License (see ../LICENSE). It talks to Hwallet only through Android intents.
+
+v1.5 scanner: QR decoding by ZXing core (https://github.com/zxing/zxing, Apache-2.0) and camera by AndroidX CameraX
+(Apache-2.0). Scanner layout follows Gem Wallet (GPL-3.0). No Google Play services code scanner is used.

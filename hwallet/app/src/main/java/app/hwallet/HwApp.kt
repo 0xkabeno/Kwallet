@@ -36,6 +36,8 @@ class HwApp : Application() {
                 val old = if (f.exists()) f.readText() else ""
                 val entry = "time: " + stamp(at) + "\n" + title + "\n" + device() + "\n" + body.trim() + "\n"
                 f.writeText((entry + (if (old.isNotEmpty()) "\n----\n" + old else "")).take(MAX))
+                /* v1.5 (#64): a real crash or ANR (not a note) asks once on the next launch */
+                if (!title.startsWith("note:")) c.getSharedPreferences("hw_crash", Context.MODE_PRIVATE).edit().putLong("pending", at).commit()
             } catch (_: Throwable) {}
         }
 
@@ -74,6 +76,13 @@ class HwApp : Application() {
                 } catch (_: Throwable) {}
             }
         }
+
+        /** v1.5 (#64): the newest crash entry when it has not been prompted yet, else "" */
+        fun pending(c: Context): String = try {
+            val p = c.getSharedPreferences("hw_crash", Context.MODE_PRIVATE)
+            if (p.getLong("pending", 0L) > p.getLong("acked", 0L)) read(c).substringBefore("\n----\n").ifEmpty { read(c) } else ""
+        } catch (_: Throwable) { "" }
+        fun ack(c: Context) { try { val p = c.getSharedPreferences("hw_crash", Context.MODE_PRIVATE); p.edit().putLong("acked", p.getLong("pending", 0L)).apply() } catch (_: Throwable) {} }
 
         fun read(c: Context): String = try { val f = file(c); if (f.exists()) f.readText() else "" } catch (_: Throwable) { "" }
         fun clear(c: Context) { try { file(c).delete() } catch (_: Throwable) {} }

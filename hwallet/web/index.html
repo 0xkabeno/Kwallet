@@ -329,14 +329,14 @@ html.hw-opening,html.hw-opening body{overflow:hidden}
 
 /* ===== v1.4 (#54): Kwallet's Settings sheet, CSS copied from Kwallet (v3.41 Settings, v3.57 compact rows, grouped sheet) ===== */
 /* Kwallet's design tokens, mapped onto Hwallet's theme (light / dark / Material You) */
-.kws-ov, .kwd-ov { --bg-card: var(--card); --text-muted: var(--muted); --accent: var(--acc); --greyed: var(--soft);
+.kws-ov, .kws-page, .kwd-ov { --bg-card: var(--card); --text-muted: var(--muted); --accent: var(--acc); --greyed: var(--soft);
   --kw-font: 'RobotoE','Roboto',system-ui,sans-serif; --kw-font-d: 'RobotoE','Roboto',system-ui,sans-serif; }
-body:not(.md3) .kws-ov, body:not(.md3) .kwd-ov {
+body:not(.md3) .kws-ov, body:not(.md3) .kws-page, body:not(.md3) .kwd-ov {
   --md-primary: var(--acc); --md-on-primary: var(--accI);
   --md-bg: var(--bg); --md-surf: var(--card); --md-sc-low: var(--card); --md-sc: color-mix(in srgb, var(--acc) 7%, var(--card)); --md-sc-high: color-mix(in srgb, var(--acc) 12%, var(--card));
   --md-on: var(--text); --md-on-var: var(--muted); --md-outline: var(--soft); --md-ov: var(--border); }
-body:not(.md3)[data-theme="light"] .kws-ov { --md-pc: #e3e8ef; --md-opc: #223348; }
-body:not(.md3)[data-theme="dark"] .kws-ov { --md-pc: #2b3a1c; --md-opc: #DDF869; }
+body:not(.md3)[data-theme="light"] .kws-ov, body:not(.md3)[data-theme="light"] .kws-page { --md-pc: #e3e8ef; --md-opc: #223348; }
+body:not(.md3)[data-theme="dark"] .kws-ov, body:not(.md3)[data-theme="dark"] .kws-page { --md-pc: #2b3a1c; --md-opc: #DDF869; }
   .kws-ov { position: fixed; inset: 0; z-index: 9000; background: rgba(0,0,0,.32); display: flex; align-items: center; justify-content: center; padding: 24px;
     opacity: 0; pointer-events: none; transition: opacity .18s ease; }
   .kws-ov.show { opacity: 1; pointer-events: auto; }
@@ -468,6 +468,93 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
 .kws-sl.anim .kws-sl-fi { transition: transform .32s cubic-bezier(.34,1.56,.64,1); }
 .kws-sl.drag .kws-sl-th { width: 26px; height: 26px; top: 3px; margin-left: -3px; }
 .kws-sl-l { display: flex; justify-content: space-between; font: 400 11.5px/14px var(--kw-font); color: var(--md-on-var); margin: 0; opacity: .8; }
+
+/* ===== v1.5 (#62): Settings is a full page in the Settings tab (Kwallet's cards, no sheet) ===== */
+.kws-page { display: block; }
+.kws-page .kws { width: auto !important; max-height: none !important; overflow: visible !important; border-radius: 0 !important; box-shadow: none !important;
+  transform: none !important; opacity: 1 !important; background: transparent !important; padding: 0 0 8px !important; transition: none !important; }
+.kws-page .bar { margin: 0 0 6px; }
+.kws-page .kws-don { margin: 0 0 6px !important; }
+.kws-page .kws-grp { margin: 0; }
+.kws-page .kws-sec { padding: 16px 16px 6px !important; }
+body[data-theme="dark"]:not(.md3) .kws-page .kws-grp { background: var(--card); }
+body[data-theme="light"]:not(.md3) .kws-page .kws-grp { background: var(--card); box-shadow: 0 0 0 1px var(--line); }
+/* #56: section headers in the theme accent like Kwallet (Kwallet's light accent, its lime in dark, wallpaper colour in Material You) */
+body[data-theme="light"]:not(.md3) .kws-page .kws-sec { color: #1a73e8 !important; }
+body[data-theme="dark"]:not(.md3) .kws-page .kws-sec { color: #DDF869 !important; }
+.kws-don-h span { opacity: .72; }
+
+/* ===== v1.5 (#61/#65): Hwallet's own scanner, Gem's layout ===== */
+html.scanning, html.scanning body { background: transparent !important; }
+html.scanning #pg, html.scanning #nav, html.scanning .opening { visibility: hidden !important; }
+.scn { position: fixed; inset: 0; z-index: 8000; color: #fff; opacity: 0; transition: opacity .18s ease; font-family: 'RobotoE','Roboto',system-ui,sans-serif; }
+.scn.show { opacity: 1; }
+.scn[data-mode="recv"] { background: var(--bg); color: var(--text); }
+.scn-top { position: absolute; left: 0; right: 0; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: calc(var(--sat, 0px) + 10px) 12px 10px; }
+.scn-ib { width: 44px; height: 44px; border: 0; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.38); color: #fff; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.scn-ib svg { width: 24px; height: 24px; }
+.scn[data-mode="recv"] .scn-ib { background: var(--card2); color: var(--text); }
+.scn[data-mode="recv"] [data-sg] { visibility: hidden; }
+.scn-seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 999px; background: rgba(0,0,0,.42); isolation: isolate; }
+.scn[data-mode="recv"] .scn-seg { background: var(--card2); }
+.scn-pl { position: absolute; z-index: -1; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: 999px; background: var(--acc); transition: transform .34s cubic-bezier(.2,0,0,1); }
+.scn[data-mode="recv"] .scn-pl { transform: translateX(100%); }
+body.md3 .scn-pl { background: var(--md-primary, var(--acc)); }
+.scn-seg button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 104px; height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent;
+  color: inherit; font: 500 14px/1 'RobotoE','Roboto',system-ui,sans-serif; cursor: pointer; transition: color .25s ease; -webkit-tap-highlight-color: transparent; }
+.scn-seg button i { display: none; width: 18px; height: 18px; }
+.scn-seg button i svg { width: 18px; height: 18px; }
+.scn-seg button.on { color: var(--accI); }
+.scn-seg button.on i { display: inline-grid; }
+.scn-cam { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.scn[data-mode="recv"] .scn-cam { display: none; }
+.scn-fr { position: relative; width: min(68vw, 300px); aspect-ratio: 1; margin-top: -40px; }
+.scn-fr i { position: absolute; width: 46px; height: 46px; border: 4px solid rgba(214,218,224,.92); }
+.scn-fr .a { left: 0; top: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 22px; }
+.scn-fr .b { right: 0; top: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 22px; }
+.scn-fr .c { left: 0; bottom: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 22px; }
+.scn-fr .d { right: 0; bottom: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 22px; }
+.scn-cap { margin: 28px 24px 0; font: 500 16px/22px 'RobotoE','Roboto',system-ui,sans-serif; text-align: center; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.scn-torch { position: absolute; left: 50%; bottom: calc(var(--sab, 0px) + 44px); width: 60px; height: 60px; margin-left: -30px; border: 0; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(0,0,0,.42); color: #fff; cursor: pointer; transition: background .2s ease, color .2s ease, transform .12s ease; -webkit-tap-highlight-color: transparent; }
+.scn-torch svg { width: 28px; height: 28px; }
+.scn-torch.on { background: var(--acc); color: var(--accI); }
+.scn-torch:active { transform: scale(.94); }
+.scn-msg { position: absolute; left: 20px; right: 20px; bottom: calc(var(--sab, 0px) + 120px); display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 20px;
+  background: var(--card); color: var(--text); box-shadow: 0 6px 24px rgba(0,0,0,.3); }
+.scn-msg b { font-size: 16px; } .scn-msg span { font-size: 14px; color: var(--muted); line-height: 20px; }
+.scn-msg .btn { margin-top: 6px; }
+.scn-recv { display: none; position: absolute; inset: 0; overflow-y: auto; padding: calc(var(--sat, 0px) + 72px) 16px calc(var(--sab, 0px) + 24px); }
+.scn[data-mode="recv"] .scn-recv { display: block; }
+.scn-sr { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; border-radius: 16px; background: var(--card2); color: var(--muted); }
+.scn-sr input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: 400 16px/1 'RobotoE','Roboto',system-ui,sans-serif; }
+.scn-h { margin: 18px 4px 8px; font: 500 13px/16px 'RobotoE','Roboto',system-ui,sans-serif; color: var(--muted); }
+.scn-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.scn-chip { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px 0 8px; border: 0; border-radius: 999px; background: var(--card); color: var(--text);
+  box-shadow: 0 0 0 1px var(--line); font: 500 14px/1 'RobotoE','Roboto',system-ui,sans-serif; cursor: pointer; }
+.scn-list { display: flex; flex-direction: column; gap: 8px; }
+.scn-row { display: flex; align-items: center; gap: 12px; padding: 10px 8px 10px 14px; border-radius: 18px; background: var(--card); cursor: pointer; }
+.scn-row .am { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.scn-row .an { font-weight: 500; font-size: 16px; color: var(--text); }
+.scn-row .ap { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scn-cp { width: 42px; height: 42px; border: 0; border-radius: 50%; display: grid; place-items: center; background: transparent; color: var(--accT); cursor: pointer; transition: background .15s ease; }
+.scn-cp.ok, .scn-cp:active { background: color-mix(in srgb, var(--acc) 16%, transparent); }
+.scn-empty { text-align: center; color: var(--muted); padding: 24px 0; }
+.scn-url { word-break: break-all; max-height: 30vh; overflow: auto; }
+/* in a browser (no native camera) a dark stand-in sits behind the scanner UI */
+.scn.nocam:not([data-mode="recv"]) { background: radial-gradient(120% 80% at 50% 40%, #39424f 0%, #12161c 70%); }
+
+/* ===== v1.5 (#66): clipboard address chip on Send ===== */
+.clipchip { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; margin: 8px 0 2px; height: 36px; padding: 0 14px 0 10px; border: 0; border-radius: 999px;
+  background: color-mix(in srgb, var(--acc) 14%, var(--card)); color: var(--text); font: 400 14px/1 'RobotoE','Roboto',system-ui,sans-serif; cursor: pointer;
+  opacity: 0; transform: translateY(-4px); transition: opacity .2s ease, transform .2s cubic-bezier(.2,0,0,1); }
+.clipchip.show { opacity: 1; transform: none; }
+.clipchip svg { width: 18px; height: 18px; color: var(--accT); flex: 0 0 auto; }
+.clipchip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clipchip b { font-weight: 500; }
+.crashp .kwd { width: min(340px, 100%); }
+.scn-msg[hidden], .scn-torch[hidden] { display: none !important; }
 
 </style>
 </head>
@@ -3127,7 +3214,7 @@ window.FX = (function(){
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.4';
+var APP_VERSION = '1.5';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -3287,7 +3374,7 @@ var APP_VERSION = '1.4';
     o = o || {};
     var ms = o.timeout || 6000, ct = o.ctype || 'application/json';
     /* v1.4 (#53): at a low data speed limit replies take longer: wait for them (a send still goes through, just slower) */
-    var cap = +window.__hwCap || 0; if (cap > 0) ms = Math.min(120000, Math.max(ms, Math.round(ms * 40 / cap)));
+    var cap = +window.__hwCap || 0; try { if (cap > 0 && window.HwNative && HwNative.capActive && !HwNative.capActive()) cap = 0; } catch (e) {} if (cap > 0) ms = Math.min(120000, Math.max(ms, Math.round(ms * 40 / cap)));
     function parse(body) { if (o.text) return body; return JSON.parse(body); }
     if (window.HwNative && HwNative.http) {
       return new Promise(function (res, rej) {
@@ -3589,8 +3676,7 @@ var APP_VERSION = '1.4';
   var tabRaf = 0;
   function tab(t) {
     /* v1.4 (#54): Settings is Kwallet's Settings sheet, opened over the current page; the pill shows it while open */
-    if (t === 'settings') { if (window.hwSettings && hwSettings.isOpen()) return; movePill('settings'); lightTick(); snd('tick', 1250); kopen(); return; }
-    if (window.hwSettings && hwSettings.isOpen()) hwSettings.close();
+    /* v1.5 (#62): Settings is a full page in its tab (no sheet); it switches like Wallet and Activity */
     if (V.v === t && !stack.length) { try { scroller().scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} return; }
     window.__tabT0 = performance.now(); stack = []; V = { v: t }; movePill(t); lightTick(); snd('tick', 1250);
     cancelAnimationFrame(tabRaf); tabRaf = requestAnimationFrame(function () { if (V.v !== t) return; render('fade'); refreshVisible(); });
@@ -3874,8 +3960,8 @@ var APP_VERSION = '1.4';
   /* v1.3 (#43): Scan (Gem's top-left button). The phone's own code scanner (no camera permission); a pairing text pairs,
      an address (or a payment link like ethereum:0x…) opens Send for that network with the address filled in */
   function scanQr() {
-    if (!(window.HwNative && HwNative.scan)) { toast('Scanning needs the Hwallet app'); return; }
-    buzz(6); window.hwScanDone = function (t) { window.hwScanDone = null; onScan(String(t || '')); }; try { HwNative.scan(); } catch (e) { toast('Scanner not available'); }
+    /* v1.5 (#61): Hwallet's own scanner (segScan.js), no Google code scanner */
+    openScanner('scan');
   }
   function onScan(t) {
     t = t.trim(); if (!t) return; if (t.indexOf('error:') === 0) { toast(t.slice(6) || 'Scanner not available on this phone'); return; }
@@ -4165,7 +4251,7 @@ var APP_VERSION = '1.4';
     document.querySelector('[data-max]').onclick = function () { SND.max = true; buzz(6); fillMax(); validate(); };
     $('lv').querySelectorAll('[data-lv]').forEach(function (b) { b.onclick = function () { SND.lv = b.getAttribute('data-lv'); $('lv').querySelectorAll('[data-lv]').forEach(function (x) { x.classList.toggle('on', x === b); }); buzz(6); if (SND.max) fillMax(); validate(); }; });
     $('go').onclick = review;
-    var sc0 = takeScanned(); if (sc0) { to.value = sc0; SND.to = sc0; checkTo(); }
+    var sc0 = takeScanned(), sa0 = takeScanAmt(); if (sc0) { to.value = sc0; SND.to = sc0; checkTo(); if (sa0) { am.value = sa0; } } else setTimeout(clipChip, 60);
     prep();
   }
   function validAddr(ch, a) { return ch === 'eth' ? OKRE.eth.test(a) : OKRE[ch] ? OKRE[ch].test(a) : false; }
@@ -4971,7 +5057,7 @@ var APP_VERSION = '1.4';
   var DON_IC = {"ETH": ["0 0 24 24", "M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z"], "SOL": ["0 0 24 24", "m23.8764 18.0313-3.962 4.1393a.9201.9201 0 0 1-.306.2106.9407.9407 0 0 1-.367.0742H.4599a.4689.4689 0 0 1-.2522-.0733.4513.4513 0 0 1-.1696-.1962.4375.4375 0 0 1-.0314-.2545.4438.4438 0 0 1 .117-.2298l3.9649-4.1393a.92.92 0 0 1 .3052-.2102.9407.9407 0 0 1 .3658-.0746H23.54a.4692.4692 0 0 1 .2523.0734.4531.4531 0 0 1 .1697.196.438.438 0 0 1 .0313.2547.4442.4442 0 0 1-.1169.2297zm-3.962-8.3355a.9202.9202 0 0 0-.306-.2106.941.941 0 0 0-.367-.0742H.4599a.4687.4687 0 0 0-.2522.0734.4513.4513 0 0 0-.1696.1961.4376.4376 0 0 0-.0314.2546.444.444 0 0 0 .117.2297l3.9649 4.1394a.9204.9204 0 0 0 .3052.2102c.1154.049.24.0744.3658.0746H23.54a.469.469 0 0 0 .2523-.0734.453.453 0 0 0 .1697-.1961.4382.4382 0 0 0 .0313-.2546.4444.4444 0 0 0-.1169-.2297zM.46 6.7225h18.7815a.9411.9411 0 0 0 .367-.0742.9202.9202 0 0 0 .306-.2106l3.962-4.1394a.4442.4442 0 0 0 .117-.2297.4378.4378 0 0 0-.0314-.2546.453.453 0 0 0-.1697-.196.469.469 0 0 0-.2523-.0734H4.7596a.941.941 0 0 0-.3658.0745.9203.9203 0 0 0-.3052.2102L.1246 5.9687a.4438.4438 0 0 0-.1169.2295.4375.4375 0 0 0 .0312.2544.4512.4512 0 0 0 .1692.196.4689.4689 0 0 0 .2518.0739z"], "BTC": ["0 0 24 24", "M23.638 14.904c-1.602 6.43-8.113 10.34-14.542 8.736C2.67 22.05-1.244 15.525.362 9.105 1.962 2.67 8.475-1.243 14.9.358c6.43 1.605 10.342 8.115 8.738 14.548v-.002zm-6.35-4.613c.24-1.59-.974-2.45-2.64-3.03l.54-2.153-1.315-.33-.525 2.107c-.345-.087-.705-.167-1.064-.25l.526-2.127-1.32-.33-.54 2.165c-.285-.067-.565-.132-.84-.2l-1.815-.45-.35 1.407s.975.225.955.236c.535.136.63.486.615.766l-1.477 5.92c-.075.166-.24.406-.614.314.015.02-.96-.24-.96-.24l-.66 1.51 1.71.426.93.242-.54 2.19 1.32.327.54-2.17c.36.1.705.19 1.05.273l-.51 2.154 1.32.33.545-2.19c2.24.427 3.93.257 4.64-1.774.57-1.637-.03-2.58-1.217-3.196.854-.193 1.5-.76 1.68-1.93h.01zm-3.01 4.22c-.404 1.64-3.157.75-4.05.53l.72-2.9c.896.23 3.757.67 3.33 2.37zm.41-4.24c-.37 1.49-2.662.735-3.405.55l.654-2.64c.744.18 3.137.524 2.75 2.084v.006z"], "XMR": ["0 0 24 24", "M12 0C5.365 0 0 5.373 0 12.015c0 1.335.228 2.607.618 3.81h3.577V5.729L12 13.545l7.805-7.815v10.095h3.577c.389-1.203.618-2.475.618-3.81C24 5.375 18.635 0 12 0zm-1.788 15.307l-3.417-3.421v6.351H1.758C3.87 21.689 7.678 24 12 24s8.162-2.311 10.245-5.764h-5.04v-6.351l-3.386 3.421-1.788 1.79-1.814-1.79h-.005z"]};
   function kshort(a) { return a.length > 22 ? a.slice(0, 10) + '\u2026' + a.slice(-8) : a; }
   function donateCard() {
-    return '<div class="kws-don"><div class="kws-don-h"><b>Support Hwallet</b><span>Free and open source</span></div>' +
+    return '<div class="kws-don"><div class="kws-don-h"><b>Support Hwallet</b><span>\u00b7 Free and open source</span></div>' +
       DONATE.map(function (d, i) {
         return '<button type="button" class="kws-don-r" data-don="' + i + '" aria-label="Copy ' + d[0] + ' address">' +
           '<span class="kws-don-b" title="' + d[1] + '"><svg viewBox="' + DON_IC[d[0]][0] + '" aria-hidden="true"><path fill="currentColor" d="' + DON_IC[d[0]][1] + '"/></svg></span><span class="kws-don-a">' + kshort(d[2]) + '</span>' +
@@ -4990,13 +5076,13 @@ var APP_VERSION = '1.4';
   function capOf(p) { if (p >= (CAP_END + 1) / 2) return 0; p = Math.min(p, CAP_END); return Math.max(1, Math.round(Math.exp(p / CAP_END * Math.log(CAP_MAX)))); }
   function capTxt(kb) { return kb ? kb + ' KB/s' : 'Unlimited'; }
   /* the subtitle never changes length while dragging (no layout shift): the live value sits on the right */
-  function capSub(kb) { return 'One limit for all traffic'; }
+  function capSub(kb) { return 'Wi-Fi is never limited'; }
   function capSet(kb) { var was = +window.__hwCap || 0; jset('hw-cap', kb); window.__hwCap = kb; try { if (window.HwNative && HwNative.setSpeed) HwNative.setSpeed(kb); } catch (e) {} if (!was !== !kb) try { wsStart(); } catch (e) {} }
   function capHtml() {
     var kb = capGet();
-    return '<div class="kws-row kws-slr" id="kws-cap"><span class="kws-ic">' + ksv(KI.speed) + '</span><span class="kws-t">Data speed limit<span class="kws-s" id="kws-cap-s">' + capSub(kb) + '</span></span>' +
+    return '<div class="kws-row kws-slr" id="kws-cap"><span class="kws-ic">' + ksv(KI.speed) + '</span><span class="kws-t">Mobile data speed limit<span class="kws-s" id="kws-cap-s">' + capSub(kb) + '</span></span>' +
       '<b class="kws-sl-v" id="kws-cap-v">' + capTxt(kb) + '</b><span class="kws-slw">' +
-      '<span class="kws-sl" id="kws-sl" role="slider" tabindex="0" aria-label="Data speed limit" aria-valuetext="' + capTxt(kb) + '"><span class="kws-sl-tr"><span class="kws-sl-fi"></span>' +
+      '<span class="kws-sl" id="kws-sl" role="slider" tabindex="0" aria-label="Mobile data speed limit" aria-valuetext="' + capTxt(kb) + '"><span class="kws-sl-tr"><span class="kws-sl-fi"></span>' +
       CAP_SNAP.map(function (s) { return '<i style="left:' + (capPos(s) * 100).toFixed(2) + '%"></i>'; }).join('') + '<i class="end" style="left:100%"></i></span><span class="kws-sl-th"></span></span>' +
       '<span class="kws-sl-l"><span>1 KB/s</span><span>Unlimited</span></span></span></div>';
   }
@@ -5035,9 +5121,10 @@ var APP_VERSION = '1.4';
   var kov = null;
   function kbuild() {
     var icon = 'lime'; try { if (window.HarkNative && HarkNative.appIcon) icon = String(HarkNative.appIcon()); } catch (e) {}
-    kov = document.createElement('div'); kov.className = 'kws-ov'; kov.id = 'settings-overlay';
-    kov.innerHTML = '<div class="kws" role="dialog" aria-modal="true" aria-label="Settings">' +
-      '<div class="kws-head"><h2>Settings</h2><button type="button" class="kws-x" aria-label="Close">' + ksv(KI.x) + '</button></div>' +
+    /* v1.5 (#62): a full page inside the Settings tab (no sheet, no X, no dimmed backdrop); the bottom bar stays */
+    kov = document.createElement('div'); kov.className = 'kws-page show'; kov.id = 'settings-page';
+    kov.innerHTML = '<div class="kws" aria-label="Settings">' +
+      '<header class="bar"><div class="bt l">Settings</div></header>' +
       donateCard() +
       '<div class="kws-sec">Wallets</div><div class="kws-grp">' +
       krow('kws-wallets', KI.wallet, 'Wallets', '') +
@@ -5063,9 +5150,6 @@ var APP_VERSION = '1.4';
       krow('kws-src', KI.info, 'Source code', 'github.com/0xkabeno/Kwallet') +
       krow('kws-ver', KI.hglyph, 'Hwallet ' + APP_VERSION, 'Watch only \u00b7 keys stay in Kwallet') +
       '</div></div>';
-    document.body.appendChild(kov);
-    kov.addEventListener('click', function (e) { if (e.target === kov) kclose(); });
-    kov.querySelector('.kws-x').onclick = kclose;
     kov.querySelectorAll('[data-don]').forEach(function (b) {
       b.onclick = function () {
         var d = DONATE[+b.getAttribute('data-don')];
@@ -5180,10 +5264,228 @@ var APP_VERSION = '1.4';
       if (e.target === d) close(false);
     });
   }
-  function kopen() { if (!kov) kbuild(); ksync(); kov.classList.add('show'); kov.querySelector('.kws').scrollTop = 0; requestAnimationFrame(function () { if (kov.__capPaint) kov.__capPaint(); }); }
-  function kclose() { if (!kov || !kov.classList.contains('show')) return; kov.classList.remove('show'); movePill(V.v); }
-  function kopenNow() { return !!(kov && kov.classList.contains('show')); }
+  function kopen() { if (V.v !== 'settings') tab('settings'); }
+  function kclose() {}
+  function kopenNow() { return false; }
+  /* the Settings tab page: the Kwallet settings content is built once and kept, so toggles and the slider keep their state */
+  function settingsHtml() { return '<div id="kset-host"></div>'; }
+  function settingsAfter() {
+    var h = $('kset-host'); if (!h) return; if (!kov) kbuild(); h.appendChild(kov); ksync();
+    requestAnimationFrame(function () { if (kov.__capPaint) kov.__capPaint(); });
+  }
   window.hwSettings = { open: kopen, close: kclose, isOpen: kopenNow, sync: ksync };
+
+
+  /* ---------- v1.5 (#61/#65): Hwallet's own scanner, Gem's layout (Gem Wallet, GPL-3.0) ----------
+     The camera preview is native (CameraX) behind the page; frames are decoded on the phone (ZXing). The page draws
+     Gem's UI over it: X, Scan | Receive pill with a tick on the active side, gallery (photo picker), grey corner
+     brackets, the caption, and a torch button. Receive: search, recents and every address with logo and copy. */
+  var SC = { el: null, mode: 'scan', torch: false, flash: false, busy: false };
+  var SIC = {
+    gal: 'M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4.86 8.86-3 3.87L9 13.14 6 17h12l-3.86-5.14z',
+    torch: 'M6 2h12v3H6zm0 5h12l-3 5v10H9V12L6 7zm6 7.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z',
+    torchOff: 'M3.27 3 2 4.27l5 5V22h6v-7.27l3 3V22h-.01L20.73 22 22 20.73 3.27 3zM17 10l-2 2.58V8h3l-1 2zM6 2h12v3H7.83L6 3.17V2z'
+  };
+  function ssv(d) { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="' + d + '"/></svg>'; }
+  function scanAvail() { return !!(window.HwNative && HwNative.scanStart); }
+  function recvRecent() { var r = jget('hw-recv-rec', []); return Array.isArray(r) ? r.filter(function (k) { return CHBY[k] && A[k]; }) : []; }
+  function recvMark(k) { var r = recvRecent().filter(function (x) { return x !== k; }); r.unshift(k); jset('hw-recv-rec', r.slice(0, 4)); }
+  function recvList(q) {
+    q = String(q || '').trim().toLowerCase();
+    return CH.filter(function (c) { return A[c.id] && (!q || (c.name + ' ' + c.sym + (c.id === 'eth' ? ' evm base arbitrum polygon bsc optimism' : '')).toLowerCase().indexOf(q) >= 0); });
+  }
+  function recvRows(q) {
+    var L = recvList(q);
+    if (!L.length) return '<p class="scn-empty">No network matches \u201c' + esc(q) + '\u201d</p>';
+    return L.map(function (c) {
+      return '<div class="scn-row" data-rq="' + c.id + '">' + logo(c.logo, c.sym, '', 'md') + '<span class="am"><span class="an">' + esc(c.id === 'eth' ? 'Ethereum \u00b7 EVM' : c.name) + '</span><span class="ap mono">' + esc(short(A[c.id], 6)) + '</span></span>' +
+        '<button class="scn-cp" data-rc="' + c.id + '" aria-label="Copy ' + esc(c.name) + ' address">' + sv('copy') + '</button></div>';
+    }).join('');
+  }
+  function recvHtml() {
+    var rec = recvRecent();
+    return '<div class="scn-sr">' + sv('search') + '<input id="scn-q" placeholder="Search networks" autocomplete="off" autocapitalize="off" spellcheck="false"></div>' +
+      (rec.length ? '<div class="scn-h">Recents</div><div class="scn-chips">' + rec.map(function (k) { var c = CHBY[k]; return '<button class="scn-chip" data-rq="' + k + '">' + logo(c.logo, c.sym, '', 'xs') + esc(c.sym) + '</button>'; }).join('') + '</div>' : '') +
+      '<div class="scn-h">All networks</div><div class="scn-list" id="scn-list">' + recvRows('') + '</div>';
+  }
+  function recvQr(k) {
+    var c = CHBY[k], a = A[k], qr = ''; recvMark(k);
+    try { var q = qrcode(0, 'M'); q.addData(a); q.make(); qr = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); } catch (e) {}
+    sheet('<h3>Receive ' + esc(c.sym) + '</h3><p class="sp">Send only ' + (k === 'eth' ? 'EVM assets' : esc(c.sym) + ' and ' + esc(c.name) + ' tokens') + ' to this address.</p><div class="qr">' + qr + '<span class="qrl">' + logo(c.logo, c.sym) + '</span></div>' +
+      '<div class="addr mono">' + esc(a) + '</div><div class="row2"><button class="btn" data-x>Close</button><button class="btn pri" data-c>' + sv('copy') + ' Copy</button></div>', function (ov) {
+      ov.querySelector('[data-c]').onclick = function () { copy(a).then(function () { toast('Address copied'); buzz(8); snd('addr'); }); };
+    });
+  }
+  function scanHtml() {
+    return '<div class="scn-top"><button class="scn-ib" data-sx aria-label="Close">' + sv('close') + '</button>' +
+      '<div class="scn-seg" role="tablist"><span class="scn-pl" aria-hidden="true"></span><button data-sm="scan" role="tab"><i>' + sv('check') + '</i>Scan</button><button data-sm="recv" role="tab"><i>' + sv('check') + '</i>Receive</button></div>' +
+      '<button class="scn-ib" data-sg aria-label="Scan from a photo">' + ssv(SIC.gal) + '</button></div>' +
+      '<div class="scn-cam"><div class="scn-fr" aria-hidden="true"><i class="a"></i><i class="b"></i><i class="c"></i><i class="d"></i></div>' +
+      '<p class="scn-cap">Send, pay, or connect to a DApp</p><div class="scn-msg" id="scn-msg" hidden></div>' +
+      '<button class="scn-torch" data-st aria-label="Torch" aria-pressed="false" hidden>' + ssv(SIC.torch) + '</button></div>' +
+      '<div class="scn-recv" id="scn-recv"></div>';
+  }
+  function scanMode(m) {
+    SC.mode = m; var el = SC.el; if (!el) return;
+    el.setAttribute('data-mode', m);
+    el.querySelectorAll('[data-sm]').forEach(function (b) { var on = b.getAttribute('data-sm') === m; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+    if (m === 'recv') {
+      var r = $('scn-recv'); r.innerHTML = recvHtml();
+      var q = $('scn-q'); q.oninput = function () { $('scn-list').innerHTML = recvRows(q.value); };
+      if (SC.torch) scanTorch(false);
+      try { HwNative.scanStop && HwNative.scanStop(pageBg()); } catch (e) {} SC.cam = false;
+    } else if (!SC.cam) camStart();
+  }
+  function pageBg() { try { return getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#f8f9fa'; } catch (e) { return '#f8f9fa'; } }
+  function camStart() { if (!scanAvail()) { if (SC.el) SC.el.classList.add('nocam'); scanMsg('nocam'); return; } SC.cam = true; document.documentElement.classList.add('scanning'); try { HwNative.scanStart(); } catch (e) { scanMsg('error'); } }
+  function scanMsg(st) {
+    var m = $('scn-msg'); if (!m) return;
+    if (!st) { m.hidden = true; return; }
+    var t = { denied: ['Camera access is off', 'Allow the camera to scan QR codes. You can still scan from a photo.', 'Allow camera', 'ask'],
+      'denied:forever': ['Camera access is off', 'Turn on Camera for Hwallet in its app settings. You can still scan from a photo.', 'Open settings', 'set'],
+      nocam: ['Camera not available', 'Scanning with the camera needs the Hwallet app. You can scan from a photo.', '', ''],
+      error: ['Camera not available', 'The camera could not start. Close other camera apps and try again, or scan from a photo.', 'Try again', 'ask'] }[st] || null;
+    if (!t) { m.hidden = true; return; }
+    m.hidden = false; m.innerHTML = '<b>' + t[0] + '</b><span>' + t[1] + '</span>' + (t[2] ? '<button class="btn pri" data-ma="' + t[3] + '">' + t[2] + '</button>' : '');
+    var b = m.querySelector('[data-ma]'); if (b) b.onclick = function () { buzz(6); if (b.getAttribute('data-ma') === 'set') { try { HwNative.openAppSettings(); } catch (e) {} } else { m.hidden = true; camStart(); } };
+  }
+  function scanTorch(on) {
+    var ok = false; try { ok = !!HwNative.scanTorch(!!on); } catch (e) {}
+    SC.torch = ok && !!on; var b = SC.el && SC.el.querySelector('[data-st]');
+    if (b) { b.classList.toggle('on', SC.torch); b.setAttribute('aria-pressed', SC.torch ? 'true' : 'false'); b.innerHTML = ssv(SC.torch ? SIC.torch : SIC.torchOff); }
+    if (on && !ok) toast('No torch on this camera');
+  }
+  window.hwScanState = function (s) {
+    s = String(s || '');
+    if (s.indexOf('ready') === 0) { scanMsg(''); SC.flash = s === 'ready:1'; var b = SC.el && SC.el.querySelector('[data-st]'); if (b) { b.hidden = !SC.flash; b.innerHTML = ssv(SC.torch ? SIC.torch : SIC.torchOff); } return; }
+    if (s === 'denied' || s === 'denied:forever') { SC.cam = false; scanMsg(s); return; }
+    if (s.indexOf('error') === 0) { SC.cam = false; scanMsg('error'); return; }
+    if (s === 'noqr') { toast('No QR code found in that photo'); buzz([20, 40, 20]); return; }
+    if (s === 'pickfail') { toast('The photo picker is not available'); return; }
+  };
+  window.hwScanHit = function (t) { if (!SC.el) return; scanResult(String(t || '')); };
+  function openScanner(mode) {
+    if (SC.el) return;
+    var el = document.createElement('div'); el.className = 'scn'; el.id = 'scanner'; el.innerHTML = scanHtml();
+    document.body.appendChild(el); SC.el = el; SC.torch = false; SC.cam = false;
+    void el.offsetWidth; el.classList.add('show'); buzz(6);
+    el.addEventListener('click', function (e) {
+      var b = e.target.closest('button,[data-rq]'); if (!b) return;
+      if (b.hasAttribute('data-sx')) { closeScanner(); return; }
+      if (b.hasAttribute('data-sm')) { var m = b.getAttribute('data-sm'); if (m !== SC.mode) { lightTick(); scanMode(m); } return; }
+      if (b.hasAttribute('data-sg')) { buzz(6); if (window.HwNative && HwNative.scanPick) HwNative.scanPick(); else toast('Scanning a photo needs the Hwallet app'); return; }
+      if (b.hasAttribute('data-st')) { lightTick(); scanTorch(!SC.torch); return; }
+      if (b.hasAttribute('data-rc')) { var k = b.getAttribute('data-rc'); e.stopPropagation(); copy(A[k]).then(function () { recvMark(k); b.classList.add('ok'); setTimeout(function () { b.classList.remove('ok'); }, 1200); toast(CHBY[k].sym + ' address copied'); buzz(8); snd('addr'); }); return; }
+      if (b.hasAttribute('data-rq')) { buzz(6); recvQr(b.getAttribute('data-rq')); }
+    });
+    scanMode(mode || 'scan');
+  }
+  function closeScanner() {
+    var el = SC.el; if (!el) return; SC.el = null;
+    if (SC.torch) scanTorch(false);
+    try { if (window.HwNative && HwNative.scanStop) HwNative.scanStop(pageBg()); } catch (e) {}
+    SC.cam = false;
+    document.documentElement.classList.remove('scanning');
+    el.classList.remove('show'); setTimeout(function () { el.remove(); }, 220);
+  }
+  function scanResume() { try { if (window.HwNative && HwNative.scanResume) HwNative.scanResume(); } catch (e) {} }
+  window.hwScanner = { open: openScanner, close: closeScanner, isOpen: function () { return !!SC.el; }, hit: function (t) { scanResult(t); } };
+
+  /* what a scanned text means: an address or a payment link -> Send (prefilled), wc: -> soon, a web link -> its text */
+  var SCAN_AMT = '';
+  function takeScanAmt() { var a = SCAN_AMT; SCAN_AMT = ''; return a; }
+  function weiToEth(v) { try { var b = BigInt(v); return fmtU(b, 18, 18).replace(/,/g, ''); } catch (e) { return ''; } }
+  function parsePay(t) {
+    var m = t.match(/^(ethereum|bitcoin|solana|tron|sui|xrp|ripple|cardano):(?:\/\/)?([^?@\/]+)(?:@(\d+))?(?:\/[^?]*)?(?:\?(.*))?$/i); if (!m) return null;
+    var sch = m[1].toLowerCase(), q = {}, amt = '';
+    (m[4] || '').split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) q[decodeURIComponent(kv.slice(0, i)).toLowerCase()] = decodeURIComponent(kv.slice(i + 1)); });
+    if (q.amount && /^\d*\.?\d+$/.test(q.amount)) amt = q.amount;
+    else if (sch === 'ethereum' && q.value && /^\d+(e\d+)?$/i.test(q.value)) { var v = q.value; if (/e/i.test(v)) { var p = v.toLowerCase().split('e'); v = p[0] + '0'.repeat(+p[1]); } amt = weiToEth(v); }
+    return { addr: m[2], amt: amt, chainId: m[3] ? +m[3] : null };
+  }
+  function scanResult(t) {
+    t = String(t || '').trim(); if (!t) { scanResume(); return; }
+    lightTick();
+    if (/^wc:/i.test(t)) { toast('WalletConnect coming soon'); setTimeout(scanResume, 1600); return; }
+    if (/^https?:\/\//i.test(t)) { urlSheet(t); return; }
+    if (/kwallet-pair:/.test(t)) { closeScanner(); onScan(t); return; }
+    var pay = parsePay(t), a = pay ? pay.addr : t;
+    var ch = null; ['btc', 'trx', 'xrp', 'ada', 'sui', 'eth', 'sol'].some(function (k) { if (validAddr(k, a)) { ch = k; return true; } return false; });
+    if (!ch) { textSheet(t); return; }
+    closeScanner();
+    if (!A[ch]) { toast(CHBY[ch].name + ' address scanned. Add a ' + CHBY[ch].name + ' address to send'); return; }
+    SCANNED = a; SCAN_AMT = pay && pay.amt ? pay.amt : ''; snd('addr'); buzz(8);
+    if (ch === 'eth') {
+      var net = null; if (pay && pay.chainId) { try { EVM.some(function (n) { if (+n.chainId === pay.chainId) { net = n.id; return true; } return false; }); } catch (e) {} }
+      if (net) { go({ v: 'send', ch: 'eth', net: net, tk: 'native' }); return; }
+      pickNet(function (n) { go({ v: 'send', ch: 'eth', net: n, tk: 'native' }); }, 'Send to ' + short(a, 4) + ' on'); return;
+    }
+    go({ v: 'send', ch: ch, net: null, tk: 'native' });
+  }
+  function urlSheet(u) {
+    sheet('<h3>Link</h3><p class="sp">This QR code holds a web address. Check it before you open it.</p><div class="addr mono scn-url">' + esc(u) + '</div>' +
+      '<div class="row2"><button class="btn" data-c>' + sv('copy') + ' Copy</button><button class="btn pri" data-o>' + sv('ext') + ' Open externally</button></div>', function (ov, close) {
+      ov.querySelector('[data-c]').onclick = function () { copy(u).then(function () { toast('Link copied'); buzz(8); }); };
+      ov.querySelector('[data-o]').onclick = function () { close(); try { if (window.HwNative && HwNative.openUrl && /^https:/i.test(u)) HwNative.openUrl(u); else window.open(u, '_blank', 'noopener'); } catch (e) {} };
+      var oc = ov._close; ov._close = function () { oc(); scanResume(); };
+      ov.addEventListener('click', function (e) { if (e.target === ov || e.target.closest('[data-x]')) scanResume(); });
+    });
+  }
+  function textSheet(t) {
+    sheet('<h3>Scanned text</h3><p class="sp">Not an address Hwallet knows.</p><div class="addr mono scn-url">' + esc(t.slice(0, 600)) + '</div>' +
+      '<div class="row2"><button class="btn" data-x>Close</button><button class="btn pri" data-c>' + sv('copy') + ' Copy</button></div>', function (ov) {
+      ov.querySelector('[data-c]').onclick = function () { copy(t).then(function () { toast('Copied'); buzz(8); }); };
+      var oc = ov._close; ov._close = function () { oc(); scanResume(); };
+      ov.addEventListener('click', function (e) { if (e.target === ov || e.target.closest('[data-x]')) scanResume(); });
+    });
+  }
+
+  /* ---------- v1.5 (#66): clipboard address chip on Send ----------
+     Read once when Send opens, only plain text the phone does not mark sensitive and copied in the last 30 minutes
+     (HwNative.clipPeek). A valid address shows "Paste <short> (Chain)"; another chain's address opens that chain's Send. */
+  function clipChip() {
+    var t = ''; try { if (window.HwNative && HwNative.clipPeek) t = String(HwNative.clipPeek() || '').trim(); } catch (e) {}
+    if (!t && window.__hwClipTest) t = String(window.__hwClipTest);
+    if (!t || t.length > 140 || /\s/.test(t)) return;
+    var pay = parsePay(t), a = pay ? pay.addr : t, ch = null;
+    ['btc', 'trx', 'xrp', 'ada', 'sui', 'eth', 'sol'].some(function (k) { if (validAddr(k, a)) { ch = k; return true; } return false; });
+    if (!ch) return;
+    var mine = Object.keys(A).some(function (k) { return typeof A[k] === 'string' && A[k].toLowerCase() === a.toLowerCase(); }); if (mine) return;
+    var to = $('to'); if (!to || to.value) return;
+    var name = ch === 'eth' ? (curNet() && V.ch === 'eth' ? curNet().name : 'EVM') : CHBY[ch].name;
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'clipchip'; b.id = 'clipchip';
+    b.innerHTML = sv('paste') + '<span>Paste <b class="mono">' + esc(short(a, 4)) + '</b> (' + esc(name) + ')</span>';
+    var inp = to.closest('.inp'); inp.parentNode.insertBefore(b, inp.nextSibling);
+    requestAnimationFrame(function () { b.classList.add('show'); });
+    b.onclick = function () {
+      buzz(6); b.remove();
+      if (ch === V.ch) { to.value = a; to.oninput(); if (pay && pay.amt && $('amt') && !$('amt').value) { $('amt').value = pay.amt; $('amt').oninput(); } return; }
+      if (!A[ch]) { toast(CHBY[ch].name + ' address. Add a ' + CHBY[ch].name + ' address to send'); return; }
+      SCANNED = a; SCAN_AMT = pay && pay.amt ? pay.amt : '';
+      if (ch === 'eth') { pickNet(function (n) { stack.pop(); go({ v: 'send', ch: 'eth', net: n, tk: 'native' }); }, 'Send to ' + short(a, 4) + ' on'); return; }
+      V = { v: 'send', ch: ch, net: null, tk: 'native' }; render('in'); refreshVisible();
+    };
+  }
+
+  /* ---------- v1.5 (#64): after a crash or ANR, a small prompt on the next launch (once per crash) ---------- */
+  function crashPrompt() {
+    var t = ''; try { if (window.HwNative && HwNative.crashPending) t = String(HwNative.crashPending() || ''); } catch (e) {}
+    if (!t && window.__hwCrashTest) t = String(window.__hwCrashTest);
+    if (!t) return;
+    var ack = function () { try { if (window.HwNative && HwNative.crashAck) HwNative.crashAck(); } catch (e) {} window.__hwCrashTest = ''; };
+    var d = document.createElement('div'); d.className = 'kwd-ov crashp';
+    d.innerHTML = '<div class="kwd" role="alertdialog" aria-modal="true"><h3>Hwallet closed unexpectedly</h3><p class="kwd-p">A crash log was saved on this phone. Copy it to share it with the developers. It holds no keys or addresses.</p>' +
+      '<div class="kwd-act"><button type="button" data-a="x">Dismiss</button><button type="button" data-a="c">Copy log</button></div></div>';
+    document.body.appendChild(d); void d.offsetWidth; d.classList.add('show');
+    var close = function () { ack(); d.classList.remove('show'); setTimeout(function () { d.remove(); }, 160); };
+    d._close = close;
+    d.addEventListener('click', function (e) {
+      var a = e.target.closest('[data-a]'); if (!a) return;
+      if (a.getAttribute('data-a') === 'c') { var all = t; try { all = String(HwNative.crashLog() || t); } catch (x) {} copy(all).then(function () { toast('Crash log copied'); buzz(8); }); }
+      close();
+    });
+  }
+window.hwCrashPrompt = crashPrompt;
 
 
   /* ---------- TRON: TronLink-style Energy / Bandwidth bar (#37), live from TronGrid getaccountresource ---------- */
@@ -5322,7 +5624,7 @@ var APP_VERSION = '1.4';
   function sw(on) { return '<span class="sw' + (on ? ' on' : '') + '" aria-hidden="true"></span>'; }
   function srow(id, ic, title, sub, right) { return '<button class="sr tap" data-s="' + id + '"><span class="sri">' + sv(ic) + '</span><span class="srt"><b>' + title + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>' + (right == null ? sv('chev', 'ic chev') : right) + '</button>'; }
   function nat(f) { try { return !!(window.HwNative && HwNative[f]); } catch (e) { return false; } }
-  function settingsHtml() {
+  function settingsHtmlOld() {
     var th = document.body.getAttribute('data-theme'), icon = 'lime'; try { if (window.HarkNative && HarkNative.appIcon) icon = String(HarkNative.appIcon()); } catch (e) {}
     var md = jget('hw-md3', false) === true, sndOn = !(window.FX && !FX.soundOn()), setI = window.FX ? FX.soundSet() : 0, sets = (window.KwSnd && KwSnd.SETS) || ['Original'];
     var bgOn = jget('hw-bg', 5), notif = jget('hw-notif', true) !== false, alerts = jget('hw-alerts', true) !== false;
@@ -5342,7 +5644,7 @@ var APP_VERSION = '1.4';
       '<div class="sech">About</div><div class="lst">' + (nat('crashLog') ? srow('crash', 'warn', 'Crash log', crashSub(), null) : '') + srow('lic', 'code', 'Open-source licenses', 'Hwallet is GPL-3.0 · design and tools from Gem Wallet', null) + srow('src', 'info', 'Source code', 'github.com/0xkabeno/Kwallet', null) + '</div>' +
       '<p class="ver">Hwallet ' + APP_VERSION + ' · watch only · keys stay in Kwallet</p>';
   }
-  function settingsAfter() {
+  function settingsAfterOld() {
     var box = $('app');
     box.querySelectorAll('[data-th]').forEach(function (b) { b.onclick = function () { setTheme(b.getAttribute('data-th')); box.querySelectorAll('[data-th]').forEach(function (x) { x.classList.toggle('on', x === b); }); buzz(6); snd('tick', 900); }; });
     box.querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { try { if (HarkNative.setAppIcon(b.getAttribute('data-i'))) { box.querySelectorAll('[data-i]').forEach(function (x) { x.classList.toggle('on', x === b); }); toast('App icon changed'); buzz(8); } } catch (e) {} }; });
@@ -5516,7 +5818,7 @@ var APP_VERSION = '1.4';
     stopWs(); if (!hasAny() || !window.WebSocket) return;
     /* v1.4 (#53): the page's own WebSockets can't be counted by the native speed limit: while a cap is set the
        native live service (whose frames are counted) does the listening, the page keeps polling */
-    if ((+jget('hw-cap', 0) || 0) > 0 && nat('setSpeed')) return;
+    if ((+jget('hw-cap', 0) || 0) > 0 && nat('setSpeed') && capOn()) return;
     if (A.eth) EVM.forEach(function (n) { if (!n.ws || !(U((C.b['evm:' + n.id] || {}).n) > 0n || n.id === 'ethereum')) return; wsOne(n.ws, function (s) { s.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_subscribe', params: ['newHeads'] })); }, function (m) { if (m.method === 'eth_subscription') wsHit('eth'); }); });
     if (A.sol) wsOne(CHBY.sol.ws, function (s) { s.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'accountSubscribe', params: [A.sol, { commitment: 'confirmed', encoding: 'base64' }] })); s.send(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'logsSubscribe', params: [{ mentions: [A.sol] }, { commitment: 'confirmed' }] })); }, function (m) { if (m.method === 'accountNotification' || m.method === 'logsNotification') wsHit('sol'); });
     if (A.btc) wsOne('wss://mempool.space/api/v1/ws', function (s) { s.send(JSON.stringify({ 'track-address': A.btc })); }, function (m) { if (m['address-transactions'] || m['block-transactions']) wsHit('btc'); });
@@ -5543,12 +5845,15 @@ var APP_VERSION = '1.4';
   window.kwBack = function () {
     var ov = document.querySelectorAll('.sheet-ov.show'); if (ov.length) { ov[ov.length - 1]._close(); return true; }
     var kd = document.querySelectorAll('.kwd-ov.show'); if (kd.length) { var d = kd[kd.length - 1]; if (d._close) d._close(); else { d.classList.remove('show'); setTimeout(function () { d.remove(); }, 160); } return true; }
-    if (window.hwSettings && hwSettings.isOpen()) { hwSettings.close(); return true; }
+    if (window.hwScanner && hwScanner.isOpen()) { hwScanner.close(); return true; }
     if (V.v === 'setup' && !hasAny()) return false;
     if (stack.length) { back(); return true; }
     if (V.v !== 'home') { tab('home'); return true; }
     return false;
   };
+  /* v1.5 (#67): the cap applies only on mobile data */
+  function capOn() { try { if (window.HwNative && HwNative.capActive) return !!HwNative.capActive(); } catch (e) {} return true; }
+  window.hwNetChanged = function () { try { wsStart(); } catch (e) {} };
   /* a payment that the native service saw while the app was closed: refresh right away */
   window.hwIncoming = function () { refreshAll(); histRefresh(); };
 
@@ -5575,6 +5880,8 @@ var APP_VERSION = '1.4';
     loop();
     /* v1.3 (#42): the native service is started from here, after the page has loaded, never from onCreate */
     setTimeout(liveConfig, 1500);
+    /* v1.5 (#64): crash prompt once the opening has played */
+    setTimeout(crashPrompt, 2400);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
