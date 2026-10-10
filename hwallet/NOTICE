@@ -17,7 +17,10 @@ Gem Wallet - https://github.com/gemwalletcom/wallet
   Hwallet's layout and components (asset lists and rows, chain badges, bottom
   navigation, send/receive and network pickers, activity feed, settings structure)
   and wallet logic (per-chain history parsing, token metadata sources, explorer links)
-  follow Gem Wallet. Gem Wallet's name and logo are not used. Gem Wallet is not
+  follow Gem Wallet. Since Hwallet 1.3 the home header (centred wallet chip, scan and
+  search) and the round Send / Receive buttons copy Gem's layout, with Gem's Material
+  Symbols icons (send, QR code, QR scanner, search, chevron; Apache-2.0 by Google, as
+  shipped in Gem Wallet android/ui). Gem Wallet's name and logo are not used. Gem Wallet is not
   affiliated with Hwallet.
 
 Gem Wallet assets - https://github.com/gemwalletcom/assets (fork of trustwallet/assets)

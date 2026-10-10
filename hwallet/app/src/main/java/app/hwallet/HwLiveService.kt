@@ -48,6 +48,8 @@ import java.util.concurrent.TimeUnit
 class HwLiveService : Service() {
     companion object {
         const val CH_LIVE = "hw_live"
+        /* v1.3 (#47): same notification, no status-bar icon. Channel importance can't change after creation, so it is a second channel */
+        const val CH_QUIET = "hw_live_quiet"
         const val CH_IN = "hw_in"
         const val NID = 7101
         const val PREF = "hw_live"
@@ -57,17 +59,24 @@ class HwLiveService : Service() {
             return try { val o = JSONObject(cfg); o.optBoolean("on") && (o.optInt("bg", 5) > 0 || o.optBoolean("notif", true)) } catch (_: Exception) { false }
         }
 
-        fun start(c: Context) {
-            if (!enabled(c)) { stop(c); return }
-            try { ContextCompat.startForegroundService(c, Intent(c, HwLiveService::class.java)) } catch (_: Exception) {}
+        /** v1.3 (#42): from the app (visible activity) a plain startService: no "must call startForeground within N s" contract,
+         *  so a refused promotion can never crash the app. From the background (boot, restart alarm) startForegroundService. */
+        fun start(c: Context, fromApp: Boolean = false) {
+            try {
+                if (!enabled(c)) { stop(c); return }
+                val i = Intent(c, HwLiveService::class.java)
+                if (fromApp || Build.VERSION.SDK_INT < 26) c.startService(i) else ContextCompat.startForegroundService(c, i)
+            } catch (e: Throwable) { HwApp.write(c, "note: live service not started (" + (if (fromApp) "app" else "background") + ")", e.toString()) }
         }
+        fun sbar(c: Context): Boolean = try { JSONObject(c.getSharedPreferences(PREF, Context.MODE_PRIVATE).getString("cfg", null) ?: "{}").optBoolean("sbar", true) } catch (_: Exception) { true }
 
         fun stop(c: Context) { try { c.stopService(Intent(c, HwLiveService::class.java)) } catch (_: Exception) {} }
     }
 
-    private val http = OkHttpClient.Builder()
+    /* built lazily: nothing heavy runs before the service is in the foreground */
+    private val http by lazy { OkHttpClient.Builder()
         .connectTimeout(8, TimeUnit.SECONDS).readTimeout(10, TimeUnit.SECONDS)
-        .pingInterval(20, TimeUnit.SECONDS).retryOnConnectionFailure(true).build()
+        .pingInterval(20, TimeUnit.SECONDS).retryOnConnectionFailure(true).build() }
     private val JSON_T = "application/json".toMediaType()
     private var exec: ScheduledExecutorService? = null
     private var wake: PowerManager.WakeLock? = null
@@ -94,12 +103,13 @@ class HwLiveService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        channels()
+        /* v1.3: foreground first, before anything else can fail or take time */
+        try { channels() } catch (_: Throwable) {}
         goForeground()
         try {
             val pm = getSystemService(POWER_SERVICE) as PowerManager
             wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Hwallet:live").apply { setReferenceCounted(false); acquire() }
-        } catch (_: Exception) {}
+        } catch (_: Throwable) {}
         try {
             val wm = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
             @Suppress("DEPRECATION")
@@ -110,7 +120,7 @@ class HwLiveService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         goForeground()
-        reload()
+        try { reload() } catch (e: Throwable) { HwApp.write(this, "note: live service reload failed", e.toString()) }
         return START_STICKY
     }
 
@@ -119,6 +129,7 @@ class HwLiveService : Service() {
         super.onTaskRemoved(rootIntent)
         if (!enabled(this)) return
         try {
+            if (!(getSystemService(POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(packageName)) return
             val it = Intent(this, HwLiveService::class.java)
             val fl = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             val pi = if (Build.VERSION.SDK_INT >= 26) PendingIntent.getForegroundService(this, 1, it, fl) else PendingIntent.getService(this, 1, it, fl)
@@ -146,7 +157,10 @@ class HwLiveService : Service() {
         val inc = NotificationChannel(CH_IN, "Incoming payments", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "When funds arrive in a watched wallet"; enableVibration(true); vibrationPattern = longArrayOf(0, 40, 60, 40, 60, 90)
         }
-        nm.createNotificationChannel(live); nm.createNotificationChannel(inc)
+        val quiet = NotificationChannel(CH_QUIET, "Live prices (no status-bar icon)", NotificationManager.IMPORTANCE_MIN).apply {
+            description = "The same live prices, without the H in the status bar"; setShowBadge(false); enableVibration(false); setSound(null, null)
+        }
+        nm.createNotificationChannel(live); nm.createNotificationChannel(quiet); nm.createNotificationChannel(inc)
     }
 
     private fun openApp(): PendingIntent {
@@ -176,7 +190,7 @@ class HwLiveService : Service() {
             rv.setTextViewText(ids[k][1], if (p == null) "" else String.format("%s%.2f%%", if (p >= 0) "+" else "", p))
             rv.setTextColor(ids[k][1], if (p == null || Math.abs(p) < 0.005) mute else if (p >= 0) up else dn)
         }
-        val b = NotificationCompat.Builder(this, CH_LIVE)
+        val b = NotificationCompat.Builder(this, if (sbar(this)) CH_LIVE else CH_QUIET)
             .setSmallIcon(R.drawable.hw_stat)
             .setColor(0xFFDDF869.toInt())
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
@@ -192,12 +206,19 @@ class HwLiveService : Service() {
         return b.build()
     }
 
+    private var fgOk = false
+    private var fgChannel = ""
     private fun goForeground() {
-        val n = buildNote()
+        /* the v1.2 custom layout; if it can't be built on this phone, a plain text notification instead of a crash */
+        val n = try { buildNote() } catch (e: Throwable) {
+            HwApp.write(this, "note: custom notification failed, plain one used", e.toString())
+            try { NotificationCompat.Builder(this, if (sbar(this)) CH_LIVE else CH_QUIET).setSmallIcon(R.drawable.hw_stat).setContentTitle("Hwallet").setContentText("Live prices").setOngoing(true).setSilent(true).build() } catch (_: Throwable) { null }
+        } ?: return
         try {
             if (Build.VERSION.SDK_INT >= 34) startForeground(NID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
             else startForeground(NID, n)
-        } catch (_: Exception) {}
+            fgOk = true; fgChannel = if (sbar(this)) CH_LIVE else CH_QUIET
+        } catch (e: Throwable) { fgOk = false; HwApp.write(this, "note: live service could not enter the foreground", e.toString()) }
     }
 
     @SuppressLint("MissingPermission")
@@ -206,7 +227,7 @@ class HwLiveService : Service() {
         val now = System.currentTimeMillis()
         if (!force && (key == lastNote || now - lastNoteAt < 900)) return
         lastNote = key; lastNoteAt = now
-        try { (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).notify(NID, buildNote()) } catch (_: Exception) {}
+        try { (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).notify(NID, buildNote()) } catch (_: Throwable) {}
     }
 
     /* ---------- config from the app (Settings > Live data) ---------- */
@@ -214,13 +235,15 @@ class HwLiveService : Service() {
         val s = getSharedPreferences(PREF, Context.MODE_PRIVATE).getString("cfg", null)
         cfg = try { JSONObject(s ?: "{}") } catch (_: Exception) { JSONObject() }
         if (!enabled(this)) { stopSelf(); return }
+        /* v1.3 (#47): status-bar switch changed: repost the foreground notification on the other channel */
+        if (fgChannel.isNotEmpty() && fgChannel != (if (sbar(this)) CH_LIVE else CH_QUIET)) goForeground()
         try { exec?.shutdownNow() } catch (_: Exception) {}
         closeSockets()
         running = true
         val ex = Executors.newScheduledThreadPool(6)
         exec = ex
         ex.scheduleWithFixedDelay({ tick() }, 0, 1, TimeUnit.SECONDS)
-        ex.execute { openSockets() }
+        ex.execute { try { openSockets() } catch (_: Throwable) {} }
     }
 
     private fun bgSec(): Int = cfg.optInt("bg", 5)
@@ -240,7 +263,7 @@ class HwLiveService : Service() {
                 val gap = maxOf(bg * 1000L, minGap) + (backoff[id] ?: 0L)
                 if (now < (nextAt[id] ?: 0L) || busy[id] == true) continue
                 nextAt[id] = now + gap
-                exec?.execute { poll(c) }
+                try { exec?.execute { poll(c) } } catch (_: Throwable) {}
             }
         } catch (_: Exception) {}
     }
@@ -267,7 +290,7 @@ class HwLiveService : Service() {
         val gap = maxOf(1000L, if (bgSec() > 0) bgSec() * 1000L else 5000L)
         if (pxBusy || now - pxAt < gap) return
         pxBusy = true; pxAt = now
-        exec?.execute {
+        try { exec?.execute {
             try {
                 if (now - cgAt > 60000) {
                     val j = get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,monero&vs_currencies=usd&include_24hr_change=true")
@@ -287,7 +310,7 @@ class HwLiveService : Service() {
                 }
                 pushNote()
             } catch (_: Exception) {} finally { pxBusy = false }
-        }
+        } } catch (_: Throwable) { pxBusy = false }
     }
 
     /* ---------- balances (watch only) ---------- */
@@ -443,7 +466,7 @@ class HwLiveService : Service() {
     private fun ws(url: String, sub: String, c: JSONObject, tries: Int) {
         if (!running) return
         val req = try { Request.Builder().url(url).build() } catch (_: Exception) { return }
-        val s = http.newWebSocket(req, object : WebSocketListener() {
+        val s = try { http.newWebSocket(req, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) { webSocket.send(sub) }
             override fun onMessage(webSocket: WebSocket, text: String) {
                 if (!running) return
@@ -453,13 +476,13 @@ class HwLiveService : Service() {
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 if (!running) return
                 val delay = minOf(15000L, 500L shl minOf(tries, 5))
-                exec?.schedule({ ws(url, sub, c, tries + 1) }, delay, TimeUnit.MILLISECONDS)
+                try { exec?.schedule({ ws(url, sub, c, tries + 1) }, delay, TimeUnit.MILLISECONDS) } catch (_: Throwable) {}
             }
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 if (!running) return
-                exec?.schedule({ ws(url, sub, c, tries + 1) }, 1000, TimeUnit.MILLISECONDS)
+                try { exec?.schedule({ ws(url, sub, c, tries + 1) }, 1000, TimeUnit.MILLISECONDS) } catch (_: Throwable) {}
             }
-        })
+        }) } catch (_: Throwable) { return }
         synchronized(sockets) { sockets.add(s) }
     }
 }

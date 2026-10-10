@@ -10761,7 +10761,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.92';
+const APP_VERSION = '3.93';
 const APP_BUILD = '2026-10-10';
 let derivedRows = [];
 let copiedState = {};
@@ -19514,6 +19514,7 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     'html.kw-sign body>*:not(#kss):not(.kwd-ov):not(.toast):not(script):not(style){display:none!important}' +
     '#kss{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;background:var(--bg);color:var(--text);overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .22s ease,transform .3s cubic-bezier(.22,1,.36,1)}' +
     '#kss.in{opacity:1;transform:none}' +
+    '#kss{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-feature-settings:"tnum" 1}' +
     '.kss-scroll{flex:1;overflow:auto;padding:calc(var(--kw-sat,0px) + 6px) 14px 10px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}' +
     'html.kw-e2e .kss-scroll{padding-top:6px}html.kw-e2e .kss-foot{padding-bottom:12px!important}' +
     '.kss-head{display:flex;align-items:center;gap:10px;height:40px;margin-bottom:2px}' +
@@ -19524,21 +19525,21 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     '.kss-chip .kss-lg{width:20px;height:20px}' +
     '.kss-lg{display:inline-block;width:48px;height:48px;border-radius:50%;object-fit:cover;flex:0 0 auto;background:transparent}' +
     '.kss-lt{display:inline-grid;place-items:center;background:var(--bg-input);color:var(--text);font:700 20px/1 RobotoE,system-ui}' +
-    '.kss-hero{display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:14px;margin:8px 0 8px}' +
+    '.kss-hero{display:flex;align-items:center;gap:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:15px 14px;margin:6px 0 8px}' +
     '.kss-hero .kss-lg{width:46px;height:46px}' +
-    '.kss-ht{flex:1;min-width:0}.kss-amt{font:700 24px/1.15 RobotoE,system-ui;letter-spacing:-.3px;word-break:break-word;font-variant-numeric:tabular-nums}' +
-    '.kss-usd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--text-muted);font-size:13.5px;margin-top:3px;min-height:18px}' +
-    '.kss-live{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted)}' +
+    '.kss-ht{flex:1;min-width:0}.kss-amt{font:700 25px/1.12 RobotoE,system-ui;letter-spacing:-.4px;word-break:break-word;font-variant-numeric:tabular-nums}' +
+    '.kss-usd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--text-muted);font:500 13.5px/18px RobotoE,system-ui;margin-top:4px;min-height:18px;font-variant-numeric:tabular-nums}' +
+    '.kss-live{display:inline-flex;align-items:center;gap:5px;font:500 12px/16px RobotoE,system-ui;color:var(--text-muted);min-width:148px;font-variant-numeric:tabular-nums;white-space:nowrap}' +
     '.kss-live i{width:7px;height:7px;border-radius:50%;background:#1e9e5a;box-shadow:0 0 0 0 rgba(30,158,90,.5);animation:kssP 2s infinite}' +
     '.kss-live.stale i{background:#e3a008;animation:none}' +
     '@keyframes kssP{0%{box-shadow:0 0 0 0 rgba(30,158,90,.45)}70%{box-shadow:0 0 0 6px rgba(30,158,90,0)}100%{box-shadow:0 0 0 0 rgba(30,158,90,0)}}' +
     '.kss-grp{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;margin-bottom:8px;overflow:hidden}' +
-    '.kss-r{display:flex;align-items:center;gap:10px;padding:11px 13px;border-top:1px solid var(--border);min-height:46px}.kss-r:first-child{border-top:0}' +
+    '.kss-r{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid color-mix(in srgb,var(--border) 80%,transparent);min-height:48px}.kss-r:first-child{border-top:0}' +
     '.kss-r.col{flex-direction:column;align-items:stretch;gap:7px}' +
     '.kss-rh{display:flex;align-items:center;justify-content:space-between;gap:10px}' +
-    '.kss-l{color:var(--text-muted);font-size:13.5px;flex:0 0 auto}' +
-    '.kss-v{flex:1;min-width:0;text-align:right;font-size:14px;line-height:1.35;word-break:break-word;font-variant-numeric:tabular-nums}' +
-    '.kss-v small{display:block;color:var(--text-muted);font-size:12.5px;margin-top:2px}' +
+    '.kss-l{color:var(--text-muted);font:500 13.5px/18px RobotoE,system-ui;flex:0 0 auto}' +
+    '.kss-v{flex:1;min-width:0;text-align:right;font:500 14.5px/19px RobotoE,system-ui;word-break:break-word;font-variant-numeric:tabular-nums}' +
+    '.kss-v small{display:block;color:var(--text-muted);font:400 12.5px/17px RobotoE,system-ui;margin-top:1px}' +
     '.kss-v .kss-lg{width:18px;height:18px;vertical-align:-4px;margin-left:6px}' +
     '.kss-ab{font:500 13px/1.55 RobotoMonoE,monospace;letter-spacing:.2px;background:var(--bg-input);border-radius:10px;padding:8px 10px;color:var(--text);word-break:break-all;text-align:left}.kss-ab{word-spacing:3px;text-wrap:balance}' +
     '.kss-ab b{font-weight:700}' +
@@ -19812,9 +19813,31 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
         '<button type="button" class="kss-go" id="kss-go" disabled><i class="kss-fill"></i><span>Hold to sign</span></button></div>');
       $('kss-no').onclick = function () { if (!busy) finish({ status: 'rejected' }); };
       hold($('kss-go'));
-    } else { $('kss-sc').innerHTML = body; $('kss-sc').scrollTop = top; }
+    } else { morph($('kss-sc'), body); if ($('kss-sc').scrollTop !== top) $('kss-sc').scrollTop = top; }
     page.querySelectorAll('[data-lv]').forEach(function (b) { b.onclick = function () { var v = b.getAttribute('data-lv'); if (v === S.level || busy) return; S.level = v; buzz(8); notice = ''; draw(); arm(450); }; });
     tickExp(); syncBtn();
+  }
+  /* v3.93 (#49): live values change in place. The new page is diffed against the one on screen and only the text and
+     attributes that changed are touched: no node is rebuilt, no logo reloads, nothing moves or flickers */
+  function morph(el, html) { var t = document.createElement('div'); t.innerHTML = html; syncKids(el, t); }
+  function syncAttrs(x, y) {
+    var ya = y.attributes, i;
+    for (i = 0; i < ya.length; i++) if (x.getAttribute(ya[i].name) !== ya[i].value) x.setAttribute(ya[i].name, ya[i].value);
+    var xa = x.attributes; for (i = xa.length - 1; i >= 0; i--) if (!y.hasAttribute(xa[i].name)) x.removeAttribute(xa[i].name);
+  }
+  function syncKids(a, b) {
+    var bc = b.childNodes;
+    for (var i = 0; i < bc.length; i++) {
+      var x = a.childNodes[i], y = bc[i];
+      if (!x) { a.appendChild(y.cloneNode(true)); continue; }
+      if (x.nodeType !== y.nodeType || x.nodeName !== y.nodeName) { a.replaceChild(y.cloneNode(true), x); continue; }
+      if (x.nodeType === 3) { if (x.nodeValue !== y.nodeValue) x.nodeValue = y.nodeValue; continue; }
+      if (x.nodeType !== 1) continue;
+      syncAttrs(x, y);
+      if (x.id === 'kss-live') continue; /* the live dot keeps its own pulse; its text is set by tickLive */
+      syncKids(x, y);
+    }
+    while (a.childNodes.length > bc.length) a.removeChild(a.lastChild);
   }
   function liveText() { var s = Math.max(0, Math.round((Date.now() - lastFeed) / 1000)); return stale() ? 'Live data paused' : s <= 1 ? 'Live · updated just now' : 'Live · updated ' + s + 's ago'; }
   function syncBtn() {
