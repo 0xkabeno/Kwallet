@@ -27,6 +27,29 @@ class HarkNative(
     private val bioCryptCb: (String, String, String) -> Unit = { _, _, _ -> }
 ) {
 
+    /** v3.89: launcher icon, "lime" or "navy" (two activity-aliases; one enabled at a time). */
+    @JavascriptInterface
+    fun appIcon(): String = try {
+        val pm = ctx.packageManager
+        val st = pm.getComponentEnabledSetting(android.content.ComponentName(ctx.packageName, "app.kwallet.IconNavy"))
+        if (st == android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED) "navy" else "lime"
+    } catch (_: Exception) { "lime" }
+
+    @JavascriptInterface
+    fun setAppIcon(name: String): Boolean = try {
+        val pm = ctx.packageManager
+        val on = android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        val off = android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        val keep = android.content.pm.PackageManager.DONT_KILL_APP
+        val lime = android.content.ComponentName(ctx.packageName, "app.kwallet.MainActivity")
+        val navy = android.content.ComponentName(ctx.packageName, "app.kwallet.IconNavy")
+        val (show, hide) = if (name == "navy") navy to lime else lime to navy
+        // enable the new one first so the app always has a launcher entry
+        pm.setComponentEnabledSetting(show, on, keep)
+        pm.setComponentEnabledSetting(hide, off, keep)
+        true
+    } catch (_: Exception) { false }
+
     /** v3.84: HMAC-SHA256 with a non-exportable Keystore key (base64 in, base64 out; "" if unavailable). */
     @JavascriptInterface
     fun teeMac(b64: String): String = try { KwKeys.mac(Base64.decode(b64, Base64.NO_WRAP)) } catch (_: Exception) { "" }
