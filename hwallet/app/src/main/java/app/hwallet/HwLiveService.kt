@@ -74,9 +74,15 @@ class HwLiveService : Service() {
     }
 
     /* built lazily: nothing heavy runs before the service is in the foreground */
-    private val http by lazy { OkHttpClient.Builder()
-        .connectTimeout(8, TimeUnit.SECONDS).readTimeout(10, TimeUnit.SECONDS)
-        .pingInterval(20, TimeUnit.SECONDS).retryOnConnectionFailure(true).build() }
+    /* v1.4 (#53): Hwallet's one network stack, so the Settings data speed limit covers the service too */
+    private val http by lazy { HwNet.withTimeout(10000) }
+    /* v1.4 (#55): background activity: every watched chain's history goes into the persistent activity cache */
+    private val actDb by lazy { HwActDb.get(this) }
+    private val hist by lazy { HwHist(actDb) }
+    private val histAt = ConcurrentHashMap<String, Long>()
+    private val histBusy = ConcurrentHashMap<String, Boolean>()
+    private val histBack = ConcurrentHashMap<String, Long>()
+    @Volatile private var catchUp = true
     private val JSON_T = "application/json".toMediaType()
     private var exec: ScheduledExecutorService? = null
     private var wake: PowerManager.WakeLock? = null
@@ -106,6 +112,7 @@ class HwLiveService : Service() {
         /* v1.3: foreground first, before anything else can fail or take time */
         try { channels() } catch (_: Throwable) {}
         goForeground()
+        try { HwNet.load(this) } catch (_: Throwable) {}
         try {
             val pm = getSystemService(POWER_SERVICE) as PowerManager
             wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Hwallet:live").apply { setReferenceCounted(false); acquire() }
@@ -240,7 +247,8 @@ class HwLiveService : Service() {
         try { exec?.shutdownNow() } catch (_: Exception) {}
         closeSockets()
         running = true
-        val ex = Executors.newScheduledThreadPool(6)
+        histAt.clear(); catchUp = true
+        val ex = Executors.newScheduledThreadPool(8)
         exec = ex
         ex.scheduleWithFixedDelay({ tick() }, 0, 1, TimeUnit.SECONDS)
         ex.execute { try { openSockets() } catch (_: Throwable) {} }
@@ -265,7 +273,40 @@ class HwLiveService : Service() {
                 nextAt[id] = now + gap
                 try { exec?.execute { poll(c) } } catch (_: Throwable) {}
             }
+            histTick(w, now)
         } catch (_: Exception) {}
+    }
+
+    /* ---------- v1.4 (#55): background activity ----------
+       Every watched chain's newest history page is read into the activity cache: at start (catching up from each
+       stream's last-seen cursor), whenever a WebSocket event or a balance change says something happened, every few
+       seconds while a send from Hwallet is pending, and otherwise lightly (once a minute). */
+    private fun wid(): String = cfg.optString("wid", "")
+    private fun histKey(c: JSONObject): String = c.optString("id")
+    fun histKick(id: String, delayMs: Long = 1200L) {
+        val now = System.currentTimeMillis(); val at = histAt[id] ?: Long.MAX_VALUE
+        if (at > now + delayMs) histAt[id] = now + delayMs
+    }
+    private fun histTick(w: JSONArray, now: Long) {
+        val wid = wid(); if (wid.isEmpty()) return
+        val pend = try { actDb.pendingChains(wid) } catch (_: Throwable) { emptySet<String>() }
+        for (i in 0 until w.length()) {
+            val c = w.optJSONObject(i) ?: continue
+            val id = histKey(c)
+            if (c.optString("k") == "evm" && c.optString("bs").isEmpty()) continue
+            val pending = pend.contains(id)
+            val light = if (pending) 4000L else 60000L
+            val at = histAt[id]
+            if (at == null) { histAt[id] = now + 400L * i; continue }
+            if (now < at || histBusy[id] == true) continue
+            histBusy[id] = true
+            histAt[id] = now + light + (histBack[id] ?: 0L)
+            try { exec?.execute {
+                try { hist.sync(wid, c); histBack.remove(id) }
+                catch (_: Throwable) { histBack[id] = minOf(120000L, maxOf(5000L, (histBack[id] ?: 2500L) * 2)) }
+                finally { histBusy[id] = false }
+            } } catch (_: Throwable) { histBusy[id] = false }
+        }
     }
 
     /* ---------- prices ---------- */
@@ -401,7 +442,7 @@ class HwLiveService : Service() {
         for ((k, v) in now) {
             val old = snap[k]
             if (old != null && v > old && cfg.optBoolean("alerts", true)) alert(c, k, v.subtract(old))
-            if (old != v) { snap[k] = v; changed = true }
+            if (old != v) { if (old != null) histKick(c.optString("id"), 300L); snap[k] = v; changed = true }
         }
         if (changed) saveSnap()
     }
@@ -442,45 +483,65 @@ class HwLiveService : Service() {
         } catch (_: Exception) {}
     }
 
-    /* ---------- WebSockets: any event = check that chain now ---------- */
+    /* ---------- WebSockets: any event = check that chain now ----------
+       v1.4 (#55): subscriptions to the user's addresses: EVM new blocks (Ethereum, Base) plus ERC-20 Transfer logs to and
+       from the address on every EVM network with a WebSocket, Solana account + logs mentioning the address, mempool.space
+       address tracking, XRPL account stream. An event refreshes that chain's balance at once and reads its history into
+       the activity cache. TRON, Sui and Cardano have no free push: light polling. Frames count against the speed limit. */
     private fun closeSockets() { synchronized(sockets) { for (s in sockets) try { s.cancel() } catch (_: Exception) {}; sockets.clear() } }
 
+    private val TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
     private fun openSockets() {
         if (bgSec() <= 0) return
         val w = cfg.optJSONArray("watch") ?: return
         for (i in 0 until w.length()) {
             val c = w.optJSONObject(i) ?: continue
             val url = c.optString("ws"); if (url.isEmpty()) continue
-            val addr = c.optString("addr")
-            val sub = when (c.optString("k")) {
-                "evm" -> if (c.optString("id") == "ethereum" || c.optString("id") == "base") "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_subscribe\",\"params\":[\"newHeads\"]}" else null
-                "sol" -> "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"accountSubscribe\",\"params\":[\"$addr\",{\"commitment\":\"confirmed\",\"encoding\":\"base64\"}]}"
-                "btc" -> "{\"track-address\":\"$addr\"}"
-                "xrp" -> "{\"id\":1,\"command\":\"subscribe\",\"accounts\":[\"$addr\"]}"
-                else -> null
-            } ?: continue
-            ws(url, sub, c, 0)
+            val addr = c.optString("addr"); val id = c.optString("id")
+            val subs = ArrayList<String>()
+            when (c.optString("k")) {
+                "evm" -> {
+                    if (id == "ethereum" || id == "base") subs.add("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_subscribe\",\"params\":[\"newHeads\"]}")
+                    val t = "\"0x" + pad32(addr) + "\""
+                    subs.add("{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"eth_subscribe\",\"params\":[\"logs\",{\"topics\":[\"$TRANSFER\",null,$t]}]}")
+                    subs.add("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"eth_subscribe\",\"params\":[\"logs\",{\"topics\":[\"$TRANSFER\",$t]}]}")
+                }
+                "sol" -> {
+                    subs.add("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"accountSubscribe\",\"params\":[\"$addr\",{\"commitment\":\"confirmed\",\"encoding\":\"base64\"}]}")
+                    subs.add("{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"logsSubscribe\",\"params\":[{\"mentions\":[\"$addr\"]},{\"commitment\":\"confirmed\"}]}")
+                }
+                "btc" -> subs.add("{\"track-address\":\"$addr\"}")
+                "xrp" -> subs.add("{\"id\":1,\"command\":\"subscribe\",\"accounts\":[\"$addr\"]}")
+            }
+            if (subs.isEmpty()) continue
+            ws(url, subs, c, 0)
         }
     }
 
-    private fun ws(url: String, sub: String, c: JSONObject, tries: Int) {
+    private fun ws(url: String, subs: List<String>, c: JSONObject, tries: Int) {
         if (!running) return
         val req = try { Request.Builder().url(url).build() } catch (_: Exception) { return }
+        val id = c.optString("id"); val k = c.optString("k")
         val s = try { http.newWebSocket(req, object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) { webSocket.send(sub) }
+            override fun onOpen(webSocket: WebSocket, response: Response) { for (m in subs) { HwNet.wsOut(m.length); webSocket.send(m) } }
             override fun onMessage(webSocket: WebSocket, text: String) {
+                HwNet.wsIn(text.length)
                 if (!running) return
-                val id = c.optString("id")
+                /* subscription confirmations are not events */
+                if (text.contains("\"result\"") && !text.contains("\"method\"") && k != "btc" && k != "xrp") return
                 if (busy[id] != true) { nextAt[id] = 0L }
+                /* a new block alone does not mean our address moved; a log, an account change, an address tx does */
+                val newHead = text.contains("\"parentHash\"") && !text.contains("\"topics\"")
+                if (!newHead) histKick(id, if (k == "evm") 2500L else 1200L)
             }
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 if (!running) return
                 val delay = minOf(15000L, 500L shl minOf(tries, 5))
-                try { exec?.schedule({ ws(url, sub, c, tries + 1) }, delay, TimeUnit.MILLISECONDS) } catch (_: Throwable) {}
+                try { exec?.schedule({ ws(url, subs, c, tries + 1) }, delay, TimeUnit.MILLISECONDS) } catch (_: Throwable) {}
             }
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 if (!running) return
-                try { exec?.schedule({ ws(url, sub, c, tries + 1) }, 1000, TimeUnit.MILLISECONDS) } catch (_: Throwable) {}
+                try { exec?.schedule({ ws(url, subs, c, tries + 1) }, 1000, TimeUnit.MILLISECONDS) } catch (_: Throwable) {}
             }
         }) } catch (_: Throwable) { return }
         synchronized(sockets) { sockets.add(s) }

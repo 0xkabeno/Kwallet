@@ -21,6 +21,7 @@ class HwApp : Application() {
     override fun onCreate() {
         super.onCreate()
         install(this)
+        try { HwNet.load(this) } catch (_: Throwable) {}
     }
 
     companion object {
