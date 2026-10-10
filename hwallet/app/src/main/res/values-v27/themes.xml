@@ -1,0 +1,5 @@
+<resources>
+    <style name="Theme.Hwallet" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@color/kw_lime</item>
+    </style>
+</resources>
