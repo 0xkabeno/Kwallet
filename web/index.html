@@ -19540,7 +19540,7 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     '.kss-v{flex:1;min-width:0;text-align:right;font-size:14px;line-height:1.35;word-break:break-word;font-variant-numeric:tabular-nums}' +
     '.kss-v small{display:block;color:var(--text-muted);font-size:12.5px;margin-top:2px}' +
     '.kss-v .kss-lg{width:18px;height:18px;vertical-align:-4px;margin-left:6px}' +
-    '.kss-ab{font:500 13px/1.55 RobotoMonoE,monospace;letter-spacing:.2px;background:var(--bg-input);border-radius:10px;padding:8px 10px;color:var(--text);word-break:break-all;text-align:left}.kss-ab i{display:inline-block;width:5px}' +
+    '.kss-ab{font:500 13px/1.55 RobotoMonoE,monospace;letter-spacing:.2px;background:var(--bg-input);border-radius:10px;padding:8px 10px;color:var(--text);word-break:break-all;text-align:left}.kss-ab{word-spacing:3px;text-wrap:balance}' +
     '.kss-ab b{font-weight:700}' +
     '.kss-badge{display:inline-block;font:600 11px/1 RobotoE,system-ui;padding:4px 8px;border-radius:6px;background:color-mix(in srgb,#e3a008 18%,transparent);color:#a86f00}[data-theme="dark"] .kss-badge{color:#f0c14b}' +
     '.kss-seg{display:inline-flex;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:2px;gap:2px}.kss-seg button{border:0;background:transparent;color:var(--text-muted);font:600 12.5px/1 RobotoE,system-ui;height:28px;padding:0 11px;border-radius:8px}' +
@@ -19609,7 +19609,7 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     if (!isFinite(v)) return '';
     return v > 0 && v < 0.01 ? '< $0.01' : '≈ $' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-  function chunk(a) { a = String(a || ''); var g = a.match(/.{1,4}/g) || []; return g.map(function (x, i) { return i === 0 || i === g.length - 1 ? '<b>' + esc(x) + '</b>' : esc(x); }).join('<i></i>'); }
+  function chunk(a) { a = String(a || ''); var g = a.match(/.{1,4}/g) || []; return g.map(function (x, i) { return i === 0 || i === g.length - 1 ? '<b>' + esc(x) + '</b>' : esc(x); }).join(' '); }
   var ICW = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>';
   var ICI = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>';
   var ICR = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>';
@@ -19783,7 +19783,7 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     }
     rows += '<div class="kss-r"><span class="kss-l">Network</span><span class="kss-v">' + esc(S.info.name) + logoImg(S.info.logo, '', S.info.name) +
       (S.c === 'evm' ? '<small>Chain ' + R.chainId + ' · nonce ' + esc(R.nonce) + '</small>' : '') + '</span></div>';
-    var fee = '<div class="kss-r col"><div class="kss-rh"><span class="kss-l">Network fee</span>' + seg + '</div><div class="kss-rh"><span class="kss-l"></span><span class="kss-v">' + (c.approx ? '≈ ' : '') + fmt(c.fee, S.gdec, S.gdec) + ' ' + esc(S.gsym) +
+    var fee = '<div class="kss-r col"><div class="kss-rh"><span class="kss-l">Network fee</span>' + seg + '</div><div class="kss-rh"><span class="kss-l"></span><span class="kss-v">' + (S.c === 'trx' && c.fee === 0n ? 'Free' : (c.approx ? '≈ ' : '') + fmt(c.fee, S.gdec, S.gdec) + ' ' + esc(S.gsym)) +
       '<small>' + usd(c.fee, S.gdec, gpx) + (c.atMost ? ' · at most' : '') + (S.c === 'trx' ? (c.fee > 0n ? ' · burned from your TRX' : ' · covered by your bandwidth') : '') + '</small></span></div></div>';
     if (c.extra && S.c === 'sol') fee += '<div class="kss-r"><span class="kss-l">Account rent</span><span class="kss-v">' + fmt(c.extra, 9, 8) + ' SOL<small>Opens the recipient\u2019s token account</small></span></div>';
     if (c.extra && S.c === 'ada') fee += '<div class="kss-r"><span class="kss-l">ADA sent with it</span><span class="kss-v">' + fmt(c.extra, 6, 6) + ' ADA<small>Cardano requires this minimum with tokens</small></span></div>';
