@@ -35,7 +35,9 @@ jobs:
         run: |
           V=$(grep -oP "const APP_VERSION = '\K[0-9.]+" web/index.html | head -1)
           echo "version=$V" >> "$GITHUB_OUTPUT"
-          echo "Kwallet v$V"
+          H=$(grep -oP "var APP_VERSION = '\K[0-9.]+" hwallet/web/index.html | head -1)
+          echo "hversion=$H" >> "$GITHUB_OUTPUT"
+          echo "Kwallet v$V, Hwallet v$H"
 
       - name: Release keystore
         env:
@@ -63,6 +65,10 @@ jobs:
         run: |
           APKSIGNER=$(ls $ANDROID_HOME/build-tools/*/apksigner | sort -V | tail -1)
           "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk | head -5
+          "$APKSIGNER" verify --print-certs hwallet/app/build/outputs/apk/release/hwallet-release.apk | head -5
+          K=$("$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk | grep -m1 SHA-256)
+          H=$("$APKSIGNER" verify --print-certs hwallet/app/build/outputs/apk/release/hwallet-release.apk | grep -m1 SHA-256)
+          [ "${K#*: }" = "${H#*: }" ] || { echo "::error::Kwallet and Hwallet must be signed with the same key"; exit 1; }
 
       - name: Package
         run: |
@@ -70,6 +76,9 @@ jobs:
           mkdir -p dist
           cp app/build/outputs/apk/release/app-release.apk "dist/Kwallet-v$V.apk"
           cp web/index.html "dist/Kwallet-v$V.html"
+          HV=${{ steps.ver.outputs.hversion }}
+          cp hwallet/app/build/outputs/apk/release/hwallet-release.apk "dist/Hwallet-v$HV.apk"
+          cp hwallet/web/index.html "dist/Hwallet-v$HV.html"
           cd dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
 
       - uses: actions/upload-artifact@v4
@@ -85,8 +94,10 @@ jobs:
           files: dist/*
           generate_release_notes: true
           body: |
-            **Kwallet ${{ github.ref_name }}** — offline multi-chain HD wallet generator.
+            **Kwallet ${{ github.ref_name }}** — offline multi-chain HD wallet generator, plus **Hwallet v${{ steps.ver.outputs.hversion }}**, its online watch-only companion.
 
             - `Kwallet-*.apk` — Android app (no internet permission)
             - `Kwallet-*.html` — the same app as one HTML file; open it in any browser, offline
+            - `Hwallet-*.apk` — Android watch-only app: live balances, asks Kwallet on the same phone to sign
+            - `Hwallet-*.html` — Hwallet in a browser (balances; signing needs the Android apps)
             - `SHA256SUMS.txt` — verify your download before use
