@@ -4,6 +4,13 @@
 
     <!-- Kwallet is fully offline: there is deliberately NO INTERNET permission. -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- v3.90: the sign page hides other apps' overlays (anti-tapjacking, Android 12+) -->
+    <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
+
+    <!-- v3.90: Kwallet checks that Hwallet is signed with the same key before it signs anything -->
+    <queries>
+        <package android:name="app.hwallet" />
+    </queries>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
 
@@ -23,6 +30,16 @@
             android:name=".KwActivity"
             android:exported="false"
             android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|smallestScreenSize|uiMode|density"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- v3.90 Hwallet sign page: only reachable by an explicit request from Hwallet (checked in code) -->
+        <activity
+            android:name=".SignActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="standard"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|smallestScreenSize|uiMode|density"
             android:windowSoftInputMode="adjustResize" />
 
