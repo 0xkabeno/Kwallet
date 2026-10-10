@@ -52,7 +52,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-a
 .sp1{flex:1}
 /* ---------- hero ---------- */
 .hero{text-align:center;padding:18px 0 4px}
-.tot{font-size:44px;font-weight:700;letter-spacing:-1.2px;line-height:1.1;font-variant-numeric:tabular-nums}
+.tot{font-size:44px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;letter-spacing:-1.2px;line-height:1.1;font-variant-numeric:tabular-nums}
 .chg{font-size:15px;margin-top:8px;min-height:20px;font-weight:500;font-variant-numeric:tabular-nums}
 .acts{display:flex;justify-content:center;gap:28px;margin:22px 0 24px}
 .act{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:68px}
@@ -109,7 +109,7 @@ button.kv:active{background:var(--card2)}
 .on>.sw,.sw.on{background:var(--acc)}.on>.sw::after,.sw.on::after{transform:translateX(18px)}
 body[data-theme="dark"] .on>.sw::after{background:#223348}
 .seg{display:inline-flex;background:var(--card2);border-radius:12px;padding:3px;gap:2px}
-.seg button{height:32px;padding:0 12px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted)}
+.seg button{text-align:center;height:32px;padding:0 12px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted)}
 .seg button.on{background:var(--card);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.14)}
 body[data-theme="dark"] .seg button.on{background:var(--sel)}
 .seg button[hidden]{display:none}
@@ -160,7 +160,7 @@ body[data-theme="dark"] .seg button.on{background:var(--sel)}
 .hint2{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:13.5px;margin:8px 6px 0;font-variant-numeric:tabular-nums}
 .seg.wide{display:flex;background:var(--card);border-radius:14px;padding:4px}
 .seg.wide button{flex:1;height:42px;font-size:15px}
-.seg.wide button.on{background:var(--acc);color:var(--accI);box-shadow:none}
+body[data-theme] .seg.wide button.on{background:var(--acc);color:var(--accI);box-shadow:none}
 .note{background:var(--card);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.45;color:var(--muted);margin-top:10px}
 .note.warn{background:var(--errBg);color:var(--dn)}.note.ok{color:var(--up)}
 .note[hidden]{display:none}
@@ -214,7 +214,7 @@ body[data-theme="dark"] .seg button.on{background:var(--sel)}
 /* ---------- bottom nav (Gem) ---------- */
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--navbg);border-top:1px solid var(--line);padding:8px 8px calc(var(--sab) + 8px);display:flex;justify-content:space-around;transform:translate3d(0,0,0);transition:transform .25s var(--ease),background-color .25s ease}
 .nav.hide{transform:translate3d(0,110%,0)}
-.nav button{flex:1;max-width:160px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:2px 0;color:var(--muted);font-size:13.5px;font-weight:600}
+.nav button{text-align:center;flex:1;max-width:160px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:2px 0;color:var(--muted);font-size:13.5px;font-weight:600}
 .nav .ni{width:64px;height:32px;border-radius:999px;display:grid;place-items:center;transition:background-color .2s ease}
 .nav button.on{color:var(--text)}
 .nav button.on .ni{background:var(--sel)}
@@ -225,6 +225,8 @@ body[data-theme="dark"] .toast{background:#e9edf3;color:#0e1117}
 .toast.show{opacity:1;transform:translate3d(-50%,0,0)}
 body.hw-hide [data-money]{letter-spacing:1px}
 @media (prefers-reduced-motion:reduce){.app.in,.app.back,.empty,.wel{animation:none}}
+
+.tot.l1{font-size:36px;letter-spacing:-.8px}.tot.l2{font-size:29px;letter-spacing:-.5px}
 
 </style>
 </head>
@@ -3184,6 +3186,7 @@ var APP_VERSION = '1.2';
       var v = vals[k]; if (el._v !== v) { el._v = v; el.innerHTML = v; }
     });
     if (V.v === 'coin' && V.ch === 'trx') resBar();
+    var tt = document.querySelector('.tot'); if (tt) { var L = (tt.textContent || '').length; tt.classList.toggle('l1', L > 11 && L <= 14); tt.classList.toggle('l2', L > 14); }
   }
   function homeSig() { try { return homeAssets().map(function (x) { return x.id; }).join(','); } catch (e) { return ''; } }
 
@@ -3707,7 +3710,7 @@ var APP_VERSION = '1.2';
     er.hidden = !msg; er.textContent = msg;
     SND.amt = amt; go.disabled = !!msg || !validAddr(SND.ch, SND.to) || !SND.d || (!SND.max && !(amt > 0n)) || SND.busy;
     var sk = SND.to + '|' + (SND.max ? 'max' : String(amt)); if (sk !== SND.simK) { SND.simK = sk; clearTimeout(SND.simT); SND.simT = setTimeout(simPrep, 450); }
-    if (SND.d) { var f = feeOf(SND.lv); $('fee').innerHTML = SND.ch === 'trx' && f === 0n ? 'Free · covered by your bandwidth' : (SND.d.approx ? '≈ ' : '') + fmtU(f, gas.d, gas.d) + ' ' + esc(gas.s) + (px(gas.cg) ? ' · ' + fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '') + (SND.d.extra ? (SND.ch === 'ada' ? ' + ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : ' + account rent') : '') + (SND.ch === 'trx' && SND.d.burnE ? ' · energy burn' : ''); }
+    if (SND.d) { var f = feeOf(SND.lv); $('fee').innerHTML = SND.ch === 'trx' && f === 0n ? 'Free · covered by your bandwidth' : (SND.d.approx ? '≈ ' : '') + fmtA(f, gas.d) + ' ' + esc(gas.s) + (px(gas.cg) ? ' · ' + fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '') + (SND.d.extra ? (SND.ch === 'ada' ? ' + ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : ' + account rent') : '') + (SND.ch === 'trx' && SND.d.burnE ? ' · energy burn' : ''); }
     var segs = $('lv'); if (segs && SND.d) { var lv = SND.d.levels; segs.querySelectorAll('[data-lv]').forEach(function (b) { b.hidden = !lv[b.getAttribute('data-lv')]; }); if (!lv[SND.lv]) { SND.lv = lv.medium ? 'medium' : Object.keys(lv)[0]; } }
   }
   /* chain data for the request (and the live feed): one module per chain */
@@ -4144,6 +4147,7 @@ var APP_VERSION = '1.2';
               if (amt === 0n) return;
               var kt = sui ? null : tokOf('sui', ty); if (!sui && !kt) return;
               var other = (t.balanceChanges || []).filter(function (x) { return x.coinType === b.coinType && x.owner && x.owner.AddressOwner && String(x.owner.AddressOwner).toLowerCase() !== a; })[0];
+              if (!sender && amt < 0n) return;  /* outgoing side is listed by the FromAddress stream */
               if (sui && sender && !other && amt < 0n) { items.push(itm({ ch: 'sui', hash: t.digest, t: time, dir: 'call', key: 'native', s: 'SUI', d: 9, raw: String(-BI(b.amount)), cg: 'sui', st: st })); return; }
               items.push(itm({ ch: 'sui', hash: t.digest, t: time, dir: amt > 0n ? 'in' : 'out', key: sui ? 'native' : kt.a, s: sui ? 'SUI' : kt.s, d: sui ? 9 : kt.d, raw: String(amt < 0n ? -amt : amt), cg: sui ? 'sui' : kt.cg, icon: kt && kt.icon, cp: other ? other.owner.AddressOwner : '', st: st }));
             });
