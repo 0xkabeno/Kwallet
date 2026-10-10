@@ -56,10 +56,13 @@ class HwActivity : FragmentActivity() {
 
     /** Kwallet's sign page: one request at a time, answered only to this app. */
     private val kwSign = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+        signing = false
         val json = res.data?.getStringExtra("res") ?: "{\"status\":\"rejected\"}"
         web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote(json)})", null)
     }
     private val net = java.util.concurrent.Executors.newFixedThreadPool(6)
+    /** v1.1: true while Kwallet's sign page is open over Hwallet; the page keeps running to stream live data to it. */
+    @Volatile private var signing = false
 
     inner class HwBridge {
         /** Opens Kwallet's sign page with one request (sign or pair). The result comes back through window.hwSignDone. */
@@ -69,7 +72,8 @@ class HwActivity : FragmentActivity() {
                 val i = Intent().setClassName(KWALLET, "$KWALLET.SignActivity").putExtra("req", json.take(65536))
                 val ok = try { packageManager.getPackageInfo(KWALLET, 0); true } catch (_: Exception) { false }
                 if (!ok) { web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote("{\"status\":\"missing\"}")})", null); return@runOnUiThread }
-                try { kwSign.launch(i) } catch (_: Exception) {
+                try { signing = true; kwSign.launch(i) } catch (_: Exception) {
+                    signing = false
                     web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote("{\"status\":\"missing\"}")})", null)
                 }
             }
@@ -101,6 +105,55 @@ class HwActivity : FragmentActivity() {
                 val js = "window.hwHttpDone&&hwHttpDone(${JSONObject.quote(id)},$st,${JSONObject.quote(out)})"
                 runOnUiThread { if (::web.isInitialized) web.evaluateJavascript(js, null) }
             }
+        }
+
+        /** v1.1: like http() with a content type; "type;hex" sends the hex body as raw bytes (Cardano CBOR). */
+        @android.webkit.JavascriptInterface
+        fun http2(id: String, method: String, url: String, body: String, timeoutMs: Int, contentType: String) {
+            net.execute {
+                var st = 0; var out = ""
+                try {
+                    val u = java.net.URL(url)
+                    if (u.protocol != "https") throw IllegalArgumentException("https only")
+                    val c = u.openConnection() as java.net.HttpURLConnection
+                    c.connectTimeout = timeoutMs.coerceIn(1000, 20000); c.readTimeout = timeoutMs.coerceIn(1000, 20000)
+                    c.requestMethod = if (method == "POST") "POST" else "GET"
+                    c.setRequestProperty("Accept", "application/json, text/plain, */*")
+                    c.setRequestProperty("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME)
+                    if (method == "POST") {
+                        val hex = contentType.endsWith(";hex")
+                        val ct = if (hex) contentType.removeSuffix(";hex") else contentType.ifEmpty { "application/json" }
+                        val bytes = if (hex) ByteArray(body.length / 2) { k -> body.substring(k * 2, k * 2 + 2).toInt(16).toByte() } else body.toByteArray(Charsets.UTF_8)
+                        c.doOutput = true
+                        c.setRequestProperty("Content-Type", ct)
+                        c.outputStream.use { it.write(bytes) }
+                    }
+                    st = c.responseCode
+                    val stream = if (st in 200..299) c.inputStream else c.errorStream
+                    out = stream?.use { s -> s.readBytes().toString(Charsets.UTF_8).take(4_000_000) } ?: ""
+                    c.disconnect()
+                } catch (_: Exception) { st = 0; out = "" }
+                val js = "window.hwHttpDone&&hwHttpDone(${JSONObject.quote(id)},$st,${JSONObject.quote(out)})"
+                runOnUiThread { if (::web.isInitialized) web.evaluateJavascript(js, null) }
+            }
+        }
+
+        /** v1.1: the clipboard text for Paste buttons (the WebView clipboard API is unreliable on phones). */
+        @android.webkit.JavascriptInterface
+        fun clip(): String = try {
+            val cm = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val c = cm.primaryClip
+            if (c != null && c.itemCount > 0) (c.getItemAt(0).coerceToText(this@HwActivity)?.toString() ?: "").take(20000) else ""
+        } catch (_: Exception) { "" }
+
+        /** v1.1: live fee / balance / price data for Kwallet's open sign page. Only apps signed with the
+         *  Kwallet key may receive it (signature permission on Kwallet's receiver). */
+        @android.webkit.JavascriptInterface
+        fun feed(id: String, json: String) {
+            if (!signing || json.length > 262144) return
+            try {
+                sendBroadcast(Intent("app.kwallet.SIGN_FEED").setPackage(KWALLET).putExtra("id", id).putExtra("feed", json))
+            } catch (_: Exception) {}
         }
 
         @android.webkit.JavascriptInterface
@@ -383,7 +436,7 @@ class HwActivity : FragmentActivity() {
         web.saveState(outState)
     }
 
-    override fun onPause() { super.onPause(); web.onPause() }
+    override fun onPause() { super.onPause(); if (!signing) web.onPause() }
     override fun onResume() { super.onResume(); web.onResume(); if (::web.isInitialized) tuneWebView(this, web) }  // OEMs drop back to 60 Hz after resume
     override fun onDestroy() { net.shutdownNow(); web.destroy(); super.onDestroy() }
 }

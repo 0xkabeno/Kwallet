@@ -7,6 +7,10 @@
     <!-- v3.90: the sign page hides other apps' overlays (anti-tapjacking, Android 12+) -->
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
 
+    <!-- v3.91: live fee / balance updates from Hwallet to the open sign page. Only apps signed with the
+         Kwallet key can hold this permission (Hwallet declares the same one, so install order does not matter). -->
+    <permission android:name="app.kwallet.permission.SIGN_FEED" android:protectionLevel="signature" />
+
     <!-- v3.90: Kwallet checks that Hwallet is signed with the same key before it signs anything -->
     <queries>
         <package android:name="app.hwallet" />
@@ -37,6 +41,7 @@
         <activity
             android:name=".SignActivity"
             android:exported="true"
+            android:theme="@style/Theme.KwSign"
             android:excludeFromRecents="true"
             android:taskAffinity=""
             android:launchMode="standard"

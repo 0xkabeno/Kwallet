@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- v1.1: live data for Kwallet's open sign page. Declared here too (same key as Kwallet), so the
+         install order of the two apps does not matter. -->
+    <permission android:name="app.kwallet.permission.SIGN_FEED" android:protectionLevel="signature" />
+    <uses-permission android:name="app.kwallet.permission.SIGN_FEED" />
+
     <!-- Hwallet asks Kwallet (same phone, same signing key) to sign -->
     <queries>
         <package android:name="app.kwallet" />
