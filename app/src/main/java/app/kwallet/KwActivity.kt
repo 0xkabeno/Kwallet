@@ -40,10 +40,14 @@ import androidx.webkit.WebViewAssetLoader
  * context (WebCrypto, Clipboard API). Nothing is ever loaded from the network:
  * the app has no INTERNET permission and every non-asset request is refused.
  */
-class KwActivity : FragmentActivity() {
+open class KwActivity : FragmentActivity() {
     private var LIME = 0xFFDDF869.toInt()
 
-    private lateinit var web: WebView
+    protected lateinit var web: WebView
+
+    /** v3.90: the sign page subclass opens index.html#sign and adds its own bridge. */
+    protected open fun startUrl(): String = "https://appassets.androidplatform.net/assets/index.html"
+    protected open fun onWebReady(w: WebView) {}
     private lateinit var root: FrameLayout
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     @Volatile var insetCss = "{\"t\":0,\"r\":0,\"b\":0,\"l\":0}"
@@ -153,7 +157,9 @@ class KwActivity : FragmentActivity() {
             bio = { bioStatus() },
             bioPrompt = { t -> runOnUiThread { bioAuth(t) } },
             onAwake = { on -> runOnUiThread { web.keepScreenOn = on } },
-            bioCryptCb = { mode, data, title -> runOnUiThread { bioCrypt(mode, data, title) } }), "HarkNative")
+            bioCryptCb = { mode, data, title -> runOnUiThread { bioCrypt(mode, data, title) } },
+            devAuthCb = { t -> runOnUiThread { devAuth(t) } }), "HarkNative")
+        onWebReady(web)
         tuneWebView(this, web)
 
         root = FrameLayout(this)
@@ -193,7 +199,7 @@ class KwActivity : FragmentActivity() {
         })
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState)
-        else web.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+        else web.loadUrl(startUrl())
     }
 
     private val BIO = BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -227,6 +233,23 @@ class KwActivity : FragmentActivity() {
             .setConfirmationRequired(false)
             .build()
         try { prompt.authenticate(info) } catch (_: Exception) { bioResult("fail") }
+    }
+
+    /** v3.90: the phone's own lock for the sign page when Kwallet has no PIN. "ok" | "cancel" | "fail" | "nolock" */
+    private fun devResult(r: String) = web.evaluateJavascript("window.kwDevDone&&kwDevDone(${JSONObject.quote(r)})", null)
+    private fun devAuth(title: String) {
+        val km = getSystemService(KEYGUARD_SERVICE) as android.app.KeyguardManager
+        if (!km.isDeviceSecure) { devResult("nolock"); return }
+        val prompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) { devResult("ok") }
+            override fun onAuthenticationError(code: Int, msg: CharSequence) {
+                devResult(if (code == BiometricPrompt.ERROR_USER_CANCELED || code == BiometricPrompt.ERROR_CANCELED || code == BiometricPrompt.ERROR_NEGATIVE_BUTTON) "cancel" else "fail")
+            }
+        })
+        val b = BiometricPrompt.PromptInfo.Builder().setTitle(title).setSubtitle("Kwallet").setConfirmationRequired(false)
+        if (Build.VERSION.SDK_INT >= 30) b.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+        else @Suppress("DEPRECATION") b.setDeviceCredentialAllowed(true)
+        try { prompt.authenticate(b.build()) } catch (_: Exception) { devResult("fail") }
     }
 
     private fun b64(b: ByteArray) = android.util.Base64.encodeToString(b, android.util.Base64.NO_WRAP)
