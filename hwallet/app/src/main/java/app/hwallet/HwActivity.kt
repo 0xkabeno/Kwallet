@@ -33,6 +33,8 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.webkit.WebViewAssetLoader
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
  * Hwallet shell: one WebView that serves the watch-only app from the APK's assets
@@ -80,33 +82,10 @@ class HwActivity : FragmentActivity() {
             }
         }
 
-        /** HTTPS JSON requests to public nodes (no CORS limits here). Result via window.hwHttpDone(id, status, body). */
+        /** HTTPS JSON requests to public nodes (no CORS limits here). Result via window.hwHttpDone(id, status, body).
+         *  v1.4 (#53): through Hwallet's one network stack (HwNet), so the data speed limit applies. */
         @android.webkit.JavascriptInterface
-        fun http(id: String, method: String, url: String, body: String, timeoutMs: Int) {
-            net.execute {
-                var st = 0; var out = ""
-                try {
-                    val u = java.net.URL(url)
-                    if (u.protocol != "https") throw IllegalArgumentException("https only")
-                    val c = u.openConnection() as java.net.HttpURLConnection
-                    c.connectTimeout = timeoutMs.coerceIn(1000, 15000); c.readTimeout = timeoutMs.coerceIn(1000, 15000)
-                    c.requestMethod = if (method == "POST") "POST" else "GET"
-                    c.setRequestProperty("Accept", "application/json")
-                    c.setRequestProperty("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME)
-                    if (method == "POST") {
-                        c.doOutput = true
-                        c.setRequestProperty("Content-Type", "application/json")
-                        c.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
-                    }
-                    st = c.responseCode
-                    val stream = if (st in 200..299) c.inputStream else c.errorStream
-                    out = stream?.use { s -> s.readBytes().toString(Charsets.UTF_8).take(4_000_000) } ?: ""
-                    c.disconnect()
-                } catch (_: Exception) { st = 0; out = "" }
-                val js = "window.hwHttpDone&&hwHttpDone(${JSONObject.quote(id)},$st,${JSONObject.quote(out)})"
-                runOnUiThread { if (::web.isInitialized) web.evaluateJavascript(js, null) }
-            }
-        }
+        fun http(id: String, method: String, url: String, body: String, timeoutMs: Int) { http2(id, method, url, body, timeoutMs, "application/json") }
 
         /** v1.1: like http() with a content type; "type;hex" sends the hex body as raw bytes (Cardano CBOR). */
         @android.webkit.JavascriptInterface
@@ -114,30 +93,56 @@ class HwActivity : FragmentActivity() {
             net.execute {
                 var st = 0; var out = ""
                 try {
-                    val u = java.net.URL(url)
-                    if (u.protocol != "https") throw IllegalArgumentException("https only")
-                    val c = u.openConnection() as java.net.HttpURLConnection
-                    c.connectTimeout = timeoutMs.coerceIn(1000, 20000); c.readTimeout = timeoutMs.coerceIn(1000, 20000)
-                    c.requestMethod = if (method == "POST") "POST" else "GET"
-                    c.setRequestProperty("Accept", "application/json, text/plain, */*")
-                    c.setRequestProperty("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME)
+                    if (!url.startsWith("https://")) throw IllegalArgumentException("https only")
+                    val rb = okhttp3.Request.Builder().url(url)
+                        .header("Accept", "application/json, text/plain, */*")
+                        .header("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME)
                     if (method == "POST") {
                         val hex = contentType.endsWith(";hex")
                         val ct = if (hex) contentType.removeSuffix(";hex") else contentType.ifEmpty { "application/json" }
                         val bytes = if (hex) ByteArray(body.length / 2) { k -> body.substring(k * 2, k * 2 + 2).toInt(16).toByte() } else body.toByteArray(Charsets.UTF_8)
-                        c.doOutput = true
-                        c.setRequestProperty("Content-Type", ct)
-                        c.outputStream.use { it.write(bytes) }
+                        rb.post(bytes.toRequestBody(ct.toMediaTypeOrNull()))
                     }
-                    st = c.responseCode
-                    val stream = if (st in 200..299) c.inputStream else c.errorStream
-                    out = stream?.use { s -> s.readBytes().toString(Charsets.UTF_8).take(4_000_000) } ?: ""
-                    c.disconnect()
+                    /* at a low speed cap a big page needs longer than the page's timeout: let it finish */
+                    val t = if (HwNet.rate.on()) 30000 else timeoutMs.coerceIn(1000, 20000)
+                    HwNet.withTimeout(t).newCall(rb.build()).execute().use { r ->
+                        st = r.code
+                        out = r.body?.string()?.take(4_000_000) ?: ""
+                    }
                 } catch (_: Exception) { st = 0; out = "" }
                 val js = "window.hwHttpDone&&hwHttpDone(${JSONObject.quote(id)},$st,${JSONObject.quote(out)})"
                 runOnUiThread { if (::web.isInitialized) web.evaluateJavascript(js, null) }
             }
         }
+
+        /** v1.4 (#53): Settings > Data speed limit, KB/s (0 = unlimited). Saved and applied at once to all traffic. */
+        @android.webkit.JavascriptInterface
+        fun setSpeed(kb: Int) { HwNet.setKbps(this@HwActivity, kb) }
+
+        @android.webkit.JavascriptInterface
+        fun speed(): Int = HwNet.kbps(this@HwActivity)
+
+        /** v1.4 (#55): the persistent activity cache. Rows for the Activity tab, newest first, read from disk (no network). */
+        @android.webkit.JavascriptInterface
+        fun actRows(wid: String, limit: Int): String = try { HwActDb.get(this@HwActivity).rows(wid, limit) } catch (_: Throwable) { "[]" }
+
+        /** rows the page fetched itself (pull to refresh, older pages) or a send it just broadcast (pending) */
+        @android.webkit.JavascriptInterface
+        fun actPut(wid: String, json: String) {
+            if (json.length > 3_000_000) return
+            net.execute {
+                try {
+                    val a = org.json.JSONArray(json); val l = ArrayList<JSONObject>()
+                    for (i in 0 until a.length()) a.optJSONObject(i)?.let { l.add(it) }
+                    HwActDb.get(this@HwActivity).put(wid, l, false)
+                    /* a pending send: the service checks that chain every few seconds until it confirms */
+                } catch (_: Throwable) {}
+            }
+        }
+
+        /** when the live service last read the chains for this wallet (ms since 1970), 0 = never / not running */
+        @android.webkit.JavascriptInterface
+        fun actFresh(wid: String): String = try { if (HwLiveService.enabled(this@HwActivity)) HwActDb.get(this@HwActivity).lastAt(wid).toString() else "0" } catch (_: Throwable) { "0" }
 
         /** v1.1: the clipboard text for Paste buttons (the WebView clipboard API is unreliable on phones). */
         @android.webkit.JavascriptInterface
@@ -282,6 +287,7 @@ class HwActivity : FragmentActivity() {
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
         )
         super.onCreate(savedInstanceState)
+        try { HwNet.load(this) } catch (_: Throwable) {}
         // Material You chosen in Settings: the window behind the page uses the wallpaper colour, never a lime flash
         val kwp = getSharedPreferences("kw", MODE_PRIVATE)
         if (Build.VERSION.SDK_INT >= 31 && kwp.getBoolean("md3", false)) {
@@ -332,7 +338,7 @@ class HwActivity : FragmentActivity() {
 
         web.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
-                if (request.url.host == "appassets.androidplatform.net") assets.shouldInterceptRequest(request.url) else null
+                if (request.url.host == "appassets.androidplatform.net") assets.shouldInterceptRequest(request.url) else limited(request)
 
             override fun onPageFinished(view: WebView, url: String) { pushInsets(); pageReady = true; root.invalidate() }
             override fun onPageCommitVisible(view: WebView, url: String) { pageReady = true; root.invalidate() }
@@ -409,8 +415,29 @@ class HwActivity : FragmentActivity() {
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl(startUrl())
+        HwActDb.listener = { wid, json -> actPatch(wid, json) }
         // v1.3 (#42): the always-on listener is NOT started here any more. The page starts it through setLive()
         // after it has loaded, when Hwallet is resumed (see startLiveSafe).
+    }
+
+    /** v1.4 (#53): while a data speed limit is set, the page's remote images (token logos) load through HwNet too,
+     *  so they share the same limit. Unlimited: the WebView loads them itself as before. */
+    private fun limited(req: WebResourceRequest): WebResourceResponse? {
+        if (!HwNet.rate.on() || req.method != "GET" || req.url.scheme != "https") return null
+        return try {
+            val r = HwNet.withTimeout(30000).newCall(okhttp3.Request.Builder().url(req.url.toString()).header("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME).build()).execute()
+            val b = r.body
+            if (!r.isSuccessful || b == null) { r.close(); WebResourceResponse("text/plain", "utf-8", 404, "Not Found", emptyMap(), java.io.ByteArrayInputStream(ByteArray(0))) }
+            else {
+                val mt = b.contentType(); val mime = if (mt != null) mt.type + "/" + mt.subtype else "application/octet-stream"
+                WebResourceResponse(mime, mt?.charset()?.name(), r.code, r.message.ifEmpty { "OK" }, mapOf("Cache-Control" to "max-age=86400", "Access-Control-Allow-Origin" to "*"), b.byteStream())
+            }
+        } catch (_: Throwable) { WebResourceResponse("text/plain", "utf-8", 504, "Gateway Timeout", emptyMap(), java.io.ByteArrayInputStream(ByteArray(0))) }
+    }
+
+    /** v1.4 (#55): rows the live service just wrote to the activity cache, patched into the open Activity list in place */
+    private fun actPatch(wid: String, json: String) {
+        runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript("window.hwActPatch&&hwActPatch(${JSONObject.quote(wid)},${JSONObject.quote(json)})", null) } catch (_: Throwable) {} }
     }
 
     private val BIO = BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -548,7 +575,7 @@ class HwActivity : FragmentActivity() {
         super.onResume(); web.onResume(); if (::web.isInitialized) tuneWebView(this, web)
         if (pendingLive) ui.postDelayed({ if (pendingLive) startLiveSafe() }, 300)
     }  // OEMs drop back to 60 Hz after resume
-    override fun onDestroy() { try { ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
+    override fun onDestroy() { try { HwActDb.listener = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
 }
 
 /** Smooth rendering like Chrome: highest refresh rate, no overscroll glow.
