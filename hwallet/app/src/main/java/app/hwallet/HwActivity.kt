@@ -1,4 +1,4 @@
-package app.kwallet
+package app.hwallet
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -35,25 +35,78 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.webkit.WebViewAssetLoader
 
 /**
- * Kwallet shell: one WebView that serves the offline app from the APK's assets.
- * Served from https://appassets.androidplatform.net so the page runs in a secure
- * context (WebCrypto, Clipboard API). Nothing is ever loaded from the network:
- * the app has no INTERNET permission and every non-asset request is refused.
+ * Hwallet shell: one WebView that serves the watch-only app from the APK's assets
+ * (https://appassets.androidplatform.net, a secure context). Balances come from public
+ * nodes through HwNative.http; signing is always done by Kwallet (offline) via SignActivity.
  */
-open class KwActivity : FragmentActivity() {
+class HwActivity : FragmentActivity() {
     private var LIME = 0xFFDDF869.toInt()
 
-    protected lateinit var web: WebView
+    private lateinit var web: WebView
 
-    /** v3.90: the sign page subclass opens index.html#sign and adds its own bridge. */
-    protected open fun startUrl(): String = "https://appassets.androidplatform.net/assets/index.html"
-    protected open fun onWebReady(w: WebView) {}
+    private fun startUrl(): String = "https://appassets.androidplatform.net/assets/index.html"
+    companion object { const val KWALLET = "app.kwallet" }
     private lateinit var root: FrameLayout
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     @Volatile var insetCss = "{\"t\":0,\"r\":0,\"b\":0,\"l\":0}"
 
     private fun pushInsets() {
         if (::web.isInitialized) web.evaluateJavascript("window.kwInsets&&kwInsets($insetCss)", null)
+    }
+
+    /** Kwallet's sign page: one request at a time, answered only to this app. */
+    private val kwSign = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+        val json = res.data?.getStringExtra("res") ?: "{\"status\":\"rejected\"}"
+        web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote(json)})", null)
+    }
+    private val net = java.util.concurrent.Executors.newFixedThreadPool(6)
+
+    inner class HwBridge {
+        /** Opens Kwallet's sign page with one request (sign or pair). The result comes back through window.hwSignDone. */
+        @android.webkit.JavascriptInterface
+        fun sign(json: String) {
+            runOnUiThread {
+                val i = Intent().setClassName(KWALLET, "$KWALLET.SignActivity").putExtra("req", json.take(65536))
+                val ok = try { packageManager.getPackageInfo(KWALLET, 0); true } catch (_: Exception) { false }
+                if (!ok) { web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote("{\"status\":\"missing\"}")})", null); return@runOnUiThread }
+                try { kwSign.launch(i) } catch (_: Exception) {
+                    web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote("{\"status\":\"missing\"}")})", null)
+                }
+            }
+        }
+
+        /** HTTPS JSON requests to public nodes (no CORS limits here). Result via window.hwHttpDone(id, status, body). */
+        @android.webkit.JavascriptInterface
+        fun http(id: String, method: String, url: String, body: String, timeoutMs: Int) {
+            net.execute {
+                var st = 0; var out = ""
+                try {
+                    val u = java.net.URL(url)
+                    if (u.protocol != "https") throw IllegalArgumentException("https only")
+                    val c = u.openConnection() as java.net.HttpURLConnection
+                    c.connectTimeout = timeoutMs.coerceIn(1000, 15000); c.readTimeout = timeoutMs.coerceIn(1000, 15000)
+                    c.requestMethod = if (method == "POST") "POST" else "GET"
+                    c.setRequestProperty("Accept", "application/json")
+                    c.setRequestProperty("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME)
+                    if (method == "POST") {
+                        c.doOutput = true
+                        c.setRequestProperty("Content-Type", "application/json")
+                        c.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+                    }
+                    st = c.responseCode
+                    val stream = if (st in 200..299) c.inputStream else c.errorStream
+                    out = stream?.use { s -> s.readBytes().toString(Charsets.UTF_8).take(4_000_000) } ?: ""
+                    c.disconnect()
+                } catch (_: Exception) { st = 0; out = "" }
+                val js = "window.hwHttpDone&&hwHttpDone(${JSONObject.quote(id)},$st,${JSONObject.quote(out)})"
+                runOnUiThread { if (::web.isInitialized) web.evaluateJavascript(js, null) }
+            }
+        }
+
+        @android.webkit.JavascriptInterface
+        fun openUrl(url: String) {
+            runOnUiThread { try { if (url.startsWith("https://")) startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (_: Exception) {} }
+        }
     }
 
     private val pickFile = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
@@ -121,9 +174,7 @@ open class KwActivity : FragmentActivity() {
 
         web.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
-                assets.shouldInterceptRequest(request.url)
-                    ?: if (request.url.scheme == "blob" || request.url.scheme == "data") null
-                    else WebResourceResponse("text/plain", "utf-8", 403, "Offline", null, null)
+                if (request.url.host == "appassets.androidplatform.net") assets.shouldInterceptRequest(request.url) else null
 
             override fun onPageFinished(view: WebView, url: String) { pushInsets(); pageReady = true; root.invalidate() }
             override fun onPageCommitVisible(view: WebView, url: String) { pageReady = true; root.invalidate() }
@@ -159,7 +210,7 @@ open class KwActivity : FragmentActivity() {
             onAwake = { on -> runOnUiThread { web.keepScreenOn = on } },
             bioCryptCb = { mode, data, title -> runOnUiThread { bioCrypt(mode, data, title) } },
             devAuthCb = { t -> runOnUiThread { devAuth(t) } }), "HarkNative")
-        onWebReady(web)
+        web.addJavascriptInterface(HwBridge(), "HwNative")
         tuneWebView(this, web)
 
         root = FrameLayout(this)
@@ -227,7 +278,7 @@ open class KwActivity : FragmentActivity() {
         })
         val info = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
-            .setSubtitle("Kwallet")
+            .setSubtitle("Hwallet")
             .setNegativeButtonText("Use PIN")
             .setAllowedAuthenticators(BIO)
             .setConfirmationRequired(false)
@@ -246,7 +297,7 @@ open class KwActivity : FragmentActivity() {
                 devResult(if (code == BiometricPrompt.ERROR_USER_CANCELED || code == BiometricPrompt.ERROR_CANCELED || code == BiometricPrompt.ERROR_NEGATIVE_BUTTON) "cancel" else "fail")
             }
         })
-        val b = BiometricPrompt.PromptInfo.Builder().setTitle(title).setSubtitle("Kwallet").setConfirmationRequired(false)
+        val b = BiometricPrompt.PromptInfo.Builder().setTitle(title).setSubtitle("Hwallet").setConfirmationRequired(false)
         if (Build.VERSION.SDK_INT >= 30) b.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
         else @Suppress("DEPRECATION") b.setDeviceCredentialAllowed(true)
         try { prompt.authenticate(b.build()) } catch (_: Exception) { devResult("fail") }
@@ -284,7 +335,7 @@ open class KwActivity : FragmentActivity() {
         })
         val info = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
-            .setSubtitle("Kwallet")
+            .setSubtitle("Hwallet")
             .setNegativeButtonText("Use PIN")
             .setAllowedAuthenticators(BIO)
             .setConfirmationRequired(false)
@@ -334,7 +385,7 @@ open class KwActivity : FragmentActivity() {
 
     override fun onPause() { super.onPause(); web.onPause() }
     override fun onResume() { super.onResume(); web.onResume(); if (::web.isInitialized) tuneWebView(this, web) }  // OEMs drop back to 60 Hz after resume
-    override fun onDestroy() { web.destroy(); super.onDestroy() }
+    override fun onDestroy() { net.shutdownNow(); web.destroy(); super.onDestroy() }
 }
 
 /** Smooth rendering like Chrome: highest refresh rate, no overscroll glow. */

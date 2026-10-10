@@ -1,4 +1,4 @@
-package app.kwallet
+package app.hwallet
 
 import android.content.ContentValues
 import android.content.Context
@@ -37,7 +37,7 @@ class HarkNative(
     @JavascriptInterface
     fun appIcon(): String = try {
         val pm = ctx.packageManager
-        val st = pm.getComponentEnabledSetting(android.content.ComponentName(ctx.packageName, "app.kwallet.IconNavy"))
+        val st = pm.getComponentEnabledSetting(android.content.ComponentName(ctx.packageName, "app.hwallet.IconNavy"))
         if (st == android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED) "navy" else "lime"
     } catch (_: Exception) { "lime" }
 
@@ -47,8 +47,8 @@ class HarkNative(
         val on = android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
         val off = android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
         val keep = android.content.pm.PackageManager.DONT_KILL_APP
-        val lime = android.content.ComponentName(ctx.packageName, "app.kwallet.MainActivity")
-        val navy = android.content.ComponentName(ctx.packageName, "app.kwallet.IconNavy")
+        val lime = android.content.ComponentName(ctx.packageName, "app.hwallet.MainActivity")
+        val navy = android.content.ComponentName(ctx.packageName, "app.hwallet.IconNavy")
         val (show, hide) = if (name == "navy") navy to lime else lime to navy
         // enable the new one first so the app always has a launcher entry
         pm.setComponentEnabledSetting(show, on, keep)
@@ -116,7 +116,7 @@ class HarkNative(
 
     private fun splashTheme(): Int {
         val p = ctx.getSharedPreferences("kw", Context.MODE_PRIVATE)
-        return if (!p.getBoolean("md3", false)) 0 else if (p.getBoolean("dark", false)) R.style.Theme_Kwallet_Md3Dark else R.style.Theme_Kwallet_Md3
+        return if (!p.getBoolean("md3", false)) 0 else if (p.getBoolean("dark", false)) R.style.Theme_Hwallet_Md3Dark else R.style.Theme_Hwallet_Md3
     }
 
     /** App theme light/dark: lets the next launch open on the dark Material You splash. */
@@ -174,7 +174,7 @@ class HarkNative(
         } catch (_: Exception) {}
     }
 
-    /** Saves an export/backup into Download/Kwallet. Returns the folder shown to the user, or "" on failure. */
+    /** Saves an export/backup into Download/Hwallet. Returns the folder shown to the user, or "" on failure. */
     @JavascriptInterface
     fun saveFile(name: String, mime: String, base64: String): String {
         return try {
@@ -184,7 +184,7 @@ class HarkNative(
                 val cv = ContentValues().apply {
                     put(MediaStore.Downloads.DISPLAY_NAME, safe)
                     put(MediaStore.Downloads.MIME_TYPE, mime)
-                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Kwallet")
+                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Hwallet")
                     put(MediaStore.Downloads.IS_PENDING, 1)
                 }
                 val r = ctx.contentResolver
@@ -194,11 +194,11 @@ class HarkNative(
                 r.update(uri, cv, null, null)
             } else {
                 @Suppress("DEPRECATION")
-                val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Kwallet")
+                val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Hwallet")
                 dir.mkdirs()
                 File(dir, safe).writeBytes(bytes)
             }
-            "Download/Kwallet"
+            "Download/Hwallet"
         } catch (_: Exception) { "" }
     }
 }

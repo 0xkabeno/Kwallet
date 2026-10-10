@@ -7,3 +7,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "Kwallet"
 include(":app")
+include(":hwallet")
+project(":hwallet").projectDir = file("hwallet/app")
