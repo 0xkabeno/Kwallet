@@ -156,10 +156,62 @@ class HwActivity : FragmentActivity() {
             } catch (_: Exception) {}
         }
 
+        /** v1.2: settings for the always-on listener (background refresh, live notification, alerts, watched addresses). */
+        @android.webkit.JavascriptInterface
+        fun setLive(json: String) {
+            if (json.length > 200000) return
+            runOnUiThread {
+                val p = getSharedPreferences(HwLiveService.PREF, MODE_PRIVATE)
+                p.edit().putString("cfg", json).apply()
+                val on = HwLiveService.enabled(this@HwActivity)
+                if (on) {
+                    if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this@HwActivity, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED && !p.getBoolean("askedNotif", false)) {
+                        p.edit().putBoolean("askedNotif", true).apply()
+                        try { askNotif.launch(android.Manifest.permission.POST_NOTIFICATIONS) } catch (_: Exception) {}
+                    } else if (!batteryOk() && !p.getBoolean("askedBatt", false)) {
+                        p.edit().putBoolean("askedBatt", true).apply(); askBatteryNow()
+                    }
+                    HwLiveService.start(this@HwActivity)
+                } else HwLiveService.stop(this@HwActivity)
+            }
+        }
+
+        @android.webkit.JavascriptInterface
+        fun batteryExempt(): String = if (batteryOk()) "1" else "0"
+
+        @android.webkit.JavascriptInterface
+        fun askBattery() { runOnUiThread { askBatteryNow() } }
+
+        @android.webkit.JavascriptInterface
+        fun maker(): String = Build.MANUFACTURER ?: ""
+
+        @android.webkit.JavascriptInterface
+        fun openAppSettings() {
+            runOnUiThread { try { startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))) } catch (_: Exception) {} }
+        }
+
         @android.webkit.JavascriptInterface
         fun openUrl(url: String) {
             runOnUiThread { try { if (url.startsWith("https://")) startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (_: Exception) {} }
         }
+    }
+
+    /** v1.2: notification permission (Android 13+), then the battery-optimization exemption prompt */
+    private val askNotif = registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
+        val p = getSharedPreferences(HwLiveService.PREF, MODE_PRIVATE)
+        if (!batteryOk() && !p.getBoolean("askedBatt", false)) { p.edit().putBoolean("askedBatt", true).apply(); askBatteryNow() }
+        HwLiveService.start(this)
+    }
+
+    private fun batteryOk(): Boolean = try {
+        (getSystemService(POWER_SERVICE) as android.os.PowerManager).isIgnoringBatteryOptimizations(packageName)
+    } catch (_: Exception) { false }
+
+    @SuppressLint("BatteryLife")
+    private fun askBatteryNow() {
+        if (batteryOk()) return
+        try { startActivity(Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName"))) }
+        catch (_: Exception) { try { startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) } catch (_: Exception) {} }
     }
 
     private val pickFile = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
@@ -304,6 +356,8 @@ class HwActivity : FragmentActivity() {
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl(startUrl())
+        // v1.2: keep the always-on listener running whenever the app opens
+        HwLiveService.start(this)
     }
 
     private val BIO = BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -465,5 +519,14 @@ fun tuneWebView(activity: Activity, webView: WebView) {
     if (Build.VERSION.SDK_INT >= 29) {
         @Suppress("DEPRECATION")
         webView.isForceDarkAllowed = false
+    }
+    // v1.2: GPU-backed WebView layer (requested for #41); the page itself only animates transform/opacity
+    webView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+    // v1.2: steady clocks where the phone supports it (no thermal drop mid-scroll)
+    if (Build.VERSION.SDK_INT >= 24) {
+        try {
+            val pm = activity.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
+            if (pm.isSustainedPerformanceModeSupported) activity.window.setSustainedPerformanceMode(true)
+        } catch (_: Exception) {}
     }
 }

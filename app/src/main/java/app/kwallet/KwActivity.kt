@@ -184,6 +184,9 @@ open class KwActivity : FragmentActivity() {
             WindowInsetsCompat.CONSUMED
         }
         setContentView(root)
+        // v3.92 sign page: fully transparent until the page says it has drawn the transaction (KwSign.ready),
+        // so Hwallet stays visible underneath and no Kwallet screen ever flashes. Safety net: 2.5 s.
+        if (signPage) { root.alpha = 0f; root.postDelayed({ revealSign() }, 2500) }
         // hold the first frame until the page has painted (max 1.2 s): no blank flash on open
         val t0 = System.currentTimeMillis()
         root.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
@@ -204,6 +207,12 @@ open class KwActivity : FragmentActivity() {
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl(startUrl())
+    }
+
+    /** v3.92: shows the sign page once it is drawn (quick fade, compositor only). */
+    protected fun revealSign() {
+        if (!::root.isInitialized || root.alpha >= 1f || isFinishing) return
+        root.animate().alpha(1f).setDuration(110).start()
     }
 
     private val BIO = BiometricManager.Authenticators.BIOMETRIC_STRONG

@@ -1,0 +1,31 @@
+Hwallet
+Copyright (C) 2026 Kwallet contributors
+
+Hwallet (this directory: hwallet/app and hwallet/web) is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version. See LICENSE in this directory.
+
+Hwallet is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE. See the GNU General Public License for more details.
+
+Third-party work
+----------------
+Gem Wallet - https://github.com/gemwalletcom/wallet
+  Copyright (C) Gem Wallet contributors. Licensed under GPL-3.0.
+  Hwallet's layout and components (asset lists and rows, chain badges, bottom
+  navigation, send/receive and network pickers, activity feed, settings structure)
+  and wallet logic (per-chain history parsing, token metadata sources, explorer links)
+  follow Gem Wallet. Gem Wallet's name and logo are not used. Gem Wallet is not
+  affiliated with Hwallet.
+
+Gem Wallet assets - https://github.com/gemwalletcom/assets (fork of trustwallet/assets)
+  Copyright (c) 2019-2023 Trust Wallet. Licensed under the MIT License.
+  Chain and token logos bundled in hwallet/web/index.html and loaded from
+  assets.gemwallet.com.
+
+Monero symbol - The Monero Project, https://getmonero.org/press-kit/
+
+Kwallet (the offline signer in app/ and web/) is a separate program under the MIT
+License (see ../LICENSE). It talks to Hwallet only through Android intents.

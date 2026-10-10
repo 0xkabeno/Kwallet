@@ -65,4 +65,6 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.fragment:fragment-ktx:1.8.3")
+    // v1.2: WebSockets + HTTP for the always-on listener (foreground service)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }

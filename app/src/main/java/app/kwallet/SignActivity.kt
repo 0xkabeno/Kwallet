@@ -20,6 +20,8 @@ import org.json.JSONObject
  * v3.91: opens straight on the transaction over Hwallet (translucent window, no splash, no PIN screen)
  * and takes live fee / balance / price updates from Hwallet through a broadcast that only apps signed
  * with the Kwallet key can send (signature permission), matched to the one open request id.
+ * v3.92: the window stays transparent until the page has drawn the transaction (no Kwallet UI flash),
+ * and opens/closes without a window animation.
  */
 class SignActivity : KwActivity() {
     private var req = ""
@@ -60,6 +62,7 @@ class SignActivity : KwActivity() {
         reqId = try { JSONObject(req).optString("id", "") } catch (_: Exception) { "" }
         setResult(RESULT_CANCELED, Intent().putExtra("res", if (ok) "{\"status\":\"rejected\"}" else "{\"status\":\"refused\",\"error\":\"Only Hwallet signed with the Kwallet key can ask Kwallet to sign\"}"))
         super.onCreate(null)
+        @Suppress("DEPRECATION") overridePendingTransition(0, 0)
         if (!ok) { replied = true; finish(); return }
         try {
             ContextCompat.registerReceiver(this, feedRx, IntentFilter(FEED_ACTION), FEED_PERM, null, ContextCompat.RECEIVER_EXPORTED)
@@ -76,6 +79,8 @@ class SignActivity : KwActivity() {
     inner class Bridge {
         @JavascriptInterface fun request(): String = req
         @JavascriptInterface fun done(json: String) { runOnUiThread { reply(json) } }
+        /** v3.92: the transaction is on screen; reveal the window (it stays transparent until then). */
+        @JavascriptInterface fun ready() { runOnUiThread { revealSign() } }
     }
 
     private fun reply(json: String) {
@@ -83,6 +88,7 @@ class SignActivity : KwActivity() {
         replied = true
         setResult(RESULT_OK, Intent().putExtra("res", json.take(262144)))
         finish()
+        @Suppress("DEPRECATION") overridePendingTransition(0, 0)
     }
 
     override fun onDestroy() {
