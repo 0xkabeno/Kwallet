@@ -20,6 +20,17 @@
 Kwallet creates and restores wallets for eight chains from one recovery phrase, entirely on your device.
 The Android app has **no internet permission**; the HTML version is one self-contained file that works with the network unplugged.
 
+## Hwallet — the hot side
+
+**We secure the K and speed up the H.** Hwallet is Kwallet's online, watch-only companion (`Hwallet-*.apk`, "Simple and quick").
+
+- Live balances on ETH (+ Base, Arbitrum, Optimism, Polygon, BNB Chain, Linea, Scroll, Arc), SOL, BTC, TRX, SUI, XRP and ADA from free public nodes, with fallbacks
+- Gas coin plus official USDT/USDC pinned on every chain; add any token by contract
+- Holds **public addresses only**. To send, it opens Kwallet's sign page on the same phone: unlock, check every detail, hold to sign. Kwallet stays offline
+- Pair: Kwallet → Settings → Hwallet signer → Pair, then Hwallet → Pair with Kwallet
+- Signing today: EVM networks (native coins and tokens, Max with exact fee). More chains come next
+- Both apps must come from the same release (same signing key), and Kwallet refuses any other caller
+
 ## Chains
 
 | Chain | Paths | Compatible with |
