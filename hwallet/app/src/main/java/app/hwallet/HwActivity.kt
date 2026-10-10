@@ -520,6 +520,8 @@ fun tuneWebView(activity: Activity, webView: WebView) {
         @Suppress("DEPRECATION")
         webView.isForceDarkAllowed = false
     }
+    // v1.2: GPU-backed WebView layer (requested for #41); the page itself only animates transform/opacity
+    webView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
     // v1.2: steady clocks where the phone supports it (no thermal drop mid-scroll)
     if (Build.VERSION.SDK_INT >= 24) {
         try {
