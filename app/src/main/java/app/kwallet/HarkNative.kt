@@ -24,8 +24,14 @@ class HarkNative(
     private val bio: () -> String = { "none" },
     private val bioPrompt: (String) -> Unit = { },
     private val onAwake: (Boolean) -> Unit = { },
-    private val bioCryptCb: (String, String, String) -> Unit = { _, _, _ -> }
+    private val bioCryptCb: (String, String, String) -> Unit = { _, _, _ -> },
+    private val devAuthCb: (String) -> Unit = { }
 ) {
+
+    /** v3.90: the phone's own screen lock (fingerprint, face, PIN, pattern) for the sign page; result via window.kwDevDone. */
+    @JavascriptInterface
+    fun devAuth(title: String) { devAuthCb(title) }
+
 
     /** v3.89: launcher icon, "lime" or "navy" (two activity-aliases; one enabled at a time). */
     @JavascriptInterface
