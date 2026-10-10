@@ -48,6 +48,9 @@ open class KwActivity : FragmentActivity() {
     /** v3.90: the sign page subclass opens index.html#sign and adds its own bridge. */
     protected open fun startUrl(): String = "https://appassets.androidplatform.net/assets/index.html"
     protected open fun onWebReady(w: WebView) {}
+    /** v3.91: the sign page opens over Hwallet (translucent, no splash) in the page's own colour. */
+    protected open val signPage: Boolean = false
+    protected open fun bootColor(c: Int): Int = c
     private lateinit var root: FrameLayout
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     @Volatile var insetCss = "{\"t\":0,\"r\":0,\"b\":0,\"l\":0}"
@@ -73,14 +76,15 @@ open class KwActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         // Material You chosen in Settings: the window behind the page uses the wallpaper colour, never a lime flash
         val kwp = getSharedPreferences("kw", MODE_PRIVATE)
-        if (Build.VERSION.SDK_INT >= 31 && kwp.getBoolean("md3", false)) {
+        if (!signPage && Build.VERSION.SDK_INT >= 31 && kwp.getBoolean("md3", false)) {
             LIME = if (kwp.getBoolean("dark", false))
                 androidx.core.graphics.ColorUtils.blendARGB(getColor(android.R.color.system_neutral1_900), getColor(android.R.color.system_accent1_800), .28f)
             else getColor(android.R.color.system_accent1_100)
             window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(LIME))
         }
+        LIME = bootColor(LIME)
         // Android 12+: the system splash fades into the app instead of cutting
-        if (Build.VERSION.SDK_INT >= 31) {
+        if (!signPage && Build.VERSION.SDK_INT >= 31) {
             splashScreen.setOnExitAnimationListener { v ->
                 v.animate().alpha(0f).setDuration(260).setInterpolator(PathInterpolator(.2f, 0f, 0f, 1f))
                     .withEndAction { v.remove() }.start()
