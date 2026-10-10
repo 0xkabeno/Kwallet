@@ -2571,6 +2571,12 @@ body.md3 .kws-row .kws-ic { border-radius: 50%; background: var(--md-pc); color:
 .kws-sw::after { top: 5px !important; left: 5px !important; width: 14px !important; height: 14px !important; background: var(--md-outline) !important; transition: all .25s cubic-bezier(.34,1.56,.64,1) !important; }
 .kws-row.on .kws-sw { background: var(--md-primary) !important; border-color: var(--md-primary) !important; }
 .kws-row.on .kws-sw::after { left: 22px !important; top: 2px !important; width: 20px !important; height: 20px !important; background: var(--md-on-primary) !important; }
+.kws-ico { display: inline-flex; gap: 10px; flex: 0 0 auto; }
+.kws-ico span { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 2px transparent; transition: box-shadow .2s ease, transform .2s cubic-bezier(.34,1.56,.64,1); }
+.kws-ico span b { font: 900 18px/1 'KwBlack','Roboto',system-ui,sans-serif; }
+.kws-ico [data-i="lime"] { background: #DDF869; color: #223348; }
+.kws-ico [data-i="navy"] { background: #223348; color: #DDF869; }
+.kws-ico span.on { box-shadow: 0 0 0 2px var(--md-sc-low, #fff), 0 0 0 4px var(--md-primary, #223348); transform: scale(1.04); }
 .kws-seg { position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; flex: 0 0 auto; padding: 3px; border-radius: 999px; background: var(--md-sc-high); isolation: isolate; cursor: pointer; }
 .kws-seg::before { content: ''; position: absolute; z-index: -1; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 999px;
   background: var(--md-primary); box-shadow: 0 1px 3px rgba(0,0,0,.18); transition: transform .38s cubic-bezier(.2,0,0,1); will-change: transform; }
@@ -3149,7 +3155,7 @@ window.KwDB = (function () {
       var cw = VW / 3, ch = (y1 - y0) / (top ? 2 : 1);
       if (ORDER[i] === LIT_COIN) size = Math.max(size, 67 * sc);
       size = Math.min(size, ch + 10, cw - 4);
-      var best = null, bestD = -1;
+      var best = null, bestD = -Infinity; /* v3.89: -1 left best null when every spot overlapped, which crashed the opening */
       for (var tries = 0; tries < 40; tries++) {
         var x = col * cw + size / 2 + 34 + Math.random() * Math.max(4, cw - size - 68);
         var y = y0 + row * ch + size / 2 + 4 + Math.random() * Math.max(4, ch - size - 8);
@@ -10754,7 +10760,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.88';
+const APP_VERSION = '3.89';
 const APP_BUILD = '2026-10-07';
 let derivedRows = [];
 let copiedState = {};
@@ -14740,6 +14746,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       row('kws-theme', I.theme, 'Theme', null, '<span class="kws-seg" role="radiogroup"><span data-t="light">Light</span><span data-t="dark">Dark</span></span>') +
       row('kws-md3', 'M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z', 'Material You', '', '<span class="kws-sw" aria-hidden="true"></span>') +
       row('kws-snd', 'M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z', 'Sounds', '') +
+      (window.HarkNative && HarkNative.setAppIcon ? row('kws-icon', 'M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z', 'App icon', null, '<span class="kws-ico" role="radiogroup"><span data-i="lime" role="radio" aria-label="Lime"><b>K</b></span><span data-i="navy" role="radio" aria-label="Navy"><b>K</b></span></span>') : '') +
       row('kws-replay', I.play, 'Play opening screen', null) +
       '</div><div class="kws-sec">Security</div><div class="kws-grp">' +
       row('kws-lock', I.lock, 'App lock', '', '<span class="kws-sw" aria-hidden="true"></span>') +
@@ -14783,6 +14790,14 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
     $('kws-md3').onclick = function () { tick(); if (window.KwMd3) { KwMd3.set(!KwMd3.on()); try { FX.buzz(10); } catch (x) {} } sync(); };
     $('kws-snd').onclick = function () { tick(); var o = FX.SETS.map(function (n, i) { return [String(i), n + (i ? '' : ' (default)')]; });
       chooseLive('Sound set', o, String(FX.soundSet()), function (v) { FX.setSoundSet(+v); sync(); toast(FX.SETS[+v] + ' sounds'); }, function (v) { try { localStorage.setItem('kw-snd-set', v); } catch (x) {} FX.seedGen(); }); };
+    if ($('kws-icon')) $('kws-icon').onclick = function (e) {
+      var t = e.target.closest && e.target.closest('[data-i]'), now = HarkNative.appIcon(), v = t ? t.getAttribute('data-i') : (now === 'lime' ? 'navy' : 'lime');
+      if (v === now) return; tick();
+      ov.querySelectorAll('.kws-ico [data-i]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-i') === v); });
+      var go = function () { var ok = false; try { ok = HarkNative.setAppIcon(v); } catch (x) {} toast(ok ? 'Icon changed. Your home screen updates in a moment' : 'Could not change the icon'); setTimeout(sync, 300); };
+      /* save everything first: some launchers close the app when its icon changes */
+      try { if (window.KwDB && KwDB.flush) KwDB.flush().then(go, go); else go(); } catch (x) { go(); }
+    };
     $('kws-replay').onclick = function () { closeSettings(); if (window.KwLock && KwLock.replay) KwLock.replay(); };
     document.addEventListener('kwallet-pinmode', sync);
   }
@@ -14801,6 +14816,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       $('kws-bio').disabled = !on && !bon;
       $('kws-bio-s').textContent = st === 'ok' ? (bon ? 'Fingerprint or face. PIN stays as backup' : 'Off. PIN only') : (st === 'unenrolled' ? 'No fingerprint or face set up on this phone' : 'Not available on this phone');
     }
+    if ($('kws-icon')) { var ic = 'lime'; try { ic = HarkNative.appIcon(); } catch (x) {} ov.querySelectorAll('.kws-ico [data-i]').forEach(function (x) { var o = x.getAttribute('data-i') === ic; x.classList.toggle('on', o); x.setAttribute('aria-checked', o ? 'true' : 'false'); }); }
     if ($('kws-snd-s')) $('kws-snd-s').textContent = FX.SETS[FX.soundSet()] + (FX.soundOn() ? '' : ' \u00b7 sound is off');
     var th = document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
     ov.querySelectorAll('.kws-seg').forEach(function (g) { g.setAttribute('data-v', th); });
