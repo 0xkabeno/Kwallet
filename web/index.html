@@ -3,6 +3,7 @@
 <head>
 <script>(function(){var P={touchstart:1,touchmove:1,wheel:1,mousewheel:1},o=EventTarget.prototype.addEventListener;try{EventTarget.prototype.addEventListener=function(t,f,x){if(P[t]&&(x===undefined||typeof x==='boolean'))x={capture:!!x,passive:true};return o.call(this,t,f,x);};}catch(e){}})();</script>
 <meta charset="UTF-8">
+<script>/* v3.90: SignActivity opens index.html#sign with the KwSign bridge */window.__kwSign=/(^|#)sign\b/.test(location.hash)&&!!window.KwSign;if(window.__kwSign)document.documentElement.classList.add("kw-sign");</script>
 <script>
 /* v3.50: Android app draws edge-to-edge; the native shell tells us the system bar sizes */
 (function () {
@@ -2810,7 +2811,7 @@ window.KwSnd = (function () {
    and optionally by a Keystore key that only a strong fingerprint/face check can use.
    Locked = nothing readable in storage and nothing loaded; the app starts only after the PIN or biometrics open it. */
 window.KwDB = (function () {
-  var SENS = { 'wallet-gen-state-v2': 1, 'kw-chambers': 1, 'kw-pk-vault': 1, 'kw-seed-book': 1 };
+  var SENS = { 'kw-hw-pair': 1, 'wallet-gen-state-v2': 1, 'kw-chambers': 1, 'kw-pk-vault': 1, 'kw-seed-book': 1 };
   var META = 'kw-vault-v1', DATA = 'kw-vault-data', PREV = 'kw-vault-data-prev', IT = 310000;
   var P = Storage.prototype, rg = P.getItem, rs = P.setItem, rr = P.removeItem, LS = null;
   try { LS = window.localStorage; } catch (e) {}
@@ -3605,6 +3606,14 @@ window.KwDB = (function () {
 
   /* ---------- boot ---------- */
   function boot() {
+    if (window.__kwSign) {
+      if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', boot); return; }
+      VW = window.innerWidth; VH = window.innerHeight; try { fit(); layout(); } catch (e) {}
+      coinsBox.style.display = 'none';
+      var sm = pinMode(), sNeed = !!(window.crypto && crypto.subtle) && ((sm !== 'off' && !!stored()) || KwDB.locked());
+      if (!sNeed) { locked = false; unlockedOnce = true; root.style.display = 'none'; try { document.documentElement.style.overflow = ''; } catch (e) {} document.dispatchEvent(new CustomEvent('kwallet-unlocked')); return; }
+      locked = false; lockNow({}); return;
+    }
     VW = window.innerWidth; VH = window.innerHeight; fit(); layout(); sizeCoins();
     var m = pinMode(), has = !!stored();
     needPin = !!(window.crypto && crypto.subtle) && m !== 'off' && (!has || m === 'open' || Date.now() - lastActive() > graceMs(m) || KwDB.locked() || (stored() || {}).v !== 2);
@@ -10760,8 +10769,8 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.89';
-const APP_BUILD = '2026-10-07';
+const APP_VERSION = '3.90';
+const APP_BUILD = '2026-10-10';
 let derivedRows = [];
 let copiedState = {};
 let clickOrder = {}; // key -> order number (1,2,3...)
@@ -14748,6 +14757,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       row('kws-snd', 'M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z', 'Sounds', '') +
       (window.HarkNative && HarkNative.setAppIcon ? row('kws-icon', 'M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z', 'App icon', null, '<span class="kws-ico" role="radiogroup"><span data-i="lime" role="radio" aria-label="Lime"><b>K</b></span><span data-i="navy" role="radio" aria-label="Navy"><b>K</b></span></span>') : '') +
       row('kws-replay', I.play, 'Play opening screen', null) +
+      '</div><div class="kws-sec">Hwallet</div><div class="kws-grp">' + row('kws-hw', 'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z', 'Hwallet signer', '') +
       '</div><div class="kws-sec">Security</div><div class="kws-grp">' +
       row('kws-lock', I.lock, 'App lock', '', '<span class="kws-sw" aria-hidden="true"></span>') +
       (window.HarkNative && HarkNative.bioStatus ? row('kws-bio', I.fp, 'Biometric unlock', '', '<span class="kws-sw" aria-hidden="true"></span>') : '') +
@@ -14799,6 +14809,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       try { if (window.KwDB && KwDB.flush) KwDB.flush().then(go, go); else go(); } catch (x) { go(); }
     };
     $('kws-replay').onclick = function () { closeSettings(); if (window.KwLock && KwLock.replay) KwLock.replay(); };
+    $('kws-hw').onclick = function () { tick(); closeSettings(); if (window.KwHw) KwHw.open(); };
     document.addEventListener('kwallet-pinmode', sync);
   }
   function name(m) { for (var i = 0; i < TIMES.length; i++) if (TIMES[i][0] === m) return TIMES[i][1]; return ''; }
@@ -14817,6 +14828,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       $('kws-bio-s').textContent = st === 'ok' ? (bon ? 'Fingerprint or face. PIN stays as backup' : 'Off. PIN only') : (st === 'unenrolled' ? 'No fingerprint or face set up on this phone' : 'Not available on this phone');
     }
     if ($('kws-icon')) { var ic = 'lime'; try { ic = HarkNative.appIcon(); } catch (x) {} ov.querySelectorAll('.kws-ico [data-i]').forEach(function (x) { var o = x.getAttribute('data-i') === ic; x.classList.toggle('on', o); x.setAttribute('aria-checked', o ? 'true' : 'false'); }); }
+    if ($('kws-hw-s') && window.KwHw) $('kws-hw-s').textContent = KwHw.summary();
     if ($('kws-snd-s')) $('kws-snd-s').textContent = FX.SETS[FX.soundSet()] + (FX.soundOn() ? '' : ' \u00b7 sound is off');
     var th = document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
     ov.querySelectorAll('.kws-seg').forEach(function (g) { g.setAttribute('data-v', th); });
@@ -14981,7 +14993,7 @@ window.addEventListener('load', () => {
   updateRedoButton();
   updateSeedDisplay();
   updateBar();
-  if (currentMnemonic && typeof ethers !== 'undefined') deriveAddresses();
+  if (currentMnemonic && typeof ethers !== 'undefined' && !window.__kwSign) deriveAddresses();
   else showEmpty();
 });
 </script>
@@ -18314,6 +18326,7 @@ function togglePathFind(force){
 
 /* ===== v3.48: Android back button (called by the APK) ===== */
 window.kwBack = function () {
+  if (window.__kwSign) return window.kwSignBack ? window.kwSignBack() : false;
   if (window.KwVault && KwVault.isOpen()) { KwVault.back(); return true; }
   var open = Array.prototype.filter.call(document.querySelectorAll('.show'), function (e) {
     return !/toast/i.test(e.id + ' ' + e.className) && getComputedStyle(e).position === 'fixed';
@@ -18837,6 +18850,373 @@ window.kwBack = function () {
   }
   if (document.readyState === 'complete') setTimeout(bind, 0); else window.addEventListener('load', function () { setTimeout(bind, 0); });
 })();
+</script>
+<script>
+/* ===== v3.90 Hwallet signer =====
+   Pairing: Kwallet derives the public addresses of a seed once and keeps the pairing (seed, index,
+   address map) encrypted inside Kwallet. Hwallet only ever receives public addresses (+ XMR view key).
+   Sign page: opened by Hwallet through Android (SignActivity, #sign). One request, one action:
+   'sign' (one EVM transfer) or 'pair' (watch-only export). Unlock first, then hold to sign. */
+(function () {
+  'use strict';
+  var PK = 'kw-hw-pair', NETS = ['eth', 'sol', 'btc', 'trx', 'sui', 'xrp', 'ada', 'xmr'];
+  var EVM = {
+    1: { id: 'ethereum', name: 'Ethereum', sym: 'ETH' }, 8453: { id: 'base', name: 'Base', sym: 'ETH' },
+    42161: { id: 'arbitrum', name: 'Arbitrum', sym: 'ETH' }, 10: { id: 'optimism', name: 'Optimism', sym: 'ETH' },
+    137: { id: 'polygon', name: 'Polygon', sym: 'POL' }, 56: { id: 'bsc', name: 'BNB Chain', sym: 'BNB' },
+    59144: { id: 'linea', name: 'Linea', sym: 'ETH' }, 534352: { id: 'scroll', name: 'Scroll', sym: 'ETH' },
+    5042: { id: 'arc', name: 'Arc', sym: 'USDC' }
+  };
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function toast(t) { try { showToast(t); } catch (e) {} }
+  function buzz(p) { try { FX.buzz(p); } catch (e) {} }
+  function load() { try { var a = JSON.parse(localStorage.getItem(PK) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function save(a) { localStorage.setItem(PK, JSON.stringify(a)); try { if (window.KwDB && KwDB.flush) KwDB.flush(); } catch (e) {} }
+  function rid(n) { var b = new Uint8Array(n || 8); crypto.getRandomValues(b); return Array.prototype.map.call(b, function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); }
+  function short(a) { a = String(a || ''); return a.length > 16 ? a.slice(0, 8) + '…' + a.slice(-6) : a; }
+
+  /* ---------- pairing ---------- */
+  async function makePair(index, label) {
+    if (!currentMnemonic) throw new Error('No seed on screen. Generate or import one first');
+    index = Math.max(0, Math.min(2147483647, parseInt(index, 10) || 0));
+    var st = currentSeedType, m = currentMnemonic, p = currentPassphrase || '';
+    var rec = { id: rid(8), label: String(label || '').trim().slice(0, 24), index: index, created: Date.now(), seedType: st, m: m, p: p, addrs: {} };
+    var nets = st === 'bip39' ? NETS : ['xmr'];
+    for (var i = 0; i < nets.length; i++) {
+      var net = nets[i];
+      try {
+        if (net === 'xmr') {
+          var ssk = await xmrSpendKeyForSeed();
+          var xc = FastCore.makeCtx({ net: 'xmr', pathTpl: DEFAULT_PATH.xmr, ssk: ssk, seedType: st });
+          var xr = FastCore.derive(xc, index, true);
+          rec.addrs.xmr = xr.address; rec.xmrView = xr.viewKey || '';
+        } else {
+          var ctx = FastCore.makeCtx({ net: net, pathTpl: DEFAULT_PATH[net], seedHex: getBip39SeedHex(m, p), adaEnt: net === 'ada' ? adaEntropyHex() : null, pass: p, seedType: st });
+          rec.addrs[net] = FastCore.derive(ctx, index, false).address;
+        }
+      } catch (e) { try { console.warn('pair', net, e); } catch (x) {} }
+      await new Promise(function (r) { setTimeout(r, 0); });
+    }
+    if (!rec.addrs.eth && !rec.addrs.xmr) throw new Error('Could not derive addresses for this seed');
+    var all = load(), fp = (rec.addrs.eth || rec.addrs.xmr || '').toLowerCase();
+    all = all.filter(function (r) { return ((r.addrs.eth || r.addrs.xmr || '').toLowerCase()) !== fp; });
+    if (!rec.label) rec.label = 'Wallet ' + (all.length + 1);
+    all.push(rec); save(all);
+    return rec;
+  }
+  function publicExport(r) {
+    return { v: 1, src: 'kwallet', label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: 0 } : null };
+  }
+  function exportText(r) { return 'kwallet-pair:' + btoa(unescape(encodeURIComponent(JSON.stringify(publicExport(r))))); }
+  function findByAddress(addr) {
+    addr = String(addr || '').toLowerCase(); if (!addr) return null;
+    var all = load();
+    for (var i = 0; i < all.length; i++) {
+      var a = all[i].addrs || {};
+      for (var k in a) if (String(a[k]).toLowerCase() === addr) return { rec: all[i], net: k };
+    }
+    return null;
+  }
+
+  /* ---------- settings sheet: Hwallet signer ---------- */
+  var sheet = null;
+  function openSheet() {
+    if (!sheet) {
+      sheet = document.createElement('div'); sheet.className = 'modal-overlay'; sheet.id = 'hw-pair-modal';
+      sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
+      document.body.appendChild(sheet);
+    }
+    render(); sheet.classList.add('show');
+  }
+  function closeSheet() { if (sheet) sheet.classList.remove('show'); }
+  function render() {
+    var all = load();
+    var list = all.length ? all.map(function (r) {
+      return '<div class="hwp-row"><div class="hwp-t"><b>' + esc(r.label) + '</b><span>#' + r.index + ' · ' + esc(short(r.addrs.eth || r.addrs.xmr)) + '</span></div>' +
+        '<button type="button" class="btn btn-copy hwp-cp" data-cp="' + r.id + '">Copy</button>' +
+        '<button type="button" class="btn btn-d hwp-rm" data-rm="' + r.id + '">Remove</button></div>';
+    }).join('') : '<div class="hwp-empty">No seeds paired yet</div>';
+    sheet.innerHTML = '<div class="modal"><h2 class="kws-x-free">Hwallet signer</h2>' +
+      '<p class="m-lead">Pair the seeds Hwallet may ask to sign with. Seeds never leave Kwallet; Hwallet only gets public addresses.</p>' +
+      '<div class="hwp-list">' + list + '</div>' +
+      '<div class="hwp-new"><label class="bk-lb">Pair the seed on screen</label>' +
+      '<div class="hwp-in"><input type="text" id="hwp-label" placeholder="Name (Wallet ' + (all.length + 1) + ')" maxlength="24" autocomplete="off">' +
+      '<input type="number" id="hwp-idx" min="0" step="1" value="0" inputmode="numeric" title="Address number"></div>' +
+      '<p class="hwp-hint">' + (currentMnemonic ? 'Uses address #<span id="hwp-idx-s">0</span> of the seed on screen on every chain.' : 'Generate or import a seed first.') + '</p></div>' +
+      '<div class="mrow"><button class="btn" type="button" data-close>Close</button><button class="btn btn-p" type="button" id="hwp-go"' + (currentMnemonic ? '' : ' disabled') + '>Pair</button></div></div>';
+    var idx = $('hwp-idx'); if (idx) idx.oninput = function () { var s = $('hwp-idx-s'); if (s) s.textContent = Math.max(0, parseInt(idx.value, 10) || 0); };
+    sheet.querySelector('[data-close]').onclick = closeSheet;
+    var go = $('hwp-go');
+    if (go) go.onclick = function () {
+      go.disabled = true; go.textContent = 'Pairing…';
+      makePair(idx.value, $('hwp-label').value).then(function (r) {
+        buzz([15, 40, 15]); try { FX.notify('addr'); } catch (e) {}
+        toast(r.label + ' paired'); try { pushActivity('act', 'Hwallet: paired ' + r.label + ' #' + r.index); } catch (e) {}
+        render();
+      }, function (e) { toast(e.message || 'Could not pair'); go.disabled = false; go.textContent = 'Pair'; });
+    };
+    sheet.querySelectorAll('[data-cp]').forEach(function (b) {
+      b.onclick = function () {
+        var r = load().filter(function (x) { return x.id === b.getAttribute('data-cp'); })[0]; if (!r) return;
+        copyToClipboard(exportText(r)).then(function () { toast('Copied. Paste it in Hwallet setup'); try { FX.notify('addr'); } catch (e) {} });
+      };
+    });
+    sheet.querySelectorAll('[data-rm]').forEach(function (b) {
+      b.onclick = function () {
+        if (b.getAttribute('data-arm') !== '1') { b.setAttribute('data-arm', '1'); b.textContent = 'Sure?'; setTimeout(function () { if (b.isConnected) { b.removeAttribute('data-arm'); b.textContent = 'Remove'; } }, 2500); return; }
+        save(load().filter(function (x) { return x.id !== b.getAttribute('data-rm'); })); toast('Unpaired'); render();
+      };
+    });
+  }
+
+  window.KwHw = {
+    open: openSheet, close: closeSheet, load: load, findByAddress: findByAddress, isOpen: function () { return !!(sheet && sheet.classList.contains('show')); },
+    summary: function () { var n = load().length; return n ? n + (n === 1 ? ' seed paired' : ' seeds paired') : 'No seeds paired'; }
+  };
+
+  var CSS = '' +
+    'html.kw-sign body>*:not(#kss):not(#kl-root):not(.kwd-ov):not(.toast):not(script):not(style){display:none!important}' +
+    '#kss{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;background:var(--bg);color:var(--text);padding:calc(var(--kw-sat,0px) + 14px) 14px calc(var(--kw-sab,0px) + 14px);overflow:auto;opacity:0;transform:translateY(14px);transition:opacity .28s ease,transform .32s cubic-bezier(.22,1,.36,1)}' +
+    '#kss.in{opacity:1;transform:none}' +
+    '.kss-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}.kss-head .kbrand{display:inline-flex;align-items:center;background:#DDF869;color:#223348;border-radius:8px;padding:5px 9px 6px;font:900 15px/1 KwBlack,RobotoE,system-ui}.kss-head .kbrand .kb-w{font-weight:900}.kss-head h2{font-size:17px;font-weight:600;flex:1}' +
+    '.kss-net{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--bg-input);border:1px solid var(--border)}' +
+    '.kss-card{background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:10px}' +
+    '.kss-top{display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 16px}' +
+    '.kss-coin{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:#223348;color:#DDF869}.kss-coin svg{width:26px;height:26px}' +
+    '.kss-amt{font:600 26px/1.15 "RobotoMonoE",monospace;text-align:center;word-break:break-all}.kss-usd{color:var(--text-muted);font-size:14px}' +
+    '.kss-r{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--border)}.kss-r:first-child{border-top:0;padding-top:0}' +
+    '.kss-l{color:var(--text-muted);font-size:13px;min-width:92px}.kss-v{flex:1;text-align:right;font-size:13px;word-break:break-all}' +
+    '.kss-v small{display:block;color:var(--text-muted);font-size:12px;margin-top:2px}' +
+    '.kss-addr{font:500 13px/1.5 "RobotoMonoE",monospace}.kss-addr i{display:inline-block;width:5px}' +
+    '.kss-badge{display:inline-block;font:600 11px/1 system-ui;padding:4px 7px;border-radius:999px;background:#fbbc04;color:#202124;margin-top:5px}' +
+    '.kss-fee{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-bottom:4px}.kss-fee button{border:0;background:transparent;color:var(--text-muted);font:600 12px system-ui;padding:6px 10px}.kss-fee button.on{background:#DDF869;color:#223348}' +
+    '.kss-warn{border-radius:14px;padding:11px 13px;font-size:13px;line-height:1.45;margin-bottom:10px;background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger);border:1px solid color-mix(in srgb,var(--danger) 40%,transparent)}' +
+    '.kss-info{border-radius:14px;padding:11px 13px;font-size:13px;line-height:1.45;margin-bottom:10px;background:var(--bg-input);color:var(--text-muted)}' +
+    '.kss-sp{flex:1;min-height:8px}.kss-act{display:flex;gap:10px}' +
+    '.kss-act button{flex:1;height:54px;border-radius:999px;border:0;font:600 16px system-ui;position:relative;overflow:hidden}' +
+    '.kss-no{background:#223348;color:#fff}[data-theme="dark"] .kss-no{background:#2a3446}' +
+    '.kss-go{background:#DDF869;color:#223348;touch-action:none;user-select:none;-webkit-user-select:none}.kss-go:disabled{opacity:.45}' +
+    '.kss-go .kss-fill{position:absolute;inset:0;background:#b9d63a;transform-origin:left;transform:scaleX(0)}.kss-go span{position:relative}' +
+    '.kss-exp{text-align:center;color:var(--text-muted);font-size:12px;margin:8px 0 2px}' +
+    '.kss-done{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;flex:1;font-size:16px}' +
+    '.kss-ring{width:84px;height:84px}.kss-ring circle{fill:none;stroke:#DDF869;stroke-width:6;stroke-dasharray:240;stroke-dashoffset:240;animation:kssR .5s ease forwards}.kss-ring path{fill:none;stroke:#DDF869;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:kssR .3s .45s ease forwards}' +
+    '@keyframes kssR{to{stroke-dashoffset:0}}' +
+    '.hwp-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}.hwp-row{display:flex;align-items:center;gap:6px;padding:8px;border:1px solid var(--border);border-radius:10px}' +
+    '.hwp-t{flex:1;min-width:0;display:flex;flex-direction:column}.hwp-t span{color:var(--text-muted);font:12px "RobotoMonoE",monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '.hwp-row .btn{flex:0 0 auto;min-width:0;padding:6px 10px}.hwp-empty{color:var(--text-muted);font-size:13px;padding:8px 0}' +
+    '.hwp-in{display:flex;gap:6px}.hwp-in input[type=text]{flex:1}.hwp-in input[type=number]{width:76px}.hwp-hint{color:var(--text-muted);font-size:12px;margin:6px 0 10px}' +
+    '.kss-pick{display:flex;flex-direction:column;gap:8px}.kss-pick button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px;border-radius:14px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);text-align:left}' +
+    '.kss-pick button b{font-size:15px}.kss-pick button span{color:var(--text-muted);font:12px "RobotoMonoE",monospace}';
+  var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+
+  /* ================= sign page (only inside SignActivity) ================= */
+  if (!window.__kwSign) return;
+  var REQ = null, done = false;
+  function finish(o) {
+    if (done) return; done = true;
+    o = o || { status: 'rejected' }; if (REQ && REQ.id) o.id = REQ.id;
+    try { KwSign.done(JSON.stringify(o)); } catch (e) {}
+  }
+  window.kwSignBack = function () { finish({ status: 'rejected' }); return true; };
+  try { REQ = JSON.parse(KwSign.request() || 'null'); } catch (e) { REQ = null; }
+
+  var BI = window.BigInt;
+  function U(v) { try { return BI(String(v)); } catch (e) { return null; } }
+  function fmt(raw, dec, max) {
+    if (raw == null) return '—';
+    var neg = raw < 0n; if (neg) raw = -raw;
+    var s = raw.toString(); dec = dec || 0;
+    if (dec) { while (s.length <= dec) s = '0' + s; }
+    var i = dec ? s.slice(0, s.length - dec) : s, f = dec ? s.slice(s.length - dec) : '';
+    f = f.slice(0, max == null ? 8 : max).replace(/0+$/, '');
+    i = i.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return (neg ? '-' : '') + i + (f ? '.' + f : '');
+  }
+  function usd(raw, dec, px) {
+    if (raw == null || !(px > 0)) return '';
+    var v = Number(raw) / Math.pow(10, dec) * px;
+    if (!isFinite(v)) return '';
+    return v > 0 && v < 0.01 ? '< $0.01' : '≈ $' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function chunk(a) { a = String(a || ''); return esc(a).replace(/(.{4})/g, '$1<i></i>'); }
+
+
+
+  var page = document.createElement('div'); page.id = 'kss'; page.setAttribute('role', 'dialog');
+  function mount() { if (!page.isConnected) document.body.appendChild(page); requestAnimationFrame(function () { page.classList.add('in'); }); }
+  function head(title, net) {
+    return '<div class="kss-head"><span class="kbrand" aria-label="Kwallet"><span class="kb-k">K</span><span class="kb-w">wallet</span></span><h2>' + esc(title) + '</h2>' + (net ? '<span class="kss-net">' + esc(net) + '</span>' : '') + '</div>';
+  }
+  function fail(msg, fix) {
+    mount();
+    page.innerHTML = head('Can\u2019t sign') + '<div class="kss-warn">' + esc(msg) + '</div>' + (fix ? '<div class="kss-info">' + fix + '</div>' : '') +
+      '<div class="kss-sp"></div><div class="kss-act"><button type="button" class="kss-no" id="kss-close">Close</button></div>';
+    $('kss-close').onclick = function () { finish({ status: 'rejected', error: msg }); };
+    buzz([30, 40, 30]);
+  }
+  function success(o, text) {
+    page.innerHTML = '<div class="kss-done"><svg class="kss-ring" viewBox="0 0 84 84"><circle cx="42" cy="42" r="38"/><path d="M26 43l11 11 21-23"/></svg><div>' + esc(text) + '</div></div>';
+    buzz([10, 50, 18]); try { FX.notify('addr'); } catch (e) {}
+    setTimeout(function () { finish(o); }, 900);
+  }
+
+  /* ---------- auth: Kwallet's own PIN / biometrics, else the phone's screen lock ---------- */
+  var authed = false;
+  function afterAuth() { if (authed) return; authed = true; setTimeout(route, 60); }
+  document.addEventListener('kwallet-unlocked', function () {
+    if (window.KwLock && KwLock.hasPin() && KwLock.mode() !== 'off') { afterAuth(); return; }
+    /* no Kwallet PIN: ask the phone's own lock (fingerprint, face, PIN or pattern) */
+    if (window.HarkNative && HarkNative.devAuth) {
+      window.kwDevDone = function (r) {
+        if (r === 'ok' || r === 'nolock') { if (r === 'nolock') window.__kssNoLock = true; afterAuth(); }
+        else finish({ status: 'rejected', error: 'Authentication cancelled' });
+      };
+      try { HarkNative.devAuth('Confirm it is you'); } catch (e) { afterAuth(); }
+    } else afterAuth();
+  });
+
+  function route() {
+    if (!REQ || typeof REQ !== 'object') return fail('This request could not be read.');
+    if (REQ.v !== 1 || !/^[0-9a-f]{16,64}$/i.test(String(REQ.id || ''))) return fail('Unknown request format.', 'Update Hwallet and Kwallet to matching versions.');
+    var now = Date.now();
+    if (!(REQ.expires > now) || REQ.expires - now > 130000) return finish({ status: 'expired' });
+    if (REQ.action === 'pair') return pairPage();
+    if (REQ.action === 'sign') return signPage();
+    return fail('Kwallet only accepts sign and pair requests.');
+  }
+
+  /* ---------- pair: send the public addresses of one paired seed ---------- */
+  function pairPage() {
+    var all = load(); mount();
+    if (!all.length) return fail('No seeds are paired with Hwallet yet.', 'Open Kwallet, go to <b>Settings &gt; Hwallet signer</b>, pair the seed that holds your funds, then pair again from Hwallet.');
+    page.innerHTML = head('Pair Hwallet') + '<div class="kss-info">Choose the wallet Hwallet should watch. Only public addresses are shared; your seed stays in Kwallet.</div>' +
+      '<div class="kss-pick">' + all.map(function (r, i) { return '<button type="button" data-i="' + i + '"><b>' + esc(r.label) + ' · #' + r.index + '</b><span>' + esc(short(r.addrs.eth || r.addrs.xmr)) + '</span></button>'; }).join('') + '</div>' +
+      '<div class="kss-sp"></div><div class="kss-act"><button type="button" class="kss-no" id="kss-close">Cancel</button></div>';
+    $('kss-close').onclick = function () { finish({ status: 'rejected' }); };
+    page.querySelectorAll('[data-i]').forEach(function (b) {
+      b.onclick = function () { var r = all[+b.getAttribute('data-i')]; success({ status: 'paired', pair: publicExport(r) }, 'Sent to Hwallet'); };
+    });
+  }
+
+  /* ---------- sign: one EVM transfer, built here from the request ---------- */
+  var S = null;
+  function signPage() {
+    var R = REQ;
+    if (R.chain !== 'evm') return fail(String(R.chain || '').toUpperCase() + ' signing is not in this Kwallet version yet.', 'EVM networks sign today. More chains come in the next updates.');
+    if (typeof ethers === 'undefined') return fail('Signing engine missing.');
+    var cid = +R.chainId, net = EVM[cid];
+    if (!net || (R.network && R.network !== net.id)) return fail('Unknown network (chain ' + esc(R.chainId) + ').');
+    if (!ethers.isAddress(R.to || '')) return fail('The recipient address is not valid.');
+    if (!ethers.isAddress(R.from || '')) return fail('The sending address is not valid.');
+    var hit = findByAddress(R.from);
+    if (!hit || hit.net !== 'eth') return fail('No paired seed owns ' + short(R.from) + '.', 'Open Kwallet, go to <b>Settings &gt; Hwallet signer</b> and pair the seed that owns this address. Import it into Kwallet first if it is not there, then pair again in Hwallet.');
+    var tok = R.token === 'native' ? null : R.token;
+    if (tok && !ethers.isAddress(tok)) return fail('The token contract is not valid.');
+    var dec = tok ? (+R.tokenDec | 0) : 18;
+    if (dec < 0 || dec > 36) return fail('Bad token decimals.');
+    var amt = R.amount === 'max' ? 'max' : U(R.amount);
+    if (amt !== 'max' && (amt == null || amt <= 0n)) return fail('Bad amount.');
+    var gas = U(R.gasLimit), nonce = +R.nonce;
+    if (gas == null || gas < 21000n || gas > 3000000n) return fail('Bad gas limit.');
+    if (!(nonce >= 0) || nonce % 1) return fail('Bad nonce.');
+    var lv = R.fee && R.fee.levels; if (!lv || !lv.medium) return fail('Missing network fee.');
+    S = { R: R, net: net, cid: cid, tok: tok, dec: dec, amt: amt, gas: gas, nonce: nonce, levels: lv, level: lv[R.fee.level] ? R.fee.level : 'medium',
+      bal: U(R.balance && R.balance.token), gbal: U(R.balance && R.balance.gas), l1: U(R.l1Fee || '0') || 0n, rec: hit.rec,
+      sym: String(R.tokenSym || (tok ? 'TOKEN' : net.sym)).slice(0, 12), gsym: net.sym, armed: false };
+    mount(); draw(); setTimeout(function () { S.armed = true; draw(); }, 600);
+    tickExp();
+  }
+  function calc() {
+    var L = S.levels[S.level], max = S.amt === 'max';
+    var gp = U(L.gasPrice), mf = U(L.maxFee), tip = U(L.tip);
+    var legacy = (max && !S.tok) || !(mf > 0n);
+    var fee = S.gas * (legacy ? gp : mf) + S.l1, value = 0n, amt, err = '';
+    if (!S.tok) {
+      amt = max ? (S.gbal != null ? S.gbal - fee : null) : S.amt;
+      if (amt == null) err = 'Balance unknown. Send a fixed amount instead of Max.';
+      else if (amt <= 0n) err = 'Not enough ' + S.gsym + ' to cover the network fee.';
+      else if (S.gbal != null && amt + fee > S.gbal) err = 'Not enough ' + S.gsym + ' for this amount plus the fee.';
+      value = amt;
+    } else {
+      amt = max ? S.bal : S.amt;
+      if (amt == null) err = 'Token balance unknown. Send a fixed amount instead of Max.';
+      else if (S.bal != null && amt > S.bal) err = 'Not enough ' + S.sym + '.';
+      if (!err && S.gbal != null && fee > S.gbal) err = 'Not enough ' + S.gsym + ' for the network fee.';
+    }
+    return { legacy: legacy, gp: gp, mf: mf, tip: tip, fee: fee, amt: amt, value: value, err: err };
+  }
+  function draw() {
+    var R = S.R, c = calc(), P = R.prices || {}, gpx = +P.gasUsd || 0, tpx = S.tok ? (+P.tokenUsd || 0) : gpx;
+    var feeUsd = usd(c.fee, 18, gpx), amtTxt = c.amt != null ? fmt(c.amt, S.dec, 8) : '—';
+    var after = (c.amt != null && !c.err) ? (S.tok ? (S.bal != null ? S.bal - c.amt : null) : (S.gbal != null ? S.gbal - c.amt - c.fee : null)) : null;
+    var feeHigh = !c.err && (gpx * Number(c.fee) / 1e18 > 25 || (!S.tok && c.amt != null && c.fee * 5n > c.amt && c.amt > 0n));
+    var lvBtns = ['slow', 'medium', 'fast'].filter(function (k) { return S.levels[k]; }).map(function (k) { return '<button type="button" data-lv="' + k + '" class="' + (k === S.level ? 'on' : '') + '">' + k[0].toUpperCase() + k.slice(1) + '</button>'; }).join('');
+    page.innerHTML = head('Send', S.net.name) +
+      '<div class="kss-card kss-top"><div class="kss-coin">' + coinSvg() + '</div><div class="kss-amt">-' + amtTxt + ' ' + esc(S.sym) + '</div><div class="kss-usd">' + (c.amt != null ? usd(c.amt, S.dec, tpx) : '') + (S.amt === 'max' ? ' · Max' : '') + '</div></div>' +
+      (c.err ? '<div class="kss-warn">' + esc(c.err) + '</div>' : '') +
+      (feeHigh ? '<div class="kss-warn">This network fee looks unusually high. Check it before you sign.</div>' : '') +
+      (window.__kssNoLock ? '<div class="kss-info">This phone has no screen lock. Set one to protect signing.</div>' : '') +
+      '<div class="kss-card">' +
+      '<div class="kss-r"><span class="kss-l">Network fee</span><span class="kss-v"><span class="kss-fee">' + lvBtns + '</span><br>' + fmt(c.fee, 18, 8) + ' ' + esc(S.gsym) + '<small>' + feeUsd + (c.legacy ? '' : ' · at most') + '</small></span></div>' +
+      (S.tok ? '<div class="kss-r"><span class="kss-l">Balance</span><span class="kss-v">' + fmt(S.bal, S.dec, 6) + ' ' + esc(S.sym) + (after != null ? '<small>After: ' + fmt(after, S.dec, 6) + ' ' + esc(S.sym) + '</small>' : '') + '</span></div>' : '') +
+      '<div class="kss-r"><span class="kss-l">' + (S.tok ? 'Gas balance' : 'Balance') + '</span><span class="kss-v">' + fmt(S.gbal, 18, 6) + ' ' + esc(S.gsym) + (!S.tok && after != null ? '<small>After: ' + fmt(after, 18, 6) + ' ' + esc(S.gsym) + '</small>' : '') + '</span></div>' +
+      '<div class="kss-r"><span class="kss-l">From</span><span class="kss-v">' + esc(S.rec.label) + ' · #' + S.rec.index + '<small class="kss-addr">' + chunk(R.from) + '</small></span></div>' +
+      '<div class="kss-r"><span class="kss-l">To</span><span class="kss-v"><span class="kss-addr">' + chunk(R.to) + '</span>' + (R.firstTime ? '<br><span class="kss-badge">New address</span>' : '') + '</span></div>' +
+      (S.tok ? '<div class="kss-r"><span class="kss-l">Token</span><span class="kss-v kss-addr">' + chunk(S.tok) + '</span></div>' : '') +
+      '<div class="kss-r"><span class="kss-l">Network</span><span class="kss-v">' + esc(S.net.name) + '<small>Chain ' + S.cid + ' · nonce ' + S.nonce + '</small></span></div>' +
+      '</div><div class="kss-sp"></div><div class="kss-exp" id="kss-exp"></div>' +
+      '<div class="kss-act"><button type="button" class="kss-no" id="kss-no">Cancel</button>' +
+      '<button type="button" class="kss-go" id="kss-go"' + (c.err || !S.armed ? ' disabled' : '') + '><i class="kss-fill"></i><span>Hold to sign</span></button></div>';
+    tickExp(true);
+    $('kss-no').onclick = function () { finish({ status: 'rejected' }); };
+    page.querySelectorAll('[data-lv]').forEach(function (b) { b.onclick = function () { var v = b.getAttribute('data-lv'); if (v === S.level) return; S.level = v; buzz(8); S.armed = false; draw(); setTimeout(function () { S.armed = true; draw(); }, 450); }; });
+    hold($('kss-go'), c);
+  }
+  function coinSvg() {
+    var IC = { ETH: 'M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z' };
+    if (S.tok || !IC[S.sym]) return '<b style="font:900 14px KwBlack,system-ui">' + esc(S.sym.slice(0, 4)) + '</b>';
+    return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="' + IC[S.sym] + '"/></svg>';
+  }
+  function hold(b, c) {
+    if (!b || b.disabled) return;
+    var fill = b.querySelector('.kss-fill'), t0 = 0, raf = 0, on = false, MS = 1000;
+    function step(now) { var p = Math.min(1, (now - t0) / MS); fill.style.transform = 'scaleX(' + p + ')'; if (p >= 1) { on = false; sign(c); return; } raf = requestAnimationFrame(step); }
+    function down(e) {
+      if (e.isTrusted === false) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      on = true; t0 = performance.now(); buzz(10); try { b.setPointerCapture(e.pointerId); } catch (x) {} raf = requestAnimationFrame(step);
+    }
+    function up() { if (!on) return; on = false; cancelAnimationFrame(raf); fill.style.transition = 'transform .2s ease'; fill.style.transform = 'scaleX(0)'; setTimeout(function () { fill.style.transition = ''; }, 220); }
+    b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
+    b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  }
+  async function sign(c) {
+    try {
+      if (Date.now() > S.R.expires) return finish({ status: 'expired' });
+      var rec = S.rec, ctx = FastCore.makeCtx({ net: 'eth', pathTpl: DEFAULT_PATH.eth, seedHex: getBip39SeedHex(rec.m, rec.p), seedType: 'bip39' });
+      var d = FastCore.derive(ctx, rec.index, true);
+      if (String(d.address).toLowerCase() !== String(S.R.from).toLowerCase()) return fail('The paired seed no longer derives ' + short(S.R.from) + '.');
+      var w = new ethers.Wallet(d.privateKey); d = null;
+      var tx = { chainId: S.cid, nonce: S.nonce, gasLimit: S.gas };
+      if (c.legacy) { tx.type = 0; tx.gasPrice = c.gp; } else { tx.type = 2; tx.maxFeePerGas = c.mf; tx.maxPriorityFeePerGas = c.tip > c.mf ? c.mf : c.tip; }
+      if (!S.tok) { tx.to = ethers.getAddress(S.R.to); tx.value = c.value; tx.data = '0x'; }
+      else {
+        tx.to = ethers.getAddress(S.tok); tx.value = 0n;
+        tx.data = new ethers.Interface(['function transfer(address,uint256)']).encodeFunctionData('transfer', [ethers.getAddress(S.R.to), c.amt]);
+      }
+      var raw = await w.signTransaction(tx); w = null;
+      try { pushActivity('act', 'Hwallet: signed ' + fmt(c.amt, S.dec, 8) + ' ' + S.sym + ' on ' + S.net.name); } catch (e) {}
+      success({ status: 'signed', raw: raw, hash: ethers.keccak256(raw), amount: c.amt.toString(), fee: c.fee.toString(), level: S.level }, 'Signed');
+    } catch (e) { fail('Signing failed: ' + (e && e.message || e)); }
+  }
+  var expT = 0;
+  function tickExp(once) {
+    var el = $('kss-exp'); if (el && S) { var s = Math.max(0, Math.round((S.R.expires - Date.now()) / 1000)); el.textContent = 'Expires in ' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); if (s <= 0) { finish({ status: 'expired' }); return; } }
+    if (once) return; clearTimeout(expT); expT = setTimeout(function () { tickExp(); }, 1000);
+  }
+})();
+
 </script>
 </body>
 </html>
