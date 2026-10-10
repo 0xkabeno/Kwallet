@@ -60,7 +60,8 @@ class HwActivity : FragmentActivity() {
         val json = res.data?.getStringExtra("res") ?: "{\"status\":\"rejected\"}"
         web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote(json)})", null)
     }
-    private val net = java.util.concurrent.Executors.newFixedThreadPool(6)
+    /* v1.3 (#46): enough threads for every chain's history and balances at once (was 6, which queued the Activity tab) */
+    private val net = java.util.concurrent.Executors.newFixedThreadPool(24)
     /** v1.1: true while Kwallet's sign page is open over Hwallet; the page keeps running to stream live data to it. */
     @Volatile private var signing = false
 
@@ -156,25 +157,40 @@ class HwActivity : FragmentActivity() {
             } catch (_: Exception) {}
         }
 
-        /** v1.2: settings for the always-on listener (background refresh, live notification, alerts, watched addresses). */
+        /** v1.2: settings for the always-on listener (background refresh, live notification, alerts, watched addresses).
+         *  v1.3 (#42): called by the page after it has loaded. The service is never started in the same moment as a permission
+         *  or battery dialog: notification permission first, the service once Hwallet is back in front, the battery prompt later. */
         @android.webkit.JavascriptInterface
         fun setLive(json: String) {
             if (json.length > 200000) return
             runOnUiThread {
-                val p = getSharedPreferences(HwLiveService.PREF, MODE_PRIVATE)
-                p.edit().putString("cfg", json).apply()
-                val on = HwLiveService.enabled(this@HwActivity)
-                if (on) {
+                try {
+                    val p = getSharedPreferences(HwLiveService.PREF, MODE_PRIVATE)
+                    p.edit().putString("cfg", json).apply()
+                    if (!HwLiveService.enabled(this@HwActivity)) { HwLiveService.stop(this@HwActivity); return@runOnUiThread }
                     if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this@HwActivity, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED && !p.getBoolean("askedNotif", false)) {
                         p.edit().putBoolean("askedNotif", true).apply()
-                        try { askNotif.launch(android.Manifest.permission.POST_NOTIFICATIONS) } catch (_: Exception) {}
-                    } else if (!batteryOk() && !p.getBoolean("askedBatt", false)) {
-                        p.edit().putBoolean("askedBatt", true).apply(); askBatteryNow()
-                    }
-                    HwLiveService.start(this@HwActivity)
-                } else HwLiveService.stop(this@HwActivity)
+                        pendingLive = true
+                        try { askNotif.launch(android.Manifest.permission.POST_NOTIFICATIONS) } catch (_: Throwable) { startLiveSafe() }
+                    } else startLiveSafe()
+                } catch (e: Throwable) { HwApp.write(this@HwActivity, "note: setLive failed", e.toString()) }
             }
         }
+
+        /** v1.3 (#50): the lightest haptic the phone has (a clock tick), one pulse, for the bottom bar */
+        @android.webkit.JavascriptInterface
+        fun tick() { runOnUiThread { lightTick() } }
+
+        /** v1.3 (#43): the phone's own QR scanner (Google code scanner: no camera permission). Result via window.hwScanDone(text) */
+        @android.webkit.JavascriptInterface
+        fun scan() { runOnUiThread { scanQr() } }
+
+        /** v1.3 (#42): the saved crash log for Settings > About > Crash log */
+        @android.webkit.JavascriptInterface
+        fun crashLog(): String = HwApp.read(this@HwActivity)
+
+        @android.webkit.JavascriptInterface
+        fun clearCrashLog() { HwApp.clear(this@HwActivity) }
 
         @android.webkit.JavascriptInterface
         fun batteryExempt(): String = if (batteryOk()) "1" else "0"
@@ -196,11 +212,48 @@ class HwActivity : FragmentActivity() {
         }
     }
 
-    /** v1.2: notification permission (Android 13+), then the battery-optimization exemption prompt */
+    /** v1.2: notification permission (Android 13+). v1.3: the service starts after it, once Hwallet is in front again */
     private val askNotif = registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
+        pendingLive = true
+        startLiveSafe()
+    }
+    @Volatile private var pendingLive = false
+    private val ui = android.os.Handler(android.os.Looper.getMainLooper())
+    private fun resumed() = lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
+    /** starts the live service only while Hwallet is the resumed, visible app; otherwise waits for onResume */
+    private fun startLiveSafe() {
+        if (!resumed()) { pendingLive = true; return }
+        pendingLive = false
+        HwLiveService.start(this, true)
+        /* the battery prompt once, a moment later and only if Hwallet is still in front */
         val p = getSharedPreferences(HwLiveService.PREF, MODE_PRIVATE)
-        if (!batteryOk() && !p.getBoolean("askedBatt", false)) { p.edit().putBoolean("askedBatt", true).apply(); askBatteryNow() }
-        HwLiveService.start(this)
+        if (!batteryOk() && !p.getBoolean("askedBatt", false)) ui.postDelayed({
+            try { if (resumed() && !batteryOk() && !p.getBoolean("askedBatt", false)) { p.edit().putBoolean("askedBatt", true).apply(); askBatteryNow() } } catch (_: Throwable) {}
+        }, 4000)
+    }
+
+    private fun lightTick() {
+        try {
+            val vib: android.os.Vibrator = if (Build.VERSION.SDK_INT >= 31) (getSystemService(VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager).defaultVibrator
+                else @Suppress("DEPRECATION") (getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator)
+            if (!vib.hasVibrator()) return
+            val eff = if (Build.VERSION.SDK_INT >= 29) android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_TICK)
+                else android.os.VibrationEffect.createOneShot(8, if (vib.hasAmplitudeControl()) 70 else android.os.VibrationEffect.DEFAULT_AMPLITUDE)
+            if (Build.VERSION.SDK_INT >= 33) vib.vibrate(eff, android.os.VibrationAttributes.createForUsage(android.os.VibrationAttributes.USAGE_TOUCH))
+            else vib.vibrate(eff)
+        } catch (_: Throwable) { try { web.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) } catch (_: Throwable) {} }
+    }
+
+    private fun scanDone(t: String) { if (::web.isInitialized) web.evaluateJavascript("window.hwScanDone&&hwScanDone(${JSONObject.quote(t)})", null) }
+    private fun scanQr() {
+        try {
+            val opts = com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions.Builder()
+                .setBarcodeFormats(com.google.mlkit.vision.barcode.common.Barcode.FORMAT_QR_CODE).enableAutoZoom().build()
+            com.google.mlkit.vision.codescanner.GmsBarcodeScanning.getClient(this, opts).startScan()
+                .addOnSuccessListener { b -> scanDone(b.rawValue ?: "") }
+                .addOnCanceledListener { scanDone("") }
+                .addOnFailureListener { _ -> scanDone("error:The phone's QR scanner is not available (Google Play services needed)") }
+        } catch (_: Throwable) { scanDone("error:The phone's QR scanner is not available (Google Play services needed)") }
     }
 
     private fun batteryOk(): Boolean = try {
@@ -356,8 +409,8 @@ class HwActivity : FragmentActivity() {
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl(startUrl())
-        // v1.2: keep the always-on listener running whenever the app opens
-        HwLiveService.start(this)
+        // v1.3 (#42): the always-on listener is NOT started here any more. The page starts it through setLive()
+        // after it has loaded, when Hwallet is resumed (see startLiveSafe).
     }
 
     private val BIO = BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -491,42 +544,41 @@ class HwActivity : FragmentActivity() {
     }
 
     override fun onPause() { super.onPause(); if (!signing) web.onPause() }
-    override fun onResume() { super.onResume(); web.onResume(); if (::web.isInitialized) tuneWebView(this, web) }  // OEMs drop back to 60 Hz after resume
-    override fun onDestroy() { net.shutdownNow(); web.destroy(); super.onDestroy() }
+    override fun onResume() {
+        super.onResume(); web.onResume(); if (::web.isInitialized) tuneWebView(this, web)
+        if (pendingLive) ui.postDelayed({ if (pendingLive) startLiveSafe() }, 300)
+    }  // OEMs drop back to 60 Hz after resume
+    override fun onDestroy() { try { ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
 }
 
-/** Smooth rendering like Chrome: highest refresh rate, no overscroll glow. */
+/** Smooth rendering like Chrome: highest refresh rate, no overscroll glow.
+ *  v1.3 (#42): every call guarded on its own; the v1.2 forced View hardware layer is gone (WebView is already GPU-composited,
+ *  a View layer adds a full-screen texture copy per frame and is a known source of trouble on new Android versions). */
 fun tuneWebView(activity: Activity, webView: WebView) {
-    // WebView is already GPU-composited; forcing a View hardware layer adds an extra
-    // full-screen texture copy every frame (the main cause of scroll jank) - so don't.
-    if (Build.VERSION.SDK_INT >= 26) webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
-    // No offscreen pre-raster: Chrome doesn't do it, and on long pages it rasterises
-    // everything up front (memory spikes, slower first paint, dropped frames).
-    webView.settings.offscreenPreRaster = false
-    webView.isVerticalScrollBarEnabled = false
-    webView.overScrollMode = View.OVER_SCROLL_NEVER
-    if (Build.VERSION.SDK_INT >= 23) {
-        @Suppress("DEPRECATION")
-        val display = if (Build.VERSION.SDK_INT >= 30) activity.display else activity.windowManager.defaultDisplay
-        val best = display?.supportedModes?.filter { it.physicalWidth == display.mode.physicalWidth }?.maxByOrNull { it.refreshRate }
-        if (best != null) {
-            val lp = activity.window.attributes
-            lp.preferredDisplayModeId = best.modeId
-            lp.preferredRefreshRate = best.refreshRate   // some OEM skins (MIUI, One UI) read this one instead
-            activity.window.attributes = lp
+    try { if (Build.VERSION.SDK_INT >= 26) webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false) } catch (_: Throwable) {}
+    try { webView.settings.offscreenPreRaster = false } catch (_: Throwable) {}
+    try { webView.isVerticalScrollBarEnabled = false; webView.overScrollMode = View.OVER_SCROLL_NEVER } catch (_: Throwable) {}
+    try {
+        if (Build.VERSION.SDK_INT >= 23) {
+            @Suppress("DEPRECATION")
+            val display = if (Build.VERSION.SDK_INT >= 30) activity.display else activity.windowManager.defaultDisplay
+            val cur = display?.mode
+            val best = if (cur == null) null else display.supportedModes?.filter { it.physicalWidth == cur.physicalWidth && it.physicalHeight == cur.physicalHeight }?.maxByOrNull { it.refreshRate }
+            if (best != null) {
+                val lp = activity.window.attributes
+                if (lp.preferredDisplayModeId != best.modeId || lp.preferredRefreshRate != best.refreshRate) {
+                    lp.preferredDisplayModeId = best.modeId
+                    lp.preferredRefreshRate = best.refreshRate   // some OEM skins (MIUI, One UI) read this one instead
+                    activity.window.attributes = lp
+                }
+            }
         }
-    }
-    if (Build.VERSION.SDK_INT >= 29) {
-        @Suppress("DEPRECATION")
-        webView.isForceDarkAllowed = false
-    }
-    // v1.2: GPU-backed WebView layer (requested for #41); the page itself only animates transform/opacity
-    webView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
-    // v1.2: steady clocks where the phone supports it (no thermal drop mid-scroll)
-    if (Build.VERSION.SDK_INT >= 24) {
-        try {
+    } catch (_: Throwable) {}
+    try { if (Build.VERSION.SDK_INT >= 29) { @Suppress("DEPRECATION") webView.isForceDarkAllowed = false } } catch (_: Throwable) {}
+    try {
+        if (Build.VERSION.SDK_INT >= 24) {
             val pm = activity.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
             if (pm.isSustainedPerformanceModeSupported) activity.window.setSustainedPerformanceMode(true)
-        } catch (_: Exception) {}
-    }
+        }
+    } catch (_: Throwable) {}
 }

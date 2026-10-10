@@ -26,6 +26,9 @@ The Android app has **no internet permission**; the HTML version is one self-con
 
 - Live balances and full on-chain history (sent and received, endless scroll) on ETH (+ Base, Arbitrum, Optimism, Polygon, BNB Chain, Linea, Robinhood Chain, Arc), SOL, BTC, TRX, SUI, XRP and ADA from free public nodes
 - Several wallets (pair more from Kwallet, rename, remove), Kwallet themes (light, dark, Material You), sounds and haptics
+- Gem-style home: centred wallet chip, Scan (phone's own QR scanner) and Search, round Send / Receive; a fixed bottom bar with a sliding pill; Kwallet's opening screen at twice the speed
+- Activity opens instantly: cached rows first, every chain fetched in parallel, a virtual list that only draws the rows on screen
+- Settings > About > Crash log (with Copy) if the app ever closes by itself; "Show H in status bar" switch for the live notification
 - Refresh down to 1 second; an always-on foreground service keeps prices, balances and incoming-payment alerts live, with a live BTC/ETH/SOL/XMR notification
 - Tokens on every chain: by contract (EVM, TRON), mint (Solana), coin type (Sui), issuer + code (XRP, with trust lines) and policy ID (Cardano)
 - TRON: Energy / Bandwidth bar and Stake 2.0 (stake, unstake, withdraw)
