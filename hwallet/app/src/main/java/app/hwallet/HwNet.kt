@@ -23,11 +23,47 @@ object HwNet {
     const val PREF = "hw_net"
     val rate = HwRate()
     @Volatile private var loaded = false
+    /** v1.5 (#67): the user's cap (bytes/s, 0 = unlimited) and whether the default network is mobile data */
+    @Volatile private var userBps = 0L
+    @Volatile var mobile = false
+        private set
+    @Volatile private var watching = false
+    /** v1.5 (#67): told when the limit turns on/off with the network (the page restarts its own WebSockets) */
+    @Volatile var onChange: (() -> Unit)? = null
+
+    /** the bucket runs at the user's cap only on mobile data; Wi-Fi and Ethernet are never limited.
+     *  setRate wakes transfers already waiting, so a network change applies to them at once. */
+    private fun apply() { rate.setRate(HwGate.effective(userBps, mobile)) }
 
     fun load(c: Context) {
-        if (loaded) return
-        loaded = true
-        try { rate.setRate(kbps(c).toLong() * 1024L) } catch (_: Throwable) {}
+        if (!loaded) { loaded = true; try { userBps = kbps(c).toLong() * 1024L } catch (_: Throwable) {} }
+        watch(c)
+        apply()
+    }
+
+    /** v1.5 (#67): follows the default network live (ConnectivityManager default-network callback) */
+    private fun watch(c0: Context) {
+        if (watching) return
+        try {
+            val c = c0.applicationContext ?: c0
+            val cm = c.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            fun upd(caps: android.net.NetworkCapabilities?) {
+                val m = if (caps == null) false else HwGate.limited(
+                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR),
+                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI),
+                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET),
+                    !caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED))
+                if (m != mobile) { mobile = m; apply(); try { onChange?.invoke() } catch (_: Throwable) {} }
+            }
+            if (android.os.Build.VERSION.SDK_INT >= 23) try { upd(cm.getNetworkCapabilities(cm.activeNetwork)) } catch (_: Throwable) {}
+            if (android.os.Build.VERSION.SDK_INT >= 24) {
+                cm.registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
+                    override fun onCapabilitiesChanged(n: android.net.Network, caps: android.net.NetworkCapabilities) { upd(caps) }
+                    override fun onLost(n: android.net.Network) { upd(null) }
+                })
+            }
+            watching = true
+        } catch (_: Throwable) {}
     }
 
     /** KB/s, 0 = unlimited */
@@ -36,8 +72,10 @@ object HwNet {
     fun setKbps(c: Context, kb: Int) {
         val v = if (kb <= 0) 0 else kb.coerceAtMost(1_000_000)
         try { c.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit().putInt("kbps", v).apply() } catch (_: Throwable) {}
-        rate.setRate(v * 1024L)
+        userBps = v * 1024L
         loaded = true
+        watch(c)
+        apply()
     }
 
     val client: OkHttpClient by lazy {
@@ -58,6 +96,13 @@ object HwNet {
     /** WebSocket frames: charged on the reader / sender thread, which also slows the socket itself (TCP back-pressure) */
     fun wsIn(n: Int) { rate.take(n + 6) }
     fun wsOut(n: Int) { rate.take(n + 8) }
+}
+
+/** v1.5 (#67): pure gating rule (unit tested): limit only mobile data, never Wi-Fi or Ethernet */
+object HwGate {
+    fun limited(cellular: Boolean, wifi: Boolean, ethernet: Boolean, metered: Boolean): Boolean =
+        if (wifi || ethernet) false else cellular || metered
+    fun effective(userBps: Long, mobile: Boolean): Long = if (mobile && userBps > 0) userBps else 0L
 }
 
 /** charges request headers + bodies and response bodies to the shared limit */

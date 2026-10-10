@@ -122,6 +122,10 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun speed(): Int = HwNet.kbps(this@HwActivity)
 
+        /** v1.5 (#67): true only while the cap is set AND the phone is on mobile data (Wi-Fi is never limited) */
+        @android.webkit.JavascriptInterface
+        fun capActive(): Boolean = HwNet.rate.on()
+
         /** v1.4 (#55): the persistent activity cache. Rows for the Activity tab, newest first, read from disk (no network). */
         @android.webkit.JavascriptInterface
         fun actRows(wid: String, limit: Int): String = try { HwActDb.get(this@HwActivity).rows(wid, limit) } catch (_: Throwable) { "[]" }
@@ -150,6 +154,18 @@ class HwActivity : FragmentActivity() {
             val cm = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
             val c = cm.primaryClip
             if (c != null && c.itemCount > 0) (c.getItemAt(0).coerceToText(this@HwActivity)?.toString() ?: "").take(20000) else ""
+        } catch (_: Exception) { "" }
+
+        /** v1.5 (#66): the clipboard for Send's paste chip, read once when Send opens. Only plain text, never text the
+         *  phone marks sensitive (Android 13+), and only when copied in the last 30 minutes; "" otherwise. */
+        @android.webkit.JavascriptInterface
+        fun clipPeek(): String = try {
+            val cm = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val d = cm.primaryClipDescription
+            val sensitive = d?.extras?.getBoolean("android.content.extra.IS_SENSITIVE", false) == true
+            val old = Build.VERSION.SDK_INT >= 26 && d != null && d.timestamp > 0 && System.currentTimeMillis() - d.timestamp > 30 * 60 * 1000L
+            if (d == null || sensitive || old || !(d.hasMimeType("text/plain") || d.hasMimeType("text/*"))) ""
+            else { val c = cm.primaryClip; if (c != null && c.itemCount > 0) (c.getItemAt(0).text?.toString() ?: "").trim().take(200) else "" }
         } catch (_: Exception) { "" }
 
         /** v1.1: live fee / balance / price data for Kwallet's open sign page. Only apps signed with the
@@ -186,9 +202,34 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun tick() { runOnUiThread { lightTick() } }
 
-        /** v1.3 (#43): the phone's own QR scanner (Google code scanner: no camera permission). Result via window.hwScanDone(text) */
+        /** v1.5 (#61): Hwallet's own scanner (CameraX + ZXing, no Play services). The page draws Gem's scanner UI over the
+         *  camera preview; results via window.hwScanHit(text), camera state via window.hwScanState(s). */
         @android.webkit.JavascriptInterface
-        fun scan() { runOnUiThread { scanQr() } }
+        fun scan() { scanStart() }
+
+        @android.webkit.JavascriptInterface
+        fun scanStart() { runOnUiThread { scanOpen() } }
+
+        @android.webkit.JavascriptInterface
+        fun scanStop(bg: String) { runOnUiThread { scanClose(bg) } }
+
+        @android.webkit.JavascriptInterface
+        fun scanResume() { runOnUiThread { scanner?.resume() } }
+
+        /** #65: torch on/off; false when the camera has no flash */
+        @android.webkit.JavascriptInterface
+        fun scanTorch(on: Boolean): Boolean { var ok = false; val l = java.util.concurrent.CountDownLatch(1); runOnUiThread { ok = scanner?.torch(on) ?: false; l.countDown() }; try { l.await(800, java.util.concurrent.TimeUnit.MILLISECONDS) } catch (_: Throwable) {}; return ok }
+
+        /** the Android photo picker; the chosen image is decoded on the phone */
+        @android.webkit.JavascriptInterface
+        fun scanPick() { runOnUiThread { try { pickPhoto.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) } catch (_: Throwable) { scanJs("hwScanState", "pickfail") } } }
+
+        /** v1.5 (#64): the crash recorded since the last prompt ("" when none), shown once on the next launch */
+        @android.webkit.JavascriptInterface
+        fun crashPending(): String = HwApp.pending(this@HwActivity)
+
+        @android.webkit.JavascriptInterface
+        fun crashAck() { HwApp.ack(this@HwActivity) }
 
         /** v1.3 (#42): the saved crash log for Settings > About > Crash log */
         @android.webkit.JavascriptInterface
@@ -249,16 +290,34 @@ class HwActivity : FragmentActivity() {
         } catch (_: Throwable) { try { web.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) } catch (_: Throwable) {} }
     }
 
-    private fun scanDone(t: String) { if (::web.isInitialized) web.evaluateJavascript("window.hwScanDone&&hwScanDone(${JSONObject.quote(t)})", null) }
-    private fun scanQr() {
+    /* ---------- v1.5 (#61/#65): own scanner ---------- */
+    private var scanner: HwScan? = null
+    private fun scanJs(f: String, v: String) { if (::web.isInitialized) web.evaluateJavascript("window.$f&&$f(${JSONObject.quote(v)})", null) }
+    private val askCam = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        if (ok) scanOpen()
+        else scanJs("hwScanState", if (!shouldShowRequestPermissionRationale(android.Manifest.permission.CAMERA)) "denied:forever" else "denied")
+    }
+    private val pickPhoto = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri == null) { scanJs("hwScanState", "pickcancel"); return@registerForActivityResult }
+        val sc = scanner ?: HwScan(this, root) { t -> scanJs("hwScanHit", t) }.also { scanner = it }
+        sc.decodeImage(uri) { t -> if (t.isEmpty()) scanJs("hwScanState", "noqr") else scanJs("hwScanHit", t) }
+    }
+    private fun scanOpen() {
         try {
-            val opts = com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions.Builder()
-                .setBarcodeFormats(com.google.mlkit.vision.barcode.common.Barcode.FORMAT_QR_CODE).enableAutoZoom().build()
-            com.google.mlkit.vision.codescanner.GmsBarcodeScanning.getClient(this, opts).startScan()
-                .addOnSuccessListener { b -> scanDone(b.rawValue ?: "") }
-                .addOnCanceledListener { scanDone("") }
-                .addOnFailureListener { _ -> scanDone("error:The phone's QR scanner is not available (Google Play services needed)") }
-        } catch (_: Throwable) { scanDone("error:The phone's QR scanner is not available (Google Play services needed)") }
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                askCam.launch(android.Manifest.permission.CAMERA); return
+            }
+            val sc = scanner ?: HwScan(this, root) { t -> scanJs("hwScanHit", t) }.also { scanner = it }
+            sc.state = { st -> scanJs("hwScanState", st) }
+            web.setBackgroundColor(Color.TRANSPARENT)
+            root.setBackgroundColor(Color.BLACK)
+            sc.start()
+        } catch (e: Throwable) { scanJs("hwScanState", "error:" + (e.message ?: "camera")); HwApp.write(this, "note: scanner failed", e.toString()) }
+    }
+    private fun scanClose(bg: String) {
+        try { scanner?.stop() } catch (_: Throwable) {}
+        val c = try { Color.parseColor(bg) } catch (_: Throwable) { LIME }
+        try { web.setBackgroundColor(c); root.setBackgroundColor(c) } catch (_: Throwable) {}
     }
 
     private fun batteryOk(): Boolean = try {
@@ -416,6 +475,7 @@ class HwActivity : FragmentActivity() {
         if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl(startUrl())
         HwActDb.listener = { wid, json -> actPatch(wid, json) }
+        HwNet.onChange = { runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript("window.hwNetChanged&&hwNetChanged()", null) } catch (_: Throwable) {} } }
         // v1.3 (#42): the always-on listener is NOT started here any more. The page starts it through setLive()
         // after it has loaded, when Hwallet is resumed (see startLiveSafe).
     }

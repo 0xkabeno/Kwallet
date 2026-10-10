@@ -67,8 +67,11 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.8.3")
     // v1.2: WebSockets + HTTP for the always-on listener (foreground service)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    // v1.3: the phone's own QR scanner for the Scan button (no camera permission; Google Play services)
-    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+    // v1.5 (#61): Hwallet's own scanner: CameraX preview + ZXing decoding on the phone (no Play services)
+    implementation("androidx.camera:camera-camera2:1.3.4")
+    implementation("androidx.camera:camera-lifecycle:1.3.4")
+    implementation("androidx.camera:camera-view:1.3.4")
+    implementation("com.google.zxing:core:3.5.3")
     // v1.4 (#53): JVM unit test of the shared data speed limit (HwRateTest)
     testImplementation("junit:junit:4.13.2")
 }
