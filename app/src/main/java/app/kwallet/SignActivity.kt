@@ -26,6 +26,7 @@ class SignActivity : KwActivity() {
     private var reqId = ""
     private var replied = false
     private var feedOn = false
+    private var wv: WebView? = null
 
     override val signPage: Boolean = true
     override fun bootColor(c: Int): Int {
@@ -46,7 +47,7 @@ class SignActivity : KwActivity() {
             val id = i.getStringExtra("id") ?: return
             val f = i.getStringExtra("feed") ?: return
             if (replied || id.isEmpty() || id != reqId || f.length > 262144) return
-            if (::web.isInitialized) web.evaluateJavascript("window.kwFeed&&kwFeed(${JSONObject.quote(f)})", null)
+            wv?.evaluateJavascript("window.kwFeed&&kwFeed(${JSONObject.quote(f)})", null)
         }
     }
 
@@ -68,6 +69,7 @@ class SignActivity : KwActivity() {
 
     override fun onWebReady(w: WebView) {
         w.filterTouchesWhenObscured = true
+        wv = w
         w.addJavascriptInterface(Bridge(), "KwSign")
     }
 
@@ -84,7 +86,8 @@ class SignActivity : KwActivity() {
     }
 
     override fun onDestroy() {
-        if (feedOn) { try { unregisterReceiver(feedRx) } catch (_: Exception) {} ; feedOn = false }
+        if (feedOn) { try { unregisterReceiver(feedRx) } catch (_: Exception) {}; feedOn = false }
+        wv = null
         super.onDestroy()
     }
 
