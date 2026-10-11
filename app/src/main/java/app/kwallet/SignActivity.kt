@@ -22,6 +22,7 @@ import org.json.JSONObject
  * with the Kwallet key can send (signature permission), matched to the one open request id.
  * v3.92: the window stays transparent until the page has drawn the transaction (no Kwallet UI flash),
  * and opens/closes without a window animation.
+ * v3.96: dApp requests (personal_sign, typed data, contract calls, Solana and Tron) as a translucent bottom sheet.
  */
 class SignActivity : KwActivity() {
     private var req = ""
@@ -29,6 +30,7 @@ class SignActivity : KwActivity() {
     private var replied = false
     private var feedOn = false
     private var wv: WebView? = null
+    @Volatile private var sheetMode = false
 
     override val signPage: Boolean = true
     override fun bootColor(c: Int): Int {
@@ -81,6 +83,12 @@ class SignActivity : KwActivity() {
         @JavascriptInterface fun done(json: String) { runOnUiThread { reply(json) } }
         /** v3.92: the transaction is on screen; reveal the window (it stays transparent until then). */
         @JavascriptInterface fun ready() { runOnUiThread { revealSign() } }
+        /** v3.96 (#60): dApp requests open as a bottom sheet over Hwallet's dApp tab. The page draws its own dim
+         *  backdrop, so the window, root and WebView become fully transparent and Hwallet stays visible behind. */
+        @JavascriptInterface fun sheet() { runOnUiThread {
+            sheetMode = true
+            try { wv?.setBackgroundColor(android.graphics.Color.TRANSPARENT); (wv?.parent as? android.view.View)?.setBackgroundColor(android.graphics.Color.TRANSPARENT) } catch (_: Throwable) {}
+        } }
     }
 
     private fun reply(json: String) {

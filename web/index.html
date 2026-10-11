@@ -3,7 +3,7 @@
 <head>
 <script>(function(){var P={touchstart:1,touchmove:1,wheel:1,mousewheel:1},o=EventTarget.prototype.addEventListener;try{EventTarget.prototype.addEventListener=function(t,f,x){if(P[t]&&(x===undefined||typeof x==='boolean'))x={capture:!!x,passive:true};return o.call(this,t,f,x);};}catch(e){}})();</script>
 <meta charset="UTF-8">
-<script>/* v3.90: SignActivity opens index.html#sign with the KwSign bridge. v3.92: the main UI is hidden from the very first paint */window.__kwSign=/(^|#)sign\b/.test(location.hash)&&!!window.KwSign;if(window.__kwSign){document.documentElement.classList.add("kw-sign");var __d=false;try{__d=localStorage.getItem("wallet-theme")==="dark"}catch(e){}document.write("<style>html.kw-sign,html.kw-sign body{background:"+(__d?"#0e1117":"#f8f9fa")+"!important}html.kw-sign body>*:not(#kss):not(.kwd-ov):not(.toast):not(script):not(style){display:none!important}</style>")}</script>
+<script>/* v3.90: SignActivity opens index.html#sign with the KwSign bridge. v3.92: the main UI is hidden from the very first paint */window.__kwSign=/(^|#)sign\b/.test(location.hash)&&!!window.KwSign;if(window.__kwSign){document.documentElement.classList.add("kw-sign");var __sh=false;try{__sh=JSON.parse(KwSign.request()||"{}").action==="dapp"}catch(e){}if(__sh)document.documentElement.classList.add("kw-sheet");var __d=false;try{__d=localStorage.getItem("wallet-theme")==="dark"}catch(e){}document.write("<style>html.kw-sign,html.kw-sign body{background:"+(__sh?"transparent":__d?"#0e1117":"#f8f9fa")+"!important}html.kw-sign body>*:not(#kss):not(.kwd-ov):not(.toast):not(script):not(style){display:none!important}</style>")}</script>
 <script>
 /* v3.50: Android app draws edge-to-edge; the native shell tells us the system bar sizes */
 (function () {
@@ -10761,8 +10761,8 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.95';
-const APP_BUILD = '2026-10-10';
+const APP_VERSION = '3.96';
+const APP_BUILD = '2026-10-11';
 let derivedRows = [];
 let copiedState = {};
 let clickOrder = {}; // key -> order number (1,2,3...)
@@ -19330,7 +19330,7 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
 
 </script>
 <script>
-/* ===== v3.92 Hwallet signer =====
+/* ===== v3.92 Hwallet signer (v3.96: + dApp requests, see kw_dapp section) =====
    v3.92: expiry countdown is fixed (live data can no longer push it forward), tighter K-style sign page,
    page stays hidden until it is drawn (no Kwallet UI flash), staking / trust line / Cardano and XRP tokens.
    Pairing: Kwallet derives the public addresses of a seed and keeps the pairing (seed, index, address map)
@@ -19510,6 +19510,14 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
   };
 
   var CSS = '' +
+    'html.kw-sign.kw-sheet,html.kw-sign.kw-sheet body{background:transparent!important}' +
+    '#kss.kss-sh{background:rgba(8,12,18,.46);justify-content:flex-end;transform:none}#kss.kss-sh .kss-panel{transform:translateY(40px);transition:transform .32s cubic-bezier(.22,1,.36,1)}#kss.kss-sh.in .kss-panel{transform:none}' +
+    '.kss-panel{display:flex;flex-direction:column;max-height:92%;background:var(--bg);border-radius:22px 22px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.22);overflow:hidden}' +
+    '.kss-grab{flex:0 0 auto;width:38px;height:4px;border-radius:2px;background:var(--border);margin:8px auto 2px}' +
+    '.kss-sh .kss-scroll{padding-top:6px}.kss-site{padding:11px 12px}.kss-site .kss-lg{width:38px;height:38px;border-radius:10px}.kss-sn{font-size:17px!important;letter-spacing:-.1px!important}' +
+    '.kss-msg{font:500 13.5px/1.5 RobotoMonoE,monospace;background:var(--bg-input);border-radius:10px;padding:10px;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto}' +
+    '.kss-raw{margin:0 0 8px}.kss-raw summary{color:var(--text-muted);font:600 13px RobotoE,system-ui;padding:8px 4px;cursor:pointer}.kss-raw .kss-ab{max-height:180px;overflow:auto;white-space:pre-wrap;font-size:12px}' +
+    '.kss-ins{margin:0;padding-left:20px;font:500 13.5px/1.5 RobotoE,system-ui}.kss-ins li{margin:2px 0}.kss-livebar{display:flex;justify-content:flex-end;margin:-2px 2px 6px}.mono{font-family:RobotoMonoE,monospace}' +
     'html.kw-sign,html.kw-sign body{background:var(--bg)!important}' +
     'html.kw-sign body>*:not(#kss):not(.kwd-ov):not(.toast):not(script):not(style){display:none!important}' +
     '#kss{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;background:var(--bg);color:var(--text);overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .22s ease,transform .3s cubic-bezier(.22,1,.36,1)}' +
@@ -19616,7 +19624,7 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
   var ICR = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>';
 
   var page = document.createElement('div'); page.id = 'kss'; page.setAttribute('role', 'dialog');
-  function bars() { try { var c = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#f8f9fa'; if (window.HarkNative && HarkNative.setBars) HarkNative.setBars(c, c); } catch (e) {} }
+  function bars() { if (document.documentElement.classList.contains('kw-sheet')) return; try { var c = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#f8f9fa'; if (window.HarkNative && HarkNative.setBars) HarkNative.setBars(c, c); } catch (e) {} }
   function mount() {
     if (page.isConnected) return;
     document.body.appendChild(page); bars();
@@ -19646,7 +19654,8 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     if (!(REQ.expires > now) || REQ.expires - now > 130000) return finish({ status: 'expired' });
     if (REQ.action === 'pair') return pairPage();
     if (REQ.action === 'sign') return signPage();
-    return fail('Kwallet only accepts sign and pair requests.');
+    if (REQ.action === 'dapp') return dappPage();
+    return fail('Kwallet only accepts sign, pair and dApp requests.');
   }
 
   /* ---------- pair: send the public addresses of one paired seed (public data only, no PIN) ---------- */
@@ -19795,6 +19804,7 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     balRows += '<div class="kss-r"><span class="kss-l">' + (S.tok && !trust ? 'Gas balance' : 'Balance') + '</span><span class="kss-v">' + fmt(c.gbal, S.gdec, 6) + ' ' + esc(S.gsym) + ((!S.tok || trust) && after != null ? '<small>After: ' + fmt(after, S.gdec, 6) + ' ' + esc(S.gsym) + (stake && kind === 'trx-freeze' ? ' liquid' : '') + '</small>' : '') + '</span></div>';
     if (S.c === 'xrp' && R.xrp && U(R.xrp.reserve)) balRows += '<div class="kss-r"><span class="kss-l">Reserve</span><span class="kss-v">' + fmt(U(R.xrp.reserve), 6, 6) + ' XRP<small>' + (trust ? 'A trust line adds 0.2 XRP to it' : 'Stays locked on the ledger') + '</small></span></div>';
     var notes = '';
+    if (R.note) notes += '<div class="kss-note kss-info">' + ICI + '<div>' + esc(String(R.note).slice(0, 240)) + '</div></div>';
     if (stale()) notes += '<div class="kss-note kss-upd">' + ICR + '<div><b>Waiting for live data.</b> Keep Hwallet open and online. Signing is paused until fresh values arrive.</div></div>';
     if (notice) notes += '<div class="kss-note kss-upd">' + ICR + '<div>' + notice + '</div></div>';
     if (c.err) notes += '<div class="kss-note kss-warn">' + ICW + '<div>' + esc(c.err) + '</div></div>';
@@ -19850,7 +19860,7 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     var wasStale = S.wasStale, isStale = stale();
     var t = $('kss-live-t'); if (t) t.textContent = liveText();
     var l = $('kss-live'); if (l) l.classList.toggle('stale', isStale);
-    if (isStale !== !!wasStale) { S.wasStale = isStale; if (!holding && !busy) draw(); }
+    if (isStale !== !!wasStale) { S.wasStale = isStale; if (!holding && !busy) (S.dapp ? dappDraw : draw)(); }
     tickExp();
   }
   /* v3.92: a real per-second countdown. The deadline is fixed when the page opens; live data never moves it. */
@@ -19871,7 +19881,7 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     if (!f || !S || done || !REQ || f.id !== REQ.id || !(f.seq > lastSeq)) return;
     lastSeq = f.seq; lastFeed = Date.now();
     if (holding || busy) { pendingFeed = f; return; }
-    applyFeed(f);
+    (S.dapp ? dappFeed : applyFeed)(f);
   };
   function applyFeed(f) {
     var R = S.R, before = S.key;
@@ -19892,7 +19902,7 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     var fill = b.querySelector('.kss-fill'), t0 = 0, raf = 0, snap = null, MS = 1000;
     function step(now) {
       var p = Math.min(1, (now - t0) / MS); fill.style.transform = 'scaleX(' + p + ')';
-      if (p >= 1) { holding = false; proceed(snap); return; }
+      if (p >= 1) { holding = false; (S && S.dapp ? dappProceed : proceed)(snap); return; }
       raf = requestAnimationFrame(step);
     }
     function down(e) {
@@ -19904,7 +19914,7 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     function up() {
       if (!holding) return; holding = false; cancelAnimationFrame(raf);
       fill.style.transition = 'transform .2s ease'; fill.style.transform = 'scaleX(0)'; setTimeout(function () { fill.style.transition = ''; }, 220);
-      if (pendingFeed) { var f = pendingFeed; pendingFeed = null; applyFeed(f); }
+      if (pendingFeed) { var f = pendingFeed; pendingFeed = null; (S.dapp ? dappFeed : applyFeed)(f); }
     }
     b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
     b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
@@ -19912,7 +19922,7 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
   function setBusy(on, label) {
     busy = on; var b = $('kss-go'); if (b) { b.querySelector('span').textContent = on ? (label || 'Signing…') : 'Hold to sign'; if (!on) b.querySelector('.kss-fill').style.transform = 'scaleX(0)'; }
     syncBtn();
-    if (!on && pendingFeed) { var f = pendingFeed; pendingFeed = null; applyFeed(f); }
+    if (!on && pendingFeed) { var f = pendingFeed; pendingFeed = null; (S.dapp ? dappFeed : applyFeed)(f); }
   }
 
   /* ---------- the one optional auth step (Require PIN to sign) ---------- */
@@ -20025,6 +20035,555 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     }
     var raw = await w.signTransaction(tx); w = null;
     return { status: 'signed', chain: 'evm', raw: raw, enc: 'hex', hash: ethers.keccak256(raw), amount: c.amount.toString(), fee: c.fee.toString(), level: lvl };
+  }
+
+
+  /* ================= v3.96 (#60): dApp requests (WalletConnect, Hwallet Browser, Swap, Fees) =================
+     A translucent bottom sheet over Hwallet's dApp tab. Same header as the send page (Kwallet chip top-left,
+     chain chip top-right), same live fee / price / balance updates, fee-change banner + hold re-arm, no layout
+     shift. Kwallet decodes everything itself from the raw request and signs only what it showed. */
+  var DM = {
+    personal_sign: 'Sign message', eth_signTypedData_v4: 'Sign typed data', eth_sendTransaction: 'Review transaction',
+    solana_signMessage: 'Sign message', solana_signTransaction: 'Review transaction',
+    tron_signMessage: 'Sign message', tron_signTransaction: 'Review transaction', kw_nearAccount: 'Share NEAR account'
+  };
+  var DCH = { personal_sign: 'evm', eth_signTypedData_v4: 'evm', eth_sendTransaction: 'evm', solana_signMessage: 'sol', solana_signTransaction: 'sol', tron_signMessage: 'trx', tron_signTransaction: 'trx', kw_nearAccount: 'evm' };
+  var MAXU = (1n << 255n);
+  /* known methods: the selector is computed from the signature, so nothing here is a magic number */
+  var SIGS = [
+    'function transfer(address to,uint256 amount)', 'function approve(address spender,uint256 amount)', 'function transferFrom(address from,address to,uint256 amount)',
+    'function increaseAllowance(address spender,uint256 added)', 'function setApprovalForAll(address operator,bool approved)',
+    'function approve(address token,address spender,uint160 amount,uint48 expiration)',
+    'function deposit()', 'function withdraw(uint256 amount)',
+    'function execute(bytes commands,bytes[] inputs,uint256 deadline)', 'function execute(bytes commands,bytes[] inputs)',
+    'function multicall(bytes[] data)', 'function multicall(uint256 deadline,bytes[] data)',
+    'function swapExactTokensForTokens(uint256 amountIn,uint256 amountOutMin,address[] path,address to,uint256 deadline)',
+    'function swapExactETHForTokens(uint256 amountOutMin,address[] path,address to,uint256 deadline)',
+    'function swapExactTokensForETH(uint256 amountIn,uint256 amountOutMin,address[] path,address to,uint256 deadline)',
+    'function exactInputSingle((address tokenIn,address tokenOut,uint24 fee,address recipient,uint256 deadline,uint256 amountIn,uint256 amountOutMinimum,uint160 sqrtPriceLimitX96) params)',
+    'function exactInputSingle((address tokenIn,address tokenOut,uint24 fee,address recipient,uint256 amountIn,uint256 amountOutMinimum,uint160 sqrtPriceLimitX96) params)',
+    'function exactInput((bytes path,address recipient,uint256 amountIn,uint256 amountOutMinimum) params)',
+    'function swapTokensGeneric(bytes32 transactionId,string integrator,string referrer,address receiver,uint256 minAmount,(address callTo,address approveTo,address sendingAssetId,address receivingAssetId,uint256 fromAmount,bytes callData,bool requiresDeposit)[] swapData)',
+    'function swapTokensSingleV3ERC20ToERC20(bytes32 transactionId,string integrator,string referrer,address receiver,uint256 minAmount,(address callTo,address approveTo,address sendingAssetId,address receivingAssetId,uint256 fromAmount,bytes callData,bool requiresDeposit) swapData)',
+    'function swapTokensSingleV3ERC20ToNative(bytes32 transactionId,string integrator,string referrer,address receiver,uint256 minAmount,(address callTo,address approveTo,address sendingAssetId,address receivingAssetId,uint256 fromAmount,bytes callData,bool requiresDeposit) swapData)',
+    'function swapTokensSingleV3NativeToERC20(bytes32 transactionId,string integrator,string referrer,address receiver,uint256 minAmount,(address callTo,address approveTo,address sendingAssetId,address receivingAssetId,uint256 fromAmount,bytes callData,bool requiresDeposit) swapData)',
+    'function withdrawIntegratorFees(address tokenAddress)', 'function batchWithdrawIntegratorFees(address[] tokenAddresses)',
+    'function swapExactInput(address[] path,string[] poolVersion,uint256[] versionLen,uint24[] fees,(uint256 amountIn,uint256 amountOutMin,address to,uint256 deadline) data)'
+  ];
+  var IFACE = null;
+  function iface() { if (!IFACE) IFACE = new ethers.Interface(SIGS); return IFACE; }
+  var NICE = {
+    transfer: 'Token transfer', approve: 'Token approval', transferFrom: 'Token transfer', increaseAllowance: 'Token approval', setApprovalForAll: 'Approve all NFTs',
+    deposit: 'Wrap', withdraw: 'Unwrap', execute: 'Swap (Universal Router)', multicall: 'Multicall',
+    swapExactTokensForTokens: 'Swap', swapExactETHForTokens: 'Swap', swapExactTokensForETH: 'Swap', exactInputSingle: 'Swap', exactInput: 'Swap',
+    swapTokensGeneric: 'Swap (LI.FI)', swapTokensSingleV3ERC20ToERC20: 'Swap (LI.FI)', swapTokensSingleV3ERC20ToNative: 'Swap (LI.FI)', swapTokensSingleV3NativeToERC20: 'Swap (LI.FI)',
+    withdrawIntegratorFees: 'Withdraw fees', batchWithdrawIntegratorFees: 'Withdraw fees', swapExactInput: 'Swap (SunSwap)'
+  };
+  var DS = null;
+  function host(o) { try { return new URL(String(o)).host; } catch (e) { return String(o || '').replace(/^https?:\/\//, '').split('/')[0]; } }
+  function hexB(h) { h = String(h || '').replace(/^0x/, ''); if (h.length % 2 || /[^0-9a-f]/i.test(h)) return null; var u = new Uint8Array(h.length / 2); for (var i = 0; i < u.length; i++) u[i] = parseInt(h.substr(i * 2, 2), 16); return u; }
+  function utf8(u) { try { var t = new TextDecoder('utf-8', { fatal: true }).decode(u); return /^[\x09\x0a\x0d\x20-\x7e\u00a0-\uffff]*$/.test(t) ? t : null; } catch (e) { return null; } }
+  function bhex(u) { return Array.prototype.map.call(u, function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); }
+  function b64u(s) { var b = atob(String(s || '')), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+  function u8b64(u) { var s = ''; for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); }
+  function tokOf(a) { var T = (DS && DS.R.tokens) || {}; a = String(a || ''); return T[a] || T[a.toLowerCase()] || null; }
+  function amtTok(v, a, native) {
+    if (native) return fmt(v, DS.gdec, 8) + ' ' + esc(DS.gsym);
+    var t = tokOf(a); if (v >= MAXU || v === (1n << 160n) - 1n) return '<b>Unlimited</b> ' + esc(t ? t.s : 'tokens');
+    return t ? fmt(v, +t.d || 0, 8) + ' ' + esc(t.s) : v.toString() + ' <small>raw units of ' + esc(short(a)) + '</small>';
+  }
+  function kv(l, v, sub) { return '<div class="kss-r"><span class="kss-l">' + l + '</span><span class="kss-v">' + v + (sub ? '<small>' + sub + '</small>' : '') + '</span></div>'; }
+  /* v3.96 (#80): the summary shows a short address; the full grouped address is in Details */
+  function addrKv(l, a, right) { if (DS) { DS.full = DS.full || {}; DS.full[l + '|' + a] = addrRow(l, right || '', a); } return kv(l, '<span class="kss-mono">' + esc(short(a)) + '</span>', right || ''); }
+  function warn(t) { return '<div class="kss-note kss-warn">' + ICW + '<div>' + t + '</div></div>'; }
+  function info(t) { return '<div class="kss-note kss-info">' + ICI + '<div>' + t + '</div></div>'; }
+  function rawBox(t, label) { return '<details class="kss-raw"><summary>' + (label || 'Raw data') + '</summary><div class="kss-ab">' + esc(t) + '</div></details>'; }
+
+  /* ---------- EVM ---------- */
+  function decodeEvmCall(tx) {
+    var to = tx.to ? String(tx.to) : '', data = String(tx.data || tx.input || '0x'), value = U(tx.value || '0') || 0n, out = { rows: '', warn: [], title: '', blind: false };
+    if (!to) { out.title = 'Deploy contract'; out.warn.push('This deploys a new contract. Only continue if you wrote it.'); out.blind = true; return out; }
+    if (data === '0x' || data === '') { out.title = 'Send ' + DS.gsym; out.hero = { l: 'You send', a: fmt(value, 18, 8) + ' ' + esc(DS.gsym), raw: value }; out.rows += addrKv('To', to); return out; }
+    var p = null; try { p = iface().parseTransaction({ data: data, value: value }); } catch (e) { p = null; }
+    if (!p) { out.title = 'Contract call'; out.rows += addrKv('Contract', to) + kv('Method', '<span class="mono">' + esc(data.slice(0, 10)) + '</span>', 'Kwallet does not know this method'); out.hero = { l: 'Contract call', a: fmt(value, 18, 8) + ' ' + esc(DS.gsym), raw: value }; out.blind = true; out.warn.push('Kwallet cannot decode this call. Only sign if you trust ' + esc(DS.site) + '.'); return out; }
+    var n = p.name, a = p.args; out.title = NICE[n] || n; out.method = p.signature;
+    out.rows += addrKv(n === 'transfer' || n === 'approve' || n === 'increaseAllowance' ? 'Token contract' : 'Contract', to, tokOf(to) ? esc(tokOf(to).s) : '');
+    if (n === 'transfer') { out.hero = { l: 'You send', a: amtTok(a[1], to) }; out.rows += addrKv('To', a[0]); }
+    else if (n === 'transferFrom') { out.hero = { l: 'Transfer', a: amtTok(a[2], to) }; out.rows += addrKv('From', a[0]) + addrKv('To', a[1]); }
+    else if (n === 'approve' && p.fragment.inputs.length === 2 || n === 'increaseAllowance') {
+      /* #60: an unlimited approval is cut to the exact amount by default; the hero, rows and data follow apprEff() */
+      out.appr = { frag: p.fragment, args: Array.from(a), i: 1, tok: to, orig: a[1], unl: a[1] >= MAXU, max: (1n << 256n) - 1n, inc: n === 'increaseAllowance' };
+      out.rows += addrKv('Spender', a[0]);
+    } else if (n === 'approve') {
+      out.title = 'Permit2 approval';
+      out.appr = { frag: p.fragment, args: Array.from(a), i: 2, tok: a[0], orig: a[2], unl: a[2] >= (1n << 159n), max: (1n << 160n) - 1n, p2: true };
+      out.rows += addrKv('Token', a[0], tokOf(a[0]) ? esc(tokOf(a[0]).s) : '') + addrKv('Spender', a[1]) + kv('Expires', a[3] > 0n ? new Date(Number(a[3]) * 1000).toLocaleString() : 'Never');
+    } else if (n === 'setApprovalForAll') { out.rows += addrKv('Operator', a[0]) + kv('Access', a[1] ? '<b>All NFTs in this collection</b>' : 'Revoke'); if (a[1]) out.warn.push('This gives the operator control of every NFT in this collection.'); }
+    else if (n === 'deposit') { out.hero = { l: 'Wrap', a: fmt(value, DS.gdec, 8) + ' ' + esc(DS.gsym), raw: value }; }
+    else if (n === 'withdraw') { out.hero = { l: 'Unwrap', a: fmt(a[0], 18, 8) + ' W' + esc(DS.gsym) }; }
+    else if (/^swapExact/.test(n) && n !== 'swapExactInput') {
+      var path = a[n === 'swapExactETHForTokens' ? 1 : 2]; var inA = n === 'swapExactETHForTokens' ? value : a[0], minO = n === 'swapExactETHForTokens' ? a[0] : a[1];
+      out.hero = { l: 'You pay', a: amtTok(inA, path[0], n === 'swapExactETHForTokens'), sub: 'You get at least ' + amtTok(minO, path[path.length - 1], n === 'swapExactTokensForETH') }; out.rows += addrKv('Recipient', a[n === 'swapExactETHForTokens' ? 2 : 3]);
+    } else if (n === 'exactInputSingle') { var q = a[0]; out.hero = { l: 'You pay', a: amtTok(q.amountIn, q.tokenIn), sub: 'You get at least ' + amtTok(q.amountOutMinimum, q.tokenOut) }; out.rows += addrKv('Recipient', q.recipient); }
+    else if (/^swapTokens/.test(n)) {
+      var sd = Array.isArray(a[5]) && Array.isArray(a[5][0]) ? a[5] : [a[5]], f0 = sd[0], fl = sd[sd.length - 1], z = '0x0000000000000000000000000000000000000000';
+      out.hero = { l: 'You pay', a: amtTok(f0.fromAmount, f0.sendingAssetId, f0.sendingAssetId === z), sub: 'You get at least ' + amtTok(a[4], fl.receivingAssetId, fl.receivingAssetId === z) }; out.rows += addrKv('Recipient', a[3]) + kv('Integrator', esc(a[1] || '—'));
+    } else if (n === 'withdrawIntegratorFees' || n === 'batchWithdrawIntegratorFees') { out.rows += kv('Tokens', esc(String((n === 'withdrawIntegratorFees' ? [a[0]] : a[0]).length))); }
+    else { out.rows += kv('Method', esc(n), esc(p.signature)); if (n === 'execute' || n === 'multicall') out.rows += kv('Steps', String((a[1] && a[1].length) || (a[0] && a[0].length) || 0)); }
+    if (!out.hero && !out.appr) out.hero = { l: out.title, a: fmt(value, 18, 8) + ' ' + esc(DS.gsym), raw: value };
+    return out;
+  }
+  /* the allowance that is actually signed: the app's, or the exact amount (default when the app asked for unlimited) */
+  function apprEff(R) {
+    var A = DS.view && DS.view.appr; if (!A) return null;
+    var ex = U(R.exact), mode = R.allowMode || (A.unl && ex != null && ex > 0n ? 'exact' : 'app');
+    var amt = mode === 'exact' && ex != null ? (ex > A.max ? A.max : ex) : A.orig, args = A.args.slice(); args[A.i] = amt;
+    var data = amt === A.orig ? String(((R.params || {}).tx || {}).data || '0x') : iface().encodeFunctionData(A.frag, args);
+    return { amt: amt, data: data, changed: amt !== A.orig, mode: mode, canExact: A.unl && ex != null && ex > 0n, unl: amt >= (A.p2 ? (1n << 159n) : MAXU) };
+  }
+  function gwei(v) { return v == null ? '—' : fmt(v, 9, 4); }
+  function calcDappEvm() {
+    var R = DS.R, P = R.params || {}, tx = P.tx || {}, lv = R.fee.levels || {}, cus = DS.level === 'custom' && R.cf, L = lv[DS.level] || lv.medium || lv[Object.keys(lv)[0]] || {};
+    var legacy = !(U((lv.medium || lv[Object.keys(lv)[0]] || {}).maxFee) > 0n);
+    var gas = U(tx.gas || tx.gasLimit) || U(R.gasLimit), mf = U(L.maxFee), tip = U(L.tip), gp = U(L.gasPrice), l1 = U(R.l1Fee || '0') || 0n, err = '';
+    /* #82: a custom network fee replaces the preset values (only the network fee; nothing else is editable) */
+    if (cus) { if (R.cf.bad) err = 'Enter a valid network fee.'; else { if (legacy) gp = U(R.cf.mf); else { mf = U(R.cf.mf); tip = U(R.cf.tip); } if (U(R.cf.gas) != null) gas = U(R.cf.gas); } }
+    var value = U(tx.value || '0') || 0n, gbal = U(R.balance && R.balance.gas);
+    if (!err && (gas == null || gas < 21000n || gas > 30000000n)) err = gas != null && gas < 21000n ? 'The gas limit must be at least 21,000.' : 'Bad gas limit.';
+    if (!err && (legacy ? !(gp > 0n) : !(mf > 0n) || tip == null)) err = 'Enter a valid network fee.';
+    var fee = err ? 0n : gas * (legacy ? gp : mf) + l1;
+    if (!err && gbal != null && value + fee > gbal) err = 'Not enough ' + DS.gsym + ' for this transaction plus the network fee.';
+    return { legacy: legacy, gp: gp, mf: mf, tip: tip, gas: gas, fee: fee, value: value, gbal: gbal, err: err, amount: value, atMost: !legacy, custom: !!cus };
+  }
+  function typedView(json) {
+    var o = null, out = { rows: '', warn: [] };
+    try { o = typeof json === 'string' ? JSON.parse(json) : json; } catch (e) { out.err = 'The typed data could not be read.'; return out; }
+    if (!o || !o.types || !o.domain || !o.primaryType || !o.message) { out.err = 'The typed data is incomplete.'; return out; }
+    var d = o.domain, m = o.message, pt = String(o.primaryType); out.obj = o;
+    out.rows += kv('Type', esc(pt)) + kv('App', esc(d.name || '—'), d.version ? 'version ' + esc(d.version) : '');
+    if (d.verifyingContract) out.rows += addrKv('Contract', String(d.verifyingContract));
+    if (d.chainId != null && +d.chainId !== +DS.R.chainId) out.warn.push('This signature is for chain ' + esc(d.chainId) + ', not ' + esc(DS.info.name) + '.');
+    if (pt === 'Permit' && m.spender != null) {
+      var v = U(m.value); out.hero = { l: 'Allow spending', a: v != null ? amtTok(v, d.verifyingContract) : esc(m.value) }; out.rows += addrKv('Spender', m.spender) + kv('Deadline', m.deadline ? new Date(+m.deadline * 1000).toLocaleString() : '—');
+      if (v != null && v >= MAXU) out.warn.push('<b>Unlimited permit.</b> The spender could move all of this token.');
+    } else if ((pt === 'PermitSingle' || pt === 'PermitBatch') && m.spender) {
+      var ds = pt === 'PermitSingle' ? [m.details] : (m.details || []);
+      ds.forEach(function (x, j) { var am = U(x.amount); if (!j) out.hero = { l: 'Allow spending' + (ds.length > 1 ? ' (' + ds.length + ' tokens)' : ''), a: am != null ? amtTok(am, x.token) : esc(x.amount) }; out.rows += addrKv('Token', x.token) + (j ? kv('Allowance', am != null ? amtTok(am, x.token) : esc(x.amount)) : ''); if (am != null && am >= (1n << 159n)) out.warn.push('<b>Unlimited Permit2 approval</b> for ' + esc(short(x.token)) + '.'); });
+      out.rows += addrKv('Spender', m.spender) + kv('Signature valid until', m.sigDeadline ? new Date(+m.sigDeadline * 1000).toLocaleString() : '—');
+    } else {
+      var n = 0; (function walk(x, pre) { Object.keys(x || {}).forEach(function (k) { if (n >= 14) return; var v = x[k]; if (v && typeof v === 'object') walk(v, pre + k + '.'); else { n++; out.rows += kv(esc(pre + k), '<span class="mono">' + esc(String(v).length > 46 ? short(String(v)) : String(v)) + '</span>'); } }); })(m, '');
+    }
+    return out;
+  }
+  function siwe(text) {
+    var m = /^(\S+) wants you to sign in with your (Ethereum|Solana) account:\n(\S+)/.exec(text || ''); if (!m) return null;
+    return { domain: m[1], addr: m[3] };
+  }
+
+  /* ---------- Solana ---------- */
+  var SOLP = { '11111111111111111111111111111111': 'System', 'ComputeBudget111111111111111111111111111111': 'Compute budget', 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA': 'Token', 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb': 'Token-2022',
+    'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL': 'Associated token account', 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr': 'Memo', 'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4': 'Jupiter',
+    'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc': 'Orca', 'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo': 'Meteora', '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8': 'Raydium', 'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK': 'Raydium CLMM' };
+  function le64(u, o) { var v = 0n; for (var i = 7; i >= 0; i--) v = (v << 8n) | BI(u[o + i]); return v; }
+  function le32(u, o) { return (u[o] | (u[o + 1] << 8) | (u[o + 2] << 16) | (u[o + 3] << 24)) >>> 0; }
+  function solView() {
+    var R = DS.R, P = R.params || {}, W = window.solanaWeb3, out = { rows: '', warn: [], ins: [], cuLimit: 200000, cuPrice: 0n };
+    if (!W || !W.VersionedTransaction) { out.err = 'Signing engine missing.'; return out; }
+    var tx; try { tx = W.VersionedTransaction.deserialize(b64u(P.tx)); } catch (e) { out.err = 'The transaction could not be read.'; return out; }
+    var msg = tx.message, st = msg.staticAccountKeys.map(function (k) { return k.toBase58(); }), lk = msg.addressTableLookups || [], wr = [], ro = [], alts = P.alts || {};
+    lk.forEach(function (l) { var t = alts[l.accountKey.toBase58()] || []; l.writableIndexes.forEach(function (i) { wr.push(t[i] || '(lookup ' + short(l.accountKey.toBase58()) + ' #' + i + ')'); }); l.readonlyIndexes.forEach(function (i) { ro.push(t[i] || '(lookup #' + i + ')'); }); });
+    var keys = st.concat(wr, ro), nsig = msg.header.numRequiredSignatures, me = st.indexOf(R.from);
+    if (me < 0 || me >= nsig) { out.err = 'This transaction does not need a signature from ' + short(R.from) + '.'; return out; }
+    out.tx = tx; out.idx = me; out.nsig = nsig; out.version = msg.version;
+    if (me !== 0) out.warn.push('Someone else pays the fee for this transaction (fee payer ' + esc(short(st[0])) + ').');
+    var unknown = [], spl = [];
+    out.cbP = -1; out.cbL = -1;
+    msg.compiledInstructions.forEach(function (ci, ix) {
+      var pid = keys[ci.programIdIndex], d = ci.data, ac = ci.accountKeyIndexes.map(function (i) { return keys[i]; }), name = SOLP[pid] || null, t = '';
+      if (pid === '11111111111111111111111111111111' && d.length >= 12 && le32(d, 0) === 2) { t = 'Send ' + fmt(le64(d, 4), 9, 9) + ' SOL to ' + esc(short(ac[1])); if (ac[0] === R.from) out.solOut = (out.solOut || 0n) + le64(d, 4); }
+      else if (pid === 'ComputeBudget111111111111111111111111111111') { if (d[0] === 2 && d.length >= 5) { out.cuLimit = le32(d, 1); out.cbL = ix; } if (d[0] === 3 && d.length >= 9) { out.cuPrice = le64(d, 1); out.cbP = ix; } t = d[0] === 2 ? 'Compute limit ' + le32(d, 1) : d[0] === 3 ? 'Priority fee ' + le64(d, 1) + ' µ-lamports/CU' : 'Compute budget'; }
+      else if ((pid === 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' || pid === 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb') && d.length) {
+        var k = d[0];
+        if (k === 3 && d.length >= 9) t = 'Token transfer ' + le64(d, 1) + ' raw units to ' + esc(short(ac[1]));
+        else if (k === 12 && d.length >= 10) { var mt = tokOf(ac[1]); t = 'Send ' + (mt ? fmt(le64(d, 1), +mt.d, 8) + ' ' + esc(mt.s) : fmt(le64(d, 1), d[9], 8) + ' of ' + esc(short(ac[1]))) + ' to ' + esc(short(ac[2])); }
+        else if (k === 4 || k === 13) { t = '<b>Approve</b> ' + esc(short(ac[1])) + ' to spend ' + le64(d, 1) + ' raw units'; out.warn.push('This lets ' + esc(short(ac[1])) + ' spend your tokens later.'); }
+        else if (k === 9) t = 'Close token account ' + esc(short(ac[0]));
+        else if (k === 17) t = 'Sync wrapped SOL';
+        else if (k === 1 || k === 16 || k === 18) t = 'Open token account';
+        else if (k === 6) { t = '<b>Change authority</b> of ' + esc(short(ac[0])); out.warn.push('This changes who controls a token account.'); }
+        else t = name + ' instruction ' + k;
+      }
+      else if (pid === 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL') t = 'Create token account for ' + esc(short(ac[2]));
+      else if (pid === 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr') t = 'Memo: ' + esc(utf8(d) || bhex(d).slice(0, 40));
+      else if (name) t = name + ' (' + ac.length + ' accounts)';
+      else { t = 'Program ' + esc(short(pid)) + ' (' + ac.length + ' accounts)'; unknown.push(pid); }
+      out.ins.push(t);
+    });
+    if (unknown.length) out.warn.push('Kwallet does not know ' + (unknown.length === 1 ? 'one program' : unknown.length + ' programs') + ' in this transaction. Only sign if you trust ' + esc(DS.site) + '.');
+    out.fee = BI(5000 * nsig) + (out.cuPrice * BI(out.cuLimit) + 999999n) / 1000000n;
+    /* #82: the priority fee / compute units can be changed only when Kwallet is the one signer and the app set them */
+    out.feeEdit = me === 0 && nsig === 1 && out.cbP >= 0;
+    out.hero = out.solOut ? { l: 'You send', a: fmt(out.solOut, 9, 9) + ' SOL', raw: out.solOut } : { l: 'Transaction', a: msg.compiledInstructions.length + ' instructions' };
+    out.rows += kv('Instructions', String(msg.compiledInstructions.length), out.version === 'legacy' ? 'Legacy transaction' : 'Version 0' + (lk.length ? ' · ' + lk.length + ' lookup table' + (lk.length > 1 ? 's' : '') : ''));
+    return out;
+  }
+
+  /* ---------- Tron (protobuf raw_data, read here) ---------- */
+  function pbRead(u) {
+    var o = 0, f = {};
+    function vint() { var r = 0n, s = 0n, b; do { if (o >= u.length) throw new Error('pb'); b = u[o++]; r |= BI(b & 0x7f) << s; s += 7n; } while (b & 0x80); return r; }
+    while (o < u.length) {
+      var k = Number(vint()), n = k >> 3, w = k & 7, v;
+      if (w === 0) v = vint(); else if (w === 2) { var l = Number(vint()); if (o + l > u.length) throw new Error('pb'); v = u.slice(o, o + l); o += l; } else if (w === 1) { v = u.slice(o, o + 8); o += 8; } else if (w === 5) { v = u.slice(o, o + 4); o += 4; } else throw new Error('pb');
+      (f[n] = f[n] || []).push(v);
+    }
+    return f;
+  }
+  var TRT = { 1: 'TransferContract', 2: 'TransferAssetContract', 4: 'VoteWitnessContract', 31: 'TriggerSmartContract', 54: 'FreezeBalanceV2Contract', 55: 'UnfreezeBalanceV2Contract', 56: 'WithdrawExpireUnfreezeContract', 57: 'DelegateResourceContract', 58: 'UnDelegateResourceContract' };
+  function trxB58(u) { try { return KwChains.util.b58enc(Uint8Array.from(Array.from(u).concat(Array.from(hexB(ethers.sha256(ethers.sha256(u))).slice(0, 4))))); } catch (e) { return bhex(u); } }
+  function pbVint(v) { var o = []; v = BI(v); do { var b = Number(v & 0x7fn); v >>= 7n; o.push(v ? b | 0x80 : b); } while (v); return o; }
+  /* #82: raw_data with a new fee_limit (field 18, the highest field, so appending keeps the canonical order) */
+  function trxSetFeeLimit(u, fl) {
+    var o = 0, keep = [];
+    function vint() { var r = 0n, s2 = 0n, b; do { b = u[o++]; r |= BI(b & 0x7f) << s2; s2 += 7n; } while (b & 0x80); return r; }
+    while (o < u.length) {
+      var st = o, k = Number(vint()), n = k >> 3, w = k & 7;
+      if (w === 0) vint(); else if (w === 2) { var l = Number(vint()); o += l; } else if (w === 1) o += 8; else if (w === 5) o += 4; else throw new Error('pb');
+      if (n !== 18) for (var i = st; i < o; i++) keep.push(u[i]);
+    }
+    return Uint8Array.from(keep.concat([0x90, 0x01], pbVint(fl)));
+  }
+  window.__kwTrxFL = trxSetFeeLimit;
+  function trxView() {
+    var R = DS.R, P = R.params || {}, t = P.tx || {}, out = { rows: '', warn: [] }, raw = hexB(t.raw_data_hex);
+    if (!raw || !raw.length) { out.err = 'The transaction could not be read.'; return out; }
+    var id = ethers.sha256(raw).slice(2); if (t.txID && String(t.txID).toLowerCase() !== id) { out.err = 'The transaction id does not match its contents.'; return out; }
+    var f; try { f = pbRead(raw); } catch (e) { out.err = 'The transaction could not be read.'; return out; }
+    out.raw = raw; out.id = id;
+    var cs = f[11] || []; if (cs.length !== 1) { out.err = 'Kwallet signs one Tron contract at a time.'; return out; }
+    var c = pbRead(cs[0]), type = Number((c[1] || [0n])[0]), any = c[2] ? pbRead(c[2][0]) : {}, val = any[2] ? pbRead(any[2][0]) : {};
+    if (c[5] && Number(c[5][0]) !== 0) out.warn.push('This uses permission ' + Number(c[5][0]) + ' of the account.');
+    var owner = val[1] ? trxB58(val[1][0]) : ''; if (owner !== R.from) { out.err = 'This transaction is for ' + short(owner) + ', not your account.'; return out; }
+    out.type = TRT[type] || ('Contract type ' + type); out.title = out.type;
+    var exp = f[8] ? Number(f[8][0]) : 0, fl = f[18] ? f[18][0] : 0n;
+    if (type === 1) { out.title = 'Send TRX'; out.value = val[3] ? val[3][0] : 0n; out.hero = { l: 'You send', a: fmt(out.value, 6, 6) + ' TRX', raw: out.value }; out.rows += addrKv('To', trxB58(val[2][0])); }
+    else if (type === 31) {
+      var ca = trxB58(val[2][0]), cv = val[3] ? val[3][0] : 0n, data = val[4] ? '0x' + bhex(val[4][0]) : '0x';
+      out.rows += addrKv('Contract', ca, tokOf(ca) ? esc(tokOf(ca).s) : '');
+      if (cv > 0n) out.rows += kv('TRX sent', fmt(cv, 6, 6) + ' TRX'); out.value = cv;
+      var p = null; try { p = iface().parseTransaction({ data: data, value: 0n }); } catch (e) {}
+      var b58a = function (a) { try { return trxB58(hexB('41' + String(a).slice(2))); } catch (e) { return a; } };
+      if (p && p.name === 'transfer') { out.title = 'Token transfer'; out.hero = { l: 'You send', a: amtTok(p.args[1], ca) }; out.rows += addrKv('To', b58a(p.args[0])); }
+      else if (p && p.name === 'approve' && p.fragment.inputs.length === 2) { out.title = 'Token approval'; out.hero = { l: 'Allow spending', a: amtTok(p.args[1], ca) }; out.rows += addrKv('Spender', b58a(p.args[0])); if (p.args[1] >= MAXU) out.warn.push('<b>Unlimited approval.</b> The spender could move all of this token.'); }
+      else if (p && p.name === 'swapExactInput') { out.title = 'Swap (SunSwap)'; var pa = p.args[0], dd = p.args[4]; out.hero = { l: 'You pay', a: amtTok(dd.amountIn, b58a(pa[0]), /^0x0{40}$/i.test(pa[0])), sub: 'You get at least ' + amtTok(dd.amountOutMin, b58a(pa[pa.length - 1]), /^0x0{40}$/i.test(pa[pa.length - 1])) }; out.rows += addrKv('Recipient', b58a(dd.to)); }
+      else if (p) { out.title = NICE[p.name] || p.name; out.rows += kv('Method', esc(p.name)); }
+      else { out.title = 'Contract call'; out.rows += kv('Method', '<span class="mono">' + esc(data.slice(0, 10)) + '</span>', 'Kwallet does not know this method'); out.warn.push('Kwallet cannot decode this call. Only sign if you trust ' + esc(DS.site) + '.'); }
+    } else if (TRT[type]) { out.rows += kv('Action', esc(TRT[type])); }
+    else { out.warn.push('Kwallet does not know this Tron contract type.'); }
+    out.feeLimit = fl; out.exp = exp;
+    if (!out.hero) out.hero = { l: out.title, a: out.value ? fmt(out.value, 6, 6) + ' TRX' : '0 TRX', raw: out.value || 0n };
+
+    if (exp) out.rows += kv('Valid until', new Date(exp).toLocaleTimeString());
+    return out;
+  }
+
+  /* ---------- page ---------- */
+  /* #80: solid, low-noise sheet. Flat surfaces, one accent, no gradients; amount, counterparty, fee and risk first */
+  function dappCss() {
+    if (document.getElementById('kss-dcss')) return;
+    var st = document.createElement('style'); st.id = 'kss-dcss';
+    st.textContent = '.kss-src{display:flex;align-items:center;gap:8px;margin:2px 2px 10px;min-width:0;font:400 13px/18px RobotoE,system-ui;color:var(--text-muted)}' +
+      '.kss-src b{font-weight:600;color:var(--text);white-space:nowrap}.kss-src span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}' +
+      '.kss-fav{width:22px;height:22px;border-radius:6px;flex:0 0 auto;object-fit:cover}.kss-favl{display:inline-grid;place-items:center;background:var(--bg-input);color:var(--text);font:700 12px/1 RobotoE,system-ui}' +
+      '.kss-hero2{text-align:center;padding:14px 8px 16px;margin:0 0 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:16px}' +
+      '.kss-hl{font:500 13px/18px RobotoE,system-ui;color:var(--text-muted);margin-bottom:4px}' +
+      '.kss-hero2 .kss-amt{font:700 30px/1.15 RobotoE,system-ui;letter-spacing:-.6px}.kss-hero2 .kss-amt.kss-sm{font-size:20px;letter-spacing:-.2px}.kss-hero2 .kss-amt small{font:500 13px RobotoE,system-ui;color:var(--text-muted)}' +
+      '.kss-hero2 .kss-usd{justify-content:center;margin-top:6px}' +
+      '.kss-mono{font:500 13.5px/19px RobotoMonoE,monospace;letter-spacing:.1px}' +
+      '.kss-fee{display:flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums}.kss-fee b{font:600 15px/20px RobotoE,system-ui}.kss-fee small{color:var(--text-muted);font:400 12.5px/17px RobotoE,system-ui}' +
+      '.kss-cf{padding:4px 14px 12px;border-top:1px solid color-mix(in srgb,var(--border) 80%,transparent)}.kss-cf.off{display:none}' +
+      '.kss-cfr{display:flex;align-items:center;gap:10px;margin-top:8px}.kss-cfr span{flex:0 0 104px;color:var(--text-muted);font:500 13px/18px RobotoE,system-ui}' +
+      '.kss-cfr input{flex:1;min-width:0;height:40px;border:1px solid var(--border);border-radius:10px;background:var(--bg-input);color:var(--text);padding:0 10px;font:500 15px RobotoE,system-ui;font-variant-numeric:tabular-nums;text-align:right;outline:none}' +
+      '.kss-cfr input:focus{border-color:var(--text)}.kss-cfr em{flex:0 0 62px;font:400 12px RobotoE,system-ui;color:var(--text-muted);font-style:normal}' +
+      '.kss-cfm{margin-top:10px;font:400 12.5px/17px RobotoE,system-ui;color:var(--text-muted)}' +
+      '.kss-cfw{display:flex;gap:8px;align-items:flex-start;color:#a86f00;font:500 12.5px/17px RobotoE,system-ui}.kss-cfw:not(:empty){margin-top:8px}.kss-cfw svg{width:16px;height:16px;flex:0 0 auto;margin-top:1px}[data-theme="dark"] .kss-cfw{color:#f0c14b}' +
+      '.kss-risk{display:flex;align-items:center;gap:9px;padding:11px 14px;margin-bottom:8px;border-radius:12px;background:var(--bg-card);border:1px solid var(--border);font:500 13px/18px RobotoE,system-ui;color:var(--text-muted)}' +
+      '.kss-risk i{width:8px;height:8px;border-radius:50%;background:#1e9e5a;flex:0 0 auto}' +
+      '.kss-note p{margin:0}.kss-note p+p{margin-top:6px}' +
+      '.kss-det{margin:2px 0 8px}.kss-det summary{list-style:none;cursor:pointer;color:var(--text-muted);font:600 13px/18px RobotoE,system-ui;padding:10px 4px;display:flex;align-items:center;gap:6px}.kss-det summary::-webkit-details-marker{display:none}' +
+      '.kss-det summary:before{content:"";width:6px;height:6px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg);transition:transform .15s}.kss-det[open] summary:before{transform:rotate(45deg)}' +
+      '.kss-rawt{max-height:160px;overflow:auto;white-space:pre-wrap;font-size:11.5px}.kss-mg .kss-msg{max-height:200px;overflow:auto}';
+    document.head.appendChild(st);
+  }
+  function dappPage() {
+    var R = REQ, m = String(R.method || ''), c = DCH[m];
+    document.documentElement.classList.add('kw-sheet'); page.classList.add('kss-sh');
+    try { if (KwSign.sheet) KwSign.sheet(); } catch (e) {}
+    if (!c) return fail('Kwallet does not sign "' + m.slice(0, 40) + '" requests.', 'Only connect, message, typed-data and transaction requests on EVM networks, Solana and Tron are supported.');
+    if (R.chain !== c) return fail('Bad request.');
+    var inf, net;
+    if (c === 'evm') { inf = EVM[+R.chainId]; if (!inf) return fail('Unknown network (chain ' + esc(R.chainId) + ').'); net = 'eth'; }
+    else { inf = CHAIN[c]; net = inf.net; }
+    if (!isAddr(c, R.from)) return fail('The account address is not valid.');
+    var rec = findPub(R.from, net);
+    if (!rec) return fail('No paired seed owns ' + short(R.from) + '.', 'Open Kwallet, go to <b>Settings &gt; Hwallet signer</b> and pair the seed that owns this address.');
+    DS = S = { dapp: true, R: R, c: c, m: m, info: inf, net: net, rec: rec, armed: false, site: host(R.origin) || 'this app', gsym: c === 'evm' ? inf.sym : inf.sym, gdec: c === 'evm' ? 18 : inf.dec, dec: c === 'evm' ? 18 : inf.dec, sym: inf.sym,
+      level: c !== 'evm' ? 'auto' : R.fee && R.fee.levels ? (R.fee.levels[R.fee.level] ? R.fee.level : Object.keys(R.fee.levels)[0]) : 'medium' };
+    dappCss();
+    var P = R.params || {};
+    if (m === 'eth_sendTransaction') {
+      var tx = P.tx || {}; if (tx.from && String(tx.from).toLowerCase() !== String(R.from).toLowerCase()) return fail('The transaction is from a different account.');
+      if (tx.to && !ethers.isAddress(tx.to)) return fail('The contract address is not valid.');
+      if (!R.fee || !R.fee.levels || !Object.keys(R.fee.levels).length) return fail('Missing network fee.');
+      if (!(+R.nonce >= 0)) return fail('Bad nonce.');
+      DS.view = decodeEvmCall(tx);
+    } else if (m === 'personal_sign') {
+      var u = hexB(P.message); if (!u) u = new TextEncoder().encode(String(P.message || ''));
+      DS.msg = u; DS.text = utf8(u);
+    } else if (m === 'eth_signTypedData_v4') { DS.view = typedView(P.typedData); if (DS.view.err) return fail(DS.view.err); }
+    else if (m === 'solana_signTransaction') { DS.view = solView(); if (DS.view.err) return fail(DS.view.err); }
+    else if (m === 'solana_signMessage') { var su = null; try { su = P.encoding === 'base64' ? b64u(P.message) : KwChains.util.b58dec(String(P.message || '')); } catch (e) {} if (!su || !su.length) return fail('The message could not be read.'); if (su.length > 8 && su[0] === 0xff && su[1] === 0x73) return fail('Kwallet will not sign an off-chain message that looks like a transaction.'); DS.msg = su; DS.text = utf8(su); }
+    else if (m === 'tron_signTransaction') { DS.view = trxView(); if (DS.view.err) return fail(DS.view.err); }
+    else if (m === 'tron_signMessage') { var tu = hexB(P.message); DS.msg = tu && /^0x/.test(String(P.message)) ? tu : new TextEncoder().encode(String(P.message || '')); DS.text = utf8(DS.msg); }
+    else if (m === 'kw_nearAccount') { if (rec.seedType && rec.seedType !== 'bip39') return fail('NEAR needs a BIP-39 seed.'); }
+    lastFeed = Date.now(); DS.total = Math.max(1000, R.expires - Date.now());
+    mount(); dappDraw(); arm(800);
+    setInterval(tickLive, 1000); setInterval(tickExp, 250);
+  }
+  /* #82: the custom network fee of Solana (priority fee / compute units) and Tron (fee limit) */
+  function solFee(R, v) {
+    var cus = DS.level === 'custom' && R.cf, pr = v.cuPrice, lim = BI(v.cuLimit);
+    if (cus) { if (U(R.cf.cup) != null) pr = U(R.cf.cup); if (U(R.cf.cul) != null) lim = U(R.cf.cul); }
+    return { fee: BI(5000 * v.nsig) + (pr * lim + 999999n) / 1000000n, pr: pr, lim: lim, custom: !!cus };
+  }
+  function solApply(tx, R, v) {
+    var f = solFee(R, v); if (!f.custom) return;
+    var msg = tx.message, set = function (ix, d) { if (ix < 0) return; if (msg.version === 'legacy') msg.instructions[ix].data = KwChains.util.b58enc(d); else msg.compiledInstructions[ix].data = d; };
+    var dp = new Uint8Array(9); dp[0] = 3; for (var i = 0; i < 8; i++) dp[1 + i] = Number((f.pr >> BI(8 * i)) & 255n); set(v.cbP, dp);
+    if (v.cbL >= 0) { var dl = new Uint8Array(5), l = Number(f.lim); dl[0] = 2; dl[1] = l & 255; dl[2] = (l >>> 8) & 255; dl[3] = (l >>> 16) & 255; dl[4] = (l >>> 24) & 255; set(v.cbL, dl); }
+  }
+  function dappCalc() {
+    var R = DS.R, m = DS.m, c = { err: '', amount: 0n, fee: null }, v = DS.view || {};
+    if (m === 'eth_sendTransaction') c = calcDappEvm();
+    else if (m === 'solana_signTransaction') {
+      var sf = solFee(R, v); c.custom = sf.custom; c.pr = sf.pr; c.lim = sf.lim;
+      if (sf.custom && R.cf.bad) c.err = 'Enter a valid network fee.'; else if (sf.custom && (sf.lim < 1000n || sf.lim > 1400000n)) c.err = 'Compute units must be between 1,000 and 1,400,000.';
+      c.fee = v.idx === 0 ? sf.fee : 0n; c.gbal = U(R.balance && R.balance.gas); c.amount = v.solOut || 0n;
+      if (!c.err && c.gbal != null && c.fee + c.amount > c.gbal) c.err = 'Not enough SOL for this transaction plus the network fee.';
+    } else if (m === 'tron_signTransaction') {
+      c.custom = DS.level === 'custom' && !!R.cf; c.fee = c.custom ? U(R.cf.fl) : v.feeLimit || 0n; c.atMost = true; c.gbal = U(R.balance && R.balance.gas); c.amount = v.value || 0n;
+      if (c.custom && (R.cf.bad || c.fee == null || c.fee <= 0n)) { c.err = 'Enter a valid fee limit.'; c.fee = 0n; } else if (c.custom && c.fee > 15000000000n) c.err = 'The fee limit can be at most 15,000 TRX.';
+    }
+    return c;
+  }
+  /* the fee editor: always in the DOM when the fee is editable (hidden until Custom), so typing never rebuilds the inputs */
+  function cfFields(c) {
+    var R = DS.R, T = R.cfTxt || {}, v = DS.view || {}, M = R.feeMin || {}, f = [], min = '', low = [];
+    if (DS.c === 'evm') {
+      if (c.legacy) f.push({ k: 'mf', l: 'Gas price', u: 'gwei', v: T.mf != null ? T.mf : gwei(c.gp) });
+      else { f.push({ k: 'mf', l: 'Max fee', u: 'gwei', v: T.mf != null ? T.mf : gwei(c.mf) }); f.push({ k: 'tip', l: 'Priority tip', u: 'gwei', v: T.tip != null ? T.tip : gwei(c.tip) }); }
+      f.push({ k: 'gas', l: 'Gas limit', u: 'units', v: T.gas != null ? T.gas : String(c.gas || '') });
+      var mm = U(M.maxFee), mt = U(M.tip), mg = U(M.gas);
+      if (mm != null || mt != null || mg != null) min = 'Network minimum now: ' + [mm != null ? (c.legacy ? 'gas price ' : 'max fee ') + gwei(mm) + ' gwei' : '', !c.legacy && mt != null ? 'tip ' + gwei(mt) + ' gwei' : '', mg != null ? 'gas ' + Number(mg).toLocaleString('en-US') : ''].filter(Boolean).join(' · ');
+      if (c.custom && !c.err) {
+        var me = c.legacy ? c.gp : c.mf;
+        if (mm != null && me < mm) low.push((c.legacy ? 'Gas price' : 'Max fee') + ' is below the current base fee. The transaction may wait or never confirm.');
+        if (!c.legacy && mt != null && c.tip < mt) low.push('The tip is below what the network takes now. It may confirm slowly.');
+        if (!c.legacy && c.tip > c.mf) low.push('The tip is higher than the max fee; Kwallet caps it at the max fee.');
+        if (mg != null && c.gas < mg) low.push('The gas limit is below the estimate. The transaction will probably fail and still cost a fee.');
+      }
+    } else if (DS.c === 'sol') {
+      f.push({ k: 'cup', l: 'Priority fee', u: 'µ-lam/CU', v: T.cup != null ? T.cup : String(c.pr) });
+      if (v.cbL >= 0) f.push({ k: 'cul', l: 'Compute units', u: 'CU', v: T.cul != null ? T.cul : String(c.lim) });
+      var mp = U(M.cuPrice); if (mp != null) min = 'Network minimum now: priority fee ' + mp.toString() + ' µ-lamports/CU';
+      if (c.custom && !c.err) { if (mp != null && c.pr < mp) low.push('The priority fee is below what recent blocks took. The transaction may be dropped.'); if (c.lim < BI(v.cuLimit)) low.push('Fewer compute units than the app asked for (' + v.cuLimit + '). The transaction may fail.'); }
+    } else if (DS.c === 'trx') {
+      f.push({ k: 'fl', l: 'Fee limit', u: 'TRX', v: T.fl != null ? T.fl : fmt(c.fee || 0n, 6, 6).replace(/,/g, '') });
+      var mf2 = U(M.feeLimit); if (mf2 != null) min = 'Network minimum now: ' + fmt(mf2, 6, 6) + ' TRX for the energy this call needs';
+      if (c.custom && !c.err && mf2 != null && c.fee < mf2) low.push('Below the energy this call needs now. It may fail and still burn TRX.');
+    }
+    if (!min) min = 'Waiting for the live network minimum…';
+    return { f: f, min: min, low: low };
+  }
+  function cfBlock(c) {
+    var x = cfFields(c), on = DS.level === 'custom';
+    return '<div class="kss-cf' + (on ? '' : ' off') + '" id="kss-cf">' + x.f.map(function (f) { return '<label class="kss-cfr"><span>' + f.l + '</span><input id="kss-cf-' + f.k + '" data-cf="' + f.k + '" inputmode="decimal" autocomplete="off" spellcheck="false" value="' + esc(f.v) + '"><em>' + f.u + '</em></label>'; }).join('') +
+      '<div class="kss-cfm">' + esc(x.min) + '</div><div class="kss-cfw">' + (on && x.low.length ? ICW + '<span>' + x.low.map(esc).join('<br>') + '</span>' : '') + '</div></div>';
+  }
+  function cfParse() {
+    var R = DS.R, T = R.cfTxt || {}, o = { bad: false }, num = function (t, d) { t = String(t == null ? '' : t).trim().replace(/,/g, ''); if (!/^\d*\.?\d+$|^\d+\.$/.test(t)) { o.bad = true; return null; } try { return ethers.parseUnits(t.replace(/\.$/, ''), d).toString(); } catch (e) { o.bad = true; return null; } };
+    if (DS.c === 'evm') { o.mf = num(T.mf, 9); if (T.tip != null) o.tip = num(T.tip, 9); o.gas = num(T.gas, 0); }
+    else if (DS.c === 'sol') { o.cup = num(T.cup, 0); if (T.cul != null) o.cul = num(T.cul, 0); }
+    else o.fl = num(T.fl, 6);
+    R.cf = o;
+  }
+  function riskLine(c, warns, okText) {
+    if (c.err) warns = [esc(c.err)].concat(warns);
+    if (!warns.length) return '<div class="kss-risk"><i></i><span>' + okText + '</span></div>';
+    return '<div class="kss-note kss-warn">' + ICW + '<div>' + warns.map(function (w) { return '<p>' + w + '</p>'; }).join('') + '</div></div>';
+  }
+  function dappDraw() {
+    var R = DS.R, m = DS.m, c = dappCalc(), P = R.prices || {}, gpx = +P.gasUsd || 0, v = DS.view || {}, ae = m === 'eth_sendTransaction' ? apprEff(R) : null;
+    DS.last = c; DS.key = m === 'eth_sendTransaction' ? String(c.fee) + '|' + R.nonce : '';
+    var chip = '<span class="kss-chip">' + logoImg(DS.info.logo, '', DS.info.name) + esc(DS.info.name) + '</span>';
+    var sname = String((R.site && R.site.name) || DS.site).slice(0, 40);
+    var icon = R.site && /^data:image\/(png|jpeg|webp|gif);base64,/.test(String(R.site.icon || '')) ? '<img class="kss-fav" alt="" src="' + esc(R.site.icon) + '">' : '<span class="kss-fav kss-favl">' + esc((sname.replace(/[^A-Za-z0-9]/g, '')[0] || '?').toUpperCase()) + '</span>';
+    var via = { walletconnect: 'WalletConnect', browser: 'Hwallet Browser', swap: 'Hwallet Swap', fees: 'Hwallet Fees accounts' }[R.via] || 'Hwallet';
+    var isTx = m === 'eth_sendTransaction' || /signTransaction$/.test(m), sym = DS.c === 'evm' ? DS.gsym : DS.c === 'sol' ? 'SOL' : 'TRX', fdec = DS.c === 'evm' ? 18 : DS.c === 'sol' ? 9 : 6;
+    var body = head(isTx ? (v.title || 'Transaction') : DM[m], chip) +
+      '<div class="kss-src">' + icon + '<b>' + esc(sname) + '</b><span>' + esc(DS.site) + ' · ' + via + '</span></div>';
+    if (R.live && m === 'eth_sendTransaction') body += '<div class="kss-livebar"><span class="kss-live' + (stale() ? ' stale' : '') + '" id="kss-live"><i></i><span id="kss-live-t">' + liveText() + '</span></span></div>';
+    var hero = '', rows = '', fee = '', warns = [], okText = 'No risks found · decoded by Kwallet', more = '', raw = '', notes = '';
+    /* 1. what it is: the amount (or the message) */
+    var h = v.hero;
+    if (ae) {
+      var ts = tokOf(v.appr.tok) ? tokOf(v.appr.tok).s : 'tokens';
+      h = { l: v.appr.p2 ? 'Permit2 allowance' : 'Allow spending', a: amtTok(ae.amt, v.appr.tok), sub: ae.changed ? 'Exact amount · the app asked for unlimited' : '' };
+      if (ae.unl) warns.push('<b>Unlimited approval.</b> ' + esc(DS.site) + ' could move all your ' + esc(ts) + ' at any time.' + (ae.canExact ? '' : ' Reject and ask the app for the exact amount if you are not sure.'));
+    }
+    if (h) hero = '<div class="kss-hero2"><div class="kss-hl">' + esc(h.l) + '</div><div class="kss-amt">' + h.a + '</div><div class="kss-usd">' + (h.sub || (h.raw != null && gpx ? usd(h.raw, fdec, gpx) : '')) + '</div></div>';
+    if (R.swap) rows += kv('Swap', esc(R.swap.text || ''), esc(R.swap.sub || '')) + (R.swap.fee ? kv('Hwallet fee', esc(R.swap.fee)) : '');
+    if (m === 'personal_sign' || m === 'solana_signMessage' || m === 'tron_signMessage') {
+      var sw = DS.text ? siwe(DS.text) : null;
+      hero = '<div class="kss-grp kss-mg"><div class="kss-r col"><span class="kss-l">Message</span><div class="kss-msg">' + esc(DS.text != null ? DS.text : '0x' + bhex(DS.msg)) + '</div></div></div>';
+      if (sw) { if (sw.domain !== DS.site) warns.push('This sign-in message is for <b>' + esc(sw.domain) + '</b>, but the request comes from <b>' + esc(DS.site) + '</b>. It may be a phishing attempt.'); rows += kv('Sign in to', esc(sw.domain)); }
+      rows += addrKv('Account', R.from, esc(DS.rec.label) + ' · #' + DS.rec.index);
+      if (DS.text == null) warns.push('This message is not readable text. Only sign it if you trust ' + esc(DS.site) + '.');
+      okText = 'Free · signing a message sends no funds';
+    } else if (m === 'eth_signTypedData_v4') {
+      rows += v.rows + addrKv('Account', R.from, esc(DS.rec.label) + ' · #' + DS.rec.index); warns = warns.concat(v.warn);
+      okText = 'Free · this signature sends no funds by itself';
+      raw = JSON.stringify(v.obj, null, 1);
+    } else if (m === 'eth_sendTransaction') {
+      var tx = (R.params || {}).tx || {};
+      if (ae && ae.canExact) rows += '<div class="kss-r"><span class="kss-l">Allowance</span><span class="kss-seg" role="radiogroup"><button type="button" data-al="exact" class="' + (ae.mode === 'exact' ? 'on' : '') + '">Exact</button><button type="button" data-al="app" class="' + (ae.mode === 'app' ? 'on' : '') + '">Unlimited</button></span></div>';
+      rows += v.rows;
+      if (c.value > 0n && !(h && h.raw != null)) rows += kv('Value', fmt(c.value, 18, 8) + ' ' + esc(DS.gsym), usd(c.value, 18, gpx));
+      more += addrRow('From', esc(DS.rec.label) + ' · #' + DS.rec.index, R.from) + kv('Network', esc(DS.info.name), 'Chain ' + esc(R.chainId) + ' · nonce ' + esc(R.nonce)) + (v.method ? kv('Method', '<span class="kss-mono">' + esc(v.method.split('(')[0]) + '</span>', esc(v.method.length > 60 ? v.method.slice(0, 57) + '…' : v.method)) : '') +
+        kv('Gas limit', c.gas != null ? Number(c.gas).toLocaleString('en-US') : '—', c.legacy ? 'Gas price ' + gwei(c.gp) + ' gwei' : 'Max fee ' + gwei(c.mf) + ' · tip ' + gwei(c.tip) + ' gwei');
+      warns = warns.concat(v.warn);
+      if (R.sim && R.sim.error) warns.push('Simulation failed: ' + esc(String(R.sim.error).slice(0, 160)) + '. This transaction will probably fail.');
+      raw = JSON.stringify({ to: tx.to, value: tx.value || '0x0', data: ae ? ae.data : tx.data || '0x', gas: String(c.gas) }, null, 1);
+      okText = v.blind ? 'Review the app before signing' : 'No risks found · decoded by Kwallet';
+    } else if (m === 'solana_signTransaction') {
+      rows += v.rows; warns = warns.concat(v.warn);
+      more += addrRow('Account', esc(DS.rec.label) + ' · #' + DS.rec.index, R.from) + '<div class="kss-r col"><span class="kss-l">What it does</span><ol class="kss-ins">' + v.ins.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ol></div>';
+      raw = (R.params || {}).tx;
+    } else if (m === 'tron_signTransaction') {
+      rows += v.rows; warns = warns.concat(v.warn);
+      more += addrRow('Account', esc(DS.rec.label) + ' · #' + DS.rec.index, R.from) + kv('Type', esc(v.type));
+      raw = (R.params || {}).tx.raw_data_hex;
+    } else if (m === 'kw_nearAccount') {
+      hero = '<div class="kss-hero2"><div class="kss-hl">NEAR account</div><div class="kss-amt kss-sm">Public account only</div><div class="kss-usd">No key leaves Kwallet</div></div>';
+      rows += addrKv('From seed of', R.from, esc(DS.rec.label) + ' · #' + DS.rec.index) + kv('Path', "m/44'/397'/0'", 'Same as Meteor and other NEAR wallets');
+      okText = 'Kwallet gives Hwallet the public NEAR account of this seed so fees can be withdrawn to it';
+    }
+    /* 3. network fee, with Slow/Normal/Fast (EVM) or the app's fee, and Custom (#82) */
+    if (isTx) {
+      var ed = DS.c === 'evm' || DS.c === 'trx' || (DS.c === 'sol' && v.feeEdit), keys, lab = { slow: 'Slow', medium: 'Normal', fast: 'Fast', auto: 'App', custom: 'Custom' };
+      if (DS.c === 'evm') { var lv = R.fee.levels; keys = ['slow', 'medium', 'fast'].filter(function (k) { return lv[k]; }); } else keys = ['auto'];
+      if (ed) keys = keys.concat(['custom']);
+      var seg = keys.length > 1 ? '<span class="kss-seg" role="radiogroup">' + keys.map(function (k) { return '<button type="button" data-lv="' + k + '" class="' + (k === DS.level ? 'on' : '') + '">' + lab[k] + '</button>'; }).join('') + '</span>' : '';
+      var fv = c.fee != null ? fmt(c.fee, fdec, fdec) + ' ' + sym : '—', fs = c.fee != null ? usd(c.fee, fdec, gpx) : '';
+      if (DS.c === 'sol' && v.idx !== 0) fs = 'Paid by someone else';
+      if (c.atMost) fs = (DS.c === 'trx' ? 'Fee limit · usually much less is used' : 'At most') + (fs ? ' · ' + fs : '');
+      fee = '<div class="kss-grp"><div class="kss-r col"><div class="kss-rh"><span class="kss-l">Network fee</span>' + seg + '</div><div class="kss-fee"><b>' + fv + '</b><small>' + fs + '</small></div></div>' + (ed ? cfBlock(c) : '');
+      if (c.gbal != null) { var after = c.err ? null : c.gbal - c.amount - (DS.c === 'sol' && v.idx !== 0 ? 0n : c.fee); fee += kv('Balance', fmt(c.gbal, fdec, 6) + ' ' + sym, after != null && after >= 0n ? (c.atMost ? 'After: at least ' : 'After: about ') + fmt(after < 0n ? 0n : after, fdec, 6) + ' ' + sym : ''); }
+      fee += '</div>';
+    }
+    if (stale() && m === 'eth_sendTransaction') notes += '<div class="kss-note kss-upd">' + ICR + '<div><b>Waiting for live data.</b> Keep Hwallet open and online. Signing is paused until fresh values arrive.</div></div>';
+    if (notice) notes += '<div class="kss-note kss-upd">' + ICR + '<div>' + notice + '</div></div>';
+    /* 4. the risk line; 5. everything else folded into Details */
+    var full = DS.full || {}, fk = Object.keys(full);
+    var det = more + fk.map(function (k) { return full[k]; }).join('') + (raw ? '<div class="kss-r col"><span class="kss-l">Raw data</span><div class="kss-ab kss-rawt">' + esc(raw) + '</div></div>' : '');
+    var dets = det ? '<details class="kss-det" id="kss-det"' + (DS.detOpen ? ' open' : '') + '><summary>Details</summary><div class="kss-grp">' + det + '</div></details>' : '';
+    body += hero + (rows ? '<div class="kss-grp">' + rows + '</div>' : '') + fee + notes + riskLine(c, warns, okText) + dets;
+    var sc = $('kss-sc'), top = sc ? sc.scrollTop : 0;
+    if (!$('kss-foot')) {
+      page.innerHTML = '<div class="kss-panel"><div class="kss-grab"></div><div class="kss-scroll" id="kss-sc">' + body + '</div><div class="kss-foot" id="kss-foot"><div class="kss-exp" id="kss-exp"><span id="kss-exp-t"></span><span class="kss-eb"><i id="kss-exp-b"></i></span></div><div class="kss-act"><button type="button" class="kss-no" id="kss-no">Reject</button>' +
+        '<button type="button" class="kss-go" id="kss-go" disabled><i class="kss-fill"></i><span>' + (m === 'kw_nearAccount' ? 'Hold to share' : 'Hold to sign') + '</span></button></div></div></div>';
+      $('kss-no').onclick = function () { if (!busy) finish({ status: 'rejected' }); };
+      hold($('kss-go'));
+    } else { morph($('kss-sc'), body); if ($('kss-sc').scrollTop !== top) $('kss-sc').scrollTop = top; }
+    var dd = $('kss-det'); if (dd) dd.ontoggle = function () { DS.detOpen = dd.open; };
+    page.querySelectorAll('[data-lv]').forEach(function (b) { b.onclick = function () {
+      var x = b.getAttribute('data-lv'); if (x === DS.level || busy) return;
+      if (x === 'custom' && !DS.R.cfTxt) { var T = {}; cfFields(DS.last).f.forEach(function (f) { T[f.k] = String(f.v).replace(/,/g, ''); }); DS.R.cfTxt = T; }
+      DS.level = x; if (x === 'custom') cfParse(); buzz(8); notice = ''; dappDraw(); arm(450);
+    }; });
+    page.querySelectorAll('[data-al]').forEach(function (b) { b.onclick = function () { var x = b.getAttribute('data-al'); if (busy || x === (apprEff(DS.R) || {}).mode) return; DS.R.allowMode = x; buzz(8); dappDraw(); arm(450); }; });
+    page.querySelectorAll('input[data-cf]').forEach(function (i) { i.oninput = function () { if (busy) return; DS.R.cfTxt = DS.R.cfTxt || {}; DS.R.cfTxt[i.getAttribute('data-cf')] = i.value; cfParse(); dappDraw(); arm(450); }; });
+    tickExp(); syncBtn();
+  }
+  function dappFeed(f) {
+    var R = DS.R, before = DS.key;
+    if (f.fee && f.fee.levels && Object.keys(f.fee.levels).length) { R.fee.levels = f.fee.levels; if (DS.level !== 'custom' && !R.fee.levels[DS.level]) DS.level = R.fee.levels.medium ? 'medium' : Object.keys(R.fee.levels)[0]; }
+    if (f.balance) R.balance = f.balance; if (f.prices) R.prices = f.prices; if (f.feeMin) R.feeMin = f.feeMin;
+    if (f.nonce != null && +f.nonce >= 0) R.nonce = +f.nonce; if (f.gasLimit) R.gasLimit = f.gasLimit; if (f.l1Fee != null) R.l1Fee = f.l1Fee;
+    var c = dappCalc(), key = DS.m === 'eth_sendTransaction' ? String(c.fee) + '|' + R.nonce : '';
+    if (key !== before && DS.last) { notice = '<b>Network fee updated</b> to ' + fmt(c.fee, DS.gdec, 8) + ' ' + esc(DS.gsym) + '. Check it, then hold again.'; buzz([12, 40, 12]); dappDraw(); arm(700); }
+    else dappDraw();
+  }
+  function slip10(seedHex, path) {
+    var I = ethers.getBytes(ethers.computeHmac('sha512', ethers.toUtf8Bytes('ed25519 seed'), '0x' + seedHex));
+    path.forEach(function (ix) {
+      var d = new Uint8Array(37); d[0] = 0; d.set(I.slice(0, 32), 1); var h = (ix | 0x80000000) >>> 0; d[33] = h >>> 24; d[34] = (h >>> 16) & 255; d[35] = (h >>> 8) & 255; d[36] = h & 255;
+      I = ethers.getBytes(ethers.computeHmac('sha512', I.slice(32), d));
+    });
+    return I.slice(0, 32);
+  }
+  window.__kwSlip10 = slip10;
+  async function dappProceed(snap) {
+    if (busy || done) return;
+    if (Date.now() > DS.R.expires) return finish({ status: 'expired' });
+    setBusy(true, 'Signing…');
+    try {
+      var sec = await getSecret();
+      if (!sec) { setBusy(false); buzz(8); return; }
+      var R = snap.R, m = DS.m, P = R.params || {}, out = { status: 'signed', method: m };
+      await new Promise(function (r) { setTimeout(r, 16); });
+      if (m === 'kw_nearAccount') {
+        var mn = String(sec.m || '').trim().toLowerCase().split(/\s+/).join(' ');
+        var sk = slip10(getBip39SeedHex(mn, sec.p || ''), [44, 397, 0]), pub = KwChains.util.edPub(sk); sk = null;
+        out.result = { account: bhex(pub), publicKey: 'ed25519:' + KwChains.util.b58enc(pub) };
+        deriveKey(sec, 'eth');
+      } else if (DS.c === 'evm') {
+        var pk = deriveKey(sec, 'eth'), w = new ethers.Wallet(pk); pk = null;
+        if (m === 'personal_sign') out.result = await w.signMessage(DS.msg);
+        else if (m === 'eth_signTypedData_v4') { var o = DS.view.obj, ty = Object.assign({}, o.types); delete ty.EIP712Domain; out.result = await w.signTypedData(o.domain, ty, o.message); }
+        else {
+          var save = DS.R, sl = DS.level; DS.R = R; DS.level = snap.level; var c = calcDappEvm(), ae = apprEff(R); DS.R = save; DS.level = sl;
+          if (c.err) throw new Error(c.err);
+          var tx = P.tx, t = { chainId: +R.chainId, nonce: +R.nonce, gasLimit: c.gas, to: tx.to ? ethers.getAddress(tx.to) : null, value: c.value, data: ae ? ae.data : tx.data || tx.input || '0x' };
+          if (ae && ae.changed) out.allowance = ae.amt.toString();
+          if (c.legacy) { t.type = 0; t.gasPrice = c.gp; } else { t.type = 2; t.maxFeePerGas = c.mf; t.maxPriorityFeePerGas = c.tip > c.mf ? c.mf : c.tip; }
+          var raw = await w.signTransaction(t); out.result = { raw: raw, hash: ethers.keccak256(raw) }; out.fee = c.fee.toString(); out.level = snap.level; if (c.custom) out.customFee = { maxFee: String(c.legacy ? c.gp : c.mf), tip: String(c.tip), gas: String(c.gas) };
+        }
+        w = null;
+      } else if (DS.c === 'sol') {
+        var kb = KwChains.util.b58dec(deriveKey(sec, 'sol'));
+        if (m === 'solana_signMessage') { out.result = { signature: KwChains.util.b58enc(KwChains.util.edSign(kb.slice(0, 32), DS.msg).sig) }; }
+        else {
+          var kp = solanaWeb3.Keypair.fromSecretKey(kb), stx = solanaWeb3.VersionedTransaction.deserialize(b64u(P.tx)), sl2 = DS.level; DS.level = snap.level;
+          try { solApply(stx, R, DS.view); if (DS.level === 'custom') out.customFee = { cuPrice: String(solFee(R, DS.view).pr), cuLimit: String(solFee(R, DS.view).lim) }; } finally { DS.level = sl2; }
+          stx.sign([kp]);
+          out.result = { signature: KwChains.util.b58enc(stx.signatures[DS.view.idx]), transaction: u8b64(stx.serialize()) };
+        }
+        kb.fill(0);
+      } else if (DS.c === 'trx') {
+        var ph = deriveKey(sec, 'trx'), key = new ethers.SigningKey('0x' + String(ph).replace(/^0x/, '')); ph = null;
+        var tid = DS.view ? DS.view.id : '', nraw = null;
+        if (m === 'tron_signTransaction' && snap.level === 'custom' && R.cf && U(R.cf.fl) > 0n) { nraw = trxSetFeeLimit(DS.view.raw, U(R.cf.fl)); tid = ethers.sha256(nraw).slice(2); }
+        var dig = m === 'tron_signTransaction' ? '0x' + tid : ethers.keccak256(ethers.concat([ethers.toUtf8Bytes('\x19TRON Signed Message:\n' + DS.msg.length), DS.msg]));
+        var sg = key.sign(dig); key = null;
+        var hx = sg.r.slice(2) + sg.s.slice(2) + (sg.v === 28 ? '1c' : '1b');
+        out.result = m === 'tron_signTransaction' ? { signature: hx, txID: tid } : { signature: '0x' + hx };
+        if (nraw) { out.result.raw_data_hex = bhex(nraw); out.result.fee_limit = U(R.cf.fl).toString(); }
+      }
+      sec = null;
+      try { pushActivity('act', 'Hwallet: ' + (DM[m] || m).toLowerCase() + ' for ' + DS.site + ' on ' + DS.info.name); } catch (e) {}
+      success(out, m === 'kw_nearAccount' ? 'Shared' : 'Signed');
+    } catch (e) { setBusy(false); fail('Signing failed: ' + (e && e.message || e)); }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', route); else route();
