@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   emulator:
-    name: Emulator flows (API ${{ matrix.api }} ${{ matrix.target }}, vibrate ${{ matrix.vib }}, ringer ${{ matrix.ringer }})
+    name: Emulator flows (API ${{ matrix.api }}, skip '${{ matrix.skip }}', xvfb ${{ matrix.xvfb }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
     # P0b: the emulator process died ~2 s after Hwallet launched (4/4 boots, API 33/34, host + guest GPU, -noaudio).
@@ -32,12 +32,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # attempts 1-2 (runs 38172608215, 38173266061): API 30 passes; API 34/35 die ~0.3 s after Hwallet's opening
-          # chime starts a Web Audio (AAudio) output stream, with or without guest Vulkan, haptics or -noaudio.
-          # ringer=silent keeps both apps' Web Audio closed (they only play sound in ringer mode "normal").
-          - { api: 30, target: google_apis, vib: block, ringer: silent, diag: false }
-          - { api: 34, target: google_apis, vib: block, ringer: silent, diag: false }
-          - { api: 34, target: google_apis, vib: allow, ringer: silent, diag: true }
+          # attempts 1-3 (runs 38172608215, 38173266061, 38173986730): API 30 passes; API 34/35 die ~0.5-1 s after
+          # Hwallet's first frame whatever the haptics, audio (ringer silent: no AAudio stream at all), guest Vulkan or
+          # GPU mode. Attempt 4 bisects the window tuning (skip = kw_e2e_skip extra, debug/E2E builds only) and tries a
+          # real (Xvfb) window instead of -no-window.
+          - { api: 30, skip: "", win: "-no-window", xvfb: false, diag: false }
+          - { api: 34, skip: "mode,perf", win: "-no-window", xvfb: false, diag: false }
+          - { api: 34, skip: "mode", win: "-no-window", xvfb: false, diag: true }
+          - { api: 34, skip: "", win: "", xvfb: true, diag: true }
     continue-on-error: ${{ matrix.diag }}
     steps:
       - uses: actions/checkout@v4
@@ -63,6 +65,13 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Xvfb (windowed emulator variant)
+        if: matrix.xvfb
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libxkbfile1 libxcb-cursor0 >/dev/null
+          Xvfb :99 -screen 0 1280x2100x24 >/tmp/xvfb.log 2>&1 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+
       - name: Python deps
         run: pip install websocket-client==1.8.0
 
@@ -73,15 +82,15 @@ jobs:
         with:
           api-level: ${{ matrix.api }}
           arch: x86_64
-          target: ${{ matrix.target }}
+          target: google_apis
           profile: pixel_2
           cores: 4
           ram-size: 4096M
           disk-size: 6000M
           heap-size: 512M
-          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -no-boot-anim -show-kernel -camera-back none -camera-front none
+          emulator-options: -no-snapshot ${{ matrix.win }} -gpu swiftshader_indirect -no-boot-anim -show-kernel -camera-back none -camera-front none
           disable-animations: true
-          script: VIB=${{ matrix.vib }} RINGER=${{ matrix.ringer }} bash ci/device_check.sh
+          script: VIB=block RINGER=silent SKIP=${{ matrix.skip }} bash ci/device_check.sh
 
       - name: Host diagnostics (dmesg, emulator crash reports)
         if: always()
@@ -99,6 +108,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: device-check-api${{ matrix.api }}-${{ matrix.target }}-vib${{ matrix.vib }}-${{ strategy.job-index }}
+          name: device-check-api${{ matrix.api }}-${{ strategy.job-index }}
           path: device-out/
           if-no-files-found: warn

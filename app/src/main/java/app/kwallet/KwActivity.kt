@@ -67,6 +67,7 @@ open class KwActivity : FragmentActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
+        E2eSkip.read(intent)
         // Edge-to-edge: the system draws its own bars (gesture pill, status icons) over the app's surface
         enableEdgeToEdge(
             // launch screen is lime: dark icons from the very first frame, never a flip on start
@@ -355,13 +356,13 @@ open class KwActivity : FragmentActivity() {
 fun tuneWebView(activity: Activity, webView: WebView) {
     // WebView is already GPU-composited; forcing a View hardware layer adds an extra
     // full-screen texture copy every frame (the main cause of scroll jank) - so don't.
-    if (Build.VERSION.SDK_INT >= 26) webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
+    if (Build.VERSION.SDK_INT >= 26 && !E2eSkip.has("prio")) webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
     // No offscreen pre-raster: Chrome doesn't do it, and on long pages it rasterises
     // everything up front (memory spikes, slower first paint, dropped frames).
     webView.settings.offscreenPreRaster = false
     webView.isVerticalScrollBarEnabled = false
     webView.overScrollMode = View.OVER_SCROLL_NEVER
-    if (Build.VERSION.SDK_INT >= 23) {
+    if (Build.VERSION.SDK_INT >= 23 && !E2eSkip.has("mode")) {
         @Suppress("DEPRECATION")
         val display = if (Build.VERSION.SDK_INT >= 30) activity.display else activity.windowManager.defaultDisplay
         val best = display?.supportedModes?.filter { it.physicalWidth == display.mode.physicalWidth }?.maxByOrNull { it.refreshRate }
@@ -376,4 +377,16 @@ fun tuneWebView(activity: Activity, webView: WebView) {
         @Suppress("DEPRECATION")
         webView.isForceDarkAllowed = false
     }
+}
+
+/** v3.97 P0b: CI emulator bisect switches. `am start -e kw_e2e_skip mode,perf,prio` skips those window/WebView tunings so
+ *  the device check can find which one takes the API 34 emulator down. Read only in debug or -PkwE2E=true builds;
+ *  store builds ignore the extra. */
+object E2eSkip {
+    private var skip: Set<String> = emptySet()
+    fun read(i: android.content.Intent?) {
+        if (!(BuildConfig.DEBUG || BuildConfig.E2E)) return
+        skip = (i?.getStringExtra("kw_e2e_skip") ?: return).split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    }
+    fun has(k: String) = k in skip
 }

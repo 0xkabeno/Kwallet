@@ -187,7 +187,8 @@ def toast(pg):
 
 def launch_w(pkg):
     comp = adb("shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER %s" % pkg).strip().splitlines()[-1]
-    out = adb('shell am start -W -n %s' % comp, 60)
+    skip = os.environ.get('SKIP', '').strip()
+    out = adb('shell am start -W -n %s%s' % (comp, (' -e kw_e2e_skip ' + skip) if skip else ''), 60)
     tt = re.search(r'TotalTime: (\d+)', out)
     return comp, (int(tt.group(1)) if tt else None), out.strip()[-300:]
 
@@ -213,7 +214,7 @@ def run():
     log('device', R['device'])
 
     # 1. launch Hwallet
-    R['vibrate'] = os.environ.get('VIB', 'block')
+    R['vibrate'] = os.environ.get('VIB', 'block'); R['e2e_skip'] = os.environ.get('SKIP', '')
     R['ringer'] = re.sub(r'\s+', ' ', adb('shell dumpsys audio | grep -m3 -i "ringer mode"'))[:200]
     R['appops_vibrate'] = {p: adb('shell appops get %s VIBRATE' % p).strip() for p in (H, K)}
     comp, tt, raw = launch_w(H)

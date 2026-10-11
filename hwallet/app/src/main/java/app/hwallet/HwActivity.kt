@@ -481,6 +481,7 @@ class HwActivity : FragmentActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
+        E2eSkip.read(intent)
         // Edge-to-edge: the system draws its own bars (gesture pill, status icons) over the app's surface
         enableEdgeToEdge(
             // launch screen is lime: dark icons from the very first frame, never a flip on start
@@ -787,11 +788,11 @@ class HwActivity : FragmentActivity() {
  *  v1.3 (#42): every call guarded on its own; the v1.2 forced View hardware layer is gone (WebView is already GPU-composited,
  *  a View layer adds a full-screen texture copy per frame and is a known source of trouble on new Android versions). */
 fun tuneWebView(activity: Activity, webView: WebView) {
-    try { if (Build.VERSION.SDK_INT >= 26) webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false) } catch (_: Throwable) {}
+    try { if (Build.VERSION.SDK_INT >= 26 && !E2eSkip.has("prio")) webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false) } catch (_: Throwable) {}
     try { webView.settings.offscreenPreRaster = false } catch (_: Throwable) {}
     try { webView.isVerticalScrollBarEnabled = false; webView.overScrollMode = View.OVER_SCROLL_NEVER } catch (_: Throwable) {}
     try {
-        if (Build.VERSION.SDK_INT >= 23) {
+        if (Build.VERSION.SDK_INT >= 23 && !E2eSkip.has("mode")) {
             @Suppress("DEPRECATION")
             val display = if (Build.VERSION.SDK_INT >= 30) activity.display else activity.windowManager.defaultDisplay
             val cur = display?.mode
@@ -810,7 +811,19 @@ fun tuneWebView(activity: Activity, webView: WebView) {
     try {
         if (Build.VERSION.SDK_INT >= 24) {
             val pm = activity.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
-            if (pm.isSustainedPerformanceModeSupported) activity.window.setSustainedPerformanceMode(true)
+            if (pm.isSustainedPerformanceModeSupported && !E2eSkip.has("perf")) activity.window.setSustainedPerformanceMode(true)
         }
     } catch (_: Throwable) {}
+}
+
+/** v3.97 P0b: CI emulator bisect switches. `am start -e kw_e2e_skip mode,perf,prio` skips those window/WebView tunings so
+ *  the device check can find which one takes the API 34 emulator down. Read only in debug or -PkwE2E=true builds;
+ *  store builds ignore the extra. */
+object E2eSkip {
+    private var skip: Set<String> = emptySet()
+    fun read(i: android.content.Intent?) {
+        if (!(BuildConfig.DEBUG || BuildConfig.E2E)) return
+        skip = (i?.getStringExtra("kw_e2e_skip") ?: return).split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    }
+    fun has(k: String) = k in skip
 }
