@@ -222,6 +222,140 @@ def launch_w(pkg):
     return comp, (int(tt.group(1)) if tt else None), out.strip()[-300:]
 
 
+# ---------------- Browser (P1) ----------------
+def tab_targets():
+    return [p for p in devtools_pages(H, 3) if p.get('type') == 'page' and 'appassets.androidplatform.net' not in p.get('url', '')]
+
+
+def page_info(t):
+    """readyState + visible text of a Browser tab page over DevTools (proves the native WebView loaded and is laid out)"""
+    try:
+        gp = Page(t['webSocketDebuggerUrl'])
+        i = gp.ev("({state: document.readyState, title: document.title, url: location.href, len: document.body ? document.body.innerText.length : 0, "
+                  "w: innerWidth, h: innerHeight, vis: document.visibilityState, eth: !!(window.ethereum && ethereum.isHwallet), "
+                  "sol: !!(window.solana && solana.isHwallet), trx: !!(window.tronWeb && tronWeb.isHwallet)})", 10) or {}
+        gp.close(); return i
+    except Exception as e:
+        return {'__err': repr(e)[:200]}
+
+
+def address(pg, text):
+    """a real tap on the address bar + adb typing + Enter, like a user (falls back to a JS submit if the focus missed)"""
+    xy = tap(pg, '#br-in'); time.sleep(1.0)
+    if pg.ev("document.activeElement && document.activeElement.id") == 'br-in':
+        pg.ev("(function(){var i=document.getElementById('br-in'); i.value=''; return 1})()")
+        adb("shell input text %s" % json.dumps(text).replace('&', '\\&')); time.sleep(0.5)
+        val = pg.ev("document.getElementById('br-in') && document.getElementById('br-in').value")
+        adb('shell input keyevent 66'); return 'adb-input %r' % val
+    pg.ev("(function(){var i=document.getElementById('br-in'); i.focus(); i.value=%s; var f=document.getElementById('br-f'); if(f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event('submit',{cancelable:true,bubbles:true})); return 1})()" % json.dumps(text))
+    return 'js-submit (tap at %r missed the focus)' % (xy,)
+
+
+def load_site(pg, name, text, match, limit=10.0, wait=40):
+    """type a site, time it until its page is complete with visible text, screenshot it; ok = loaded within `limit` s"""
+    clear_sysdlg()
+    how = address(pg, text); t0 = time.time(); found, info, t_ok = None, {}, None
+    while time.time() - t0 < wait:
+        for t in tab_targets():
+            if match in t.get('url', ''):
+                found = t; info = page_info(t)
+                if info.get('state') in ('interactive', 'complete') and info.get('len', 0) > 40 and info.get('h', 0) > 100:
+                    t_ok = round(time.time() - t0, 1)
+                break
+        if t_ok:
+            break
+        time.sleep(0.5)
+    time.sleep(1.5)  # let it paint, then look
+    bar = pg.ev("(function(){var p=document.getElementById('br-pr'); var t=hwBrowser.state(); var a=t.tabs.filter(function(x){return x.id===t.act})[0]; "
+                "return {progress_on: !!(p && p.classList.contains('on')), width: p && p.firstChild && p.firstChild.style.width, tab: a && a.url, title: a && a.title, ph: !!document.querySelector('.br-ph')}})()")
+    f = shot('h_browser_' + name)
+    step('h_browser_' + name, bool(t_ok) and t_ok <= limit, load_s=t_ok, limit_s=limit, typed=how, page=info, bar=bar,
+         targets=[t.get('url', '')[:100] for t in tab_targets()], toast=toast(pg), shot=f, logcat=logcat('h_browser_' + name))
+    return found, info
+
+
+def deep_text_js():
+    return ("(function(){var o=[];function w(n){if(!n)return;if(n.shadowRoot)w(n.shadowRoot);for(var c=n.firstChild;c;c=c.nextSibling){if(c.nodeType===3)o.push(c.data);else w(c);}}"
+            "w(document.body);return o.join(' ').replace(/\\s+/g,' ').slice(0,4000)})()")
+
+
+def browser(pg):
+    # Browser tab: real tap; afterwards no focus ring on the tab button (#B2)
+    xy = tap(pg, '[data-tab="browser"]'); time.sleep(2)
+    on_br = pg.ev("!!document.getElementById('br-host')")
+    how = 'tap'
+    if not on_br:
+        how = 'js-click (tap missed)'; pg.ev("document.querySelector('[data-tab=\"browser\"]').click()"); time.sleep(2)
+        on_br = pg.ev("!!document.getElementById('br-host')")
+    ring = pg.ev("(function(){var b=document.activeElement; if(!b||b===document.body) return 'none'; var s=getComputedStyle(b); return s.outlineStyle+' '+s.outlineWidth+' '+s.outlineColor})()")
+    icons = pg.ev("(function(){var im=[].slice.call(document.querySelectorAll('.br-start .br-tile img')); return {n: im.length, loaded: im.filter(function(i){return i.complete&&i.naturalWidth>0}).length, letters: document.querySelectorAll('.br-start .br-tile .lt').length}})()") or {}
+    f = shot('h_browser_tab')
+    step('h_browser_tab', on_br and icons.get('n', 0) >= 16 and icons.get('loaded') == icons.get('n') and (ring == 'none' or ring.startswith('none') or ' 0px' in ring),
+         how=how, tap=xy, focus_ring=ring, start_icons=icons, text=app_text(pg), shot=f, logcat=logcat('h_browser_tab'))
+    if not on_br:
+        return
+    # three real sites, each must show content within 10 s
+    load_site(pg, 'google', 'google.com', 'google.')
+    gi = None
+    for i in range(16):  # the site icon HwBrowser fetches for a non-bundled site (manifest > apple-touch-icon > favicon)
+        gi = pg.ev("(function(){try{var d=HwNative.brIcon('google.com');return d?d.length:0}catch(e){return -1}})()")
+        if gi and gi > 0: break
+        time.sleep(0.5)
+    step('h_browser_site_icon', bool(gi and gi > 100), google_icon_data_len=gi)
+    load_site(pg, 'uniswap', 'uniswap.org', 'uniswap.org')
+    load_site(pg, 'jupiter', 'jup.ag', 'jup.ag')
+    # Android Back = page back (jup.ag -> uniswap.org) while the page has history
+    clear_sysdlg(); adb('shell input keyevent 4'); time.sleep(4)
+    cur = pg.ev("(function(){var t=hwBrowser.state(); var a=t.tabs.filter(function(x){return x.id===t.act})[0]; return a && a.url})()") or ''
+    f = shot('h_browser_back')
+    step('h_browser_back', 'uniswap' in cur, tab_url=cur, still_in_h=pg.ev("!!document.getElementById('br-host')"), shot=f, logcat=logcat('h_browser_back'))
+    # start page with Most visited (tap the address bar), then History
+    tap(pg, '#br-in'); time.sleep(1.5)
+    mv = pg.ev("(function(){var t=[].slice.call(document.querySelectorAll('.br-mv .br-tile')); return t.map(function(x){return x.getAttribute('data-go')})})()") or []
+    f = shot('h_browser_most_visited')
+    step('h_browser_most_visited', isinstance(mv, list) and len(mv) >= 3, tiles=mv, shot=f)
+    adb('shell input keyevent 4'); time.sleep(0.8)  # keyboard down
+    if not rect(pg, '[data-br="hist"]'):
+        pg.ev("(function(){var i=document.getElementById('br-in'); if(i) i.focus(); return 1})()"); time.sleep(0.8)
+    tap(pg, '[data-br="hist"]'); time.sleep(1.5)
+    rows = pg.ev("[].slice.call(document.querySelectorAll('.br-hr')).map(function(r){return r.getAttribute('data-hgo')})") or []
+    f = shot('h_browser_history')
+    step('h_browser_history', isinstance(rows, list) and len(rows) >= 3, rows=rows[:8], shot=f)
+    adb('shell input keyevent 4'); time.sleep(1.2)
+    # injected wallet providers in a real dApp: Reown AppKit lab (multichain); connect starts in H without signing anything
+    found, info = load_site(pg, 'appkit', 'https://appkit-lab.reown.com/appkit?name=multichain-all', 'appkit-lab.reown.com', limit=25.0, wait=45)
+    detail = {'providers': {k: info.get(k) for k in ('eth', 'sol', 'trx')}}
+    if found:
+        try:
+            gp = Page(found['webSocketDebuggerUrl'])
+            detail['eip6963'] = gp.ev("new Promise(function(r){var g=[];window.addEventListener('eip6963:announceProvider',function(e){g.push(e.detail.info.name)});window.dispatchEvent(new Event('eip6963:requestProvider'));setTimeout(function(){r(g)},400)})", 5)
+            gp.ev("(function(){var b=document.querySelector('appkit-button,w3m-button'); if(!b) return 0; var x=b.shadowRoot&&b.shadowRoot.querySelector('button,wui-connect-button,appkit-connect-button'); (x||b).click(); return 1})()", 5)
+            time.sleep(4)
+            txt = gp.ev(deep_text_js(), 10) or ''
+            detail['modal_lists_hwallet'] = 'Hwallet' in txt if isinstance(txt, str) else None
+            fm = shot('h_browser_appkit_modal')
+            # ask for accounts the way AppKit's injected connector does; H shows its connect sheet over the page
+            gp.ev("window.__hwAcc=null; window.ethereum.request({method:'eth_requestAccounts'}).then(function(a){window.__hwAcc=a},function(e){window.__hwAcc='err '+e.code}); 1", 5)
+            sheet = None
+            for i in range(20):
+                sheet = pg.ev("!!document.querySelector('.sheet [data-ok]')")
+                if sheet: break
+                time.sleep(0.5)
+            fs = shot('h_browser_appkit_connect_sheet')
+            if sheet:
+                tap(pg, '.sheet [data-ok]'); time.sleep(3)
+            acc = gp.ev("window.__hwAcc", 5)
+            fa = shot('h_browser_appkit_connected')
+            gp.close()
+            detail.update(connect_sheet=sheet, accounts=acc, shots=[fm, fs, fa])
+        except Exception as e:
+            detail['__err'] = repr(e)[:300]
+    ok = bool(info.get('eth')) and bool(detail.get('connect_sheet')) and isinstance(detail.get('accounts'), list) and WATCH_ETH.lower() in [str(a).lower() for a in detail.get('accounts') or []]
+    step('h_browser_dapp_connect', ok, **detail)
+    # leave the Browser in a clean state for the next flows
+    pg.ev("(function(){var t=hwBrowser.state(); return t.tabs.length})()")
+
+
 # ---------------- flows ----------------
 def run():
     if not alive():
@@ -284,47 +418,16 @@ def run():
     time.sleep(3); sysdlg = clear_sysdlg()
     step('h_home_watch_setup', home, text=app_text(pg), toast=toast(pg), system_dialog=sysdlg, shot=f, logcat=logcat('h_home'))
 
-    # 3. Browser tab -> type google.com -> page loads in the native WebView
-    xy = tap(pg, '[data-tab="browser"]'); time.sleep(2)
-    on_br = pg.ev("!!document.getElementById('br-host')")
-    how = 'tap'
-    if not on_br:
-        how = 'js-click (tap missed)'; pg.ev("document.querySelector('[data-tab=\"browser\"]').click()"); time.sleep(2)
-        on_br = pg.ev("!!document.getElementById('br-host')")
-    f = shot('h_browser_tab')
-    step('h_browser_tab', on_br, how=how, tap=xy, text=app_text(pg), shot=f, logcat=logcat('h_browser_tab'))
+    # 2b. P1: the system battery-optimization dialog must never appear unasked (it used to pop up ~3-15 s after setup)
+    time.sleep(8)
+    d = adb('shell dumpsys window', 30)
+    foc = re.findall(r'mCurrentFocus=Window\{[0-9a-f]+ u\d+ ([^}\s]+)\}', d)
+    batt = [x for x in SYSDLG] + ([foc[-1]] if foc and not foc[-1].startswith(H) else [])
+    f = shot('h_no_battery_dialog')
+    step('h_no_battery_dialog', not batt, focus=foc[-1:] if foc else None, system_windows=batt, shot=f, logcat=logcat('h_no_batt'))
+    clear_sysdlg()
 
-    typed = 'none'
-    if on_br:
-        if not rect(pg, '#br-in'):  # start page may need a new tab first
-            pg.ev("(function(){var b=document.querySelector('[data-br-new],[data-new],.br-new'); if(b) b.click(); return !!b})()"); time.sleep(1)
-        xy = tap(pg, '#br-in'); time.sleep(1.2)
-        focused = pg.ev("document.activeElement && document.activeElement.id")
-        if focused == 'br-in':
-            adb("shell input text 'google.com'"); time.sleep(0.6)
-            val = pg.ev("document.getElementById('br-in') && document.getElementById('br-in').value")
-            adb('shell input keyevent 66'); typed = 'adb-input value=%r' % val
-        else:
-            pg.ev("(function(){var i=document.getElementById('br-in'); i.focus(); i.value='google.com'; var f=document.getElementById('br-f'); if(f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event('submit',{cancelable:true,bubbles:true})); return 1})()")
-            typed = 'js-submit (focus was %r after tapping %r)' % (focused, xy)
-        time.sleep(4)
-        shot('h_browser_loading')
-        found, info = None, {}
-        for i in range(25):
-            for p in devtools_pages(H, 3):
-                if p.get('type') == 'page' and 'google.' in p.get('url', ''):
-                    found = p; break
-            if found:
-                gp = Page(found['webSocketDebuggerUrl'])
-                info = gp.ev("({state: document.readyState, title: document.title, len: document.body ? document.body.innerText.length : 0, inputs: document.querySelectorAll('input,textarea').length, w: innerWidth, h: innerHeight, vis: document.visibilityState})") or {}
-                gp.close()
-                if info.get('state') == 'complete' and info.get('len', 0) > 20: break
-                found = None if i < 24 else found
-            time.sleep(1)
-        bar = pg.ev("(function(){var v=document.getElementById('br-v'), p=document.getElementById('br-pr'); var r=v&&v.getBoundingClientRect(); return {brv: r ? [Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)] : null, progress: p ? p.className + ' ' + (p.firstChild && p.firstChild.style.width) : null, ph: !!document.querySelector('.br-ph'), input: document.getElementById('br-in') && document.getElementById('br-in').value}})()")
-        targets = [{'url': p.get('url', '')[:120], 'title': p.get('title', '')[:60], 'attached': p.get('attached'), 'desc': p.get('description', '')[:160]} for p in devtools_pages(H, 3)]
-        f = shot('h_browser_google')
-        step('h_browser_google', bool(found) and info.get('len', 0) > 20, typed=typed, google=info, bar=bar, targets=targets, toast=toast(pg), shot=f, logcat=logcat('h_browser_google'))
+    browser(pg)
 
     # 4. Swap screen (from Home)
     tap(pg, '[data-tab="home"]'); time.sleep(2)

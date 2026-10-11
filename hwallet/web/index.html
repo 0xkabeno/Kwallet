@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; connect-src https: wss:; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob: https:; font-src data:; connect-src https: wss:; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none';">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>Hwallet</title>
@@ -682,6 +682,27 @@ body.md3 .scn-pl { background: var(--md-primary, var(--acc)); }
 .dk-r{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border-radius:16px}
 .dk-r .lg{width:36px;height:36px}
 .dk-r .an{font-size:16px}.dk-r .ap{font-size:13.5px}
+/* v1.7 (P1, #99): real dApp icons on the start page, history page, most visited */
+.br-tile img.br-fav{background:var(--card2);object-fit:cover}
+.br-mv{margin-bottom:6px}
+.br-note{color:var(--muted);font-size:13px;line-height:1.45;text-align:center;margin:18px 12px 0}
+.br-h .br-swh{padding-left:6px}
+.br-h .br-swh b{padding-left:2px}
+.br-hv{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 12px 24px}
+.br-hv .sech{margin:14px 6px 6px}
+.br-hl{background:var(--card);border-radius:16px;overflow:hidden}
+.br-hr{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 4px 8px 14px;cursor:pointer}
+.br-hr+.br-hr{border-top:1px solid var(--line)}
+.br-hr:active{background:var(--card2)}
+.br-hr .am{flex:1;min-width:0}
+.br-hr .an{font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.br-hr .ap{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.br-fav.br-hi{width:32px;height:32px;border-radius:10px;font-size:14px;background:var(--card2)}
+/* v1.7 (P1): no focus ring left on a button after a tap (old WebViews draw an orange box); keyboard focus still shows */
+button:focus,[data-tab]:focus,.br-card:focus,.br-hr:focus,a:focus{outline:none}
+button,[data-tab],a{-webkit-tap-highlight-color:transparent}
+button:focus-visible,a:focus-visible{outline:2px solid var(--accT);outline-offset:2px}
+#nav button:focus-visible,.br-tile:focus-visible{outline:none}
 
 /* ===== v1.6 wave C (#81/#82): Gem Wallet swap screen, Details / Slippage / Network fee sheets, token picker ===== */
 [data-theme="light"]{--swbg:#ffffff;--swcard:#f2f3f5;--swsh:#ffffff;--swrow:#f2f3f5;--swmut:#6b7177;--swblue:#3461ed;--swline:#ffffff;--swbtn:#e9eaee}
@@ -1057,6 +1078,8 @@ window.hwPlayOpening();
 (function () {
   'use strict';
   if (window.__hwProv) return;
+  /* v1.7 (P1): injected for every origin (Chromium has no "https only" origin rule); wallets exist on https top pages only */
+  if (location.protocol !== 'https:' || window.top !== window) return;
   var B = window.hwBridge;
   if (!B || typeof B.postMessage !== 'function') return;
   Object.defineProperty(window, '__hwProv', { value: 1 });
@@ -6888,6 +6911,7 @@ window.hwCrashPrompt = crashPrompt;
   IC.more = 'M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z';
   IC.close = 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z';
   IC.fwd = 'M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z';
+  IC.hist = 'M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z';
   IC.reload = 'M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z';
 
   /* ---------- the tab list (pure; tested headless) ---------- */
@@ -6921,6 +6945,32 @@ window.hwCrashPrompt = crashPrompt;
       return true;
     }
   };
+  /* v1.7 (P1): history (chronological, newest last) and most visited (visit count per site), both pure; tested headless */
+  var BRH = {
+    MAX: 500, SITES: 300,
+    host: function (u) { try { var x = new URL(u); return /^https?:$/.test(x.protocol) ? x.host.replace(/^www\./, '') : ''; } catch (e) { return ''; } },
+    add: function (H, M, u, title, now) {
+      var h = BRH.host(u); if (!h) return false;
+      u = String(u).slice(0, 2048); title = String(title || '').slice(0, 120); now = now || Date.now();
+      var last = H[H.length - 1];
+      if (last && last.u === u && now - last.ts < 30 * 60000) { last.ts = now; if (title) last.t = title; }
+      else { H.push({ u: u, t: title, ts: now }); if (H.length > BRH.MAX) H.splice(0, H.length - BRH.MAX); }
+      var r = M[h] || (M[h] = { u: '', t: '', n: 0, ts: 0 });
+      r.n++; r.ts = now; if (!r.u) r.u = u.replace(/^(https?:\/\/[^\/?#]+).*$/, '$1/');
+      if (title && (!r.t || /^https?:\/\/[^\/]+\/?$/.test(u))) r.t = title;
+      var ks = Object.keys(M);
+      if (ks.length > BRH.SITES) ks.sort(function (a, b) { return (M[a].n - M[b].n) || (M[a].ts - M[b].ts); }).slice(0, ks.length - BRH.SITES).forEach(function (k) { delete M[k]; });
+      return true;
+    },
+    title: function (H, M, u, title) {
+      if (!title) return false; title = String(title).slice(0, 120);
+      for (var i = H.length - 1; i >= 0 && i >= H.length - 5; i--) if (H[i].u === u) { H[i].t = title; break; }
+      var r = M[BRH.host(u)]; if (r && (!r.t || /^https?:\/\/[^\/]+\/?$/.test(u))) r.t = title;
+      return true;
+    },
+    del: function (H, i) { if (i >= 0 && i < H.length) { H.splice(i, 1); return true; } return false; },
+    top: function (M, n) { return Object.keys(M).map(function (k) { return { h: k, u: M[k].u, t: M[k].t, n: M[k].n, ts: M[k].ts }; }).sort(function (a, b) { return (b.n - a.n) || (b.ts - a.ts); }).slice(0, n || 8); }
+  };
   /* what the address bar turns into a page: a site, an https link, or a search */
   var BR_ENG = { ddg: ['DuckDuckGo', 'https://duckduckgo.com/?q='], google: ['Google', 'https://www.google.com/search?q='], brave: ['Brave', 'https://search.brave.com/search?q='] };
   function brUrl(s, eng) {
@@ -6932,6 +6982,10 @@ window.hwCrashPrompt = crashPrompt;
   }
 
   var BR = BRM.clean(jget('hw-br', null)), BRL = {}, brSaveT = 0, brInited = false;
+  var BRHI = jget('hw-br-hist', []), BRMV = jget('hw-br-mv', {}), brHSaveT = 0;
+  if (!Array.isArray(BRHI)) BRHI = []; if (!BRMV || typeof BRMV !== 'object' || Array.isArray(BRMV)) BRMV = {};
+  function brHSave() { clearTimeout(brHSaveT); brHSaveT = setTimeout(function () { jset('hw-br-hist', BRHI); jset('hw-br-mv', BRMV); }, 300); }
+  function brHClear() { BRHI = []; BRMV = {}; clearTimeout(brHSaveT); jset('hw-br-hist', BRHI); jset('hw-br-mv', BRMV); }
   function brSave(now) { clearTimeout(brSaveT); if (now) jset('hw-br', BR); else brSaveT = setTimeout(function () { jset('hw-br', BR); }, 400); }
   function brN() { return !!(window.HwNative && HwNative.brOpen); }
   function brNat(f) { try { if (window.HwNative && HwNative[f]) return HwNative[f].apply(HwNative, Array.prototype.slice.call(arguments, 1)); } catch (e) { console.error(e); } return null; }
@@ -6943,7 +6997,36 @@ window.hwCrashPrompt = crashPrompt;
   }
 
   /* ---------- the chrome ---------- */
-  var BRU = { sw: false, edit: false };
+  var BRU = { sw: false, edit: false, hist: false };
+  /* v1.7 (P1, #99): major dApps carry real icons bundled in the APK (assets/dapps/<key>.png; sources in NOTICE). Every other
+     site gets its own icon fetched once by HwBrowser (manifest > apple-touch-icon > favicon, cached on disk) and read
+     here by host; a letter tile shows only until it is there or when a site has none. */
+  var BR_APPS = [['uniswap', 'Uniswap', 'app.uniswap.org', 'uniswap.org'], ['jupiter', 'Jupiter', 'jup.ag'], ['raydium', 'Raydium', 'raydium.io'],
+    ['pancakeswap', 'PancakeSwap', 'pancakeswap.finance'], ['aave', 'Aave', 'app.aave.com', 'aave.com'], ['curve', 'Curve', 'curve.finance', 'curve.fi'],
+    ['1inch', '1inch', 'app.1inch.io', '1inch.io', '1inch.com'], ['opensea', 'OpenSea', 'opensea.io'], ['magiceden', 'Magic Eden', 'magiceden.io', 'magiceden.us'],
+    ['sunswap', 'SunSwap', 'sun.io', 'sunswap.com'], ['lido', 'Lido', 'stake.lido.fi', 'lido.fi'], ['orca', 'Orca', 'www.orca.so', 'orca.so'],
+    ['pumpfun', 'Pump.fun', 'pump.fun'], ['hyperliquid', 'Hyperliquid', 'app.hyperliquid.xyz', 'hyperliquid.xyz'], ['across', 'Across', 'app.across.to', 'across.to'],
+    ['stargate', 'Stargate', 'stargate.finance'], ['meteora', 'Meteora', 'app.meteora.ag', 'meteora.ag'], ['justlend', 'JustLend', 'app.justlend.org', 'justlend.org'],
+    ['kamino', 'Kamino', 'app.kamino.finance', 'kamino.finance', 'kamino.com'], ['drift', 'Drift', 'app.drift.trade', 'drift.trade']];
+  function brAppIcon(h) {
+    h = String(h || '').toLowerCase().replace(/^www\./, ''); if (!h) return '';
+    for (var i = 0; i < BR_APPS.length; i++) for (var j = 2; j < BR_APPS[i].length; j++) {
+      var d = BR_APPS[i][j].replace(/^www\./, ''); if (h === d || h.slice(-d.length - 1) === '.' + d) return 'dapps/' + BR_APPS[i][0] + '.png';
+    }
+    return '';
+  }
+  var BRI = {};
+  function brSiteIcon(h) {
+    h = String(h || '').toLowerCase().replace(/^www\./, ''); if (!h) return '';
+    var a = brAppIcon(h); if (a) return a;
+    if (!(h in BRI)) { var d = brNat('brIcon', h); BRI[h] = typeof d === 'string' && /^data:image\//.test(d) ? d : ''; }
+    return BRI[h];
+  }
+  function brIco(u, title, cls, fb) {
+    var h = brHostOf(u), src = brSiteIcon(h) || fb || '', p = h.split('.'), l = (p.length > 1 ? p[p.length - 2] : h) || title || '?';
+    if (src) return '<img class="' + cls + '" alt="" src="' + esc(src) + '">';
+    return '<span class="' + cls + ' lt">' + esc(String(l).slice(0, 1).toUpperCase()) + '</span>';
+  }
   function browserHtml() { return '<div id="br-host"></div>'; }
   function brEl() {
     var el = document.getElementById('br');
@@ -6951,11 +7034,7 @@ window.hwCrashPrompt = crashPrompt;
     return el;
   }
   function brHostOf(u) { try { var x = new URL(u); return x.host.replace(/^www\./, ''); } catch (e) { return ''; } }
-  function brFav(t, cls) {
-    if (t && t.icon) return '<img class="' + (cls || 'br-fav') + '" alt="" src="' + esc(t.icon) + '">';
-    var h = t ? brHostOf(t.url) : '', p = h.split('.'), l = (p.length > 1 ? p[p.length - 2] : h) || (t && t.title) || '?';
-    return '<span class="' + (cls || 'br-fav') + ' lt">' + esc(l.slice(0, 1).toUpperCase()) + '</span>';
-  }
+  function brFav(t, cls) { return brIco(t ? t.url : '', t && t.title, cls || 'br-fav', t && t.icon); }
   function brBarHtml() {
     var t = brCur(), L = t ? BRL[t.id] || {} : {}, sec = t && /^https:/.test(t.url), n = BR.tabs.length;
     return '<header class="br-bar"><form class="br-u" id="br-f" autocomplete="off"><span class="br-lk' + (sec ? ' s' : '') + '">' + sv(sec ? 'lock' : 'globe') + '</span>' +
@@ -6965,12 +7044,34 @@ window.hwCrashPrompt = crashPrompt;
       '<button class="ib" data-br="menu" aria-label="Menu">' + sv('more') + '</button></header>' +
       '<div class="br-pr' + (L.loading ? ' on' : '') + '" id="br-pr"><i style="width:' + Math.max(8, L.progress || 0) + '%"></i></div>';
   }
-  var BR_TOP = [['Uniswap', 'app.uniswap.org'], ['Jupiter', 'jup.ag'], ['Aave', 'app.aave.com'], ['Raydium', 'raydium.io'], ['SunSwap', 'sun.io'], ['OpenSea', 'opensea.io'], ['1inch', 'app.1inch.io'], ['Lido', 'stake.lido.fi']];
+  function brTile(u, name) { return '<button class="br-tile" data-go="' + esc(u) + '">' + brIco(u, name, 'br-fav') + '<span>' + esc(name) + '</span></button>'; }
   function brStartHtml() {
-    var S = brSites(), ns = Object.keys(S).length;
-    return '<div class="br-start"><div class="br-hero">' + sv('globe', 'ic br-hg') + '<b>Browser</b><span>Sites can ask to connect. Every signature still needs your hold in Kwallet.</span></div>' +
-      '<div class="sech">Popular apps</div><div class="br-top">' + BR_TOP.map(function (x) { return '<button class="br-tile" data-go="https://' + x[1] + '"><span class="br-fav lt">' + esc(x[0].slice(0, 1)) + '</span><span>' + esc(x[0]) + '</span></button>'; }).join('') + '</div>' +
-      '<div class="lst"><button class="br-row" data-br="sites"><span class="br-ri">' + sv('link') + '</span><span class="am"><span class="an">Connected sites</span><span class="ap">' + (ns ? ns + ' site' + (ns === 1 ? '' : 's') : 'None yet') + '</span></span></button></div></div>';
+    var S = brSites(), ns = Object.keys(S).length, mv = BRH.top(BRMV, 8), nh = BRHI.length;
+    return '<div class="br-start">' +
+      (mv.length ? '<div class="sech">Most visited</div><div class="br-top br-mv">' + mv.map(function (x) { var a = BR_APPS.filter(function (z) { return brAppIcon(x.h) === 'dapps/' + z[0] + '.png'; })[0]; return brTile(x.u, a ? a[1] : (x.t && x.t.length < 18 ? x.t : x.h)); }).join('') + '</div>' : '') +
+      '<div class="sech">Popular apps</div><div class="br-top">' + BR_APPS.map(function (x) { return brTile('https://' + x[2] + '/', x[1]); }).join('') + '</div>' +
+      '<div class="lst"><button class="br-row" data-br="hist"><span class="br-ri">' + sv('hist') + '</span><span class="am"><span class="an">History</span><span class="ap">' + (nh ? nh + ' page' + (nh === 1 ? '' : 's') : 'Nothing yet') + '</span></span></button>' +
+      '<button class="br-row" data-br="sites"><span class="br-ri">' + sv('link') + '</span><span class="am"><span class="an">Connected sites</span><span class="ap">' + (ns ? ns + ' site' + (ns === 1 ? '' : 's') : 'None yet') + '</span></span></button></div>' +
+      '<p class="br-note">Sites can ask to connect. Every signature still needs your hold in Kwallet.</p></div>';
+  }
+  /* history page: newest first, grouped by day, one tap opens, x deletes one, Clear all empties it */
+  function brDay(ts) {
+    var d = new Date(ts), n = new Date(), y = new Date(n.getFullYear(), n.getMonth(), n.getDate() - 1);
+    if (d.toDateString() === n.toDateString()) return 'Today';
+    if (d.toDateString() === y.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: d.getFullYear() === n.getFullYear() ? undefined : 'numeric' });
+  }
+  function brHistHtml() {
+    var out = '', day = '', n = BRHI.length;
+    for (var i = n - 1; i >= 0 && i >= n - 300; i--) {
+      var e = BRHI[i], dd = brDay(e.ts), tm = new Date(e.ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+      if (dd !== day) { out += (day ? '</div>' : '') + '<div class="sech">' + esc(dd) + '</div><div class="lst br-hl">'; day = dd; }
+      out += '<div class="br-hr" data-hgo="' + esc(e.u) + '">' + brIco(e.u, e.t, 'br-fav br-hi') + '<span class="am"><span class="an">' + esc(e.t || brHostOf(e.u)) + '</span><span class="ap">' + esc(brHostOf(e.u)) + ' \u00b7 ' + esc(tm) + '</span></span>' +
+        '<button class="br-cx" data-hdel="' + i + '" aria-label="Delete">' + sv('close') + '</button></div>';
+    }
+    if (day) out += '</div>';
+    return '<header class="br-swh"><button class="ib" data-br="hback" aria-label="Back">' + sv('back') + '</button><b>History</b>' + (n ? '<button class="br-txt" data-br="hclear">Clear all</button>' : '') + '</header>' +
+      '<div class="br-hv">' + (n ? out : '<div class="wc-empty br-none"><b>No history yet</b><span>Sites you open in the Browser show here.</span></div>') + '</div>';
   }
   function brSwHtml() {
     var n = BR.tabs.length;
@@ -6985,12 +7086,13 @@ window.hwCrashPrompt = crashPrompt;
   function brPaint() {
     var el = brEl(); if (el.hidden) return;
     var t = brCur();
-    if (BRU.sw) el.innerHTML = '<div class="br-sw">' + brSwHtml() + '</div>';
+    if (BRU.hist) el.innerHTML = '<div class="br-sw br-h">' + brHistHtml() + '</div>';
+    else if (BRU.sw) el.innerHTML = '<div class="br-sw">' + brSwHtml() + '</div>';
     else el.innerHTML = brBarHtml() + '<div class="br-v" id="br-v">' + (t && t.url && !BRU.edit ? '<div class="br-ph">' + brFav(t, 'br-favb') + '<span>' + esc(t.title || brHostOf(t.url)) + '</span></div>' : brStartHtml()) + '</div>';
     brPlace();
   }
   function brPaintBar() {
-    var el = brEl(); if (el.hidden || BRU.sw || BRU.edit) return;
+    var el = brEl(); if (el.hidden || BRU.sw || BRU.edit || BRU.hist) return;
     var t = brCur(), L = t ? BRL[t.id] || {} : {}, pr = document.getElementById('br-pr');
     if (pr) { pr.classList.toggle('on', !!L.loading); pr.firstChild.style.width = Math.max(8, L.progress || 0) + '%'; }
     var i = document.getElementById('br-in'); if (i && document.activeElement !== i) i.value = t ? brHostOf(t.url) || t.url : '';
@@ -7002,7 +7104,7 @@ window.hwCrashPrompt = crashPrompt;
   function brCovered() { return !!document.querySelector('.sheet-ov, .kwd-ov') || (window.hwScanner && hwScanner.isOpen && hwScanner.isOpen()); }
   function brPlace() {
     var el = document.getElementById('br'), t = brCur(), v = document.getElementById('br-v');
-    var want = el && !el.hidden && t && t.url && !BRU.sw && !BRU.edit && v && !brCovered();
+    var want = el && !el.hidden && t && t.url && !BRU.sw && !BRU.edit && !BRU.hist && v && !brCovered();
     if (!want) { if (brShown !== 'hidden') { brNat('brHide'); brShown = 'hidden'; } return; }
     var r = v.getBoundingClientRect(), top = Math.round(r.top), bot = Math.max(0, Math.round(window.innerHeight - r.bottom)), key = t.id + ':' + top + ':' + bot;
     if (brShown === key) return;
@@ -7014,7 +7116,7 @@ window.hwCrashPrompt = crashPrompt;
     brNat('brOpen', t.id, t.url || '', t.scroll || 0);
   }
   function brMount() { var el = brEl(); if (el.hidden) { el.hidden = false; } BRU.edit = false; brPaint(); }
-  function brUnmount() { var el = document.getElementById('br'); if (!el || el.hidden) return; el.hidden = true; BRU.sw = false; BRU.edit = false; brNat('brHide'); brShown = 'hidden'; }
+  function brUnmount() { var el = document.getElementById('br'); if (!el || el.hidden) return; el.hidden = true; BRU.sw = false; BRU.edit = false; BRU.hist = false; brNat('brHide'); brShown = 'hidden'; }
   var brMo = new MutationObserver(function () { if (V.v === 'browser') brPlace(); });
   brMo.observe(document.body, { childList: true });
   window.addEventListener('resize', function () { if (V.v === 'browser') brPlace(); });
@@ -7023,9 +7125,10 @@ window.hwCrashPrompt = crashPrompt;
   function brGo(u) {
     var url = brUrl(u, brEng()); if (!url) { toast('That link cannot be opened here'); return; }
     var t = brCur();
-    BRU.edit = false; BRU.sw = false;
-    if (!t) { var id = BRM.add(BR, url); brSave(true); brPaint(); return id; }
+    BRU.edit = false; BRU.sw = false; BRU.hist = false;
+    if (!t) { var id = BRM.add(BR, url); BRL[id] = { loading: true, progress: 10 }; brSave(true); brPaint(); return id; }
     BRM.update(BR, t.id, { url: url }); brSave();
+    BRL[t.id] = Object.assign(BRL[t.id] || {}, { loading: true, progress: 10 });
     if (BRL[t.id] && BRL[t.id].open) brNat('brLoad', t.id, url); else brOpenNative(t);
     brPaint(); return t.id;
   }
@@ -7040,8 +7143,13 @@ window.hwCrashPrompt = crashPrompt;
     el.addEventListener('focusin', function (e) { if (e.target.id === 'br-in') { BRU.edit = true; var t = brCur(); e.target.value = t ? t.url : ''; e.target.select(); var v = document.getElementById('br-v'); if (v) v.innerHTML = brStartHtml(); brPlace(); } });
     el.addEventListener('focusout', function (e) { if (e.target.id === 'br-in') setTimeout(function () { if (document.activeElement && document.activeElement.id === 'br-in') return; if (!BRU.edit) return; BRU.edit = false; brPaint(); }, 150); });
     el.addEventListener('click', function (e) {
-      var b = e.target.closest('button, .br-card'); if (!b) return;
+      var b = e.target.closest('button, .br-card, .br-hr'); if (!b) return;
       var k = b.getAttribute('data-br');
+      if (b.hasAttribute('data-hdel')) { e.stopPropagation(); buzz(6); BRH.del(BRHI, +b.getAttribute('data-hdel')); brHSave(); brPaint(); return; }
+      if (b.hasAttribute('data-hgo')) { buzz(4); brGo(b.getAttribute('data-hgo')); return; }
+      if (k === 'hist') { buzz(4); var ii = document.getElementById('br-in'); if (ii) ii.blur(); BRU.hist = true; BRU.edit = false; BRU.sw = false; brPaint(); return; }
+      if (k === 'hback') { BRU.hist = false; brPaint(); return; }
+      if (k === 'hclear') { if (b.dataset.sure) { buzz([10, 30, 10]); brHClear(); brPaint(); toast('History cleared'); } else { b.dataset.sure = '1'; b.textContent = 'Clear all?'; setTimeout(function () { if (b.isConnected) { delete b.dataset.sure; b.textContent = 'Clear all'; } }, 2500); } return; }
       if (b.hasAttribute('data-close')) { e.stopPropagation(); buzz(6); brClose(b.getAttribute('data-close')); return; }
       if (b.hasAttribute('data-go')) { buzz(4); var i = document.getElementById('br-in'); if (i) i.blur(); brGo(b.getAttribute('data-go')); return; }
       if (b.classList.contains('br-card')) { buzz(4); brSelect(b.getAttribute('data-tab-id')); return; }
@@ -7059,6 +7167,7 @@ window.hwCrashPrompt = crashPrompt;
       '<button data-m="reload"' + (t ? '' : ' disabled') + ' aria-label="Reload">' + sv('reload') + '</button><button data-m="new" aria-label="New tab">' + sv('plus') + '</button></div>' +
       '<div class="lst">' + (t ? '<button class="br-row" data-m="copy"><span class="br-ri">' + sv('copy') + '</span><span class="am"><span class="an">Copy link</span><span class="ap">' + esc(short(t.url, 18)) + '</span></span></button>' +
       '<button class="br-row" data-m="ext"><span class="br-ri">' + sv('ext') + '</span><span class="am"><span class="an">Open in another browser</span></span></button>' : '') +
+      '<button class="br-row" data-m="hist"><span class="br-ri">' + sv('hist') + '</span><span class="am"><span class="an">History</span></span></button>' +
       '<button class="br-row" data-m="sites"><span class="br-ri">' + sv('link') + '</span><span class="am"><span class="an">Connected sites</span></span></button>' +
       '<button class="br-row" data-m="set"><span class="br-ri">' + sv('gear') + '</span><span class="am"><span class="an">Browser settings</span><span class="ap">Storage, search engine, clear all</span></span></button></div>', function (ov, close) {
       ov.addEventListener('click', function (e) {
@@ -7068,6 +7177,7 @@ window.hwCrashPrompt = crashPrompt;
         else if (m === 'copy') copy(t.url).then(function () { toast('Link copied'); });
         else if (m === 'ext') openExt(t.url);
         else if (m === 'sites') setTimeout(brSitesSheet, 200);
+        else if (m === 'hist') { BRU.hist = true; brPaint(); }
         else if (m === 'set') setTimeout(brSettings, 200);
       });
     });
@@ -7080,13 +7190,13 @@ window.hwCrashPrompt = crashPrompt;
       '<div class="br-sr"><span>Open tabs</span><b>' + BR.tabs.length + '</b></div></div>' +
       '<div class="lbl">Search engine</div><div class="seg br-eng">' + Object.keys(BR_ENG).map(function (k) { return '<button data-eng="' + k + '"' + (k === e0 ? ' class="on"' : '') + '>' + BR_ENG[k][0] + '</button>'; }).join('') + '</div>' +
       '<p class="hint">' + (capOn() ? 'Your mobile-data limit is on: pages load at that speed, and reopened tabs come from the phone first.' : 'Reopened tabs load from the phone first, so they use almost no data.') + '</p>' +
-      '<button class="btn wide br-clr" data-clr>' + sv('del') + ' Clear all</button><p class="hint">Closes every tab and deletes saved pages, cache and cookies. Connected sites stay until you revoke them.</p>', function (ov) {
+      '<button class="btn wide br-clr" data-clr>' + sv('del') + ' Clear all</button><p class="hint">Closes every tab and deletes saved pages, history, site icons, cache and cookies. Connected sites stay until you revoke them.</p>', function (ov) {
       ov.addEventListener('click', function (e) {
         var g = e.target.closest('[data-eng]');
         if (g) { jset('hw-br-eng', g.getAttribute('data-eng')); ov.querySelectorAll('[data-eng]').forEach(function (x) { x.classList.toggle('on', x === g); }); buzz(4); return; }
         var c = e.target.closest('[data-clr]'); if (!c) return;
         if (!c.dataset.sure) { c.dataset.sure = '1'; c.lastChild.textContent = ' Tap again to clear'; buzz(6); return; }
-        buzz([10, 30, 10]); BR.tabs.forEach(function (t) { brNat('brClose', t.id); }); brNat('brClearAll'); BR = BRM.fresh(); BRL = {}; brSave(true); brShown = '';
+        buzz([10, 30, 10]); BR.tabs.forEach(function (t) { brNat('brClose', t.id); }); brNat('brClearAll'); BR = BRM.fresh(); BRL = {}; BRI = {}; brHClear(); brSave(true); brShown = '';
         var x = brUsage(); ov.querySelector('#br-u1').textContent = brBytes(x.tabs); ov.querySelector('#br-u2').textContent = brBytes(x.cache);
         c.lastChild.textContent = ' Cleared'; c.disabled = true; toast('Browser data cleared'); brPaint();
       });
@@ -7240,20 +7350,29 @@ window.hwCrashPrompt = crashPrompt;
     if (e.t === 'gone') { if (BRL[e.id]) BRL[e.id].open = 0; if (e.id === BR.act && V.v === 'browser') { brShown = ''; brPlace(); } return; }
     if (e.t === 'nav') {
       BRM.update(BR, e.id, { url: e.url, title: e.title }); BRL[e.id] = Object.assign(BRL[e.id] || {}, { back: !!e.back, fwd: !!e.fwd, loading: !!e.loading, progress: +e.progress || 0, offline: !!e.offline });
+      if (!e.loading && !e.offline && /^https?:/.test(e.url || '')) {
+        if (BRL[e.id].hu !== e.url) { BRL[e.id].hu = e.url; if (BRH.add(BRHI, BRMV, e.url, e.title)) brHSave(); }
+        else if (e.title && BRH.title(BRHI, BRMV, e.url, e.title)) brHSave();
+      }
       brSave(); if (e.id === BR.act && V.v === 'browser') brPaintBar();
       if (e.offline && e.id === BR.act && !e.loading) toast('Offline copy. Pull down or reload to refresh');
-    } else if (e.t === 'icon') { BRM.update(BR, e.id, { icon: e.icon }); brSave(); }
+    } else if (e.t === 'icon') {
+      if (e.site && e.host) { BRI[e.host] = /^data:image\//.test(e.icon || '') ? e.icon : ''; if (BRU.sw || BRU.hist || BRU.edit) brPaint(); }
+      else { BRM.update(BR, e.id, { icon: e.icon }); brSave(); }
+    }
     else if (e.t === 'scroll') { BRM.update(BR, e.id, { scroll: e.y }); brSave(); }
   };
   /* Android back inside the Browser: switcher, address bar, then the page's own history */
   window.hwBrBack = function () {
+    if (BRU.hist) { BRU.hist = false; brPaint(); return true; }
     if (BRU.sw) { BRU.sw = false; brPaint(); return true; }
     if (BRU.edit) { var i = document.getElementById('br-in'); if (i) i.blur(); BRU.edit = false; brPaint(); return true; }
     var t = brCur(), L = t ? BRL[t.id] || {} : {};
     if (t && L.back) { brNat('brNav', t.id, 'back'); return true; }
     return false;
   };
-  window.hwBrowser = { BRM: BRM, url: brUrl, state: function () { return BR; }, live: function () { return BRL; }, go: brGo, newTab: brNew, select: brSelect, close: brClose, closeAll: brCloseAll, sites: brSites, revoke: brRevoke, ui: BRU };
+  window.hwBrowser = { BRM: BRM, url: brUrl, state: function () { return BR; }, live: function () { return BRL; }, go: brGo, newTab: brNew, select: brSelect, close: brClose, closeAll: brCloseAll, sites: brSites, revoke: brRevoke, ui: BRU,
+    H: BRH, hist: function () { return BRHI; }, mv: function () { return BRMV; }, appIcon: brAppIcon, apps: BR_APPS };
 
   /* ===================== v1.6 wave C (#58/#74/#75/#81/#82): Swap =====================
      Gem Wallet's swap screen. Quotes come from NEAR Intents (1Click), Jupiter (/build), LI.FI and SunSwap in parallel; the

@@ -241,6 +241,9 @@ class HwActivity : FragmentActivity() {
         fun brClearAll() { brw().clearAll() }
         @android.webkit.JavascriptInterface
         fun brUsage(): String = try { brw().usage() } catch (_: Throwable) { "{}" }
+        /** v1.7 (P1, #99): a site's cached icon (data: PNG, 96 px) by host, "" when none is on disk yet */
+        @android.webkit.JavascriptInterface
+        fun brIcon(host: String): String = if (host.length in 1..200) try { brw().iconData(host) } catch (_: Throwable) { "" } else ""
         @android.webkit.JavascriptInterface
         fun brReply(id: String, json: String) { if (json.length < 2_000_000) br?.reply(id, json) }
         @android.webkit.JavascriptInterface
@@ -413,11 +416,9 @@ class HwActivity : FragmentActivity() {
         if (!resumed()) { pendingLive = true; return }
         pendingLive = false
         HwLiveService.start(this, true)
-        /* the battery prompt once, a moment later and only if Hwallet is still in front */
-        val p = getSharedPreferences(HwLiveService.PREF, MODE_PRIVATE)
-        if (!batteryOk() && !p.getBoolean("askedBatt", false)) ui.postDelayed({
-            try { if (resumed() && !batteryOk() && !p.getBoolean("askedBatt", false)) { p.edit().putBoolean("askedBatt", true).apply(); askBatteryNow() } } catch (_: Throwable) {}
-        }, 4000)
+        /* v1.7 (P1): the system "Let app always run in background?" dialog is never shown unasked any more (it popped up over
+           Home after setup). It is requested only from an explicit tap: Settings > Battery optimization (whose row explains
+           why), and later from the WalletConnect background switch with an in-app explanation first (P3). */
     }
 
     private fun lightTick() {
@@ -519,6 +520,8 @@ class HwActivity : FragmentActivity() {
         web = WebView(this)
         web.setBackgroundColor(LIME)
         web.isHapticFeedbackEnabled = true
+        // v1.7 (P1): no system focus highlight over the page after a tap (buttons draw their own pressed state)
+        if (Build.VERSION.SDK_INT >= 26) web.defaultFocusHighlightEnabled = false
         with(web.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true

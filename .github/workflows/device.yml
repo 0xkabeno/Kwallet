@@ -9,6 +9,11 @@ on:
     branches: [main, "v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      diag:
+        description: "Also run the API 34 diagnostic entries (google_apis + google_atd; they crash the emulator host-side, ~15 runner-min each)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -28,16 +33,10 @@ jobs:
     # Audio in the apps); neither was the cause of the API 34 deaths but they keep the runs quiet and deterministic.
     strategy:
       fail-fast: false
+      # v3.97 P1: only API 30 runs on push/PR (required). The API 34 entries (qemu SIGSEGV on API 33+ under -no-window, see
+      # push3 P0b) run only from a manual dispatch with diag=true, so they stop burning minutes on every push.
       matrix:
-        include:
-          # attempts 1-5 (runs 38172608215, 38173266061, 38173986730, 38174850301, 38176089337): API 30 passes every
-          # time. API 33/34/35 lose the whole emulator process (qemu gone, nothing in its stdout, no kernel OOM line)
-          # ~0.5-1 s after a WebView app (Hwallet; once Kwallet) shows its first frame - with or without haptics, Web
-          # Audio, guest Vulkan, GPU mode, the display-mode request, on emulator 33.1.24 / 35.2.10 / 36.x / 37.2.12.
-          # Attempt 6: userspace OOM killer (systemd-oomd) stopped + journal captured; the headless ATD image.
-          - { api: 30, target: google_apis, diag: false }
-          - { api: 34, target: google_apis, diag: true }
-          - { api: 34, target: google_atd, diag: true }
+        include: ${{ fromJSON((github.event_name == 'workflow_dispatch' && inputs.diag) && '[{"api":30,"target":"google_apis","diag":false},{"api":34,"target":"google_apis","diag":true},{"api":34,"target":"google_atd","diag":true}]' || '[{"api":30,"target":"google_apis","diag":false}]') }}
     continue-on-error: ${{ matrix.diag }}
     steps:
       - uses: actions/checkout@v4

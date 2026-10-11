@@ -40,3 +40,28 @@ WalletConnect (v1.6): Hwallet bundles Reown WalletKit 1.6.0 and @walletconnect/c
 (Apache License 2.0, github.com/reown-com/walletkit and github.com/WalletConnect/walletconnect-monorepo) and their
 MIT-licensed dependencies (@noble/*, @scure/*, ox, es-toolkit and others), inlined offline into web/index.html.
 The relay socket is native; the Reown project ID is filled on the phone and never reaches the page.
+
+v1.7 Browser start page icons (hwallet/web/dapps/*.png, bundled offline, never hotlinked at runtime): each project's own
+app icon, resized to 128 px. They are trademarks of their owners, used only to label a link to that project's site;
+no affiliation or endorsement. Sources (fetched 2026-10-11):
+  Uniswap: https://cdn.app.uniswap.org/images/192x192_App_Icon.png
+  Jupiter: https://jup.ag/web-app-manifest-192x192.png
+  Raydium: https://raydium.io/favicon.ico
+  PancakeSwap: https://pancakeswap.finance/logo.png
+  Aave: https://app.aave.com/favicon-192.png
+  Curve: https://www.curve.finance/android-chrome-192x192.png
+  1inch: https://1inch.com/favicon/favicon-192x192.png
+  OpenSea: https://opensea.io/icons/icon-192x192.png
+  Magic Eden: https://raw.githubusercontent.com/trustwallet/assets/master/dapps/magiceden.io.png (Trust Wallet assets, MIT: github.com/trustwallet/assets, dapps/)
+  SunSwap (SUN.io): https://sun.io/favicon.ico
+  Lido: https://stake.lido.fi/favicon-192x192.png
+  Orca: https://raw.githubusercontent.com/trustwallet/assets/master/dapps/www.orca.so.png (Trust Wallet assets, MIT: github.com/trustwallet/assets, dapps/)
+  Pump.fun: https://pump.fun/icon1.png
+  Hyperliquid: https://app.hyperliquid.xyz/android-chrome-192x192.png
+  Across: https://across.to/logo-small.png
+  Stargate: https://stargate.finance/static/favicons/favicon-196x196.png
+  Meteora: https://app.meteora.ag/android/android-icon-192x192.png
+  JustLend: https://app.justlend.org/favicon.ico
+  Kamino: https://kamino.com/android-chrome-192x192.png
+  Drift: https://app.drift.trade/android-chrome-192x192.png
+Other sites' icons are fetched by the phone from the site itself on the first visit and cached locally.
