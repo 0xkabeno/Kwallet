@@ -169,6 +169,16 @@ On Android, open the APK and allow *Install unknown apps* once. Updates install 
 - **Check, then hold.** The sign page shows the decoded chain, amounts, recipient, fee and balance; a fee change re-arms the button; requests expire.
 - **Reproducible checks.** Every release runs 146 chain signer tests and 37 independent decode checks of Kwallet's signed output (ethers, @solana/web3.js, bitcoinjs-lib, ripple-binary-codec, cardano-serialization-lib, TronWeb, Sui SDK).
 
+### The sign sheet's trust boundary (v3.97)
+
+Kwallet's sign sheet opens over Hwallet as a translucent window in Hwallet's own task (an explicit, result-returning Android intent to `app.kwallet/.SignActivity`), so Hwallet stays visible and dimmed behind it and you come back to the exact same tab. Nothing about the offline model changes:
+
+- **What crosses:** one request (the unsigned transaction or message, the app's name, URL, a small data: icon, the fee levels and prices Hwallet fetched) goes in as an intent extra; one result (the signature or signed transaction, or "rejected") comes back. Live fee and price updates use a broadcast that only apps signed with the Kwallet key can send. The key never leaves Kwallet.
+- **What Kwallet trusts:** only the caller's identity (same signing certificate, checked on every request) and nothing it is told about the request's meaning. It decodes the raw transaction or message itself; app name, icon, "verified domain" and balance-change estimates from Hwallet are labels for you to judge, never inputs to what gets signed. A signed result is exactly what the sheet showed.
+- **Still no `INTERNET`:** Kwallet has no network permission. Hwallet may wake Kwallet's process (a signature-protected `app.kwallet.WARM` broadcast that only loads the WebView engine on a blank page) so the sheet opens quickly; it carries no data.
+- **The sheet cannot be covered:** other apps' overlays are hidden while it is open (Android 12+), touches through obscuring windows are ignored, and screenshots are blocked (`FLAG_SECURE`).
+- **Pairing codes are unchanged:** pairing by `kwallet-pair:` code or QR (public addresses only, e.g. from Kwallet on another phone) works as before and does not use any of this.
+
 See [SECURITY.md](SECURITY.md) to report a problem.
 
 ## Build from source

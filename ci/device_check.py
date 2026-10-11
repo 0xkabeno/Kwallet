@@ -346,25 +346,100 @@ def browser(pg):
             gp.ev("window.__hwAcc=null; window.ethereum.request({method:'eth_requestAccounts'}).then(function(a){window.__hwAcc=a},function(e){window.__hwAcc='err '+e.code}); 1", 5)
             sheet = None
             for i in range(20):
-                sheet = pg.ev("!!document.querySelector('.sheet [data-ok]')")
+                sheet = pg.ev("!!document.querySelector('.hp-sheet #hp-ok')")
                 if sheet: break
                 time.sleep(0.5)
             time.sleep(1.5)
-            vis = pg.ev("(function(){var r=document.querySelector('.sheet');if(!r)return null;var b=r.getBoundingClientRect();return [Math.round(b.top),Math.round(b.height)]})()")
+            # P2a: the unified connect popup sits at the bottom with the dim behind it (WebView 83 too: no `inset`)
+            vis = pg.ev("(function(){var r=document.querySelector('.hp-sheet');if(!r)return null;var b=r.getBoundingClientRect(),d=document.querySelector('.hp-dim');"
+                        "return {top:Math.round(b.top),h:Math.round(b.height),gap_bottom:Math.round(innerHeight-b.bottom),dim:d?+getComputedStyle(d).opacity:null,text:r.innerText.replace(/\\s+/g,' ').slice(0,300)}})()")
             fs = shot('h_browser_appkit_connect_sheet')
             detail['sheet_rect'] = vis
+            detail['sheet_at_bottom_dimmed'] = bool(vis and vis.get('top', 0) > 40 and abs(vis.get('gap_bottom', 99)) <= 2 and (vis.get('dim') or 0) > 0.3)
             if sheet:
-                tap(pg, '.sheet [data-ok]'); time.sleep(3)
+                tap(pg, '.hp-sheet #hp-ok'); time.sleep(3)
             acc = gp.ev("window.__hwAcc", 5)
             fa = shot('h_browser_appkit_connected')
             gp.close()
             detail.update(connect_sheet=sheet, accounts=acc, shots=[fm, fs, fa])
         except Exception as e:
             detail['__err'] = repr(e)[:300]
-    ok = bool(info.get('eth')) and bool(detail.get('connect_sheet')) and isinstance(detail.get('accounts'), list) and WATCH_ETH.lower() in [str(a).lower() for a in detail.get('accounts') or []]
+    ok = bool(info.get('eth')) and bool(detail.get('connect_sheet')) and isinstance(detail.get('accounts'), list) and WATCH_ETH.lower() in [str(a).lower() for a in detail.get('accounts') or []] and detail.get('sheet_at_bottom_dimmed')
     step('h_browser_dapp_connect', ok, **detail)
+    if found and ok:
+        k_sign_sheet(pg, found)
     # leave the Browser in a clean state for the next flows
     pg.ev("(function(){var t=hwBrowser.state(); return t.tabs.length})()")
+
+
+def k_page(wait=20):
+    """Kwallet's sign page (index.html#sign) over DevTools, once its sheet is mounted"""
+    end = time.time() + wait
+    while time.time() < end:
+        for p in devtools_pages(K, 3):
+            if p.get('type') == 'page' and '#sign' in p.get('url', ''):
+                try:
+                    kp = Page(p['webSocketDebuggerUrl'])
+                    if kp.ev("!!document.querySelector('#kss .hp-sheet #kss-no')", 5):
+                        return kp
+                    kp.close()
+                except Exception:
+                    pass
+        time.sleep(0.3)
+    return None
+
+
+def k_sign_sheet(pg, tab):
+    """P2a (#97a/#95): personal_sign from the dApp tab -> Kwallet's sheet over the dimmed Hwallet (no Hwallet step in between)
+    -> a real tap on Cancel -> the page gets 4001 and Hwallet is still on the same tab. The E2E build of Kwallet shows the request
+    with a display-only 'E2E test wallet' (no seed on the emulator; it cannot sign)."""
+    detail = {}
+    try:
+        gp = Page(tab['webSocketDebuggerUrl'])
+        url0 = gp.ev("location.href", 5)
+        msg = '0x' + 'Hwallet E2E: sign-in test. No funds move.'.encode().hex()
+        mark(); t0 = time.time()
+        gp.ev("window.__hwPs=null; window.ethereum.request({method:'personal_sign',params:[%s,%s]}).then(function(r){window.__hwPs=r},function(e){window.__hwPs='err '+e.code}); 1" % (json.dumps(msg), json.dumps(WATCH_ETH)), 5)
+        kp = k_page(20)
+        t_vis = round(time.time() - t0, 2) if kp else None
+        detail['sheet_visible_s'] = t_vis
+        if kp:
+            time.sleep(1.2)
+            g = kp.ev("({dpr: devicePixelRatio, ih: innerHeight, iw: innerWidth})") or {}
+            info = kp.ev("(function(){var s=document.querySelector('#kss .hp-sheet'),r=s.getBoundingClientRect(),k=document.getElementById('kss');"
+                         "return {title:(s.querySelector('.hp-title')||{}).textContent, name:(s.querySelector('.hp-name')||{}).textContent, url:(s.querySelector('.hp-url')||{}).textContent,"
+                         "top:Math.round(r.top), gap_bottom:Math.round(innerHeight-r.bottom), dim:getComputedStyle(k).backgroundColor, text:s.innerText.replace(/\\s+/g,' ').slice(0,400)}})()") or {}
+            detail['k_sheet'] = info
+            fk = shot('k_sign_sheet_over_h')
+            nb = kp.ev("(function(){var b=document.getElementById('kss-no').getBoundingClientRect(); return {x:b.left+b.width/2, y:b.top+b.height/2}})()") or {}
+            oy = max(0, SCREEN['h'] - round(g.get('ih', 0) * g.get('dpr', 1))) if g.get('ih', 0) * g.get('dpr', 1) < SCREEN['h'] - 4 else 0
+            x, y = round(nb.get('x', 0) * g.get('dpr', 1)), round(oy + nb.get('y', 0) * g.get('dpr', 1))
+            adb('shell input tap %d %d' % (x, y)); detail['cancel_tap'] = [x, y]
+            kp.close()
+            time.sleep(2.5)
+        res = None
+        for i in range(10):
+            res = gp.ev("window.__hwPs", 5)
+            if res: break
+            time.sleep(0.5)
+        url1 = gp.ev("location.href", 5)
+        gp.close()
+        fa = shot('k_sign_cancelled_back_in_tab')
+        front = re.findall(r'mCurrentFocus=Window\{[0-9a-f]+ u\d+ ([^}\s]+)\}', adb('shell dumpsys window', 30))
+        detail.update(page_result=res, same_url=url0 == url1, url=url1, still_browser=pg.ev("!!document.getElementById('br-host') && !document.getElementById('br').hidden"),
+                      focus=front[-1:] if front else None, shots=[locals().get('fk'), fa])
+        lc = logcat('k_sign_sheet')
+        try:
+            m = re.findall(r'KwSign.*sheet ready.*', open(os.path.join(OUT, lc), errors='ignore').read()) if lc else []
+            detail['kwsign_timing'] = m[-1][-120:] if m else None
+        except Exception:
+            pass
+        detail['logcat'] = lc
+    except Exception as e:
+        detail['__err'] = repr(e)[:300]
+    ks = detail.get('k_sheet') or {}
+    ok = bool(ks) and abs(ks.get('gap_bottom', 99)) <= 2 and ks.get('top', 0) > 40 and ks.get('title') in ('Sign message', 'Sign-in') and detail.get('page_result') == 'err 4001' and detail.get('same_url') and bool(detail.get('still_browser'))
+    step('k_sign_sheet_over_h', ok, **detail)
 
 
 # ---------------- flows ----------------
@@ -436,6 +511,15 @@ def run():
     batt = [x for x in SYSDLG] + ([foc[-1]] if foc and not foc[-1].startswith(H) else [])
     f = shot('h_no_battery_dialog')
     step('h_no_battery_dialog', not batt, focus=foc[-1:] if foc else None, system_windows=batt, shot=f, logcat=logcat('h_no_batt'))
+    clear_sysdlg()
+
+    # P2a: mark the watch-only wallet as paired for EVM (harness only), so dApp requests go on to Kwallet's sheet
+    pg.ev("(function(){var w=JSON.parse(localStorage.getItem('hw-wallets')||'[]'); w.forEach(function(x){x.A.paired=x.A.paired||{}; x.A.paired.eth=1}); localStorage.setItem('hw-wallets',JSON.stringify(w)); return w.length})()")
+    pg.ev("location.reload(); 1", 5); time.sleep(4)
+    for i in range(30):
+        st = pg.ev("({bar: !!document.querySelector('.hbar'), opening: !!document.getElementById('kl-root')})") or {}
+        if st.get('bar') and not st.get('opening'): break
+        time.sleep(0.5)
     clear_sysdlg()
 
     browser(pg)

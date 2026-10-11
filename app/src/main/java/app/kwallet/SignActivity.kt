@@ -7,6 +7,8 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
+import android.util.Log
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -31,6 +33,9 @@ class SignActivity : KwActivity() {
     private var feedOn = false
     private var wv: WebView? = null
     @Volatile private var sheetMode = false
+    /** P2a: when Hwallet asked (its uptime clock, same as ours), for the "sheet visible" timing in logcat */
+    private var tAsk = 0L
+    private var tCreate = 0L
 
     override val signPage: Boolean = true
     override fun bootColor(c: Int): Int {
@@ -56,8 +61,9 @@ class SignActivity : KwActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // nothing on this page may be captured, recorded or drawn over
-        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        tCreate = SystemClock.uptimeMillis(); tAsk = intent.getLongExtra("t0", 0L)
+        // nothing on this page may be captured, recorded or drawn over (the CI emulator build, -PkwE2E=true, must screenshot it)
+        if (!BuildConfig.E2E) window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         if (Build.VERSION.SDK_INT >= 31) window.setHideOverlayWindows(true)
         val ok = callerOk()
         req = if (ok) (intent.getStringExtra("req") ?: "").take(65536) else ""
@@ -76,13 +82,22 @@ class SignActivity : KwActivity() {
         w.filterTouchesWhenObscured = true
         wv = w
         w.addJavascriptInterface(Bridge(), "KwSign")
+        /* P2a: the CI emulator build only. Lets the sign page show a dApp request for an address no seed is paired for
+         *  ("E2E test wallet", display only, it cannot sign), so the device check can open and cancel the sheet. No key or
+         *  mnemonic exists for it anywhere. Store builds (build.yml) never set -PkwE2E=true. */
+        if (BuildConfig.E2E) w.addJavascriptInterface(E2E(), "KwE2E")
     }
+    inner class E2E { @JavascriptInterface fun on(): Boolean = true }
 
     inner class Bridge {
         @JavascriptInterface fun request(): String = req
         @JavascriptInterface fun done(json: String) { runOnUiThread { reply(json) } }
         /** v3.92: the transaction is on screen; reveal the window (it stays transparent until then). */
-        @JavascriptInterface fun ready() { runOnUiThread { revealSign() } }
+        @JavascriptInterface fun ready() { runOnUiThread {
+            revealSign()
+            val now = SystemClock.uptimeMillis()
+            Log.i("KwSign", "sheet ready create+${now - tCreate}ms" + (if (tAsk > 0) " ask+${now - tAsk}ms" else ""))
+        } }
         /** v3.96 (#60): dApp requests open as a bottom sheet over Hwallet's dApp tab. The page draws its own dim
          *  backdrop, so the window, root and WebView become fully transparent and Hwallet stays visible behind. */
         @JavascriptInterface fun sheet() { runOnUiThread {

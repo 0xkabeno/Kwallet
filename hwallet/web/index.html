@@ -88,7 +88,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-a
 .lw.big .bdg{width:26px;height:26px;right:-2px;bottom:-2px;box-shadow:0 0 0 3px var(--bg)}
 .lt{display:grid;place-items:center;background:var(--card2);color:var(--muted);font-weight:700;font-size:18px}
 .lt .ic{width:22px;height:22px}.lt.bad{color:var(--dn)}.lt.in{color:var(--up)}.lt.pl{color:var(--accT)}
-.lgw{position:relative;overflow:hidden;background:var(--card2)}.lgw .in2{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-weight:700;font-size:18px}.lgw img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.lgw{position:relative;overflow:hidden;background:var(--card2)}.lgw .in2{position:absolute;top:0;right:0;bottom:0;left:0;display:grid;place-items:center;color:var(--muted);font-weight:700;font-size:18px}.lgw img{position:absolute;top:0;right:0;bottom:0;left:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
 .lw.big .lt,.lw.big .lgw .in2{font-size:28px}
 .am{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .an{font-size:17px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
@@ -204,7 +204,7 @@ body[data-theme] .seg.wide button.on{background:var(--acc);color:var(--accI);box
 .wav{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--acc);color:var(--accI);font:900 18px/1 KwBlack,RobotoE,system-ui;flex:0 0 auto;box-shadow:inset 0 -2px 0 rgba(34,51,72,.13)}
 .wrow .ok{color:var(--up)}
 /* sheets */
-.sheet-ov{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,0);display:flex;align-items:flex-end;justify-content:center;transition:background-color .22s ease}
+.sheet-ov{position:fixed;top:0;right:0;bottom:0;left:0;z-index:40;background:rgba(0,0,0,0);display:flex;align-items:flex-end;justify-content:center;transition:background-color .22s ease}
 .sheet-ov.show{background:rgba(0,0,0,.45)}
 .sheet{width:100%;max-width:600px;background:var(--bg);border-radius:26px 26px 0 0;padding:8px 16px calc(var(--sab) + 16px);transform:translate3d(0,100%,0);transition:transform .28s var(--ease);max-height:92vh;overflow:auto;overscroll-behavior:contain;will-change:transform}
 .sheet-ov.show .sheet{transform:none}
@@ -254,7 +254,7 @@ body.hw-hide [data-money]{letter-spacing:1px}
   --kl-lime: #DDF869; --kl-lime-deep: #CFEA55; --kl-ink: #223348;
   --kl-k: clamp(88px, 27vw, 210px);
   --kl-ease: cubic-bezier(.22, 1, .36, 1);
-  position: fixed; inset: 0; z-index: 100000; overflow: hidden;
+  position: fixed; top:0;right:0;bottom:0;left:0; z-index: 100000; overflow: hidden;
   background: var(--kl-lime); color: var(--kl-ink);
   font-family: 'KwBlack', 'Roboto', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
@@ -269,7 +269,7 @@ body.hw-hide [data-money]{letter-spacing:1px}
   animation: klAuraIn 0.7s var(--kl-ease) 0.1s forwards, klAura 2.75s ease-in-out 0.8s infinite; }
 @keyframes klAuraIn { to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @keyframes klAura { 0%,100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 50% { transform: translate(-50%, -50%) scale(1.06); opacity: .75; } }
-#kl-root .kl-bg { position: absolute; inset: 0; pointer-events: none;
+#kl-root .kl-bg { position: absolute; top:0;right:0;bottom:0;left:0; pointer-events: none;
   background:
     radial-gradient(110% 70% at 50% -5%, rgba(255,255,255,.38), rgba(255,255,255,0) 60%),
     radial-gradient(120% 80% at 50% 108%, var(--kl-lime-deep), rgba(221,248,105,0) 62%); }
@@ -311,7 +311,7 @@ body.hw-hide [data-money]{letter-spacing:1px}
 @keyframes klRingPop { 0% { transform: scale(1); } 45% { transform: scale(1.12); } 100% { transform: scale(1); } }
 #kl-root.kl-done .kl-ring .kl-arc, #kl-root.kl-done .kl-ring .kl-track { opacity: 0; transition: opacity 0.1s ease 0.05s; }
 @keyframes klRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-#kl-root .kl-splash { position: absolute; inset: 0; transition: opacity 0.2s ease; }
+#kl-root .kl-splash { position: absolute; top:0;right:0;bottom:0;left:0; transition: opacity 0.2s ease; }
 .md3 #kl-root { --kl-lime: var(--md-kl-bg, #e9ddff); --kl-lime-deep: var(--md-kl-deep, #d0bcff); --kl-ink: var(--md-kl-ink, #21005d); }
 .md3 #kl-root .kl-slogan { color: color-mix(in srgb, var(--kl-ink) 82%, transparent) !important; }
 .md3-dark #kl-root .kl-ring { --kl-disc: var(--md-kl-disc, #0d0e12); }
@@ -325,7 +325,7 @@ html.hw-opening,html.hw-opening body{overflow:hidden}
 
 /* v1.4 (#52): the scene fills the screen exactly like Kwallet's (#kl-root inset 0); the slogan and ring sit
    max(44px, --kw-sab + 32px) above the bottom edge, with --kw-sab now set from the real navigation bar height */
-#kl-root .kl-safe { position: absolute; inset: 0; overflow: hidden; }
+#kl-root .kl-safe { position: absolute; top:0;right:0;bottom:0;left:0; overflow: hidden; }
 
 /* ===== v1.4 (#54): Kwallet's Settings sheet, CSS copied from Kwallet (v3.41 Settings, v3.57 compact rows, grouped sheet) ===== */
 /* Kwallet's design tokens, mapped onto Hwallet's theme (light / dark / Material You) */
@@ -337,10 +337,10 @@ body:not(.md3) .kws-ov, body:not(.md3) .kws-page, body:not(.md3) .kwd-ov {
   --md-on: var(--text); --md-on-var: var(--muted); --md-outline: var(--soft); --md-ov: var(--border); }
 body:not(.md3)[data-theme="light"] .kws-ov, body:not(.md3)[data-theme="light"] .kws-page { --md-pc: #e3e8ef; --md-opc: #223348; }
 body:not(.md3)[data-theme="dark"] .kws-ov, body:not(.md3)[data-theme="dark"] .kws-page { --md-pc: #2b3a1c; --md-opc: #DDF869; }
-  .kws-ov { position: fixed; inset: 0; z-index: 9000; background: rgba(0,0,0,.32); display: flex; align-items: center; justify-content: center; padding: 24px;
+  .kws-ov { position: fixed; top:0;right:0;bottom:0;left:0; z-index: 9000; background: rgba(0,0,0,.32); display: flex; align-items: center; justify-content: center; padding: 24px;
     opacity: 0; pointer-events: none; transition: opacity .18s ease; }
   .kws-ov.show { opacity: 1; pointer-events: auto; }
-  .kws { width: min(420px, 100%); max-height: 86dvh; overflow-y: auto; background: var(--bg-card); color: var(--text); border-radius: 28px; padding: 8px 0 12px;
+  .kws { width: min(420px, 100%); max-height:86vh;max-height:86dvh; overflow-y: auto; background: var(--bg-card); color: var(--text); border-radius: 28px; padding: 8px 0 12px;
     box-shadow: 0 8px 28px rgba(0,0,0,.28); transform: scale(.96); transition: transform .22s cubic-bezier(.2,0,0,1); font-family: 'RobotoE','Roboto',system-ui,sans-serif; }
   .kws-ov.show .kws { transform: none; }
   .kws-don { margin: 4px 16px 8px; padding: 14px 8px 8px; border-radius: 20px; background: #DDF869; color: #223348; }
@@ -371,7 +371,7 @@ body:not(.md3)[data-theme="dark"] .kws-ov, body:not(.md3)[data-theme="dark"] .kw
   .kws-row.on .kws-sw { background: var(--accent); border-color: var(--accent); }
   .kws-row.on .kws-sw::after { left: 22px; top: 2px; width: 24px; height: 24px; background: var(--bg-card); }
   /* choice dialog */
-  .kwd-ov { position: fixed; inset: 0; z-index: 9100; background: rgba(0,0,0,.32); display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity .15s; }
+  .kwd-ov { position: fixed; top:0;right:0;bottom:0;left:0; z-index: 9100; background: rgba(0,0,0,.32); display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity .15s; }
   .kwd-ov.show { opacity: 1; pointer-events: auto; }
   .kwd { width: min(312px, 100%); background: var(--bg-card); color: var(--text); border-radius: 28px; padding: 24px 0 16px; font-family: 'RobotoE','Roboto',system-ui,sans-serif; box-shadow: 0 8px 28px rgba(0,0,0,.3); }
   .kwd-p { margin: 0 24px 8px; font: 400 14px/20px 'RobotoE','Roboto',system-ui,sans-serif; opacity: .78; }
@@ -458,7 +458,7 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
 .kws-slw { flex: 0 0 100%; display: block; padding-left: 50px; box-sizing: border-box; }
 .kws-sl { position: relative; display: block; height: 32px; margin: 4px 0 0 -10px; touch-action: none; cursor: pointer; outline: none; }
 .kws-sl-tr { position: absolute; left: 10px; right: 10px; top: 13px; height: 6px; border-radius: 3px; background: var(--md-sc-high); overflow: visible; }
-.kws-sl-fi { position: absolute; inset: 0; border-radius: 3px; background: var(--md-primary); transform-origin: 0 50%; will-change: transform; }
+.kws-sl-fi { position: absolute; top:0;right:0;bottom:0;left:0; border-radius: 3px; background: var(--md-primary); transform-origin: 0 50%; will-change: transform; }
 .kws-sl-tr i { position: absolute; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: var(--md-on-var); opacity: .55; }
 .kws-sl-tr i.end { width: 6px; height: 6px; margin: -3px 0 0 -3px; }
 .kws-sl-th { position: absolute; left: 0; top: 6px; width: 20px; height: 20px; border-radius: 50%; background: var(--md-primary); box-shadow: 0 1px 3px rgba(0,0,0,.25);
@@ -487,7 +487,7 @@ body[data-theme="dark"]:not(.md3) .kws-page .kws-sec { color: #DDF869 !important
 /* ===== v1.5 (#61/#65): Hwallet's own scanner, Gem's layout ===== */
 html.scanning, html.scanning body { background: transparent !important; }
 html.scanning #pg, html.scanning #nav, html.scanning .opening { visibility: hidden !important; }
-.scn { position: fixed; inset: 0; z-index: 8000; color: #fff; opacity: 0; transition: opacity .18s ease; font-family: 'RobotoE','Roboto',system-ui,sans-serif; }
+.scn { position: fixed; top:0;right:0;bottom:0;left:0; z-index: 8000; color: #fff; opacity: 0; transition: opacity .18s ease; font-family: 'RobotoE','Roboto',system-ui,sans-serif; }
 .scn.show { opacity: 1; }
 .scn[data-mode="recv"] { background: var(--bg); color: var(--text); }
 .scn-top { position: absolute; left: 0; right: 0; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -507,7 +507,7 @@ body.md3 .scn-pl { background: var(--md-primary, var(--acc)); }
 .scn-seg button i svg { width: 18px; height: 18px; }
 .scn-seg button.on { color: var(--accI); }
 .scn-seg button.on i { display: inline-grid; }
-.scn-cam { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.scn-cam { position: absolute; top:0;right:0;bottom:0;left:0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .scn[data-mode="recv"] .scn-cam { display: none; }
 .scn-fr { position: relative; width: min(68vw, 300px); aspect-ratio: 1; margin-top: -40px; }
 .scn-fr i { position: absolute; width: 46px; height: 46px; border: 4px solid rgba(214,218,224,.92); }
@@ -525,7 +525,7 @@ body.md3 .scn-pl { background: var(--md-primary, var(--acc)); }
   background: var(--card); color: var(--text); box-shadow: 0 6px 24px rgba(0,0,0,.3); }
 .scn-msg b { font-size: 16px; } .scn-msg span { font-size: 14px; color: var(--muted); line-height: 20px; }
 .scn-msg .btn { margin-top: 6px; }
-.scn-recv { display: none; position: absolute; inset: 0; overflow-y: auto; padding: calc(var(--sat, 0px) + 72px) 16px calc(var(--sab, 0px) + 24px); }
+.scn-recv { display: none; position: absolute; top:0;right:0;bottom:0;left:0; overflow-y: auto; padding: calc(var(--sat, 0px) + 72px) 16px calc(var(--sab, 0px) + 24px); }
 .scn[data-mode="recv"] .scn-recv { display: block; }
 .scn-sr { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; border-radius: 16px; background: var(--card2); color: var(--muted); }
 .scn-sr input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: 400 16px/1 'RobotoE','Roboto',system-ui,sans-serif; }
@@ -626,7 +626,7 @@ body.md3 .scn-pl { background: var(--md-primary, var(--acc)); }
 .br-pr i{display:block;height:100%;background:var(--accT);width:100%;transform-origin:0 50%;transform:scaleX(0);opacity:0;transition:transform .25s ease,opacity .3s ease;will-change:transform,opacity}
 .br-pr.on i{opacity:1}
 .br-v{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;position:relative}
-.br-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted);font-size:14px;padding:24px;text-align:center}
+.br-ph{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted);font-size:14px;padding:24px;text-align:center}
 .br-start{max-width:600px;margin:0 auto;padding:6px 16px 24px}
 .br-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:26px 12px 6px}
 .br-hero b{font-size:22px;font-weight:700}
@@ -707,7 +707,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--accT);outline-offse
 /* ===== v1.6 wave C (#81/#82): Gem Wallet swap screen, Details / Slippage / Network fee sheets, token picker ===== */
 [data-theme="light"]{--swbg:#ffffff;--swcard:#f2f3f5;--swsh:#ffffff;--swrow:#f2f3f5;--swmut:#6b7177;--swblue:#3461ed;--swline:#ffffff;--swbtn:#e9eaee}
 [data-theme="dark"]{--swbg:var(--bg);--swcard:var(--card);--swsh:var(--bg);--swrow:var(--card);--swmut:#8e98a8;--swblue:#3a67f2;--swline:var(--bg);--swbtn:var(--card2)}
-.swp{min-height:100vh;min-height:100dvh;background:var(--swbg);display:flex;flex-direction:column;box-sizing:border-box}
+.swp{min-height:100vh;min-height:100vh;min-height:100dvh;background:var(--swbg);display:flex;flex-direction:column;box-sizing:border-box}
 body:has(.swp){background:var(--swbg)}
 .swp .sw-bar{background:var(--swbg)}
 .swp .sw-bar .bt{font-size:21px;font-weight:400;letter-spacing:.1px}
@@ -877,6 +877,174 @@ body[data-theme=dark] .fw-s{color:#34c77b}
 .pr-more summary::-webkit-details-marker{display:none}
 .pr-more[open] summary{margin-bottom:12px}
 .pr-more[open] summary svg{transform:rotate(180deg)}
+
+/* ===== P2a (#94/#94a): one popup design for Hwallet and Kwallet (connect, sign, message). =====
+   Inlined into both apps. Written for WebView 83 too: no inset, no :has, no flex gap, no color-mix, no dvh,
+   no aspect-ratio. Motion is transform/opacity only. Sizes follow Gem Wallet's modal sheet
+   (gem-android ui/components: 16dp padding, 24-28dp sheet radius, 52dp buttons, 40dp app icon). */
+.hp-ov{position:fixed;top:0;right:0;bottom:0;left:0;z-index:60;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;-webkit-tap-highlight-color:transparent}
+.hp-dim{position:absolute;top:0;right:0;bottom:0;left:0;background:#000;opacity:0;transition:opacity .22s linear;will-change:opacity}
+.hp-ov.in .hp-dim{opacity:.5}
+.hp-sheet{position:relative;width:100%;max-width:600px;max-height:92%;display:flex;flex-direction:column;box-sizing:border-box;
+  background:#fff;color:#14171a;border-radius:28px 28px 0 0;box-shadow:0 -6px 28px rgba(0,0,0,.18);
+  transform:translate3d(0,100%,0);transition:transform .3s cubic-bezier(.2,.9,.25,1);will-change:transform;
+  font-family:'RobotoE','Roboto',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1;text-align:left}
+.hp-ov.in .hp-sheet{transform:translate3d(0,0,0)}
+.hp-ov.out .hp-dim{opacity:0;transition-duration:.18s}
+.hp-ov.out .hp-sheet{transform:translate3d(0,100%,0);transition:transform .2s cubic-bezier(.4,0,1,1)}
+[data-theme="dark"] .hp-sheet{background:#1b1d22;color:#f2f3f5;box-shadow:0 -6px 28px rgba(0,0,0,.5)}
+.hp-grab{flex:0 0 auto;width:36px;height:4px;border-radius:2px;background:#d5d8dc;margin:8px auto 0}
+[data-theme="dark"] .hp-grab{background:#3a3d44}
+.hp-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px 16px 4px}
+.hp-foot{flex:0 0 auto;padding:10px 16px calc(var(--kw-sab, var(--sab, 0px)) + 14px)}
+/* header: app icon, name, link, close */
+.hp-head{display:flex;align-items:center;min-height:56px;margin:0 0 14px}
+.hp-ic{width:48px;height:48px;border-radius:14px;flex:0 0 auto;object-fit:cover;background:#eef0f2;display:block}
+[data-theme="dark"] .hp-ic{background:#262930}
+.hp-icl{display:flex;align-items:center;justify-content:center;font:700 20px/1 'RobotoE',system-ui;color:#14171a}
+[data-theme="dark"] .hp-icl{color:#f2f3f5}
+.hp-hm{flex:1 1 auto;min-width:0;margin:0 8px 0 14px}
+.hp-name{font:700 21px/27px 'RobotoE',system-ui;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-url{display:flex;align-items:center;margin-top:1px;color:#6b7075;font:400 15px/20px 'RobotoE',system-ui;min-width:0}
+.hp-url svg{width:17px;height:17px;flex:0 0 auto;margin-right:5px}
+.hp-url span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+[data-theme="dark"] .hp-url{color:#9a9ea6}
+.hp-x{width:44px;height:44px;flex:0 0 auto;border:0;border-radius:22px;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;margin-right:-8px}
+.hp-x svg{width:26px;height:26px}
+.hp-x:active{background:rgba(127,127,127,.14)}
+/* title, captions */
+.hp-title{font:700 26px/32px 'RobotoE',system-ui;letter-spacing:-.4px;margin:0 0 6px;color:inherit}
+.hp-stp{font:600 13px/18px 'RobotoE',system-ui;color:#6b7075;margin:0 0 2px;letter-spacing:.1px}
+.hp-cap{font:400 15px/21px 'RobotoE',system-ui;color:#6b7075;margin:0 0 14px}
+[data-theme="dark"] .hp-cap,[data-theme="dark"] .hp-stp{color:#9a9ea6}
+.hp-lead{font:700 19px/25px 'RobotoE',system-ui;margin:4px 0 12px}
+/* cards and rows */
+.hp-card{background:#f3f4f6;border-radius:20px;margin:0 0 10px;overflow:hidden}
+[data-theme="dark"] .hp-card{background:#25272d}
+.hp-r{display:flex;align-items:center;min-height:64px;padding:10px 18px;box-sizing:border-box}
+.hp-r+.hp-r{border-top:1px solid rgba(0,0,0,.06)}
+[data-theme="dark"] .hp-r+.hp-r{border-top-color:rgba(255,255,255,.06)}
+.hp-r.sm{min-height:52px}
+.hp-perm+.hp-r,.hp-perm+.hp-wl{border-top:1px solid rgba(0,0,0,.06)}
+[data-theme="dark"] .hp-perm+.hp-r{border-top-color:rgba(255,255,255,.06)}
+.hp-l{flex:1 1 auto;min-width:76px;font:500 16px/21px 'RobotoE',system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-l small{display:block;font:400 13px/18px 'RobotoE',system-ui;color:#6b7075;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-v{flex:0 1 auto;min-width:0;margin-left:12px;text-align:right;font:500 16px/21px 'RobotoE',system-ui;font-variant-numeric:tabular-nums;word-break:break-word}
+.hp-v small{display:block;font:400 14px/19px 'RobotoE',system-ui;color:#6b7075}
+[data-theme="dark"] .hp-l small,[data-theme="dark"] .hp-v small{color:#9a9ea6}
+.hp-tk{width:36px;height:36px;border-radius:50%;flex:0 0 auto;margin-right:12px;object-fit:cover;display:block;background:#e3e6ea}
+[data-theme="dark"] .hp-tk{background:#33363d}
+.hp-tkl{display:flex;align-items:center;justify-content:center;font:700 15px/1 'RobotoE',system-ui;color:#3a3f45}
+[data-theme="dark"] .hp-tkl{color:#d8dbe0}
+.hp-neg{color:#d93a4e}.hp-pos{color:#1e9e5a}
+[data-theme="dark"] .hp-neg{color:#f2667a}[data-theme="dark"] .hp-pos{color:#a6f28a}
+.hp-na{display:flex;align-items:flex-start;padding:16px 18px}
+.hp-na svg{width:20px;height:20px;flex:0 0 auto;margin:1px 12px 0 0;color:#6b7075}
+.hp-na b{display:block;font:600 15px/20px 'RobotoE',system-ui}
+.hp-na small{display:block;margin-top:2px;font:400 13.5px/19px 'RobotoE',system-ui;color:#6b7075}
+[data-theme="dark"] .hp-na small,[data-theme="dark"] .hp-na svg{color:#9a9ea6}
+/* wallet row */
+.hp-w{display:flex;align-items:center;justify-content:flex-end;min-width:0}
+.hp-w .hp-cic{width:20px;height:20px;border-radius:50%;margin-right:7px;flex:0 0 auto}
+.hp-w span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-w em{font-style:normal;color:#6b7075;margin-left:6px;font-family:'RobotoMonoE',monospace;font-size:14px}
+[data-theme="dark"] .hp-w em{color:#9a9ea6}
+.hp-chev{width:20px;height:20px;margin-left:4px;color:#8a8f95;flex:0 0 auto;transition:transform .18s}
+.hp-tap{cursor:pointer}.hp-tap:active{background:rgba(127,127,127,.08)}
+.hp-open .hp-chev{transform:rotate(180deg)}
+/* permissions (connect) */
+.hp-perm{padding:10px 18px 12px}
+.hp-pr{display:flex;align-items:flex-start;padding:7px 0;font:400 16px/22px 'RobotoE',system-ui}
+.hp-pr svg{width:22px;height:22px;flex:0 0 auto;margin-right:14px}
+.hp-pr.no svg{color:#d93a4e}
+[data-theme="dark"] .hp-pr.no svg{color:#f2667a}
+/* chain chips */
+.hp-chips{display:flex;flex-wrap:wrap;padding:12px 14px 8px}
+.hp-chip{display:inline-flex;align-items:center;height:30px;padding:0 10px 0 5px;border-radius:15px;background:#e7e9ec;margin:0 6px 6px 0;font:500 13px/1 'RobotoE',system-ui}
+[data-theme="dark"] .hp-chip{background:#31343b}
+.hp-chip img,.hp-chip .lg{width:20px!important;height:20px!important;border-radius:50%;margin-right:6px}
+.hp-sec{font:600 13px/18px 'RobotoE',system-ui;color:#6b7075;padding:12px 18px 0}
+[data-theme="dark"] .hp-sec{color:#9a9ea6}
+/* wallet chooser */
+.hp-wl{padding:2px 0 6px}
+.hp-wo{display:flex;align-items:center;width:100%;border:0;background:transparent;color:inherit;padding:10px 18px;text-align:left;font:500 15px/20px 'RobotoE',system-ui}
+.hp-wo i{width:20px;height:20px;border-radius:50%;border:2px solid #b8bcc2;box-sizing:border-box;margin-right:12px;flex:0 0 auto}
+.hp-wo.on i{border:6px solid #223348}
+[data-theme="dark"] .hp-wo.on i{border-color:#DDF869}
+.hp-wo span{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-wo em{font-style:normal;color:#6b7075;font:400 13px 'RobotoMonoE',monospace;margin-left:8px}
+/* trust line and warnings */
+.hp-trust{display:flex;align-items:center;margin:6px 2px 4px;font:400 15px/21px 'RobotoE',system-ui;color:#6b7075}
+[data-theme="dark"] .hp-trust{color:#9a9ea6}
+.hp-trust svg{width:18px;height:18px;flex:0 0 auto;margin-right:8px}
+.hp-trust.ok svg{color:#1e9e5a}[data-theme="dark"] .hp-trust.ok svg{color:#a6f28a}
+.hp-trust.bad{color:#d93a4e;font-weight:600}[data-theme="dark"] .hp-trust.bad{color:#f2667a}
+.hp-warn{display:flex;align-items:flex-start;border-radius:16px;padding:12px 14px;margin:0 0 10px;background:#fff4e0;color:#7a4a00;font:400 14px/20px 'RobotoE',system-ui}
+[data-theme="dark"] .hp-warn{background:#3a2f1a;color:#f5d48a}
+.hp-warn.bad{background:#fde8eb;color:#9b1c2e}
+[data-theme="dark"] .hp-warn.bad{background:#3d1e24;color:#ffb3bf}
+.hp-warn svg{width:20px;height:20px;flex:0 0 auto;margin:0 10px 0 0}
+.hp-warn p{margin:0}.hp-warn p+p{margin-top:6px}.hp-warn b{font-weight:600}
+/* message, SIWE, typed data */
+.hp-msg{padding:14px 18px;font:400 15px/22px 'RobotoE',system-ui;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow-y:auto}
+.hp-msg.mono{font:400 13px/19px 'RobotoMonoE',monospace}
+.hp-tree{padding:8px 18px 12px;font:400 14px/20px 'RobotoE',system-ui}
+.hp-tn{padding:4px 0}
+.hp-tn>b{font-weight:500;color:#6b7075;margin-right:6px}
+[data-theme="dark"] .hp-tn>b{color:#9a9ea6}
+.hp-tn .hp-tv{word-break:break-all}
+.hp-tc{margin:2px 0 2px 2px;padding-left:12px;border-left:2px solid rgba(127,127,127,.22)}
+.hp-mono{font-family:'RobotoMonoE',monospace;font-size:13.5px}
+/* network fee */
+.hp-fee .hp-l{font-weight:500}
+.hp-fed{padding:0 18px 12px}
+.hp-fed.off{display:none}
+.hp-seg{display:flex;background:rgba(127,127,127,.12);border-radius:12px;padding:3px;margin:4px 0 2px}
+.hp-seg button{flex:1 1 0;height:34px;border:0;border-radius:9px;background:transparent;color:inherit;font:500 13.5px/1 'RobotoE',system-ui;padding:0}
+.hp-seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:600}
+[data-theme="dark"] .hp-seg button.on{background:#3a3d44}
+.hp-live{display:inline-flex;align-items:center;font:400 12.5px/16px 'RobotoE',system-ui;color:#6b7075;margin-top:2px}
+.hp-live i{width:6px;height:6px;border-radius:3px;background:#1e9e5a;margin-right:5px}
+.hp-live.stale i{background:#d9a400}
+/* details */
+.hp-det{margin:2px 0 6px}
+.hp-det>summary{list-style:none;cursor:pointer;display:flex;align-items:center;padding:10px 2px;color:#6b7075;font:500 14px/20px 'RobotoE',system-ui}
+.hp-det>summary::-webkit-details-marker{display:none}
+.hp-det>summary svg{width:18px;height:18px;margin-left:4px;transition:transform .18s}
+.hp-det[open]>summary svg{transform:rotate(180deg)}
+[data-theme="dark"] .hp-det>summary{color:#9a9ea6}
+.hp-det .hp-r{min-height:48px}
+.hp-det .hp-l{font-size:14px;color:#6b7075}
+[data-theme="dark"] .hp-det .hp-l{color:#9a9ea6}
+.hp-det .hp-v{font-size:14px}
+.hp-raw{padding:10px 18px 14px;font:400 12px/17px 'RobotoMonoE',monospace;word-break:break-all;white-space:pre-wrap;max-height:180px;overflow-y:auto}
+.hp-ol{margin:0;padding:4px 18px 12px 36px;font:400 14px/20px 'RobotoE',system-ui}
+.hp-ol li{padding:3px 0}
+/* buttons */
+.hp-act{display:flex}
+.hp-btn{flex:1 1 0;height:56px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;margin:0;border:0;border-radius:28px;font:600 18px/1 'RobotoE',system-ui;position:relative;overflow:hidden;padding:0 12px;-webkit-user-select:none;user-select:none}
+.hp-btn+.hp-btn{margin-left:12px}
+.hp-no{background:#e9eedb;color:#3d4a12}
+[data-theme="dark"] .hp-no{background:#2f3a2a;color:#cfee9a}
+.hp-ok{background:#DDF869;color:#223348;touch-action:none}
+.hp-ok:disabled{opacity:.45}
+.hp-ok .kss-fill,.hp-ok .hp-fill{position:absolute;top:0;right:0;bottom:0;left:0;background:#bcd94a;transform-origin:0 50%;transform:scaleX(0)}
+.hp-ok span{position:relative}
+.hp-btn:active{transform:scale(.985)}
+.hp-exp{display:flex;align-items:center;margin:0 4px 10px;font:400 12.5px/16px 'RobotoE',system-ui;color:#8a8f95}
+.hp-exp span:first-child{flex:0 0 auto;margin-right:10px}
+.hp-eb{flex:1 1 auto;height:3px;border-radius:2px;background:rgba(127,127,127,.18);overflow:hidden}
+.hp-eb i{display:block;height:100%;background:#8a8f95;transform-origin:0 50%}
+.hp-exp.low{color:#d93a4e}.hp-exp.low .hp-eb i{background:#d93a4e}
+.hp-hint{text-align:center;font:400 12.5px/16px 'RobotoE',system-ui;color:#8a8f95;margin-top:8px;min-height:16px}
+.hp-done{display:flex;flex-direction:column;align-items:center;padding:28px 16px calc(var(--kw-sab, var(--sab, 0px)) + 34px);font:600 18px/24px 'RobotoE',system-ui}
+.hp-done svg{width:76px;height:76px;margin-bottom:12px}
+.hp-done circle{fill:none;stroke:#1e9e5a;stroke-width:4}
+.hp-done path{fill:none;stroke:#1e9e5a;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+@media (prefers-reduced-motion: reduce){.hp-sheet,.hp-dim{transition:none!important}}
+.hp-acc{display:flex;align-items:center;min-width:0}
+.hp-acc .lg,.hp-acc img{width:24px!important;height:24px!important;border-radius:50%;margin:0 10px 0 0!important;flex:0 0 auto}
+.hp-acc span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 </style>
 </head>
@@ -3804,6 +3972,140 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
 
 </script>
 <script>
+/* ===== P2a (#94/#94a): the one popup design, shared by Hwallet (connect) and Kwallet (sign, message). =====
+   Pure HTML builders; no network, no state. Each app wires the buttons itself. ES5 (WebView 83). */
+(function () {
+  'use strict';
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var P = {
+    x: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+    link: 'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z',
+    ok: 'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+    no: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+    chev: 'M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z',
+    info: 'M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
+    warn: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
+    shield: 'M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z',
+    qm: 'M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z'
+  };
+  function sv(d, cls) { return '<svg' + (cls ? ' class="' + cls + '"' : '') + ' viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="' + d + '"/></svg>'; }
+  function letter(t) { return (String(t || '?').replace(/[^A-Za-z0-9]/g, '')[0] || '?').toUpperCase(); }
+  function safeImg(src) { return /^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,/.test(String(src || '')) || /^https:\/\//.test(String(src || '')) || /^dapps\/[a-z0-9-]+\.png$/.test(String(src || '')); }
+  /* an image with a letter fallback (an offline Kwallet only gets data: images) */
+  function icon(src, name, cls, lcls) {
+    if (src && safeImg(src)) return '<img class="' + cls + '" alt="" src="' + esc(src) + '" onerror="this.outerHTML=\'<span class=&quot;' + cls + ' ' + lcls + '&quot;>' + esc(letter(name)) + '</span>\'">';
+    return '<span class="' + cls + ' ' + lcls + '">' + esc(letter(name)) + '</span>';
+  }
+  function head(o) {
+    return '<div class="hp-head">' + icon(o.icon, o.name, 'hp-ic', 'hp-icl') + '<div class="hp-hm"><div class="hp-name">' + esc(o.name || o.url || 'App') + '</div>' +
+      (o.url ? '<div class="hp-url">' + sv(P.link) + '<span>' + esc(o.url) + '</span></div>' : '') + '</div>' +
+      '<button type="button" class="hp-x" data-hp-x aria-label="Close">' + sv(P.x) + '</button></div>';
+  }
+  function title(t, step) { return (step ? '<div class="hp-stp">' + esc(step) + '</div>' : '') + '<h2 class="hp-title">' + esc(t) + '</h2>'; }
+  function cap(t) { return '<p class="hp-cap">' + t + '</p>'; }
+  function kv(l, v, sub, o) {
+    o = o || {};
+    return '<div class="hp-r' + (o.sm ? ' sm' : '') + (o.tap ? ' hp-tap' : '') + (o.cls ? ' ' + o.cls : '') + '"' + (o.id ? ' id="' + o.id + '"' : '') + (o.attr || '') + '>' +
+      '<span class="hp-l">' + l + (o.lsub ? '<small>' + o.lsub + '</small>' : '') + '</span><span class="hp-v">' + v + (sub ? '<small>' + sub + '</small>' : '') + '</span>' + (o.chev ? sv(P.chev, 'hp-chev') : '') + '</div>';
+  }
+  function card(inner, cls, id) { return '<div class="hp-card' + (cls ? ' ' + cls : '') + '"' + (id ? ' id="' + id + '"' : '') + '>' + inner + '</div>'; }
+  /* balance-change rows: { icon, sym, amt (number text without sign), sign '+'|'-'|'', usd, note }
+     o.sim: the rows came from a simulation (P2b); otherwise they are decoded from the request.
+     No rows: "Estimate unavailable" (o.why says what Kwallet could read instead). */
+  function changes(rows, o) {
+    o = o || {};
+    if (!rows || !rows.length) return card('<div class="hp-na">' + sv(P.info) + '<div><b>' + esc(o.none || 'Estimate unavailable') + '</b>' + (o.why ? '<small>' + o.why + '</small>' : '') + '</div></div>', 'hp-chg');
+    return card(rows.map(function (r) {
+      var cl = r.sign === '-' ? 'hp-neg' : r.sign === '+' ? 'hp-pos' : '';
+      return '<div class="hp-r">' + icon(r.icon, r.sym, 'hp-tk', 'hp-tkl') + '<span class="hp-l">' + esc(r.sym) + (r.note ? '<small>' + esc(r.note) + '</small>' : '') + '</span>' +
+        '<span class="hp-v"><span class="' + cl + '">' + (r.pre ? esc(r.pre) + ' ' : '') + (r.sign === '-' ? '\u2212' : r.sign) + esc(r.amt) + ' ' + esc(r.sym) + '</span>' + (r.usd ? '<small>' + esc(r.usd) + '</small>' : '') + '</span></div>';
+    }).join(''), 'hp-chg');
+  }
+  function walletV(name, addr, cic) {
+    return '<span class="hp-w">' + (cic ? icon(cic, '', 'hp-cic', 'hp-tkl') : '') + '<span>' + esc(name || 'Wallet') + '</span>' + (addr ? '<em>' + esc(shortA(addr)) + '</em>' : '') + '</span>';
+  }
+  function shortA(a) { a = String(a || ''); return a.length > 13 ? a.slice(0, 6) + '\u2026' + a.slice(-4) : a; }
+  /* level: ok (verified domain) | unk (unknown) | bad (known scam / mismatch) */
+  function trust(level, text) {
+    var t = text || (level === 'ok' ? 'Verified domain \u00b7 only confirm if you trust this website' : level === 'bad' ? 'Known risk. Do not confirm.' : 'Only confirm if you trust this website');
+    return '<div class="hp-trust ' + (level || 'unk') + '">' + (level === 'ok' ? sv(P.shield) : level === 'bad' ? sv(P.warn) : '') + '<span>' + esc(t) + '</span></div>';
+  }
+  function warns(list, bad) { if (!list || !list.length) return ''; return '<div class="hp-warn' + (bad ? ' bad' : '') + '">' + sv(P.warn) + '<div>' + list.map(function (w) { return '<p>' + w + '</p>'; }).join('') + '</div></div>'; }
+  function perms(rows) {
+    rows = rows || [['ok', 'Can view your address and balances'], ['ok', 'Can request approval for transactions'], ['no', 'Can\u2019t move funds without your approval']];
+    return '<div class="hp-perm">' + rows.map(function (r) { return '<div class="hp-pr ' + r[0] + '">' + sv(r[0] === 'ok' ? P.ok : P.no) + '<span>' + esc(r[1]) + '</span></div>'; }).join('') + '</div>';
+  }
+  function details(inner, open, id) { return inner ? '<details class="hp-det"' + (id ? ' id="' + id + '"' : '') + (open ? ' open' : '') + '><summary>Details' + sv(P.chev) + '</summary>' + card(inner) + '</details>' : ''; }
+  function foot(o) {
+    o = o || {};
+    return (o.exp ? '<div class="hp-exp" id="kss-exp"><span id="kss-exp-t"></span><span class="hp-eb"><i id="kss-exp-b"></i></span></div>' : '') +
+      '<div class="hp-act"><button type="button" class="hp-btn hp-no" id="' + (o.noId || 'hp-no') + '">' + esc(o.no || 'Cancel') + '</button>' +
+      '<button type="button" class="hp-btn hp-ok" id="' + (o.okId || 'hp-ok') + '"' + (o.disabled ? ' disabled' : '') + '>' + (o.hold ? '<i class="kss-fill"></i>' : '') + '<span>' + esc(o.ok || 'Confirm') + '</span></button></div>' +
+      (o.hint != null ? '<div class="hp-hint" id="hp-hint">' + esc(o.hint) + '</div>' : '');
+  }
+  function sheet(inner, footHtml) { return '<div class="hp-grab"></div><div class="hp-scroll" id="kss-sc">' + inner + '</div>' + (footHtml != null ? '<div class="hp-foot" id="kss-foot">' + footHtml + '</div>' : ''); }
+  /* ---------- messages ---------- */
+  /* EIP-4361 (and the Solana form of it): every field, or null when the text is not a sign-in message */
+  function siwe(text) {
+    var m = /^(?:(\S+?):\/\/)?(\S+) wants you to sign in with your (Ethereum|Solana) account:\n(\S+)\n/.exec(String(text || ''));
+    if (!m) return null;
+    var o = { scheme: m[1] || '', domain: m[2], chain: m[3], address: m[4], statement: '' }, rest = String(text).slice(m[0].length);
+    var parts = rest.split('\n'), i = 0;
+    if (parts[i] === '') { i++; var st = []; while (i < parts.length && !/^[A-Z][A-Za-z ]+: /.test(parts[i])) { if (parts[i] !== '') st.push(parts[i]); i++; } o.statement = st.join('\n'); }
+    var key = { 'URI': 'uri', 'Version': 'version', 'Chain ID': 'chainId', 'Nonce': 'nonce', 'Issued At': 'issuedAt', 'Expiration Time': 'expirationTime', 'Not Before': 'notBefore', 'Request ID': 'requestId' }, res = [];
+    for (; i < parts.length; i++) {
+      var kvm = /^([A-Z][A-Za-z ]+): ?(.*)$/.exec(parts[i]);
+      if (kvm && key[kvm[1]]) o[key[kvm[1]]] = kvm[2];
+      else if (/^- /.test(parts[i])) res.push(parts[i].slice(2));
+    }
+    if (res.length) o.resources = res;
+    return o;
+  }
+  function siweRows(f) {
+    var r = [['Website', esc(f.domain)], ['Account', '<span class="hp-mono">' + esc(shortA(f.address)) + '</span>']];
+    if (f.uri) r.push(['URI', esc(f.uri)]);
+    if (f.chainId) r.push(['Chain ID', esc(f.chainId)]);
+    if (f.nonce) r.push(['Nonce', '<span class="hp-mono">' + esc(f.nonce) + '</span>']);
+    if (f.issuedAt) r.push(['Issued', esc(f.issuedAt)]);
+    if (f.expirationTime) r.push(['Expires', esc(f.expirationTime)]);
+    if (f.notBefore) r.push(['Not before', esc(f.notBefore)]);
+    if (f.requestId) r.push(['Request ID', esc(f.requestId)]);
+    if (f.resources) r.push(['Resources', esc(f.resources.length + '')]);
+    return r.map(function (x) { return kv(x[0], x[1], '', { sm: true }); }).join('');
+  }
+  function msgBlock(text, isHex) { return '<div class="hp-msg' + (isHex ? ' mono' : '') + '">' + esc(text) + '</div>'; }
+  /* EIP-712: the message as a tree (nested structs indented, arrays numbered, long values shortened) */
+  function tree(o, depth) {
+    depth = depth || 0;
+    if (depth > 6) return '<span class="hp-tv">\u2026</span>';
+    var keys = Object.keys(o || {});
+    return keys.slice(0, 40).map(function (k) {
+      var v = o[k];
+      if (v && typeof v === 'object') return '<div class="hp-tn"><b>' + esc(k) + (Array.isArray(v) ? ' [' + v.length + ']' : '') + '</b><div class="hp-tc">' + tree(v, depth + 1) + '</div></div>';
+      var s = String(v), addr = /^0x[0-9a-fA-F]{40}$/.test(s);
+      return '<div class="hp-tn"><b>' + esc(k) + '</b><span class="hp-tv' + (addr || /^0x/.test(s) ? ' hp-mono' : '') + '">' + esc(s.length > 66 ? s.slice(0, 30) + '\u2026' + s.slice(-12) : s) + '</span></div>';
+    }).join('') + (keys.length > 40 ? '<div class="hp-tn">\u2026 ' + (keys.length - 40) + ' more</div>' : '');
+  }
+  /* overlay for an app that hosts the sheet in its own page (Hwallet). Returns { el, close(fn) } */
+  function overlay(inner, footHtml, onClose) {
+    var ov = document.createElement('div'); ov.className = 'hp-ov';
+    ov.innerHTML = '<div class="hp-dim"></div><div class="hp-sheet" role="dialog" aria-modal="true">' + sheet(inner, footHtml) + '</div>';
+    document.body.appendChild(ov);
+    void ov.offsetWidth; requestAnimationFrame(function () { ov.classList.add('in'); });
+    var closed = false;
+    function close(cb) { if (closed) return; closed = true; ov.classList.remove('in'); ov.classList.add('out'); setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); if (cb) cb(); }, 210); if (onClose) onClose(); }
+    ov.querySelector('.hp-dim').addEventListener('click', function () { var x = ov.querySelector('[data-hp-x]'); if (x) x.click(); });
+    /* drag the sheet down to cancel (transform only) */
+    var sh = ov.querySelector('.hp-sheet'), sc = ov.querySelector('.hp-scroll'), y0 = null, dy = 0;
+    sh.addEventListener('touchstart', function (e) { if (sc.scrollTop <= 0 && !e.target.closest('.hp-foot')) { y0 = e.touches[0].clientY; dy = 0; } }, { passive: true });
+    sh.addEventListener('touchmove', function (e) { if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); if (dy > 4) { sh.style.transition = 'none'; sh.style.transform = 'translate3d(0,' + dy + 'px,0)'; } }, { passive: true });
+    sh.addEventListener('touchend', function () { if (y0 == null) return; y0 = null; sh.style.transition = ''; sh.style.transform = ''; if (dy > 100) { var x = ov.querySelector('[data-hp-x]'); if (x) x.click(); } });
+    return { el: ov, close: close };
+  }
+  window.HWP = { esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
+    trust: trust, warns: warns, perms: perms, details: details, foot: foot, sheet: sheet, siwe: siwe, siweRows: siweRows, msgBlock: msgBlock, tree: tree, overlay: overlay };
+})();
+
 /* ===== Hwallet v1.3: watch-only, simple and quick =====
    v1.2 layout and components follow Gem Wallet (github.com/gemwalletcom/wallet, GPL-3.0; assets MIT), with Kwallet's
    themes, sounds and haptics on top. Hwallet (this module) is GPL-3.0; see hwallet/LICENSE and hwallet/NOTICE.
@@ -4623,11 +4925,12 @@ var APP_VERSION = '1.7';
       ov.querySelector('[data-m]').onclick = function () { close(); go({ v: 'wallets' }); };
     });
   }
-  function switchWallet(id) {
+  function switchWallet(id, keep) {
     if (id === WID) return; saveCache(); stopWs(); useWallet(id); buzz([10, 40, 14]); snd('sw');
     try { wcWalletChanged(); } catch (e) {}
     try { brWalletChanged(); } catch (e) {}
-    stack = []; V = { v: 'home' }; render('in'); refreshAll(); liveConfig();
+    /* P2a: keep = switched from a connect popup; stay on the screen (and Browser tab) the user is on */
+    if (!keep) { stack = []; V = { v: 'home' }; render('in'); } refreshAll(); liveConfig();
   }
   function walletsHtml() {
     return topbar('Wallets') + '<div class="lst">' + W.map(function (w) { return wrow(w, 'data-w="' + w.id + '"', '<button class="ib" data-wm="' + w.id + '" aria-label="Options">' + sv('more') + '</button>'); }).join('') + '</div>' +
@@ -6376,6 +6679,9 @@ window.hwCrashPrompt = crashPrompt;
   /* the site's icon travels to Kwallet only as a small data: image (Kwallet is offline) */
   function iconData(url) {
     return new Promise(function (res) {
+      /* P2a: the P1 icon cache gives data: images and bundled dapps/*.png; both travel as they are or via canvas */
+      if (/^data:image\/(png|jpeg|webp|gif);base64,/.test(String(url || ''))) return res(url.length < 90000 ? url : '');
+      if (/^dapps\/[a-z0-9-]+\.png$/.test(String(url || ''))) { try { url = new URL(url, location.href).href; } catch (e) { return res(''); } }
       if (!url || !/^https:/.test(url)) return res('');
       var im = new Image(); im.crossOrigin = 'anonymous'; var t = setTimeout(function () { res(''); }, 1200);
       im.onload = function () { clearTimeout(t); try { var c = document.createElement('canvas'); c.width = c.height = 64; c.getContext('2d').drawImage(im, 0, 0, 64, 64); res(c.toDataURL('image/png')); } catch (e) { res(''); } };
@@ -6390,16 +6696,42 @@ window.hwCrashPrompt = crashPrompt;
   }
   function chainLabel(ns, cid) { return ns === 'eip155' ? (EVMID[cid] ? EVMID[cid].name : 'Chain ' + cid) : ns === 'solana' ? 'Solana' : 'Tron'; }
   function chainLogo(ns, cid) { return ns === 'eip155' ? logo((EVMID[cid] || EVM[0]).logo, 'E', '', 'sm') : logo(ns === 'solana' ? 'solana' : 'tron', ns[0].toUpperCase(), '', 'sm'); }
+  /* ---------- P2a (#94a): the connect popup, same design as Kwallet's sign sheet (hwpop.js / hwpop.css) ----------
+     o = { site, trust: { cls: ok|unk|bad, t }, chains: [{ name, logo (html) }], accs: [{ name, addr, logo }], ns: [...], err }
+     Resolves true (connect), false (cancel) or { wallet: id } when the user picked another wallet (the caller switches and asks again). */
+  function siteSrc(site) { var i = site && site.icon; return i && (/^https:\/\//.test(i) || /^data:image\//.test(i) || /^dapps\//.test(i)) ? i : ''; }
+  function hpConnect(o) {
+    var site = o.site || {}, tr = o.trust || { cls: 'unk' }, lv = tr.cls === 'ok' ? 'ok' : tr.cls === 'bad' ? 'bad' : 'unk';
+    var need = o.ns || [], wl = W.filter(function (w) { return need.every(function (n) { return n === 'eip155' ? w.A.eth : n === 'solana' ? w.A.sol : n === 'tron' ? w.A.trx : true; }); });
+    var a0 = (o.accs || [])[0] || {}, wname = (A.label || 'Wallet') + (o.accs && o.accs.length > 1 ? ' \u00b7 ' + o.accs.length + ' accounts' : '');
+    var wrow = HWP.kv('Wallet', HWP.walletV(wname, a0.addr, ''), '', { tap: wl.length > 1, chev: wl.length > 1, id: 'hp-wr' });
+    var wlist = wl.length > 1 ? '<div class="hp-wl" id="hp-wl" hidden>' + wl.map(function (w) { var ad = need[0] === 'solana' ? w.A.sol : need[0] === 'tron' ? w.A.trx : w.A.eth; return '<button type="button" class="hp-wo' + (w.id === WID ? ' on' : '') + '" data-wid="' + esc(w.id) + '"><i></i><span>' + esc(w.label) + '</span><em>' + esc(HWP.shortA(ad)) + '</em></button>'; }).join('') + '</div>' : '';
+    var accRows = (o.accs || []).length > 1 ? o.accs.map(function (x) { return HWP.kv('<span class="hp-acc">' + (x.logo || '') + '<span>' + esc(x.name) + '</span></span>', '<span class="hp-mono">' + esc(HWP.shortA(x.addr)) + '</span>', '', { sm: true }); }).join('') : '';
+    var chips = (o.chains || []).map(function (c) { return '<span class="hp-chip">' + c.logo + esc(c.name) + '</span>'; }).join('');
+    var inner = HWP.head({ icon: siteSrc(site), name: site.name || site.host, url: String(site.origin || ('https://' + site.host)).replace(/\/+$/, '') });
+    if (o.err) inner += HWP.title('Can\u2019t connect') + HWP.warns([esc(o.err)], true);
+    else inner += '<div class="hp-lead">This app would like to:</div>' + HWP.card(HWP.perms() + wrow + wlist + accRows) +
+      (chips ? HWP.card('<div class="hp-sec">Networks</div><div class="hp-chips">' + chips + '</div>') : '') +
+      (lv === 'bad' ? HWP.warns(['<b>' + esc(String(tr.t || 'Known risk').replace(/\.\s*$/, '')) + '.</b> Do not connect unless you are sure.'], true) : '') +
+      HWP.trust(lv, lv === 'ok' ? (tr.t || 'Verified domain') + ' \u00b7 only confirm if you trust this website' : lv === 'bad' ? 'Do not connect' : 'Unknown domain \u00b7 only confirm if you trust this website');
+    var foot = o.err ? '<div class="hp-act"><button type="button" class="hp-btn hp-no" id="hp-no">Close</button></div>' : HWP.foot({ no: 'Cancel', ok: 'Connect', okId: 'hp-ok', noId: 'hp-no' });
+    return new Promise(function (res) {
+      var settled = false, ov = HWP.overlay(inner, foot);
+      function done(v) { if (settled) return; settled = true; ov.close(); res(v); }
+      var el = ov.el; el._close = function () { done(false); };
+      el.querySelector('[data-hp-x]').onclick = function () { done(false); };
+      el.querySelector('#hp-no').onclick = function () { buzz(6); done(false); };
+      var ok = el.querySelector('#hp-ok');
+      if (ok) ok.onclick = function () { if (lv === 'bad' && !ok._sure) { ok._sure = true; ok.querySelector('span').textContent = 'Connect anyway'; buzz([20, 40, 20]); return; } buzz(8); done(true); };
+      var wr = el.querySelector('#hp-wr'), wls = el.querySelector('#hp-wl');
+      if (wr && wls) wr.onclick = function () { wls.hidden = !wls.hidden; wr.classList.toggle('hp-open', !wls.hidden); buzz(4); };
+      el.querySelectorAll('[data-wid]').forEach(function (b) { b.onclick = function () { var id = b.getAttribute('data-wid'); if (id === WID) { wls.hidden = true; wr.classList.remove('hp-open'); return; } buzz(8); done({ wallet: id }); }; });
+      try { if (window.HwNative && HwNative.warmK) HwNative.warmK(); } catch (e) {}
+    });
+  }
   /* connect: approved here (public addresses only), no Kwallet needed */
-  function dConnect(site, nets) {
-    var rows = nets.map(function (n) { return '<div class="dk-r">' + n.logo + '<span class="am"><span class="an">' + esc(n.name) + '</span><span class="ap mono">' + esc(short(n.addr, 6)) + '</span></span></div>'; }).join('');
-    return dSheet('<div class="dk-h">' + siteIcon(site) + '<div><h3>' + esc(site.name || site.host) + '</h3><p class="hint">' + esc(site.host) + '</p></div></div>' +
-      '<p class="dk-t">wants to connect to <b>' + esc(A.label || 'your wallet') + '</b></p><div class="lst">' + rows + '</div>' +
-      '<p class="hint">It can see these public addresses and ask for signatures. Every signature still needs your hold in Kwallet.</p>' +
-      '<div class="row2"><button class="btn" data-no>Reject</button><button class="btn pri" data-ok>Connect</button></div>', function (ov, done) {
-        ov.querySelector('[data-no]').onclick = function () { done(false); };
-        ov.querySelector('[data-ok]').onclick = function () { buzz(8); done(true); };
-      }).then(function (v) { return !!v; });
+  function dConnect(site, nets, ns) {
+    return hpConnect({ site: site, trust: site.trust, ns: ns ? [ns] : [], accs: nets, chains: nets.map(function (n) { return { name: n.name, logo: n.logo }; }) });
   }
   var DWANT = { personal_sign: 'Sign a message', eth_signTypedData_v4: 'Sign typed data', eth_sendTransaction: 'Approve a transaction', solana_signMessage: 'Sign a message', solana_signTransaction: 'Approve a transaction', tron_signMessage: 'Sign a message', tron_signTransaction: 'Approve a transaction' };
   function dContinue(site, ns, cid, method) {
@@ -6470,8 +6802,10 @@ window.hwCrashPrompt = crashPrompt;
   }
   function tokMap(ns, cid) {
     var o = {};
-    if (ns === 'eip155') { var n = EVMID[cid]; if (n) tokList(n.id).forEach(function (t) { o[String(t.a).toLowerCase()] = { s: t.s, d: t.d }; }); }
-    else tokList(ns === 'solana' ? 'sol' : 'trx').forEach(function (t) { o[t.a] = { s: t.s, d: t.d }; });
+    /* P2a: + the USD price (p) so Kwallet's balance-change rows show $ values */
+    var pp = function (t) { var v = +px(t.cg) || +t.px || 0; return v > 0 ? v : undefined; };
+    if (ns === 'eip155') { var n = EVMID[cid]; if (n) tokList(n.id).forEach(function (t) { o[String(t.a).toLowerCase()] = { s: t.s, d: t.d, p: pp(t) }; }); }
+    else tokList(ns === 'solana' ? 'sol' : 'trx').forEach(function (t) { o[t.a] = { s: t.s, d: t.d, p: pp(t) }; });
     return o;
   }
   /* Solana: read the lookup tables a v0 transaction uses, so Kwallet can show every account */
@@ -6498,8 +6832,11 @@ window.hwCrashPrompt = crashPrompt;
   function dappRun1(q) {
     var ns = q.ns, m = q.method, P = q.params, site = q.site;
     if (!(window.HwNative && HwNative.sign)) return Promise.reject(dErr(5000, 'Signing needs the Hwallet app with Kwallet on the same phone'));
-    var base = { origin: site.origin || ('https://' + site.host), via: q.via, site: { name: String(site.name || site.host).slice(0, 60) } };
-    var ask = q.skipAsk ? Promise.resolve(true) : dContinue(site, ns, q.cid, m);
+    var base = { origin: String(site.origin || ('https://' + site.host)).slice(0, 200), via: q.via, site: { name: String(site.name || site.host).slice(0, 60) } };
+    /* P2a (#95/#97a): no Hwallet step in between: Kwallet's sheet opens straight over this screen */
+    var ask = Promise.resolve(true); try { if (HwNative.warmK) HwNative.warmK(); } catch (e) {}
+    if (site.trust && site.trust.cls) { base.trust = site.trust.cls; if (site.trust.t) base.trustText = String(site.trust.t).slice(0, 60); }
+    if (q.step) base.step = q.step;
     return ask.then(function (ok) {
       if (!ok) throw dErr(5000, 'User rejected the request');
       return iconData(site.icon).then(function (ic) { if (ic) base.site.icon = ic; });
@@ -6763,30 +7100,11 @@ window.hwCrashPrompt = crashPrompt;
     if (ns) Object.keys(ns).forEach(function (k) { (ns[k].methods || []).forEach(function (m) { var t = WC_MNAME[m]; if (t && meth.indexOf(t) < 0) meth.push(t); }); });
     var accs = [];
     if (ns) { if (ns.eip155) accs.push(['EVM', A.eth, logo('ethereum', 'E', '', 'sm')]); if (ns.solana) accs.push(['Solana', A.sol, logo('solana', 'S', '', 'sm')]); if (ns.tron) accs.push(['Tron', A.trx, logo('tron', 'T', '', 'sm')]); }
-    var CH_MAX = 8, chipHtml = chains.slice(0, CH_MAX).map(function (c) { return '<span class="wc-chip">' + wcChainLogo(c) + esc(wcChainName(c)) + '</span>'; }).join('') + (chains.length > CH_MAX ? '<span class="wc-chip wc-more" data-more>+' + (chains.length - CH_MAX) + ' more</span>' : '');
-    var html = '<div class="wc-hd">' + siteIcon(site) + '<div class="wc-hdt"><h3>' + esc(site.name) + '</h3><p class="wc-url">' + esc(site.host) + '</p>' +
-      '<span class="wc-ver ' + ver.cls + '">' + (ver.cls === 'ok' ? '<i>\u2713</i>' : ver.cls === 'bad' ? '<i>!</i>' : '<i>?</i>') + esc(ver.t) + '</span></div></div>' +
-      (ns ? '<p class="wc-lead">wants to connect to <b>' + esc(A.label || 'your wallet') + '</b></p>' +
-        '<div class="wc-sec">Accounts</div><div class="lst wc-l">' + accs.map(function (a) { return '<div class="wc-r">' + a[2] + '<span class="am"><span class="an">' + esc(a[0]) + '</span><span class="ap mono">' + esc(short(a[1], 6)) + '</span></span></div>'; }).join('') + '</div>' +
-        '<div class="wc-sec">Networks</div><div class="wc-chips" id="wc-chips">' + chipHtml + '</div>' +
-        '<div class="wc-sec">It can ask to</div><div class="wc-chips">' + meth.map(function (m) { return '<span class="wc-chip wc-m">' + esc(m) + '</span>'; }).join('') + '</div>' +
-        '<p class="hint">It sees only public addresses. Every signature still needs your hold in Kwallet.</p>' +
-        '<div class="row2"><button class="btn" data-no>Reject</button><button class="btn pri" data-ok' + (ver.cls === 'bad' ? ' data-risk' : '') + '>Connect</button></div>'
-      : '<div class="note warn">Hwallet cannot connect to this app: ' + esc(why.replace(/^.*?:\s*/, '') || 'it needs networks this wallet does not have') + '. Hwallet supports EVM networks, Solana and Tron on paired wallets.</div>' +
-        '<div class="row2"><button class="btn pri" data-no>Close</button></div>');
-    var ov = null;
-    return dSheet(html, function (o, done) {
-      ov = o; o.querySelector('.sheet').classList.add('wc-sheet');
-      o.querySelector('[data-no]').onclick = function () { done(false); };
-      var ok = o.querySelector('[data-ok]');
-      if (ok) ok.onclick = function () {
-        if (ok.hasAttribute('data-risk') && !ok._sure) { ok._sure = true; ok.textContent = 'Connect anyway'; buzz([20, 40, 20]); return; }
-        buzz(8); done(true);
-      };
-      var mo = o.querySelector('[data-more]');
-      if (mo) mo.onclick = function () { o.querySelector('#wc-chips').innerHTML = chains.map(function (c) { return '<span class="wc-chip">' + wcChainLogo(c) + esc(wcChainName(c)) + '</span>'; }).join(''); };
-    }).then(function (yes) {
+    /* P2a (#94a): the shared connect popup */
+    return hpConnect({ site: site, trust: ver, ns: ns ? Object.keys(ns) : [], err: ns ? '' : 'Hwallet cannot connect to this app: ' + (why.replace(/^.*?:\s*/, '') || 'it needs networks this wallet does not have') + '. Hwallet supports EVM networks, Solana and Tron on paired wallets.',
+      accs: accs.map(function (x) { return { name: x[0], addr: x[1], logo: x[2] }; }), chains: chains.map(function (c) { return { name: wcChainName(c), logo: wcChainLogo(c) }; }) }).then(function (yes) {
       var wk = WC.wk;
+      if (yes && yes.wallet) { switchWallet(yes.wallet, true); return wcProposal(ev); }
       if (!yes || !ns) return wk.rejectSession({ id: ev.id, reason: wcErr(ns ? 'USER_REJECTED' : 'UNSUPPORTED_NAMESPACE_KEY') }).catch(function () {});
       return wk.approveSession({ id: ev.id, namespaces: ns }).then(function (s) {
         wcSaved(); wcListSync(); snd('ok'); toast('Connected to ' + site.name); buzz([10, 40, 14]);
@@ -6808,6 +7126,7 @@ window.hwCrashPrompt = crashPrompt;
   function wcRequest(ev) {
     var topic = ev.topic, id = ev.id, P = ev.params || {}, rq = P.request || {}, m = rq.method, p = rq.params, cs = String(P.chainId || ''), ses = wcSessions()[topic];
     var site = wcSite(ses && ses.peer && ses.peer.metadata), ns = cs.split(':')[0], cid = ns === 'eip155' ? +cs.split(':')[1] : null;
+    var vr = wcVerify(ev.verifyContext); site.trust = vr;
     var job = dappRoute({ site: site, via: 'walletconnect', ns: ns, cid: cid, cs: cs, method: m, params: p,
       chainId: function () { return +(WC.chain[topic] || cid); }, switchChain: function (a, mm) { return wcSwitch(topic, ses, a, mm); } });
     return job.then(function (r) { return wcReply(topic, id, r); }, function (e) {
@@ -7101,7 +7420,7 @@ window.hwCrashPrompt = crashPrompt;
   }
   /* lay the active tab's native WebView over #br-v (or hide it while a sheet, the switcher or the address bar is up) */
   var brShown = '';
-  function brCovered() { return !!document.querySelector('.sheet-ov, .kwd-ov') || (window.hwScanner && hwScanner.isOpen && hwScanner.isOpen()); }
+  function brCovered() { return !!document.querySelector('.sheet-ov, .kwd-ov, .hp-ov') || (window.hwScanner && hwScanner.isOpen && hwScanner.isOpen()); }
   function brPlace() {
     var el = document.getElementById('br'), t = brCur(), v = document.getElementById('br-v');
     var want = el && !el.hidden && t && t.url && !BRU.sw && !BRU.edit && !BRU.hist && v && !brCovered();
@@ -7218,8 +7537,10 @@ window.hwCrashPrompt = crashPrompt;
     if (brIs(o, ns)) return Promise.resolve(addr);
     var k = o + '|' + ns; if (brAsk[k]) return brAsk[k];
     var cid = brCid(o);
-    brAsk[k] = dConnect(site, [{ logo: chainLogo(ns, cid), name: chainLabel(ns, cid), addr: addr }]).then(function (ok) {
+    brAsk[k] = dConnect(site, [{ logo: chainLogo(ns, cid), name: chainLabel(ns, cid), addr: addr }], ns).then(function (ok) {
       delete brAsk[k];
+      /* P2a: another wallet picked in the popup: switch (staying on this tab) and ask again with its address */
+      if (ok && ok.wallet) { switchWallet(ok.wallet, true); return brConnect(o, site, ns); }
       if (!ok) throw dErr(4001, 'User rejected the request');
       var S = brSites(), r = S[o] || { ns: {}, cid: cid, since: Date.now() };
       r.ns[ns] = 1; r.name = String(site.name || site.host).slice(0, 60); if (site.icon) r.icon = site.icon; r.cid = r.cid || cid; S[o] = r; brSitesSet(S);
@@ -7277,7 +7598,10 @@ window.hwCrashPrompt = crashPrompt;
   function brSiteOf(o, meta) {
     var r = brSites()[o] || {}, h = hostOf(o), ic = meta && meta.icon;
     try { if (ic && new URL(ic).origin !== o && !/^https:/.test(ic)) ic = ''; } catch (e) { ic = ''; }
-    return { origin: o, host: h, name: String((meta && meta.title) || r.name || h).slice(0, 60), icon: (ic && /^https:/.test(ic) ? ic : '') || r.icon || '' };
+    /* P2a: the icon comes from the P1 cache first (bundled dApp icons, then the site's cached icon); trust = a bundled well-known app */
+    var known = !!brAppIcon(h);
+    return { origin: o, host: h, name: String((meta && meta.title) || r.name || h).slice(0, 60), icon: brSiteIcon(h) || (ic && /^https:/.test(ic) ? ic : '') || r.icon || '',
+      trust: known ? { cls: 'ok', t: 'Known app' } : { cls: 'unk' } };
   }
   function brSwitch(o, a, m) {
     var c = a && a.chainId, id = c == null ? NaN : Number(BI(String(c)));
@@ -7652,7 +7976,10 @@ window.hwCrashPrompt = crashPrompt;
   function swTag(q, extra) {
     var p = SW.pay, r = SW.recv;
     return Object.assign({ text: fmtU(q.amt, p.d, 8) + ' ' + p.s + ' \u2192 ' + fmtU(q.out, r.d, 8) + ' ' + r.s, sub: q.name + ' \u00b7 at least ' + fmtU(q.min, r.d, 8) + ' ' + r.s,
-      fee: q.svcBps ? bpsTxt(q.svcBps) + ' \u00b7 ' + fmtU(q.svcRaw, q.svcIn ? p.d : r.d, 8) + ' ' + (q.svcIn ? p.s : r.s) : 'None' }, extra || {});
+      fee: q.svcBps ? bpsTxt(q.svcBps) + ' \u00b7 ' + fmtU(q.svcRaw, q.svcIn ? p.d : r.d, 8) + ' ' + (q.svcIn ? p.s : r.s) : 'None',
+      /* P2a (#94): the quote as balance-change rows for Kwallet's sheet (pay exact, receive estimated with the minimum) */
+      pay: { s: p.s, d: p.d, v: String(q.amt), a: p.gas ? '' : String(p.a || ''), nat: p.gas ? 1 : 0, px: +tokPx(p) || 0 },
+      recv: { s: r.s, d: r.d, v: String(q.out), min: String(q.min), a: r.gas ? '' : String(r.a || ''), nat: r.gas ? 1 : 0, px: +tokPx(r) || 0 } }, extra || {});
   }
   function run(o) { return dappRun(Object.assign({ site: SITE, via: 'swap', skipAsk: true, feePreset: SW && SW.fee }, o)); }
   function evmTx(n, tx, extra) { return run(Object.assign({ ns: 'eip155', cid: n.chainId, method: 'eth_sendTransaction', params: { tx: tx } }, extra || {})); }

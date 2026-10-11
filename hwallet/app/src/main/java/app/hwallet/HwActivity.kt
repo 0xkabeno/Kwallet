@@ -106,15 +106,20 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun sign(json: String) {
             runOnUiThread {
-                val i = Intent().setClassName(KWALLET, "$KWALLET.SignActivity").putExtra("req", json.take(65536))
+                val i = Intent().setClassName(KWALLET, "$KWALLET.SignActivity").putExtra("req", json.take(65536)).putExtra("t0", android.os.SystemClock.uptimeMillis())
                 val ok = try { packageManager.getPackageInfo(KWALLET, 0); true } catch (_: Exception) { false }
                 if (!ok) { web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote("{\"status\":\"missing\"}")})", null); return@runOnUiThread }
-                try { signing = true; kwSign.launch(i) } catch (_: Exception) {
+                /* P2a (#97a): no window animation (Kwallet's page slides its own sheet up over this screen, which stays as it is) */
+                try { signing = true; kwSign.launch(i, androidx.core.app.ActivityOptionsCompat.makeCustomAnimation(this@HwActivity, 0, 0)) } catch (_: Exception) {
                     signing = false
                     web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote("{\"status\":\"missing\"}")})", null)
                 }
             }
         }
+
+        /** P2a (#97a): wake Kwallet's process + WebView engine before a signature is likely (dApp connect / request). */
+        @android.webkit.JavascriptInterface
+        fun warmK() { warmKwallet() }
 
         /** HTTPS JSON requests to public nodes (no CORS limits here). Result via window.hwHttpDone(id, status, body).
          *  v1.4 (#53): through Hwallet's one network stack (HwNet), so the data speed limit applies. */
@@ -785,10 +790,17 @@ class HwActivity : FragmentActivity() {
         web.saveState(outState)
     }
 
-    override fun onPause() { super.onPause(); if (!signing) web.onPause(); br?.pause() }
+    /* P2a (#95): while Kwallet's sheet is over Hwallet the dApp tab stays live and visible behind it (no pause, no save) */
+    override fun onPause() { super.onPause(); if (!signing) { web.onPause(); br?.pause() } }
+    @Volatile private var warmAt = 0L
+    fun warmKwallet() {
+        val now = android.os.SystemClock.uptimeMillis(); if (now - warmAt < 30000) return; warmAt = now
+        try { sendBroadcast(Intent("app.kwallet.WARM").setPackage(KWALLET)) } catch (_: Exception) {}
+    }
     override fun onResume() {
         super.onResume(); web.onResume(); br?.resume(); if (::web.isInitialized) tuneWebView(this, web)
         if (pendingLive) ui.postDelayed({ if (pendingLive) startLiveSafe() }, 300)
+        ui.postDelayed({ warmKwallet() }, 2500)  // P2a: keep Kwallet's sign sheet quick to open while Hwallet is in use
     }  // OEMs drop back to 60 Hz after resume
     override fun onDestroy() { try { br?.destroy(); br = null } catch (_: Throwable) {}; try { socks.values.forEach { it.cancel() }; socks.clear(); HwActDb.listener = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
 }

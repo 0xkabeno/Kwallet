@@ -48,6 +48,17 @@
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|smallestScreenSize|uiMode|density"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- P2a (#97a): Hwallet wakes Kwallet's process (and loads the WebView engine) just before it may ask for a signature,
+             so the sign sheet opens fast. Only apps signed with the Kwallet key may send it; it starts nothing visible. -->
+        <receiver
+            android:name=".WarmReceiver"
+            android:exported="true"
+            android:permission="app.kwallet.permission.SIGN_FEED">
+            <intent-filter>
+                <action android:name="app.kwallet.WARM" />
+            </intent-filter>
+        </receiver>
+
         <!-- Launcher icons. Settings > App icon enables one alias and disables the other.
              The lime alias keeps the old component name so existing home-screen shortcuts survive updates. -->
         <activity-alias
