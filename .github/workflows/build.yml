@@ -58,7 +58,18 @@ jobs:
             echo "::warning::KWALLET_SIGNING secret missing - APK signed with a temporary debug key"
           fi
 
+      # Hwallet's provider keys (v1.6): sealed into the APK at build time with AES-GCM under a per-build split key
+      # (hwallet/app/build.gradle.kts, genHwSecrets). Only this step sees them; GitHub masks them in logs. Any that are
+      # missing (forks, PRs from forks) leave that provider keyless and the build still succeeds.
       - name: Build
+        env:
+          KW_ALCHEMY_KEY: ${{ secrets.KW_ALCHEMY_KEY }}
+          KW_ETHERSCAN_KEY: ${{ secrets.KW_ETHERSCAN_KEY }}
+          KW_HELIUS_KEY: ${{ secrets.KW_HELIUS_KEY }}
+          KW_TRONGRID_KEY: ${{ secrets.KW_TRONGRID_KEY }}
+          KW_LIFI_KEY: ${{ secrets.KW_LIFI_KEY }}
+          KW_JUPITER_KEY: ${{ secrets.KW_JUPITER_KEY }}
+          KW_REOWN_PROJECT_ID: ${{ secrets.KW_REOWN_PROJECT_ID }}
         run: gradle --no-daemon assembleRelease
 
       - name: Hwallet unit tests (data speed limit)

@@ -556,6 +556,12 @@ body.md3 .scn-pl { background: var(--md-primary, var(--acc)); }
 .crashp .kwd { width: min(340px, 100%); }
 .scn-msg[hidden], .scn-torch[hidden] { display: none !important; }
 
+/* v1.6 (A2): Settings > API keys editor */
+.kwd-p{margin:0 24px 12px;font:400 14px/20px 'RobotoE','Roboto',system-ui,sans-serif;color:var(--text-muted)}
+.kwd-in{display:block;width:calc(100% - 48px);margin:0 24px;height:48px;box-sizing:border-box;border:1px solid var(--border);border-radius:12px;background:var(--bg-input,var(--bg));color:var(--text);padding:0 12px;font:500 15px 'RobotoMonoE',monospace;outline:none}
+.kwd-in:focus{border-color:var(--text)}.kwd-in.bad{border-color:#d93025}
+.kwd-key .kwd-act{align-items:center}
+
 </style>
 </head>
 <body data-theme="light">
@@ -3385,14 +3391,25 @@ var APP_VERSION = '1.5';
           if (st >= 200 && st < 300) { try { res(parse(body)); } catch (e) { rej(new Error('bad json')); } }
           else { var e = new Error('HTTP ' + st + (body ? ': ' + String(body).slice(0, 200) : '')); e.status = st; e.body = body; rej(e); }
         };
-        try { if (HwNative.http2) HwNative.http2(id, o.method || 'GET', url, o.body || '', ms, ct); else HwNative.http(id, o.method || 'GET', url, o.body || '', ms); } catch (e) { done = true; rej(e); }
+        try { if (HwNative.http3 && (o.headers || /\{\{K:/.test(url + (o.body || '')))) HwNative.http3(id, o.method || 'GET', url, o.body || '', ms, ct, o.headers ? JSON.stringify(o.headers) : ''); else if (HwNative.http2) HwNative.http2(id, o.method || 'GET', url, o.body || '', ms, ct); else HwNative.http(id, o.method || 'GET', url, o.body || '', ms); } catch (e) { done = true; rej(e); }
       });
     }
     var ac = window.AbortController ? new AbortController() : null, tm = setTimeout(function () { if (ac) ac.abort(); }, ms);
-    var body = o.body || undefined, hdr = o.body ? { 'Content-Type': ct.replace(/;hex$/, '') } : {};
+    if (/\{\{K:/.test(url + (o.body || '') + JSON.stringify(o.headers || {}))) return Promise.reject(Object.assign(new Error('keys only in the app'), { status: -1 }));
+    var body = o.body || undefined, hdr = Object.assign(o.body ? { 'Content-Type': ct.replace(/;hex$/, '') } : {}, o.headers || {});
     if (o.body && /;hex$/.test(ct)) { var h = o.body, u = new Uint8Array(h.length / 2); for (var i = 0; i < u.length; i++) u[i] = parseInt(h.substr(i * 2, 2), 16); body = u; }
     return fetch(url, { method: o.method || 'GET', headers: hdr, body: body, cache: 'no-store', signal: ac ? ac.signal : undefined, referrerPolicy: 'no-referrer' })
       .then(function (r) { clearTimeout(tm); return r.text().then(function (t) { if (!r.ok) { var e = new Error('HTTP ' + r.status + ': ' + t.slice(0, 200)); e.status = r.status; e.body = t; throw e; } return parse(t); }); });
+  }
+  /* v1.6: provider keys live natively (built-in, sealed in the APK, or the user's own from Settings > API keys).
+     The page only knows whether one is there; it writes {{K:name}} and Hwallet adds the key on the way out.
+     keyed(name, keyedJob, keylessJob): keyed first, keyless on any failure (missing key, quota 429/403, outage). */
+  var KST = {}, kstAt = 0;
+  function keyState(n) { if (Date.now() - kstAt > 15000) { kstAt = Date.now(); try { KST = JSON.parse(HwNative.keyState()) || {}; } catch (e) { KST = {}; } } return KST[n] || ''; }
+  function hasKey(n) { return !!keyState(n); }
+  function keyed(n, withKey, without) {
+    if (!hasKey(n)) return without ? without() : Promise.reject(new Error('no key'));
+    return withKey().catch(function (e) { if (e && (e.status === -429 || e.status === -1)) kstAt = 0; if (!without) throw e; return without(); });
   }
   function anyOf(ps) { return new Promise(function (res, rej) { var n = ps.length, errs = []; if (!n) rej(new Error('no endpoints')); ps.forEach(function (p) { p.then(res, function (e) { errs.push(e); if (errs.length === n) rej(errs[0]); }); }); }); }
   /* race the two fastest known endpoints, then fall back through the rest; remember who answered first */
@@ -4593,7 +4610,7 @@ var APP_VERSION = '1.5';
   /* ---------- broadcast + tracking per chain ---------- */
   function broadcast(ch, res) {
     if (ch === 'eth') {
-      var n = EVMBY[SND.net];
+      var n = EVMBY[res.network || SND.net];
       return anyOf(n.rpc.map(function (u) {
         return http(u, { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_sendRawTransaction', params: [res.raw] }), timeout: 8000 }).then(function (j) {
           if (j.error) { if (/already known|known transaction/i.test(j.error.message || '')) return res.hash; throw new Error(j.error.message); } return j.result;
@@ -5052,6 +5069,39 @@ var APP_VERSION = '1.5';
       (sub != null ? '<span class="kws-s" id="' + id + '-s">' + sub + '</span>' : '') + '</span>' + (tail || '') + '</button>';
   }
   var KSW = '<span class="kws-sw" aria-hidden="true"></span>';
+  /* v1.6 (A2): Settings > API keys. Hwallet ships the owner's keys sealed in the APK; the user may set their own per
+     provider (it wins). The page never reads a key back: it only learns "user", "app" or "" (keyless right now). */
+  var KEYP = [['alchemy', 'Alchemy', 'EVM nodes'], ['etherscan', 'Etherscan V2', 'EVM history'], ['helius', 'Helius', 'Solana node'], ['trongrid', 'TronGrid', 'Tron node'],
+    ['lifi', 'LI.FI', 'Swaps and bridges'], ['jupiter', 'Jupiter', 'Solana swaps'], ['reown', 'Reown', 'WalletConnect project ID']];
+  var KEYI = 'M12.65 10A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z';
+  function keysHtml() {
+    if (!nat('setUserKey') || !nat('keyState')) return '';
+    return '<div class="kws-sec">API keys</div><div class="kws-grp">' + KEYP.map(function (k) { return krow('kws-key-' + k[0], KEYI, k[1], ''); }).join('') + '</div>';
+  }
+  function keySub(n, d) {
+    var st = ''; try { st = (JSON.parse(HwNative.keyState()) || {})[n] || ''; } catch (e) {}
+    return d + ' \u00b7 ' + (st === 'user' ? 'Your key' : st === 'app' ? 'Built-in key' : 'Keyless \u00b7 public endpoints');
+  }
+  function keyEdit(k) {
+    var d = document.createElement('div'); d.className = 'kwd-ov';
+    d.innerHTML = '<div class="kwd kwd-key" role="dialog" aria-modal="true"><h3>' + k[1] + '</h3><p class="kwd-p">' + k[2] + '. Your key is used instead of the built-in one and stays on this phone.</p>' +
+      '<input type="password" class="kwd-in" id="kwd-key-in" autocomplete="off" spellcheck="false" maxlength="200" placeholder="Paste your key" aria-label="' + k[1] + ' key">' +
+      '<div class="kwd-act"><button type="button" data-a="clr">Use built-in</button><span style="flex:1"></span><button type="button" data-a="x">Cancel</button><button type="button" data-a="ok">Save</button></div></div>';
+    document.body.appendChild(d); void d.offsetWidth; d.classList.add('show');
+    var inp = d.querySelector('#kwd-key-in'); inp.oninput = function () { inp.classList.remove('bad'); inp.removeAttribute('aria-invalid'); }; setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
+    var close = function () { d.classList.remove('show'); inp.value = ''; setTimeout(function () { d.remove(); }, 160); };
+    d._close = close;
+    d.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-a]');
+      if (e.target === d || (b && b.getAttribute('data-a') === 'x')) return close();
+      if (!b) return;
+      ktick();
+      var a = b.getAttribute('data-a'), v = a === 'clr' ? '' : String(inp.value || '').trim();
+      if (a === 'ok' && !/^[\x21-\x7e]{8,200}$/.test(v)) { inp.classList.add('bad'); inp.setAttribute('aria-invalid', 'true'); return; }
+      try { HwNative.setUserKey(k[0], v); } catch (x) {}
+      close(); toast(a === 'clr' ? k[1] + ': built-in key' : k[1] + ': your key saved'); ksync();
+    });
+  }
   /* Kwallet's donation addresses and chain marks, copied from Kwallet's source (v3.41 Settings) */
   var DONATE = [['ETH','EVM','0x00047b2663aB0cE43B6941E30247379Ac7980fc1'],['SOL','Solana','Fd6GYpjp91xkw1nR5teZuugfdUy7Kg6oKzZ4ENQTA6JM'],['BTC','Bitcoin','bc1q9xv9snra9p3n6sqj5d6l0p6z22aesc597f3jx8'],['XMR','Monero','48n3nYPQgXTZYdrmdxiLkVYS41y9eXFf4RsSm9oXDvbcggNVP6Zzj5NSrNnWjQZcTtaaRJxfrQxVqBG5TNkSU4WKNmeKET2']];
   var DON_IC = {"ETH": ["0 0 24 24", "M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z"], "SOL": ["0 0 24 24", "m23.8764 18.0313-3.962 4.1393a.9201.9201 0 0 1-.306.2106.9407.9407 0 0 1-.367.0742H.4599a.4689.4689 0 0 1-.2522-.0733.4513.4513 0 0 1-.1696-.1962.4375.4375 0 0 1-.0314-.2545.4438.4438 0 0 1 .117-.2298l3.9649-4.1393a.92.92 0 0 1 .3052-.2102.9407.9407 0 0 1 .3658-.0746H23.54a.4692.4692 0 0 1 .2523.0734.4531.4531 0 0 1 .1697.196.438.438 0 0 1 .0313.2547.4442.4442 0 0 1-.1169.2297zm-3.962-8.3355a.9202.9202 0 0 0-.306-.2106.941.941 0 0 0-.367-.0742H.4599a.4687.4687 0 0 0-.2522.0734.4513.4513 0 0 0-.1696.1961.4376.4376 0 0 0-.0314.2546.444.444 0 0 0 .117.2297l3.9649 4.1394a.9204.9204 0 0 0 .3052.2102c.1154.049.24.0744.3658.0746H23.54a.469.469 0 0 0 .2523-.0734.453.453 0 0 0 .1697-.1961.4382.4382 0 0 0 .0313-.2546.4444.4444 0 0 0-.1169-.2297zM.46 6.7225h18.7815a.9411.9411 0 0 0 .367-.0742.9202.9202 0 0 0 .306-.2106l3.962-4.1394a.4442.4442 0 0 0 .117-.2297.4378.4378 0 0 0-.0314-.2546.453.453 0 0 0-.1697-.196.469.469 0 0 0-.2523-.0734H4.7596a.941.941 0 0 0-.3658.0745.9203.9203 0 0 0-.3052.2102L.1246 5.9687a.4438.4438 0 0 0-.1169.2295.4375.4375 0 0 0 .0312.2544.4512.4512 0 0 0 .1692.196.4689.4689 0 0 0 .2518.0739z"], "BTC": ["0 0 24 24", "M23.638 14.904c-1.602 6.43-8.113 10.34-14.542 8.736C2.67 22.05-1.244 15.525.362 9.105 1.962 2.67 8.475-1.243 14.9.358c6.43 1.605 10.342 8.115 8.738 14.548v-.002zm-6.35-4.613c.24-1.59-.974-2.45-2.64-3.03l.54-2.153-1.315-.33-.525 2.107c-.345-.087-.705-.167-1.064-.25l.526-2.127-1.32-.33-.54 2.165c-.285-.067-.565-.132-.84-.2l-1.815-.45-.35 1.407s.975.225.955.236c.535.136.63.486.615.766l-1.477 5.92c-.075.166-.24.406-.614.314.015.02-.96-.24-.96-.24l-.66 1.51 1.71.426.93.242-.54 2.19 1.32.327.54-2.17c.36.1.705.19 1.05.273l-.51 2.154 1.32.33.545-2.19c2.24.427 3.93.257 4.64-1.774.57-1.637-.03-2.58-1.217-3.196.854-.193 1.5-.76 1.68-1.93h.01zm-3.01 4.22c-.404 1.64-3.157.75-4.05.53l.72-2.9c.896.23 3.757.67 3.33 2.37zm.41-4.24c-.37 1.49-2.662.735-3.405.55l.654-2.64c.744.18 3.137.524 2.75 2.084v.006z"], "XMR": ["0 0 24 24", "M12 0C5.365 0 0 5.373 0 12.015c0 1.335.228 2.607.618 3.81h3.577V5.729L12 13.545l7.805-7.815v10.095h3.577c.389-1.203.618-2.475.618-3.81C24 5.375 18.635 0 12 0zm-1.788 15.307l-3.417-3.421v6.351H1.758C3.87 21.689 7.678 24 12 24s8.162-2.311 10.245-5.764h-5.04v-6.351l-3.386 3.421-1.788 1.79-1.814-1.79h-.005z"]};
@@ -5142,7 +5192,7 @@ var APP_VERSION = '1.5';
         krow('kws-sbar', KI.hglyph, 'Show H in status bar', '', KSW) + krow('kws-alerts', KI.bell, 'Incoming payment alerts', 'Sound + notification when funds arrive', KSW) : '') +
       krow('kws-rf', KI.timer, 'Refresh on screen', '') +
       (nat('setLive') ? krow('kws-batt', KI.batt, 'Battery optimization', '') + krow('kws-oem', KI.shield, 'Keep Hwallet running', 'Autostart and app-killer settings for your phone') : '') +
-      '</div><div class="kws-sec">Network</div><div class="kws-grp">' + capHtml() + '</div>' +
+      '</div><div class="kws-sec">Network</div><div class="kws-grp">' + capHtml() + '</div>' + keysHtml() +
       '<div class="kws-sec">Sending</div><div class="kws-grp">' + krow('kws-sim', KI.flask, 'Simulate before sending', 'Free check that the transaction would succeed (EVM, Solana, Sui, TRC-20)', KSW) + '</div>' +
       '<div class="kws-sec">About</div><div class="kws-grp">' +
       (nat('crashLog') ? krow('kws-crash', KI.warn, 'Crash log', '') : '') +
@@ -5192,6 +5242,7 @@ var APP_VERSION = '1.5';
     on('kws-batt', function () { ktick(); try { HwNative.askBattery(); } catch (e) {} setTimeout(ksync, 1500); });
     on('kws-oem', function () { ktick(); oemHelp(); });
     on('kws-sim', function () { ktick(); jset('hw-sim', !simOn()); ksync(); });
+    KEYP.forEach(function (k) { on('kws-key-' + k[0], function () { ktick(); keyEdit(k); }); });
     on('kws-crash', function () { ktick(); crashSheet(); });
     on('kws-lic', function () { ktick(); licenses(); });
     on('kws-src', function () { ktick(); openExt('https://github.com/0xkabeno/Kwallet'); });
@@ -5222,6 +5273,7 @@ var APP_VERSION = '1.5';
     var batt = nat('batteryExempt') ? String(HwNative.batteryExempt()) === '1' : null;
     ksub('kws-batt', batt === true ? 'Unrestricted. Hwallet keeps running' : 'Restricted. Tap to let Hwallet run in the background');
     kflag('kws-sim', simOn());
+    if (kov.querySelector('#kws-key-alchemy')) KEYP.forEach(function (k) { ksub('kws-key-' + k[0], keySub(k[0], k[2])); });
     ksub('kws-crash', crashSub());
     if (kov.__capPaint) kov.__capPaint();
   }
