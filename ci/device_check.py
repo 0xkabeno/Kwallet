@@ -273,7 +273,7 @@ def load_site(pg, name, text, match, limit=10.0, wait=40):
         if found: info = page_info(found) or info
     time.sleep(1.5)
     bar = pg.ev("(function(){var p=document.getElementById('br-pr'); var t=hwBrowser.state(); var a=t.tabs.filter(function(x){return x.id===t.act})[0]; "
-                "return {progress_on: !!(p && p.classList.contains('on')), width: p && p.firstChild && p.firstChild.style.width, tab: a && a.url, title: a && a.title, ph: !!document.querySelector('.br-ph')}})()")
+                "return {progress_on: !!(p && p.classList.contains('on')), width: p && p.firstChild && (p.firstChild.style.transform || p.firstChild.style.width), tab: a && a.url, title: a && a.title, ph: !!document.querySelector('.br-ph')}})()")
     f = shot('h_browser_' + name)
     step('h_browser_' + name, bool(t_ok) and t_ok <= limit, load_s=t_ok, limit_s=limit, typed=how, page=info, bar=bar,
          targets=[t.get('url', '')[:100] for t in tab_targets()], toast=toast(pg), shot=f, logcat=logcat('h_browser_' + name))

@@ -623,7 +623,7 @@ body.md3 .scn-pl { background: var(--md-primary, var(--acc)); }
 .br-tc span{min-width:22px;height:22px;padding:0 4px;border:2px solid currentColor;border-radius:6px;display:grid;place-items:center;font-size:12.5px;font-weight:700;line-height:1}
 .br-tc:active,.br-bar .ib:active{background:var(--card2)}
 .br-pr{height:2px;flex:0 0 auto;background:transparent;overflow:hidden}
-.br-pr i{display:block;height:100%;background:var(--accT);width:0;opacity:0;transition:width .25s ease,opacity .3s ease}
+.br-pr i{display:block;height:100%;background:var(--accT);width:100%;transform-origin:0 50%;transform:scaleX(0);opacity:0;transition:transform .25s ease,opacity .3s ease;will-change:transform,opacity}
 .br-pr.on i{opacity:1}
 .br-v{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;position:relative}
 .br-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted);font-size:14px;padding:24px;text-align:center}
@@ -7042,7 +7042,7 @@ window.hwCrashPrompt = crashPrompt;
       (capOn() ? '<span class="br-cap" title="Mobile-data limit is on">Data limit</span>' : '') + '</form>' +
       '<button class="br-tc" data-br="tabs" aria-label="' + n + ' tabs"><span>' + (n > 99 ? ':D' : n) + '</span></button>' +
       '<button class="ib" data-br="menu" aria-label="Menu">' + sv('more') + '</button></header>' +
-      '<div class="br-pr' + (L.loading ? ' on' : '') + '" id="br-pr"><i style="width:' + Math.max(8, L.progress || 0) + '%"></i></div>';
+      '<div class="br-pr' + (L.loading ? ' on' : '') + '" id="br-pr"><i style="transform:scaleX(' + Math.max(8, L.progress || 0) / 100 + ')"></i></div>';
   }
   function brTile(u, name) { return '<button class="br-tile" data-go="' + esc(u) + '">' + brIco(u, name, 'br-fav') + '<span>' + esc(name) + '</span></button>'; }
   function brStartHtml() {
@@ -7094,7 +7094,7 @@ window.hwCrashPrompt = crashPrompt;
   function brPaintBar() {
     var el = brEl(); if (el.hidden || BRU.sw || BRU.edit || BRU.hist) return;
     var t = brCur(), L = t ? BRL[t.id] || {} : {}, pr = document.getElementById('br-pr');
-    if (pr) { pr.classList.toggle('on', !!L.loading); pr.firstChild.style.width = Math.max(8, L.progress || 0) + '%'; }
+    if (pr) { pr.classList.toggle('on', !!L.loading); pr.firstChild.style.transform = 'scaleX(' + Math.max(8, L.progress || 0) / 100 + ')'; }  /* v1.7: compositor-only (no page repaint per step) */
     var i = document.getElementById('br-in'); if (i && document.activeElement !== i) i.value = t ? brHostOf(t.url) || t.url : '';
     var lk = el.querySelector('.br-lk'); if (lk) { var s = t && /^https:/.test(t.url); lk.classList.toggle('s', !!s); lk.innerHTML = sv(s ? 'lock' : 'globe'); }
     var tc = el.querySelector('.br-tc span'); if (tc) tc.textContent = BR.tabs.length > 99 ? ':D' : BR.tabs.length;
