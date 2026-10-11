@@ -67,12 +67,21 @@ def mark():
     MARK[0] = adb('shell date +%m-%d_%H:%M:%S.000', 15).strip().replace('_', ' ')
 
 
+STREAM = os.path.join(os.path.dirname(os.path.abspath(OUT)), 'logcat_stream_all.txt')
+
+
 def logcat(name):
+    """Slice of the `logcat -b all` stream (device_check.sh) since the previous slice, by guest timestamp."""
     fn = 'logcat_%02d_%s.txt' % (SEQ[0], name)
     try:
-        since = ('-T "\'%s\'"' % MARK[0]) if MARK[0] else '-t 4000'
-        open(os.path.join(OUT, fn), 'w').write(adb('logcat -d -v threadtime %s' % since, 45))
+        since = MARK[0] if re.match(r'\d\d-\d\d \d\d:', MARK[0]) else ''
         mark()
+        if os.path.exists(STREAM):
+            with open(STREAM, errors='replace') as f:
+                lines = [l for l in f if len(l) > 18 and l[2] == '-' and (not since or l[:18] >= since[:18])]
+            open(os.path.join(OUT, fn), 'w').writelines(lines[-20000:])
+        else:
+            open(os.path.join(OUT, fn), 'w').write(adb('logcat -d -v threadtime -t 4000', 45))
     except Exception as e:
         open(os.path.join(OUT, fn), 'w').write('logcat failed: %r (device alive: %s)' % (e, alive()))
     return fn

@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   emulator:
-    name: Emulator flows (API ${{ matrix.api }}, emulator build ${{ matrix.emu || 'latest' }})
+    name: Emulator flows (API ${{ matrix.api }} ${{ matrix.target }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
     # Diagnostics on every entry: logcat -b all streamed to a file from boot, -show-kernel guest kernel log in the job
@@ -30,14 +30,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # attempts 1-4 (runs 38172608215, 38173266061, 38173986730, 38174850301): API 30 passes every time. API 34/35 on
-          # emulator 37.2.12 lose the whole emulator process ~0.5-1 s after a WebView app (Hwallet, once Kwallet) shows
-          # its first frame - not haptics, audio, guest Vulkan, GPU mode or the display-mode request (9/10 boots died at
-          # random points). Attempt 5 pins older emulator builds (dl.google.com emulator-linux_x64-<build>.zip).
-          - { api: 30, emu: "", diag: false }
-          - { api: 34, emu: "11237101", diag: true }
-          - { api: 34, emu: "12414864", diag: true }
-          - { api: 34, emu: "15004761", diag: true }
+          # attempts 1-5 (runs 38172608215, 38173266061, 38173986730, 38174850301, 38176089337): API 30 passes every
+          # time. API 33/34/35 lose the whole emulator process (qemu gone, nothing in its stdout, no kernel OOM line)
+          # ~0.5-1 s after a WebView app (Hwallet; once Kwallet) shows its first frame - with or without haptics, Web
+          # Audio, guest Vulkan, GPU mode, the display-mode request, on emulator 33.1.24 / 35.2.10 / 36.x / 37.2.12.
+          # Attempt 6: userspace OOM killer (systemd-oomd) stopped + journal captured; the headless ATD image.
+          - { api: 30, target: google_apis, diag: false }
+          - { api: 34, target: google_apis, diag: true }
+          - { api: 34, target: google_atd, diag: true }
     continue-on-error: ${{ matrix.diag }}
     steps:
       - uses: actions/checkout@v4
@@ -63,6 +63,12 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Stop the userspace OOM killer (systemd-oomd), record memory
+        run: |
+          sudo systemctl stop systemd-oomd systemd-oomd.socket 2>/dev/null || true
+          systemctl is-active systemd-oomd || true
+          free -m; swapon --show || true
+
       - name: Python deps
         run: pip install websocket-client==1.8.0
 
@@ -72,9 +78,8 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
-          emulator-build: ${{ matrix.emu }}
           arch: x86_64
-          target: google_apis
+          target: ${{ matrix.target }}
           profile: pixel_2
           cores: 4
           ram-size: 4096M
@@ -91,6 +96,8 @@ jobs:
           sudo dmesg -T > device-out/host/dmesg.txt 2>&1 || true
           grep -iE "qemu|emulator|oom|killed process|segfault|trap" device-out/host/dmesg.txt | tail -50 || true
           free -m > device-out/host/free.txt; nproc >> device-out/host/free.txt
+          sudo journalctl --no-pager -b -o short-precise > device-out/host/journal.txt 2>&1 || true
+          grep -iE "oom|killed|qemu|emulator|memory pressure|core-dump|segfault" device-out/host/journal.txt | tail -40 || true
           ls -laR /tmp/android-runner /tmp/android-$USER 2>/dev/null | head -100 > device-out/host/tmp_ls.txt || true
           cp -r /tmp/android-runner device-out/host/ 2>/dev/null || true
           cp ~/.android/avd/test.avd/config.ini device-out/host/avd_config.ini 2>/dev/null || true
