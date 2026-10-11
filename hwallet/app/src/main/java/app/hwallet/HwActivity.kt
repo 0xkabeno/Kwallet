@@ -47,6 +47,38 @@ class HwActivity : FragmentActivity() {
     private lateinit var web: WebView
 
     private fun startUrl(): String = "https://appassets.androidplatform.net/assets/index.html"
+
+    /** v1.6 (#57): a WalletConnect pairing link that opened the app (wc:…, hwallet://wc?uri=…, https://hwallet.app/wc?uri=…).
+     *  Kept until the page takes it (wcPending) or pushed to window.hwWcLink when the page is already up. */
+    @Volatile private var pendingWc: String = ""
+    private fun wcFrom(i: Intent?): String {
+        val u = i?.data ?: return ""
+        if (i?.action != Intent.ACTION_VIEW) return ""
+        val s = when (u.scheme?.lowercase()) {
+            "wc" -> u.toString()
+            "hwallet", "https" -> u.getQueryParameter("uri") ?: ""
+            else -> ""
+        }
+        return if (s.startsWith("wc:") && s.length < 4096) s else ""
+    }
+    private fun takeWc(i: Intent?) {
+        val s = wcFrom(i); if (s.isEmpty()) return
+        pendingWc = s
+        if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwWcLink&&hwWcLink(${JSONObject.quote(s)})") { r -> if (r == "true") pendingWc = "" }
+    }
+    /** v1.6 (#59): a wc: link tapped inside the Browser tab pairs exactly like a scanned or opened one */
+    private fun wcLink(s: String) {
+        if (!s.startsWith("wc:") || s.length >= 4096) return
+        pendingWc = s
+        runOnUiThread { if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwWcLink&&hwWcLink(${JSONObject.quote(s)})") { r -> if (r == "true") pendingWc = "" } }
+    }
+
+    /** v1.6 (#59/#83): the Browser tab's native pages, created on first use */
+    private var br: HwBrowser? = null
+    private fun brw(): HwBrowser = br ?: HwBrowser(this, root, web,
+        js = { s -> runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript(s, null) } catch (_: Throwable) {} } },
+        onWc = { s -> wcLink(s) }).also { br = it }
+
     companion object { const val KWALLET = "app.kwallet" }
     private lateinit var root: FrameLayout
     private var fileCallback: ValueCallback<Array<Uri>>? = null
@@ -66,6 +98,8 @@ class HwActivity : FragmentActivity() {
     private val net = java.util.concurrent.Executors.newFixedThreadPool(24)
     /** v1.1: true while Kwallet's sign page is open over Hwallet; the page keeps running to stream live data to it. */
     @Volatile private var signing = false
+    private val socks = java.util.concurrent.ConcurrentHashMap<String, okhttp3.WebSocket>()
+    private fun wsJs(id: String, t: String, d: String) { runOnUiThread { if (::web.isInitialized) web.evaluateJavascript("window.hwWs&&hwWs(${JSONObject.quote(id)},${JSONObject.quote(t)},${JSONObject.quote(d)})", null) } }
 
     inner class HwBridge {
         /** Opens Kwallet's sign page with one request (sign or pair). The result comes back through window.hwSignDone. */
@@ -89,31 +123,89 @@ class HwActivity : FragmentActivity() {
 
         /** v1.1: like http() with a content type; "type;hex" sends the hex body as raw bytes (Cardano CBOR). */
         @android.webkit.JavascriptInterface
-        fun http2(id: String, method: String, url: String, body: String, timeoutMs: Int, contentType: String) {
+        fun http2(id: String, method: String, url: String, body: String, timeoutMs: Int, contentType: String) { http3(id, method, url, body, timeoutMs, contentType, "") }
+
+        /** v1.6: like http2() with extra headers (JSON object). URL, headers and body may carry {{K:name}} placeholders:
+         *  the provider key is added here, natively, only for that provider's hosts (HwKeys). The page never sees it.
+         *  A keyed request answered 401/403/429 rests that key and returns status -429 so the page goes keyless. */
+        @android.webkit.JavascriptInterface
+        fun http3(id: String, method: String, url0: String, body0: String, timeoutMs: Int, contentType: String, headers: String) {
             net.execute {
                 var st = 0; var out = ""
+                val used = HashSet<String>()
                 try {
-                    if (!url.startsWith("https://")) throw IllegalArgumentException("https only")
+                    if (!url0.startsWith("https://")) throw IllegalArgumentException("https only")
+                    val host = android.net.Uri.parse(url0).host ?: ""
+                    val url = HwKeys.fill(this@HwActivity, host, url0, used) ?: throw IllegalStateException("nokey")
+                    val body = HwKeys.fill(this@HwActivity, host, body0, used) ?: throw IllegalStateException("nokey")
                     val rb = okhttp3.Request.Builder().url(url)
                         .header("Accept", "application/json, text/plain, */*")
                         .header("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME)
-                    if (method == "POST") {
+                    if (headers.isNotEmpty()) {
+                        val h = JSONObject(headers); val it = h.keys()
+                        while (it.hasNext()) { val k = it.next(); val v = HwKeys.fill(this@HwActivity, host, h.optString(k), used) ?: throw IllegalStateException("nokey"); if (k.length < 64) rb.header(k, v) }
+                    }
+                    if (method == "POST" || method == "PUT") {
                         val hex = contentType.endsWith(";hex")
                         val ct = if (hex) contentType.removeSuffix(";hex") else contentType.ifEmpty { "application/json" }
                         val bytes = if (hex) ByteArray(body.length / 2) { k -> body.substring(k * 2, k * 2 + 2).toInt(16).toByte() } else body.toByteArray(Charsets.UTF_8)
-                        rb.post(bytes.toRequestBody(ct.toMediaTypeOrNull()))
+                        rb.method(method, bytes.toRequestBody(ct.toMediaTypeOrNull()))
                     }
                     /* at a low speed cap a big page needs longer than the page's timeout: let it finish */
-                    val t = if (HwNet.rate.on()) 30000 else timeoutMs.coerceIn(1000, 20000)
+                    val t = if (HwNet.rate.on()) 30000 else timeoutMs.coerceIn(1000, 30000)
                     HwNet.withTimeout(t).newCall(rb.build()).execute().use { r ->
                         st = r.code
                         out = r.body?.string()?.take(4_000_000) ?: ""
                     }
-                } catch (_: Exception) { st = 0; out = "" }
+                    if (used.isNotEmpty() && (st == 401 || st == 403 || st == 429)) { used.forEach { HwKeys.cool(it) }; st = -429; out = "" }
+                } catch (e: IllegalStateException) { st = if (e.message == "nokey") -1 else 0; out = "" }
+                catch (_: Exception) { st = 0; out = "" }
                 val js = "window.hwHttpDone&&hwHttpDone(${JSONObject.quote(id)},$st,${JSONObject.quote(out)})"
                 runOnUiThread { if (::web.isInitialized) web.evaluateJavascript(js, null) }
             }
         }
+
+        /** v1.6: which providers have a key right now: {"alchemy":"app"|"user"|"",...}. Never the keys themselves. */
+        @android.webkit.JavascriptInterface
+        fun keyState(): String { val o = JSONObject(); HwKeys.NAMES.forEach { o.put(it, HwKeys.state(this@HwActivity, it)) }; return o.toString() }
+
+        /** v1.6: Settings > API keys: the user's own key for one provider (empty clears it). */
+        @android.webkit.JavascriptInterface
+        fun setUserKey(name: String, v: String) { HwKeys.setUser(this@HwActivity, name, v) }
+
+        /** v1.6 (#57): native WebSockets for the page (WalletConnect relay). The URL may carry {{K:reown}}; the page
+         *  only ever sees the relay's messages. Events arrive through window.hwWs(id, type, data). */
+        @android.webkit.JavascriptInterface
+        fun wsOpen(id: String, url0: String) {
+            net.execute {
+                try {
+                    val host = android.net.Uri.parse(url0).host ?: ""
+                    val used = HashSet<String>()
+                    val url = HwKeys.fill(this@HwActivity, host, url0, used)
+                    if (url == null || !url.startsWith("wss://")) { wsJs(id, "close", "nokey"); return@execute }
+                    val req = okhttp3.Request.Builder().url(url).header("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME).header("Origin", "https://hwallet.app").build()
+                    val so = HwNet.withTimeout(20000).newBuilder().readTimeout(0, java.util.concurrent.TimeUnit.MILLISECONDS).pingInterval(25, java.util.concurrent.TimeUnit.SECONDS).build().newWebSocket(req, object : okhttp3.WebSocketListener() {
+                        override fun onOpen(w: okhttp3.WebSocket, r: okhttp3.Response) { wsJs(id, "open", "") }
+                        override fun onMessage(w: okhttp3.WebSocket, t: String) { HwNet.wsIn(t.length); wsJs(id, "msg", t) }
+                        override fun onClosed(w: okhttp3.WebSocket, c: Int, r: String) { socks.remove(id); wsJs(id, "close", c.toString()) }
+                        override fun onFailure(w: okhttp3.WebSocket, t: Throwable, r: okhttp3.Response?) {
+                            socks.remove(id)
+                            val code = r?.code ?: 0
+                            if (used.isNotEmpty() && (code == 401 || code == 403 || code == 429)) used.forEach { HwKeys.cool(it) }
+                            wsJs(id, "close", "fail:$code")
+                        }
+                    })
+                    socks[id] = so
+                } catch (_: Throwable) { wsJs(id, "close", "error") }
+            }
+        }
+        @android.webkit.JavascriptInterface
+        fun wsSend(id: String, text: String): Boolean { val s = socks[id] ?: return false; HwNet.wsOut(text.length); return s.send(text) }
+        @android.webkit.JavascriptInterface
+        fun wsClose(id: String) { socks.remove(id)?.close(1000, null) }
+        /** v1.6 (#57): the wc: link the app was opened with, once (empty when none). */
+        @android.webkit.JavascriptInterface
+        fun wcPending(): String { val s = pendingWc; pendingWc = ""; return s }
 
         /** v1.4 (#53): Settings > Data speed limit, KB/s (0 = unlimited). Saved and applied at once to all traffic. */
         @android.webkit.JavascriptInterface
@@ -125,6 +217,34 @@ class HwActivity : FragmentActivity() {
         /** v1.5 (#67): true only while the cap is set AND the phone is on mobile data (Wi-Fi is never limited) */
         @android.webkit.JavascriptInterface
         fun capActive(): Boolean = HwNet.rate.on()
+
+        /* v1.6 (#59/#83): Browser tab (HwBrowser.kt). Tab ids are t[0-9a-z]+; positions are CSS px of the page's #br-v box. */
+        @android.webkit.JavascriptInterface
+        fun brInit(script: String) { brw().init(script) }
+        @android.webkit.JavascriptInterface
+        fun brOpen(id: String, url: String, scroll: Int) { brw().open(id, url, scroll) }
+        @android.webkit.JavascriptInterface
+        fun brShow(id: String, top: Int, bottom: Int) { brw().show(id, top, bottom) }
+        @android.webkit.JavascriptInterface
+        fun brHide() { br?.hide() }
+        @android.webkit.JavascriptInterface
+        fun brLoad(id: String, url: String) { brw().load(id, url) }
+        @android.webkit.JavascriptInterface
+        fun brNav(id: String, action: String) { br?.nav(id, action) }
+        @android.webkit.JavascriptInterface
+        fun brSnap(id: String) { br?.snap(id) }
+        @android.webkit.JavascriptInterface
+        fun brThumb(id: String): String = brw().thumbData(id)
+        @android.webkit.JavascriptInterface
+        fun brClose(id: String) { brw().close(id) }
+        @android.webkit.JavascriptInterface
+        fun brClearAll() { brw().clearAll() }
+        @android.webkit.JavascriptInterface
+        fun brUsage(): String = try { brw().usage() } catch (_: Throwable) { "{}" }
+        @android.webkit.JavascriptInterface
+        fun brReply(id: String, json: String) { if (json.length < 2_000_000) br?.reply(id, json) }
+        @android.webkit.JavascriptInterface
+        fun brEmit(origin: String, json: String) { if (json.length < 100_000) br?.emit(origin, json) }
 
         /** v1.4 (#55): the persistent activity cache. Rows for the Activity tab, newest first, read from disk (no network). */
         @android.webkit.JavascriptInterface
@@ -255,6 +375,28 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun openUrl(url: String) {
             runOnUiThread { try { if (url.startsWith("https://")) startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (_: Exception) {} }
+        }
+
+        /** v1.6 (#79): is Kwallet on this phone, and which version. Package visibility comes from <queries> in the manifest. */
+        @android.webkit.JavascriptInterface
+        fun kwInfo(): String = try {
+            val pi = packageManager.getPackageInfo(KWALLET, 0)
+            JSONObject().put("installed", true).put("version", pi.versionName ?: "").toString()
+        } catch (_: Exception) { "{\"installed\":false}" }
+
+        /** v1.6 (#79): Install Kwallet. "play" opens the Play Store listing (store app, else its web page); anything else the GitHub releases page. */
+        @android.webkit.JavascriptInterface
+        fun installKw(where: String) {
+            runOnUiThread {
+                val gh = "https://github.com/0xkabeno/Kwallet/releases/latest"
+                try {
+                    if (where == "play") {
+                        val m = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$KWALLET")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        if (m.resolveActivity(packageManager) != null) startActivity(m)
+                        else startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$KWALLET")))
+                    } else startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(gh)))
+                } catch (_: Exception) { try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(gh))) } catch (_: Exception) {} }
+            }
         }
     }
 
@@ -474,6 +616,7 @@ class HwActivity : FragmentActivity() {
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl(startUrl())
+        takeWc(intent)
         HwActDb.listener = { wid, json -> actPatch(wid, json) }
         HwNet.onChange = { runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript("window.hwNetChanged&&hwNetChanged()", null) } catch (_: Throwable) {} } }
         // v1.3 (#42): the always-on listener is NOT started here any more. The page starts it through setLive()
@@ -625,17 +768,19 @@ class HwActivity : FragmentActivity() {
     private fun isLight(c: Int): Boolean =
         (0.299 * Color.red(c) + 0.587 * Color.green(c) + 0.114 * Color.blue(c)) / 255.0 >= 0.5
 
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); takeWc(intent) }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         web.saveState(outState)
     }
 
-    override fun onPause() { super.onPause(); if (!signing) web.onPause() }
+    override fun onPause() { super.onPause(); if (!signing) web.onPause(); br?.pause() }
     override fun onResume() {
-        super.onResume(); web.onResume(); if (::web.isInitialized) tuneWebView(this, web)
+        super.onResume(); web.onResume(); br?.resume(); if (::web.isInitialized) tuneWebView(this, web)
         if (pendingLive) ui.postDelayed({ if (pendingLive) startLiveSafe() }, 300)
     }  // OEMs drop back to 60 Hz after resume
-    override fun onDestroy() { try { HwActDb.listener = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
+    override fun onDestroy() { try { br?.destroy(); br = null } catch (_: Throwable) {}; try { socks.values.forEach { it.cancel() }; socks.clear(); HwActDb.listener = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
 }
 
 /** Smooth rendering like Chrome: highest refresh rate, no overscroll glow.

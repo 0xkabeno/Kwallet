@@ -1,3 +1,5 @@
+import java.security.SecureRandom
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -8,6 +10,49 @@ val appVersion: String = Regex("var APP_VERSION = '([0-9.]+)'")
     .find(rootProject.file("hwallet/web/index.html").readText())?.groupValues?.get(1) ?: "1.0"
 val parts = appVersion.split(".").map { it.toIntOrNull() ?: 0 }
 val code = (parts.getOrElse(0) { 1 }) * 10000 + (parts.getOrElse(1) { 0 }) * 100 + (parts.getOrElse(2) { 0 })
+
+
+// v1.6 (#57/#58/#71): the owner's API keys serve every user, but never sit in the public source.
+// CI passes them as GitHub Actions secrets (KW_*). At build time each one is sealed with AES-GCM under a
+// fresh random per-build key; that key is split into four masked pieces spread over two generated classes.
+// Hwallet opens a key only in memory, natively, and adds it to requests itself, so the page never sees it.
+// A missing secret simply leaves that provider keyless. This is obfuscation, not a vault (see SECURITY.md).
+val hwSecretNames = linkedMapOf(
+    "alchemy" to "KW_ALCHEMY_KEY", "etherscan" to "KW_ETHERSCAN_KEY", "helius" to "KW_HELIUS_KEY",
+    "trongrid" to "KW_TRONGRID_KEY", "lifi" to "KW_LIFI_KEY", "jupiter" to "KW_JUPITER_KEY", "reown" to "KW_REOWN_PROJECT_ID"
+)
+val hwGenDir = layout.buildDirectory.dir("generated/hwsecrets/kotlin")
+val genHwSecrets = tasks.register("genHwSecrets") {
+    outputs.dir(hwGenDir)
+    outputs.upToDateWhen { false }
+    doLast {
+        val rnd = SecureRandom()
+        val key = ByteArray(32).also { rnd.nextBytes(it) }
+        val p1 = ByteArray(32).also { rnd.nextBytes(it) }; val p2 = ByteArray(32).also { rnd.nextBytes(it) }; val p3 = ByteArray(32).also { rnd.nextBytes(it) }
+        val p4 = ByteArray(32) { i -> (key[i].toInt() xor p1[i].toInt() xor p2[i].toInt() xor p3[i].toInt()).toByte() }
+        val salt = rnd.nextInt(200) + 17
+        fun lit(b: ByteArray, m: Int) = b.joinToString(",") { (((it.toInt() and 0xff) + m) and 0xff).toString() }
+        val rows = StringBuilder(); var n = 0
+        for ((name, env) in hwSecretNames) {
+            val v = (System.getenv(env) ?: "").trim()
+            if (v.isEmpty()) continue
+            val iv = ByteArray(12).also { rnd.nextBytes(it) }
+            val c = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding")
+            c.init(javax.crypto.Cipher.ENCRYPT_MODE, javax.crypto.spec.SecretKeySpec(key, "AES"), javax.crypto.spec.GCMParameterSpec(128, iv))
+            c.updateAAD(name.toByteArray())
+            val ct = c.doFinal(v.toByteArray())
+            rows.append("        \"").append(name).append("\" to intArrayOf(").append(lit(iv + ct, 0)).append("),\n"); n++
+        }
+        val dir = hwGenDir.get().asFile.resolve("app/hwallet"); dir.mkdirs()
+        dir.resolve("HwSa.kt").writeText("package app.hwallet\n\n/* generated at build time, never committed */\ninternal object HwSa {\n" +
+            "    @JvmField val q = intArrayOf(${lit(p1, salt)})\n    @JvmField val w = intArrayOf(${lit(p3, 255 - salt)})\n    @JvmField val m = $salt\n" +
+            "    @JvmField val d: Map<String, IntArray> = mapOf(\n$rows    )\n}\n")
+        dir.resolve("HwSb.kt").writeText("package app.hwallet\n\n/* generated at build time, never committed */\ninternal object HwSb {\n" +
+            "    @JvmField val e = intArrayOf(${lit(p2, 0)})\n    @JvmField val r = intArrayOf(${lit(p4, 101)})\n}\n")
+        println("Hwallet: sealed $n of ${hwSecretNames.size} provider keys into this build")
+    }
+}
+tasks.matching { it.name.startsWith("compile") && it.name.contains("Kotlin") }.configureEach { dependsOn(genHwSecrets) }
 
 android {
     namespace = "app.hwallet"
@@ -45,7 +90,7 @@ android {
     }
 
     sourceSets {
-        getByName("main") { assets.srcDirs("src/main/assets", "../web") }
+        getByName("main") { assets.srcDirs("src/main/assets", "../web"); java.srcDir(hwGenDir) }
     }
 
     compileOptions {

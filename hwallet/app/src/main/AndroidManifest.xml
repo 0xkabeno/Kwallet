@@ -25,6 +25,11 @@
     <!-- Hwallet asks Kwallet (same phone, same signing key) to sign -->
     <queries>
         <package android:name="app.kwallet" />
+        <!-- v1.6 (#79): Install Kwallet opens the store when one is there -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="market" />
+        </intent>
     </queries>
 
     <application
@@ -91,6 +96,32 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <!-- v1.6 (#57): WalletConnect pairing links open Hwallet (always enabled, independent of the icon aliases).
+             https://hwallet.app/wc is not autoVerify: it needs assetlinks.json on that domain to open without a chooser. -->
+        <activity-alias
+            android:name=".WcLink"
+            android:targetActivity=".HwActivity"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="wc" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="hwallet" android:host="wc" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="hwallet.app" android:pathPrefix="/wc" />
             </intent-filter>
         </activity-alias>
     </application>
