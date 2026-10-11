@@ -10,7 +10,7 @@
 [![Hwallet: GPL-3.0](https://img.shields.io/badge/Hwallet-GPL--3.0-223348)](hwallet/LICENSE)
 ![Kwallet network](https://img.shields.io/badge/Kwallet%20network-none-DDF869?labelColor=223348)
 
-[**Download**](#downloads) · [How it works](#how-signing-works) · [Screenshots](#screenshots) · [Security](#security-model) · [Build](#build-from-source)
+[**Download**](#downloads) · [How it works](#how-signing-works) · [Features](#features) · [Fees](#fees) · [Security](#security-model) · [Build](#build-from-source)
 
 </div>
 
@@ -23,7 +23,7 @@
 | Role | Fully secure offline wallet. Creates, stores and **signs** | The quickest hot wallet. Watches, prepares and **broadcasts** |
 | Internet | **None.** The APK has no `INTERNET` permission | Public nodes for prices, balances, history and broadcast |
 | Keys | Recovery phrases and private keys, encrypted on the device, never leave it | **Public addresses only.** Never sees a key |
-| Signing | Every transaction, on its own sign page: check every detail, hold to sign | Asks Kwallet on the same phone and waits for the signed result |
+| Signing | Every transaction, message and dApp request, on its own sign page: check every detail, hold to sign | Asks Kwallet on the same phone (send, swap, WalletConnect, dApp browser) and waits for the signed result |
 | Live data | Receives live fee, price and balance updates from Hwallet while its sign page is open | Live prices, balances, activity, incoming alerts, background service |
 | License | MIT | GPL-3.0 (layout and tools follow Gem Wallet) |
 
@@ -61,7 +61,7 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 | **Light** | <img src="docs/screenshots/h-home-light.png" width="140"> | <img src="docs/screenshots/h-activity-light.png" width="140"> | <img src="docs/screenshots/h-scanner-light.png" width="140"> | <img src="docs/screenshots/h-settings-light.png" width="140"> | <img src="docs/screenshots/k-sign-light.png" width="140"> | <img src="docs/screenshots/h-opening-light.png" width="140"> |
 | **Dark** | <img src="docs/screenshots/h-home-dark.png" width="140"> | <img src="docs/screenshots/h-activity-dark.png" width="140"> | <img src="docs/screenshots/h-scanner-dark.png" width="140"> | <img src="docs/screenshots/h-settings-dark.png" width="140"> | <img src="docs/screenshots/k-sign-dark.png" width="140"> | <img src="docs/screenshots/k-opening-dark.png" width="140"> |
 
-<sub>Taken from the v3.95 / v1.5 build with a public test address. The scanner shows a stand-in where the camera picture goes.</sub>
+<sub>Taken from the v3.95 / v1.5 build with a public test address. The scanner shows a stand-in where the camera picture goes. v3.96 / v1.6 adds the Swap, Browser and WalletConnect screens.</sub>
 
 ## Features
 
@@ -76,10 +76,21 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 - **Built-in self-test** — known-answer vectors for every chain in *Log → Verify*
 - **Clipboard auto-clear**, haptics, light and dark themes, smooth 120 Hz scrolling
 - **Hwallet signer** — one sign page for every chain: decoded amounts, addresses in tidy blocks, live fee and balance, a fee-change re-arm, a countdown, and hold to sign
+- **dApp signing** *(new in 3.96)* — a calm bottom sheet for `personal_sign` (with a sign-in-with-Ethereum domain check), `eth_signTypedData_v4` (Permit / Permit2 decoded), `eth_sendTransaction` with ABI decode, Solana `signMessage` / `signTransaction` (v0 + lookup tables, instructions decoded) and Tron `signMessage` / smart-contract calls. The Kwallet chip and the chain chip are always in the header
+- **Exact approvals** *(new)* — when an app asks for an unlimited ERC-20 or Permit2 allowance, Kwallet can re-encode it to the exact amount (Exact / Unlimited toggle with a clear warning); signed permits it can't change are flagged
+- **Custom network fee** *(new)* — Slow / Normal / Fast / Custom on EVM (max fee, tip, gas limit), Solana (priority fee, compute units), Bitcoin (sat/vB) and Tron (fee limit), with the chain's live minimum and a warning when a custom value may stall or fail. It only changes the network fee
+- **Settings and pairing as full pages** *(new)* — back arrow, Kwallet-branded, short and clear, with inline errors that say how to fix them
 - **Never online** — no `INTERNET` permission; the HTML build works with the network unplugged
 
 ### Hwallet — the quickest hot wallet
 
+- **WalletConnect** *(new in 1.6)* — Reown WalletKit for EVM networks, Solana and Tron: pair by scanning, pasting a `wc:` link or opening a deep link; connect, sign messages and typed data, approvals, contract calls and swaps, all signed in Kwallet; session list with disconnect in Settings
+- **dApp browser** *(new)* — a Browser tab with unlimited tabs saved to the phone (history, scroll, a page snapshot) that reopen from storage with little data; injected EIP-1193 + EIP-6963 Ethereum provider, Solana Wallet Standard and a TronLink-style provider; per-site connections you can revoke
+- **Swap** *(new)* — the best quote across NEAR Intents, Jupiter, LI.FI and SunSwap, in a Gem-style screen with a provider list, rate, minimum received, slippage (Auto or your own, with warnings) and an editable network fee. Every swap is signed in Kwallet; see [Fees](#fees)
+- **Richer EVM history** *(new)* — Etherscan V2 and Alchemy with keyless Blockscout and RPC log-scan fallbacks; method names, approvals and swaps decoded; internal transfers included
+- **Pull to refresh** *(new)* on Home, networks, coin pages and Activity
+- **Notification coins** *(new)* — choose the four coins in the live notification from anything in the wallet, including tokens imported by contract
+- **Your own API keys** *(new)* — optional Alchemy, Etherscan, Helius, TronGrid, LI.FI and Jupiter keys in Settings; Hwallet also works with none
 - **Live everything** — prices, balances and full on-chain history (sent and received, endless scroll) on ETH and EVM networks (Base, Arbitrum, Optimism, Polygon, BNB Chain, Linea, Robinhood Chain, Arc), SOL, BTC, TRX, SUI, XRP and ADA, from free public nodes
 - **Instant Activity** — a background service writes every chain's history to an on-device cache, so the tab opens with no network call
 - **Own QR scanner** — CameraX with on-device decoding (no Google services): torch, scan from a photo, Scan / Receive tabs; addresses and payment links (`bitcoin:`, `ethereum:`, `solana:`, `tron:` with amount) open a prefilled Send
@@ -87,9 +98,28 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 - **Mobile data speed limit** — cap Hwallet's traffic on mobile data from 1 KB/s up to unlimited; **Wi-Fi is never limited**, and the limit switches live when the network changes
 - **Gem-style design** with Kwallet's themes (light, dark, Material You), sounds and haptics; fixed bottom bar with a sliding pill; Settings as a full page
 - **Several wallets**, tokens on every chain, TRON Energy / Bandwidth and Stake 2.0, XRP trust lines, Cardano native assets
-- **Always-on service** with a live BTC / ETH / SOL / XMR notification and incoming-payment alerts
+- **Always-on service** with a live four-coin notification and incoming-payment alerts
 - **Crash prompt** — if Hwallet ever closes unexpectedly, the next launch offers to copy the log (once per crash)
-- XMR is watch-only; XMR send is coming soon
+- XMR is watch-only; XMR send is not in this release
+
+### Known limits (v3.96 / v1.6)
+
+- The dApp browser needs Android System WebView 86 or newer; on older WebView pages load but get no wallet.
+- The Tron browser provider is minimal (`tron_requestAccounts`, `trx.sign`, `signMessageV2`; no `tronWeb.contract()`).
+- XMR send is not included. The browser's main page download is not throttled by the mobile-data cap (page resources are).
+
+## Fees
+
+Kwallet charges nothing. Hwallet's Swap adds a service fee, always shown on its own line in Details next to the provider fee and the network fee (none of them hidden; only the network fee is editable):
+
+| Route | Service fee (Kwallet) | What you pay in total on top of the network fee |
+|---|---|---|
+| LI.FI | 0.3% | 0.3% + LI.FI's own provider fee |
+| Jupiter | 0.3%, only when the fee token account already exists for the pair; otherwise none | 0.3% or 0% |
+| SunSwap | 0.3%, sent as a separate transfer after the swap | 0.3% |
+| NEAR Intents | 0.3% | 0.6% (NEAR Intents' 1Click takes an equal share) |
+
+Network fees go to the blockchain, not to Kwallet. There is no referral or affiliate program.
 
 ## Supported chains
 
@@ -124,8 +154,8 @@ Get the latest files from **[Releases](https://github.com/0xkabeno/Kwallet/relea
 # put the downloads and SHA256SUMS.txt in one folder, then
 sha256sum -c SHA256SUMS.txt --ignore-missing      # every line must say OK
 # Android: both APKs must carry the same signing certificate
-apksigner verify --print-certs Kwallet-v3.95.apk | grep SHA-256
-apksigner verify --print-certs Hwallet-v1.5.apk  | grep SHA-256
+apksigner verify --print-certs Kwallet-v3.96.apk | grep SHA-256
+apksigner verify --print-certs Hwallet-v1.6.apk  | grep SHA-256
 ```
 
 On Android, open the APK and allow *Install unknown apps* once. Updates install over the previous version (same permanent key).
@@ -134,6 +164,7 @@ On Android, open the APK and allow *Install unknown apps* once. Updates install 
 
 - **Keys stay in Kwallet.** Phrases and private keys are encrypted at rest (AES-256-GCM, PIN or biometrics) and never leave the app. The Android build has no `INTERNET` permission, so it cannot send anything anywhere.
 - **Hwallet is watch-only.** It stores public addresses and talks to public nodes. A compromised Hwallet can show wrong numbers, but it cannot sign: Kwallet decodes every request itself and shows what will really be signed.
+- **dApps go through Kwallet too.** WalletConnect sessions and browser pages talk to Hwallet, never to keys; every signature they ask for opens Kwallet's sheet with the request decoded. Unlimited approvals default to the exact amount where they can be changed.
 - **One caller, one key.** Kwallet only answers sign requests from an app signed with the same key, and the live-data channel is protected by a signature-level permission.
 - **Check, then hold.** The sign page shows the decoded chain, amounts, recipient, fee and balance; a fee change re-arms the button; requests expire.
 - **Reproducible checks.** Every release runs 146 chain signer tests and 37 independent decode checks of Kwallet's signed output (ethers, @solana/web3.js, bitcoinjs-lib, ripple-binary-codec, cardano-serialization-lib, TronWeb, Sui SDK).
