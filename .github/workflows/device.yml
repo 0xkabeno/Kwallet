@@ -17,11 +17,20 @@ concurrency:
   group: device-${{ github.ref }}
   cancel-in-progress: true
 
+
 jobs:
   emulator:
-    name: Emulator flows (API 34)
+    name: Emulator flows (API ${{ matrix.api }}, gpu ${{ matrix.gpu }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Two emulator setups side by side: on the first two runs the API 34 emulator process died ~2 s after Hwallet
+    # launched with -gpu swiftshader_indirect (host-side renderer). gpu=guest renders inside the VM instead.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { api: 34, gpu: guest }
+          - { api: 33, gpu: swiftshader_indirect }
     steps:
       - uses: actions/checkout@v4
 
@@ -54,14 +63,14 @@ jobs:
         timeout-minutes: 30
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api }}
           arch: x86_64
           target: google_apis
           profile: pixel_2
           cores: 4
           ram-size: 3072M
           heap-size: 512M
-          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-snapshot -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
           script: bash ci/device_check.sh
 
@@ -69,6 +78,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: device-check
+          name: device-check-api${{ matrix.api }}-${{ matrix.gpu }}
           path: device-out/
           if-no-files-found: warn

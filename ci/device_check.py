@@ -189,6 +189,8 @@ def run():
     adb('shell svc power stayon true')
     adb('shell input keyevent 82')
     adb('logcat -c')
+    R['sanity_shot'] = shot('sanity_launcher')  # proves screencap works before any of our apps runs
+    R['sanity_bytes'] = os.path.getsize(os.path.join(OUT, R['sanity_shot']))
     R['device'] = {'sdk': adb('shell getprop ro.build.version.sdk').strip(), 'model': adb('shell getprop ro.product.model').strip(),
                    'webview': re.sub(r'\s+', ' ', adb('shell dumpsys webviewupdate | grep -i -m2 "Current WebView package\\|versionName"'))[:200],
                    'h_version': re.findall(r'versionName=(\S+)', adb('shell dumpsys package %s' % H))[:1],
