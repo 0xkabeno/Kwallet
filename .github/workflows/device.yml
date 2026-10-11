@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   emulator:
-    name: Emulator flows (API ${{ matrix.api }} ${{ matrix.target }}, vibrate ${{ matrix.vib }})
+    name: Emulator flows (API ${{ matrix.api }} ${{ matrix.target }}, vibrate ${{ matrix.vib }} ${{ matrix.feat }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
     # P0b: the emulator process died ~2 s after Hwallet launched (4/4 boots, API 33/34, host + guest GPU, -noaudio).
@@ -32,9 +32,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { api: 34, target: google_apis, vib: block, diag: false }
-          - { api: 30, target: google_apis, vib: block, diag: false }
-          - { api: 34, target: google_apis, vib: allow, diag: true }
+          # API 30 passed attempt 1 (run 38172608215). API 34 still died with VIBRATE ignored, so haptics are not it.
+          # Next suspect: guest Vulkan (gfxstream -> host SwiftShader Vulkan) used by WebView 113's GPU process.
+          - { api: 30, target: google_apis, vib: block, feat: "", diag: false }
+          - { api: 34, target: google_apis, vib: allow, feat: "-feature -Vulkan", diag: true }
+          - { api: 34, target: google_apis, vib: allow, feat: "-feature -Vulkan,-GLDirectMem -gpu guest", diag: true }
+          - { api: 35, target: google_apis, vib: allow, feat: "", diag: true }
     continue-on-error: ${{ matrix.diag }}
     steps:
       - uses: actions/checkout@v4
@@ -76,7 +79,7 @@ jobs:
           ram-size: 4096M
           disk-size: 6000M
           heap-size: 512M
-          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -no-boot-anim -show-kernel -camera-back none -camera-front none
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect ${{ matrix.feat }} -no-boot-anim -show-kernel -camera-back none -camera-front none
           disable-animations: true
           script: VIB=${{ matrix.vib }} bash ci/device_check.sh
 
@@ -96,6 +99,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: device-check-api${{ matrix.api }}-${{ matrix.target }}-vib${{ matrix.vib }}
+          name: device-check-api${{ matrix.api }}-${{ matrix.target }}-vib${{ matrix.vib }}-${{ strategy.job-index }}
           path: device-out/
           if-no-files-found: warn

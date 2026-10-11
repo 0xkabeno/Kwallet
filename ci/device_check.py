@@ -59,11 +59,20 @@ def alive():
         return False
 
 
+MARK = ['']
+
+
+def mark():
+    """Guest clock now; the next logcat slice starts here (no `logcat -c`: clearing ended the -b all stream on API 34)."""
+    MARK[0] = adb('shell date +%m-%d_%H:%M:%S.000', 15).strip().replace('_', ' ')
+
+
 def logcat(name):
     fn = 'logcat_%02d_%s.txt' % (SEQ[0], name)
     try:
-        open(os.path.join(OUT, fn), 'w').write(adb('logcat -d -v threadtime -t 4000', 45))
-        adb('logcat -c', 15)
+        since = ('-T "\'%s\'"' % MARK[0]) if MARK[0] else '-t 4000'
+        open(os.path.join(OUT, fn), 'w').write(adb('logcat -d -v threadtime %s' % since, 45))
+        mark()
     except Exception as e:
         open(os.path.join(OUT, fn), 'w').write('logcat failed: %r (device alive: %s)' % (e, alive()))
     return fn
@@ -194,7 +203,7 @@ def run():
     adb('shell settings put system screen_off_timeout 1800000')
     adb('shell svc power stayon true')
     adb('shell input keyevent 82')
-    adb('logcat -c')
+    mark()
     R['sanity_shot'] = shot('sanity_launcher')  # proves screencap works before any of our apps runs
     R['sanity_bytes'] = os.path.getsize(os.path.join(OUT, R['sanity_shot']))
     R['device'] = {'sdk': adb('shell getprop ro.build.version.sdk').strip(), 'model': adb('shell getprop ro.product.model').strip(),
