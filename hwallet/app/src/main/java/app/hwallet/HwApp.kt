@@ -20,6 +20,8 @@ import java.util.Locale
 class HwApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        // v1.7 P0: the CI emulator check drives the WebViews over DevTools (debug builds, or -PkwE2E=true); never in a store build
+        if (BuildConfig.DEBUG || BuildConfig.E2E) android.webkit.WebView.setWebContentsDebuggingEnabled(true)
         install(this)
         try { HwNet.load(this) } catch (_: Throwable) {}
     }

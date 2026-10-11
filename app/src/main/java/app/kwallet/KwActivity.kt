@@ -74,6 +74,7 @@ open class KwActivity : FragmentActivity() {
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
         )
         super.onCreate(savedInstanceState)
+        if (BuildConfig.DEBUG || BuildConfig.E2E) WebView.setWebContentsDebuggingEnabled(true) // v3.97 P0: emulator check only
         // Material You chosen in Settings: the window behind the page uses the wallpaper colour, never a lime flash
         val kwp = getSharedPreferences("kw", MODE_PRIVATE)
         if (!signPage && Build.VERSION.SDK_INT >= 31 && kwp.getBoolean("md3", false)) {
