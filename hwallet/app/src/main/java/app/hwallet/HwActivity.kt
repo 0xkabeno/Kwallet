@@ -47,6 +47,25 @@ class HwActivity : FragmentActivity() {
     private lateinit var web: WebView
 
     private fun startUrl(): String = "https://appassets.androidplatform.net/assets/index.html"
+
+    /** v1.6 (#57): a WalletConnect pairing link that opened the app (wc:…, hwallet://wc?uri=…, https://hwallet.app/wc?uri=…).
+     *  Kept until the page takes it (wcPending) or pushed to window.hwWcLink when the page is already up. */
+    @Volatile private var pendingWc: String = ""
+    private fun wcFrom(i: Intent?): String {
+        val u = i?.data ?: return ""
+        if (i?.action != Intent.ACTION_VIEW) return ""
+        val s = when (u.scheme?.lowercase()) {
+            "wc" -> u.toString()
+            "hwallet", "https" -> u.getQueryParameter("uri") ?: ""
+            else -> ""
+        }
+        return if (s.startsWith("wc:") && s.length < 4096) s else ""
+    }
+    private fun takeWc(i: Intent?) {
+        val s = wcFrom(i); if (s.isEmpty()) return
+        pendingWc = s
+        if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwWcLink&&hwWcLink(${JSONObject.quote(s)})") { r -> if (r == "true") pendingWc = "" }
+    }
     companion object { const val KWALLET = "app.kwallet" }
     private lateinit var root: FrameLayout
     private var fileCallback: ValueCallback<Array<Uri>>? = null
@@ -171,6 +190,9 @@ class HwActivity : FragmentActivity() {
         fun wsSend(id: String, text: String): Boolean { val s = socks[id] ?: return false; HwNet.wsOut(text.length); return s.send(text) }
         @android.webkit.JavascriptInterface
         fun wsClose(id: String) { socks.remove(id)?.close(1000, null) }
+        /** v1.6 (#57): the wc: link the app was opened with, once (empty when none). */
+        @android.webkit.JavascriptInterface
+        fun wcPending(): String { val s = pendingWc; pendingWc = ""; return s }
 
         /** v1.4 (#53): Settings > Data speed limit, KB/s (0 = unlimited). Saved and applied at once to all traffic. */
         @android.webkit.JavascriptInterface
@@ -531,6 +553,7 @@ class HwActivity : FragmentActivity() {
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl(startUrl())
+        takeWc(intent)
         HwActDb.listener = { wid, json -> actPatch(wid, json) }
         HwNet.onChange = { runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript("window.hwNetChanged&&hwNetChanged()", null) } catch (_: Throwable) {} } }
         // v1.3 (#42): the always-on listener is NOT started here any more. The page starts it through setLive()
@@ -681,6 +704,8 @@ class HwActivity : FragmentActivity() {
 
     private fun isLight(c: Int): Boolean =
         (0.299 * Color.red(c) + 0.587 * Color.green(c) + 0.114 * Color.blue(c)) / 255.0 >= 0.5
+
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); takeWc(intent) }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)

@@ -35,3 +35,8 @@ License (see ../LICENSE). It talks to Hwallet only through Android intents.
 
 v1.5 scanner: QR decoding by ZXing core (https://github.com/zxing/zxing, Apache-2.0) and camera by AndroidX CameraX
 (Apache-2.0). Scanner layout follows Gem Wallet (GPL-3.0). No Google Play services code scanner is used.
+
+WalletConnect (v1.6): Hwallet bundles Reown WalletKit 1.6.0 and @walletconnect/core / utils 2.26.0
+(Apache License 2.0, github.com/reown-com/walletkit and github.com/WalletConnect/walletconnect-monorepo) and their
+MIT-licensed dependencies (@noble/*, @scure/*, ox, es-toolkit and others), inlined offline into web/index.html.
+The relay socket is native; the Reown project ID is filled on the phone and never reaches the page.
