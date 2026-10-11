@@ -241,6 +241,9 @@ class HwActivity : FragmentActivity() {
         fun brClearAll() { brw().clearAll() }
         @android.webkit.JavascriptInterface
         fun brUsage(): String = try { brw().usage() } catch (_: Throwable) { "{}" }
+        /** v1.7 (P1): {documentStartScript, webMessageListener, webview version} of this phone's WebView */
+        @android.webkit.JavascriptInterface
+        fun brFeatures(): String = try { brw().features() } catch (_: Throwable) { "{}" }
         /** v1.7 (P1, #99): a site's cached icon (data: PNG, 96 px) by host, "" when none is on disk yet */
         @android.webkit.JavascriptInterface
         fun brIcon(host: String): String = if (host.length in 1..200) try { brw().iconData(host) } catch (_: Throwable) { "" } else ""

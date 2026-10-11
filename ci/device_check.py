@@ -197,6 +197,8 @@ def clear_sysdlg():
 
 def tap(pg, sel):
     clear_sysdlg()
+    pg.ev("(function(){var e=document.querySelector(%s); if(e&&e.scrollIntoView){var r=e.getBoundingClientRect(); if(r.top<0||r.bottom>innerHeight) e.scrollIntoView({block:'center'});} return 1})()" % json.dumps(sel))
+    time.sleep(0.3)
     r = rect(pg, sel)
     if not r or not r['w']:
         return None
@@ -259,7 +261,7 @@ def load_site(pg, name, text, match, limit=10.0, wait=40):
         for t in tab_targets():
             if match in t.get('url', ''):
                 found = t; info = page_info(t)
-                if info.get('state') in ('interactive', 'complete') and info.get('len', 0) > 40 and info.get('h', 0) > 100:
+                if match in str(info.get('url', '')) and info.get('state') in ('interactive', 'complete') and info.get('len', 0) > 40 and info.get('h', 0) > 100:
                     t_ok = round(time.time() - t0, 1)
                 break
         if t_ok:
@@ -294,6 +296,8 @@ def browser(pg):
          how=how, tap=xy, focus_ring=ring, start_icons=icons, text=app_text(pg), shot=f, logcat=logcat('h_browser_tab'))
     if not on_br:
         return
+    R['webview_features'] = pg.ev("(function(){try{return JSON.parse(HwNative.brFeatures())}catch(e){return String(e)}})()")
+    log('webview features', R['webview_features'])
     # three real sites, each must show content within 10 s
     load_site(pg, 'google', 'google.com', 'google.')
     gi = None
@@ -323,7 +327,7 @@ def browser(pg):
     step('h_browser_history', isinstance(rows, list) and len(rows) >= 3, rows=rows[:8], shot=f)
     adb('shell input keyevent 4'); time.sleep(1.2)
     # injected wallet providers in a real dApp: Reown AppKit lab (multichain); connect starts in H without signing anything
-    found, info = load_site(pg, 'appkit', 'https://appkit-lab.reown.com/appkit?name=multichain-all', 'appkit-lab.reown.com', limit=25.0, wait=45)
+    found, info = load_site(pg, 'appkit', 'https://appkit-lab.reown.com/appkit?name=multichain-all', 'reown.com', limit=25.0, wait=45)
     detail = {'providers': {k: info.get(k) for k in ('eth', 'sol', 'trx')}}
     if found:
         try:

@@ -38,10 +38,33 @@ pass() {  # label kwallet.apk hwallet.apk
   echo "::endgroup::"
   grep -h '^SUMMARY' "$OUT/$L.log" >> "$OUT/summary.txt"
 }
+# P1: the API 30 image ships WebView 83 (2020); today's dApps (Uniswap, Jupiter) need newer JS and render blank or
+# unstyled there. WV=chromium (default) installs the current Chromium SystemWebView (x86_64, com.android.webview) for the
+# debug + release passes, then a third pass "wv83" switches back to the stock Google WebView 83 (old phones).
+WV=${WV:-chromium}
+adb shell dumpsys webviewupdate > "$OUT/webview_stock.txt" 2>&1
+NEWWV=""
+if [ "$WV" = chromium ]; then
+  ( set -x
+    REV=$(curl -sf https://storage.googleapis.com/chromium-browser-snapshots/AndroidDesktop_x64/LAST_CHANGE)
+    curl -sfL -o /tmp/cad.zip "https://storage.googleapis.com/chromium-browser-snapshots/AndroidDesktop_x64/$REV/chrome-android-desktop.zip" &&
+    unzip -o -j /tmp/cad.zip chrome-android-desktop/apks/SystemWebView.apk -d /tmp/wv && rm -f /tmp/cad.zip
+    timeout 300 adb install -r -d /tmp/wv/SystemWebView.apk
+    adb shell cmd webviewupdate set-webview-implementation com.android.webview
+  ) > "$OUT/webview_update.txt" 2>&1
+  adb shell dumpsys webviewupdate > "$OUT/webview_after.txt" 2>&1
+  grep -q "Current WebView package (name, version): (com.android.webview" "$OUT/webview_after.txt" && NEWWV=1
+  echo "webview update: $(grep -m1 'Current WebView package' "$OUT/webview_after.txt")"; tail -5 "$OUT/webview_update.txt"
+fi
 RC=0
 pass debug app/build/outputs/apk/debug/app-debug.apk hwallet/app/build/outputs/apk/debug/hwallet-debug.apk || RC=1
 if [ -f app/build/outputs/apk/release/app-release.apk ]; then
   pass release app/build/outputs/apk/release/app-release.apk hwallet/app/build/outputs/apk/release/hwallet-release.apk || RC=1
+fi
+if [ -n "$NEWWV" ]; then
+  adb shell cmd webviewupdate set-webview-implementation com.google.android.webview
+  echo "wv83 pass: $(adb shell dumpsys webviewupdate | grep -m1 'Current WebView package')"
+  pass wv83 app/build/outputs/apk/debug/app-debug.apk hwallet/app/build/outputs/apk/debug/hwallet-debug.apk || RC=1
 fi
 timeout 60 adb logcat -d -v threadtime > "$OUT/logcat_full_tail.txt" || true
 echo "== last 40 lines of the logcat stream"; tail -40 "$OUT/logcat_stream_all.txt" | cut -c1-220

@@ -334,8 +334,10 @@ class HwBrowser(
                 outside(u.toString(), s)
                 return true
             }
-            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { navEv(t, view, true, 10) }
+            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { navEv(t, view, true, 10); lateInject(view) }
+            override fun onPageCommitVisible(view: WebView, url: String?) { lateInject(view) }
             override fun onPageFinished(view: WebView, url: String?) {
+                lateInject(view)
                 navEv(t, view, false, 100)
                 if (t.pendingScroll > 0) { val y = t.pendingScroll; t.pendingScroll = 0; ui.postDelayed({ try { view.evaluateJavascript("window.scrollTo(0,$y)", null) } catch (_: Throwable) {} }, 350) }
                 if (!t.offline && isWeb(view.url)) { save(t); snapshotSoon(t); siteIcon(t, view) }
@@ -352,7 +354,7 @@ class HwBrowser(
         }
         w.webChromeClient = object : WebChromeClient() {
             private var lastP = 0
-            override fun onProgressChanged(view: WebView, p: Int) { if (p - lastP >= 15 || p == 100 || p < lastP) { lastP = p; navEv(t, view, p < 100, p) } }
+            override fun onProgressChanged(view: WebView, p: Int) { if (p - lastP >= 15 || p == 100 || p < lastP) { lastP = p; navEv(t, view, p < 100, p); lateInject(view) } }
             override fun onReceivedTitle(view: WebView, title: String?) { navEv(t, view, view.progress < 100, view.progress) }
             override fun onReceivedIcon(view: WebView, icon: Bitmap?) {
                 if (icon == null || t.offline) return
@@ -498,6 +500,21 @@ class HwBrowser(
 
     private fun atomic(f: File, b: ByteArray) { val tmp = File(f.parentFile, f.name + ".tmp"); tmp.writeBytes(b); if (!tmp.renameTo(f)) { f.delete(); tmp.renameTo(f) } }
     private fun size(f: File): Long = if (!f.exists()) 0L else if (f.isFile) f.length() else (f.listFiles() ?: emptyArray()).sumOf { size(it) }
+
+    /** v1.7 (P1): WebViews without DOCUMENT_START_SCRIPT (older than ~M87, e.g. the API 30 emulator's 83) still get the
+     *  providers: injected as early as the page lets us (start, every progress step, commit, finish). hw_provider.js runs once
+     *  per document (__hwProv) and only on https top pages; EIP-6963 / Wallet Standard announce it to dApps that load first. */
+    private val dss: Boolean by lazy { try { WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT) } catch (_: Throwable) { false } }
+    private val wml: Boolean by lazy { try { WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER) } catch (_: Throwable) { false } }
+    private fun lateInject(view: WebView) {
+        if (dss || !wml) return
+        val s = script ?: return
+        if (view.url?.startsWith("https://") != true) return
+        try { view.evaluateJavascript(s, null) } catch (_: Throwable) {}
+    }
+    /** what this phone's WebView supports, for Settings > About and the device check */
+    fun features(): String = JSONObject().put("documentStartScript", dss).put("webMessageListener", wml)
+        .put("webview", try { WebViewCompat.getCurrentWebViewPackage(act)?.versionName ?: "" } catch (_: Throwable) { "" }).toString()
 
     // ---------------------------------------------------------------- v1.7 (P1, #99): site icons
     // Bundled dApp icons live in the page (assets/dapps). For every other site the best icon is fetched once, on the first
