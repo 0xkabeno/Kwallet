@@ -20496,6 +20496,12 @@ window.__KWLOGO={"bitcoin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAA
     else if (m === 'tron_signTransaction') { DS.view = trxView(); if (DS.view.err) return fail(DS.view.err); }
     else if (m === 'tron_signMessage') { var tu = hexB(P.message); DS.msg = tu && /^0x/.test(String(P.message)) ? tu : new TextEncoder().encode(String(P.message || '')); DS.text = utf8(DS.msg); }
     else if (m === 'kw_nearAccount') { if (rec.seedType && rec.seedType !== 'bip39') return fail('NEAR needs a BIP-39 seed.'); }
+    /* wave C (#82): Hwallet's swap screen may preset the network fee: R.fee.level (EVM presets) or feePreset 'custom' with
+       the Custom text fields (R.cfTxt), which Kwallet parses and checks against R.feeMin exactly as if typed here */
+    if (R.feePreset === 'custom' && R.cfTxt && typeof R.cfTxt === 'object' && (c === 'evm' || (c === 'trx' && DS.view && DS.view.raw) || (c === 'sol' && DS.view && DS.view.feeEdit))) {
+      var ct = {}; ['mf', 'tip', 'gas', 'cup', 'cul', 'fl'].forEach(function (k) { if (R.cfTxt[k] != null && String(R.cfTxt[k]).length < 24) ct[k] = String(R.cfTxt[k]); });
+      R.cfTxt = ct; DS.level = 'custom'; cfParse();
+    } else delete R.cfTxt;
     lastFeed = Date.now(); DS.total = Math.max(1000, R.expires - Date.now());
     mount(); dappDraw(); arm(800);
     setInterval(tickLive, 1000); setInterval(tickExp, 250);
