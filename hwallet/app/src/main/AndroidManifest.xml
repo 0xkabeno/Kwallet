@@ -25,6 +25,11 @@
     <!-- Hwallet asks Kwallet (same phone, same signing key) to sign -->
     <queries>
         <package android:name="app.kwallet" />
+        <!-- v1.6 (#79): Install Kwallet opens the store when one is there -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="market" />
+        </intent>
     </queries>
 
     <application

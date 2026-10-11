@@ -91,8 +91,15 @@ class HwLiveService : Service() {
     @Volatile private var cfg = JSONObject()
     @Volatile private var running = false
 
-    /* prices: 4 coins for the notification */
-    private val coins = arrayOf("bitcoin", "ethereum", "solana", "monero")
+    /* prices: 4 coins for the notification. v1.6 (#76): each slot is configurable from Settings (cfg.ncoins):
+     *  { s: symbol, cg: CoinGecko id or "", plat: CoinGecko platform + a: contract (tokens without an id), ic: data:image/png;base64 logo, icon: https logo } */
+    private class Slot(val s: String, val cg: String, val plat: String, val a: String, val ic: String, val icon: String)
+    private val DEF_SLOTS = listOf(Slot("BTC", "bitcoin", "", "", "", ""), Slot("ETH", "ethereum", "", "", "", ""), Slot("SOL", "solana", "", "", "", ""), Slot("XMR", "monero", "", "", "", ""))
+    @Volatile private var slots: List<Slot> = DEF_SLOTS
+    private val DEF_ICONS = intArrayOf(R.drawable.hw_n_btc, R.drawable.hw_n_eth, R.drawable.hw_n_sol, R.drawable.hw_n_xmr)
+    private val KRAKEN = mapOf("bitcoin" to "XXBTZUSD", "ethereum" to "XETHZUSD", "solana" to "SOLUSD", "monero" to "XXMRZUSD")
+    private val iconCache = ConcurrentHashMap<String, android.graphics.Bitmap>()
+    private val iconTried: MutableSet<String> = java.util.Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
     private val px = DoubleArray(4)
     private val pct = arrayOfNulls<Double>(4)
     private var cgAt = 0L
@@ -159,7 +166,7 @@ class HwLiveService : Service() {
         if (Build.VERSION.SDK_INT < 26) return
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         val live = NotificationChannel(CH_LIVE, "Live prices", NotificationManager.IMPORTANCE_LOW).apply {
-            description = "Always-on BTC, ETH, SOL and XMR prices"; setShowBadge(false); enableVibration(false); setSound(null, null)
+            description = "Always-on prices for the four coins picked in Settings"; setShowBadge(false); enableVibration(false); setSound(null, null)
         }
         val inc = NotificationChannel(CH_IN, "Incoming payments", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "When funds arrive in a watched wallet"; enableVibration(true); vibrationPattern = longArrayOf(0, 40, 60, 40, 60, 90)
@@ -191,7 +198,12 @@ class HwLiveService : Service() {
         val mute = if (dark) 0xFF9AA4B2.toInt() else 0xFF6B7079.toInt()
         val rv = RemoteViews(packageName, R.layout.hw_notif)
         val ids = arrayOf(intArrayOf(R.id.p0, R.id.c0), intArrayOf(R.id.p1, R.id.c1), intArrayOf(R.id.p2, R.id.c2), intArrayOf(R.id.p3, R.id.c3))
+        val icons = intArrayOf(R.id.i0, R.id.i1, R.id.i2, R.id.i3)
         for (k in 0 until 4) {
+            val bm = slotIcon(k)
+            val di = defIcon(k)
+            if (bm != null) rv.setImageViewBitmap(icons[k], bm) else if (di != 0) rv.setImageViewResource(icons[k], di) else rv.setImageViewBitmap(icons[k], letterIcon(slots[k].s, dark))
+            rv.setContentDescription(icons[k], slots[k].s)
             rv.setTextViewText(ids[k][0], fmtPx(px[k]))
             val p = pct[k]
             rv.setTextViewText(ids[k][1], if (p == null) "" else String.format("%s%.2f%%", if (p >= 0) "+" else "", p))
@@ -203,7 +215,7 @@ class HwLiveService : Service() {
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setCustomContentView(rv)
             .setContentTitle("Hwallet")
-            .setContentText(String.format("BTC %s · ETH %s · SOL %s · XMR %s", fmtPx(px[0]), fmtPx(px[1]), fmtPx(px[2]), fmtPx(px[3])))
+            .setContentText((0 until 4).joinToString(" · ") { slots[it].s + " " + fmtPx(px[it]) })
             .setOngoing(true).setOnlyAlertOnce(true).setSilent(true).setShowWhen(false)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -211,6 +223,21 @@ class HwLiveService : Service() {
             .setContentIntent(openApp())
         if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
         return b.build()
+    }
+
+    /** default drawable for a slot: the bundled BTC/ETH/SOL/XMR art when the slot holds that coin, else the H mark */
+    private fun defIcon(k: Int): Int = when (slots[k].cg) { "bitcoin" -> DEF_ICONS[0]; "ethereum" -> DEF_ICONS[1]; "solana" -> DEF_ICONS[2]; "monero" -> DEF_ICONS[3]; else -> 0 }
+    /** letter avatar (like the app's) for a coin with no logo at all */
+    private fun letterIcon(sym: String, dark: Boolean): android.graphics.Bitmap {
+        val key = "lt:" + sym + dark
+        iconCache[key]?.let { return it }
+        val bm = android.graphics.Bitmap.createBitmap(64, 64, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(bm)
+        val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        p.color = if (dark) 0xFF2A3342.toInt() else 0xFFE8EAED.toInt(); c.drawCircle(32f, 32f, 32f, p)
+        p.color = if (dark) 0xFFE8EAED.toInt() else 0xFF3C4043.toInt(); p.textSize = 30f; p.textAlign = android.graphics.Paint.Align.CENTER; p.isFakeBoldText = true
+        c.drawText(sym.take(1).uppercase(), 32f, 32f - (p.descent() + p.ascent()) / 2, p)
+        iconCache[key] = bm; return bm
     }
 
     private var fgOk = false
@@ -242,6 +269,7 @@ class HwLiveService : Service() {
         val s = getSharedPreferences(PREF, Context.MODE_PRIVATE).getString("cfg", null)
         cfg = try { JSONObject(s ?: "{}") } catch (_: Exception) { JSONObject() }
         if (!enabled(this)) { stopSelf(); return }
+        loadSlots()
         /* v1.3 (#47): status-bar switch changed: repost the foreground notification on the other channel */
         if (fgChannel.isNotEmpty() && fgChannel != (if (sbar(this)) CH_LIVE else CH_QUIET)) goForeground()
         try { exec?.shutdownNow() } catch (_: Exception) {}
@@ -255,6 +283,40 @@ class HwLiveService : Service() {
     }
 
     private fun bgSec(): Int = cfg.optInt("bg", 5)
+
+    /** v1.6 (#76): the four notification coins from cfg.ncoins (defaults BTC, ETH, SOL, XMR). Prices reset when a slot changes. */
+    private fun loadSlots() {
+        val a = cfg.optJSONArray("ncoins")
+        val next = ArrayList<Slot>()
+        for (k in 0 until 4) {
+            val o = a?.optJSONObject(k)
+            next.add(if (o == null || o.optString("s").isEmpty()) DEF_SLOTS[k] else Slot(o.optString("s").take(10), o.optString("cg"), o.optString("plat"), o.optString("a"), o.optString("ic"), o.optString("icon")))
+        }
+        val old = slots
+        for (k in 0 until 4) if (old.getOrNull(k)?.let { it.s == next[k].s && it.cg == next[k].cg && it.a == next[k].a } != true) { px[k] = 0.0; pct[k] = null }
+        slots = next; cgAt = 0L; pxAt = 0L
+        try { pushNote(true) } catch (_: Throwable) {}
+    }
+
+    /** a slot's logo: the bundled data URL from the page, else its https icon (fetched once, off the main thread), else the default drawable */
+    private fun slotIcon(k: Int): android.graphics.Bitmap? {
+        val sl = slots.getOrNull(k) ?: return null
+        val key = if (sl.ic.isNotEmpty()) "ic:" + sl.ic.hashCode() else if (sl.icon.isNotEmpty()) sl.icon else return null
+        iconCache[key]?.let { return it }
+        if (sl.ic.startsWith("data:image/")) {
+            val bm = try { val b = android.util.Base64.decode(sl.ic.substringAfter(","), android.util.Base64.DEFAULT); android.graphics.BitmapFactory.decodeByteArray(b, 0, b.size) } catch (_: Throwable) { null }
+            if (bm != null) { iconCache[key] = bm; return bm }
+        }
+        if (sl.icon.startsWith("https://") && iconTried.add(sl.icon)) try { exec?.execute {
+            try {
+                http.newCall(Request.Builder().url(sl.icon).header("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME).build()).execute().use { r: Response ->
+                    val b = if (r.isSuccessful) r.body?.bytes() else null
+                    if (b != null && b.size < 512 * 1024) { val bm = android.graphics.BitmapFactory.decodeByteArray(b, 0, b.size); if (bm != null) { iconCache[key] = android.graphics.Bitmap.createScaledBitmap(bm, 64, 64, true); pushNote(true) } }
+                }
+            } catch (_: Throwable) {}
+        } } catch (_: Throwable) {}
+        return null
+    }
 
     private fun tick() {
         if (!running) return
@@ -333,20 +395,31 @@ class HwLiveService : Service() {
         pxBusy = true; pxAt = now
         try { exec?.execute {
             try {
+                val sl = slots
                 if (now - cgAt > 60000) {
-                    val j = get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,monero&vs_currencies=usd&include_24hr_change=true")
-                    if (j != null) {
-                        val o = JSONObject(j)
-                        for (k in 0 until 4) { val c = o.optJSONObject(coins[k]) ?: continue; val v = c.optDouble("usd", 0.0); if (v > 0) px[k] = v; if (c.has("usd_24h_change")) pct[k] = c.optDouble("usd_24h_change") }
-                        cgAt = now
+                    val ids = sl.map { it.cg }.filter { it.isNotEmpty() }.distinct()
+                    if (ids.isNotEmpty()) {
+                        val j = get("https://api.coingecko.com/api/v3/simple/price?ids=" + ids.joinToString(",") { java.net.URLEncoder.encode(it, "UTF-8") } + "&vs_currencies=usd&include_24hr_change=true")
+                        if (j != null) {
+                            val o = JSONObject(j)
+                            for (k in 0 until 4) { if (sl[k].cg.isEmpty()) continue; val c = o.optJSONObject(sl[k].cg) ?: continue; val v = c.optDouble("usd", 0.0); if (v > 0) px[k] = v; if (c.has("usd_24h_change")) pct[k] = c.optDouble("usd_24h_change") }
+                        }
                     }
+                    /* v1.6 (#76): tokens imported by contract with no CoinGecko id: price by platform + contract */
+                    for ((plat, group) in (0 until 4).filter { sl[it].cg.isEmpty() && sl[it].plat.isNotEmpty() && sl[it].a.isNotEmpty() }.groupBy { sl[it].plat }) {
+                        val j = get("https://api.coingecko.com/api/v3/simple/token_price/" + plat + "?contract_addresses=" + group.joinToString(",") { java.net.URLEncoder.encode(sl[it].a, "UTF-8") } + "&vs_currencies=usd&include_24hr_change=true") ?: continue
+                        val o = JSONObject(j)
+                        for (k in group) { val c = o.optJSONObject(sl[k].a) ?: o.optJSONObject(sl[k].a.lowercase()) ?: continue; val v = c.optDouble("usd", 0.0); if (v > 0) px[k] = v; if (c.has("usd_24h_change")) pct[k] = c.optDouble("usd_24h_change") }
+                    }
+                    cgAt = now
                 }
-                val k = get("https://api.kraken.com/0/public/Ticker?pair=XBTUSD,ETHUSD,SOLUSD,XMRUSD")
-                if (k != null) {
-                    val r = JSONObject(k).optJSONObject("result")
-                    if (r != null) {
-                        val map = mapOf("XXBTZUSD" to 0, "XETHZUSD" to 1, "SOLUSD" to 2, "XXMRZUSD" to 3)
-                        for ((key, idx) in map) { val t = r.optJSONObject(key) ?: continue; val v = t.optJSONArray("c")?.optString(0)?.toDoubleOrNull() ?: continue; if (v > 0) px[idx] = v }
+                val kr = (0 until 4).filter { KRAKEN.containsKey(sl[it].cg) }
+                if (kr.isNotEmpty()) {
+                    val pairs = mapOf("XXBTZUSD" to "XBTUSD", "XETHZUSD" to "ETHUSD", "SOLUSD" to "SOLUSD", "XXMRZUSD" to "XMRUSD")
+                    val k = get("https://api.kraken.com/0/public/Ticker?pair=" + kr.map { pairs[KRAKEN[sl[it].cg]] }.distinct().joinToString(","))
+                    if (k != null) {
+                        val r = JSONObject(k).optJSONObject("result")
+                        if (r != null) for (idx in kr) { val t = r.optJSONObject(KRAKEN[sl[idx].cg]!!) ?: continue; val v = t.optJSONArray("c")?.optString(0)?.toDoubleOrNull() ?: continue; if (v > 0) px[idx] = v }
                     }
                 }
                 pushNote()

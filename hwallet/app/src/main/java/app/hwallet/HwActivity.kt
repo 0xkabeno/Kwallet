@@ -376,6 +376,28 @@ class HwActivity : FragmentActivity() {
         fun openUrl(url: String) {
             runOnUiThread { try { if (url.startsWith("https://")) startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (_: Exception) {} }
         }
+
+        /** v1.6 (#79): is Kwallet on this phone, and which version. Package visibility comes from <queries> in the manifest. */
+        @android.webkit.JavascriptInterface
+        fun kwInfo(): String = try {
+            val pi = packageManager.getPackageInfo(KWALLET, 0)
+            JSONObject().put("installed", true).put("version", pi.versionName ?: "").toString()
+        } catch (_: Exception) { "{\"installed\":false}" }
+
+        /** v1.6 (#79): Install Kwallet. "play" opens the Play Store listing (store app, else its web page); anything else the GitHub releases page. */
+        @android.webkit.JavascriptInterface
+        fun installKw(where: String) {
+            runOnUiThread {
+                val gh = "https://github.com/0xkabeno/Kwallet/releases/latest"
+                try {
+                    if (where == "play") {
+                        val m = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$KWALLET")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        if (m.resolveActivity(packageManager) != null) startActivity(m)
+                        else startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$KWALLET")))
+                    } else startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(gh)))
+                } catch (_: Exception) { try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(gh))) } catch (_: Exception) {} }
+            }
+        }
     }
 
     /** v1.2: notification permission (Android 13+). v1.3: the service starts after it, once Hwallet is in front again */
