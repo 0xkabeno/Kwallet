@@ -167,7 +167,27 @@ def rect(pg, sel):
                  "return {x:r.left+r.width/2, y:r.top+r.height/2, w:r.width, h:r.height}})()" % json.dumps(sel))
 
 
+SYSDLG = []
+
+
+def clear_sysdlg():
+    """A system window over Hwallet (e.g. "Let app always run in background?", which Hwallet asks a few seconds after the
+    first Home) eats taps: record it as a finding and dismiss it with Back, like a user who says no."""
+    seen = None
+    for i in range(3):
+        d = adb('shell dumpsys window', 30)
+        foc = re.findall(r'mCurrentFocus=Window\{[0-9a-f]+ u\d+ ([^}\s]+)\}', d)
+        if foc and not foc[-1].startswith(H) and not foc[-1].startswith(K):
+            seen = seen or foc[-1]; adb('shell input keyevent 4'); time.sleep(1.2)
+        else:
+            break
+    if seen:
+        SYSDLG.append(seen); R['system_dialogs'] = SYSDLG; log('dismissed system window', seen)
+    return seen
+
+
 def tap(pg, sel):
+    clear_sysdlg()
     r = rect(pg, sel)
     if not r or not r['w']:
         return None
@@ -252,13 +272,7 @@ def run():
     f = shot('h_home')
     # a system dialog over Hwallet (e.g. "Let app always run in background?", asked on first Home) eats the next taps:
     # record it as a finding, then dismiss it with Back so the flows continue like a user who said no
-    sysdlg = None
-    for i in range(3):
-        foc = re.findall(r'mCurrentFocus=Window\{\S+ \S+ ([^}]+)\}', adb('shell dumpsys window windows | grep -m1 mCurrentFocus'))
-        if foc and not foc[0].startswith(H):
-            sysdlg = sysdlg or foc[0]; adb('shell input keyevent 4'); time.sleep(1.5)
-        else:
-            break
+    time.sleep(3); sysdlg = clear_sysdlg()
     step('h_home_watch_setup', home, text=app_text(pg), toast=toast(pg), system_dialog=sysdlg, shot=f, logcat=logcat('h_home'))
 
     # 3. Browser tab -> type google.com -> page loads in the native WebView
