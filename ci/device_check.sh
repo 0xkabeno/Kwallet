@@ -7,6 +7,15 @@ mkdir -p "$OUT"
 adb wait-for-device
 adb shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 1; done'
 adb shell input keyevent 82 || true
+# P0b diagnostics: stream every logcat buffer (main, system, crash, events, kernel) to a file from now on, so the last
+# guest lines before an emulator death are kept even when adb cannot reach the device afterwards.
+adb logcat -G 16M >/dev/null 2>&1 || true
+adb logcat -b all -v threadtime > "$OUT/logcat_stream_all.txt" 2>&1 &
+LCPID=$!
+(while sleep 2; do echo "$(date +%T) $(timeout 5 adb get-state 2>&1) qemu=$(pgrep -f qemu-system | head -1)" ; done > "$OUT/health.txt" 2>&1 < /dev/null) &
+HPID=$!
+# Vibration: VIB=block silences the haptic for both apps (appops), VIB=allow leaves it on (diagnostic control).
+VIB=${VIB:-block}; export VIB
 pass() {  # label kwallet.apk hwallet.apk
   local L=$1 KA=$2 HA=$3
   echo "::group::device check: $L"
@@ -14,6 +23,7 @@ pass() {  # label kwallet.apk hwallet.apk
   timeout 60 adb uninstall app.hwallet >/dev/null 2>&1; timeout 60 adb uninstall app.kwallet >/dev/null 2>&1
   timeout 180 adb install -r -g "$KA" || { echo "::error::install $KA failed"; return 1; }
   timeout 180 adb install -r -g "$HA" || { echo "::error::install $HA failed"; return 1; }
+  if [ "$VIB" = block ]; then for P in app.hwallet app.kwallet; do adb shell appops set $P VIBRATE ignore; echo "appops $P: $(adb shell appops get $P VIBRATE)"; done; fi
   timeout 900 python3 ci/device_check.py "$OUT/$L" "$L" 2>&1 | tee "$OUT/$L.log"
   timeout 30 adb exec-out screencap -p > "$OUT/$L/zz_final.png" || true
   echo "::endgroup::"
@@ -25,6 +35,9 @@ if [ -f app/build/outputs/apk/release/app-release.apk ]; then
   pass release app/build/outputs/apk/release/app-release.apk hwallet/app/build/outputs/apk/release/hwallet-release.apk || RC=1
 fi
 timeout 60 adb logcat -d -v threadtime > "$OUT/logcat_full_tail.txt" || true
+echo "== last 40 lines of the logcat stream"; tail -40 "$OUT/logcat_stream_all.txt" | cut -c1-220
+echo "== health tail"; tail -8 "$OUT/health.txt"
+kill $LCPID $HPID 2>/dev/null || true
 cat "$OUT/summary.txt" 2>/dev/null
 python3 - "$OUT" <<'P' >> "${GITHUB_STEP_SUMMARY:-/dev/null}" || true
 import json, sys, glob, os

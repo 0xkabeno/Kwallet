@@ -20,17 +20,22 @@ concurrency:
 
 jobs:
   emulator:
-    name: Emulator flows (API ${{ matrix.api }}, gpu ${{ matrix.gpu }})
+    name: Emulator flows (API ${{ matrix.api }} ${{ matrix.target }}, vibrate ${{ matrix.vib }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # Two emulator setups side by side: on the first two runs the API 34 emulator process died ~2 s after Hwallet
-    # launched with -gpu swiftshader_indirect (host-side renderer). gpu=guest renders inside the VM instead.
+    # P0b: the emulator process died ~2 s after Hwallet launched (4/4 boots, API 33/34, host + guest GPU, -noaudio).
+    # Suspect: Hwallet's opening haptic (HarkNative.vibrate) -> the headless emulator's vibration handler.
+    # vib=block runs `appops set <pkg> VIBRATE ignore` before launch; vib=allow is the diagnostic control (may die, never
+    # fails the run). Diagnostics on every entry: logcat -b all streamed to a file from boot, -show-kernel guest
+    # kernel log in the job log, host dmesg + emulator crash db after the passes.
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { api: 34, gpu: guest }
-          - { api: 33, gpu: swiftshader_indirect }
+          - { api: 34, target: google_apis, vib: block, diag: false }
+          - { api: 30, target: google_apis, vib: block, diag: false }
+          - { api: 34, target: google_apis, vib: allow, diag: true }
+    continue-on-error: ${{ matrix.diag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -65,19 +70,32 @@ jobs:
         with:
           api-level: ${{ matrix.api }}
           arch: x86_64
-          target: google_apis
+          target: ${{ matrix.target }}
           profile: pixel_2
           cores: 4
-          ram-size: 3072M
+          ram-size: 4096M
+          disk-size: 6000M
           heap-size: 512M
-          emulator-options: -no-snapshot -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -no-boot-anim -show-kernel -camera-back none -camera-front none
           disable-animations: true
-          script: bash ci/device_check.sh
+          script: VIB=${{ matrix.vib }} bash ci/device_check.sh
+
+      - name: Host diagnostics (dmesg, emulator crash reports)
+        if: always()
+        run: |
+          mkdir -p device-out/host
+          sudo dmesg -T > device-out/host/dmesg.txt 2>&1 || true
+          grep -iE "qemu|emulator|oom|killed process|segfault|trap" device-out/host/dmesg.txt | tail -50 || true
+          free -m > device-out/host/free.txt; nproc >> device-out/host/free.txt
+          ls -laR /tmp/android-runner /tmp/android-$USER 2>/dev/null | head -100 > device-out/host/tmp_ls.txt || true
+          cp -r /tmp/android-runner device-out/host/ 2>/dev/null || true
+          cp ~/.android/avd/test.avd/config.ini device-out/host/avd_config.ini 2>/dev/null || true
+          find ~/.android -name "*.dmp" -o -name "*crash*" 2>/dev/null | head > device-out/host/crash_files.txt || true
 
       - name: Upload screenshots + logcat
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: device-check-api${{ matrix.api }}-${{ matrix.gpu }}
+          name: device-check-api${{ matrix.api }}-${{ matrix.target }}-vib${{ matrix.vib }}
           path: device-out/
           if-no-files-found: warn

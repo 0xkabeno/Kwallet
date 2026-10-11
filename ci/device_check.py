@@ -41,8 +41,14 @@ def adb(args, timeout=60):
 def shot(name):
     SEQ[0] += 1
     fn = '%02d_%s.png' % (SEQ[0], name)
+    try:
+        data = subprocess.run([ADB, 'exec-out', 'screencap', '-p'], capture_output=True, timeout=30).stdout
+    except subprocess.TimeoutExpired:
+        data = b''
     with open(os.path.join(OUT, fn), 'wb') as f:
-        f.write(subprocess.run([ADB, 'exec-out', 'screencap', '-p'], capture_output=True, timeout=30).stdout)
+        f.write(data)
+    if not data:
+        log('screencap empty for', fn, 'device alive:', alive())
     return fn
 
 
@@ -198,8 +204,15 @@ def run():
     log('device', R['device'])
 
     # 1. launch Hwallet
+    R['vibrate'] = os.environ.get('VIB', 'block')
+    R['appops_vibrate'] = {p: adb('shell appops get %s VIBRATE' % p).strip() for p in (H, K)}
     comp, tt, raw = launch_w(H)
-    time.sleep(2); shot('h_launch_2s'); time.sleep(4); shot('h_launch_6s')
+    for i in range(12):  # watch the first 6 s closely: the emulator used to die ~2 s after launch
+        time.sleep(0.5)
+        if not alive():
+            R['died_after_launch_s'] = round((i + 1) * 0.5, 1)
+            step('h_launch', False, why='emulator died %.1fs after am start -W (see logcat_stream_all.txt, host/dmesg.txt)' % ((i + 1) * 0.5), comp=comp, am_total_ms=tt)
+    shot('h_launch_6s')
     R['h_proc'] = adb('shell pidof %s' % H).strip()
     log('h launched', comp, tt, 'pid', R['h_proc'], 'alive', alive())
     pg, meta = main_page(H, 30)
