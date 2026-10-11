@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   emulator:
-    name: Emulator flows (API ${{ matrix.api }} ${{ matrix.target }}, vibrate ${{ matrix.vib }} ${{ matrix.feat }})
+    name: Emulator flows (API ${{ matrix.api }} ${{ matrix.target }}, vibrate ${{ matrix.vib }}, ringer ${{ matrix.ringer }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
     # P0b: the emulator process died ~2 s after Hwallet launched (4/4 boots, API 33/34, host + guest GPU, -noaudio).
@@ -32,12 +32,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # API 30 passed attempt 1 (run 38172608215). API 34 still died with VIBRATE ignored, so haptics are not it.
-          # Next suspect: guest Vulkan (gfxstream -> host SwiftShader Vulkan) used by WebView 113's GPU process.
-          - { api: 30, target: google_apis, vib: block, feat: "", diag: false }
-          - { api: 34, target: google_apis, vib: allow, feat: "-feature -Vulkan", diag: true }
-          - { api: 34, target: google_apis, vib: allow, feat: "-feature -Vulkan,-GLDirectMem -gpu guest", diag: true }
-          - { api: 35, target: google_apis, vib: allow, feat: "", diag: true }
+          # attempts 1-2 (runs 38172608215, 38173266061): API 30 passes; API 34/35 die ~0.3 s after Hwallet's opening
+          # chime starts a Web Audio (AAudio) output stream, with or without guest Vulkan, haptics or -noaudio.
+          # ringer=silent keeps both apps' Web Audio closed (they only play sound in ringer mode "normal").
+          - { api: 30, target: google_apis, vib: block, ringer: silent, diag: false }
+          - { api: 34, target: google_apis, vib: block, ringer: silent, diag: false }
+          - { api: 34, target: google_apis, vib: allow, ringer: silent, diag: true }
     continue-on-error: ${{ matrix.diag }}
     steps:
       - uses: actions/checkout@v4
@@ -79,9 +79,9 @@ jobs:
           ram-size: 4096M
           disk-size: 6000M
           heap-size: 512M
-          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect ${{ matrix.feat }} -no-boot-anim -show-kernel -camera-back none -camera-front none
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -no-boot-anim -show-kernel -camera-back none -camera-front none
           disable-animations: true
-          script: VIB=${{ matrix.vib }} bash ci/device_check.sh
+          script: VIB=${{ matrix.vib }} RINGER=${{ matrix.ringer }} bash ci/device_check.sh
 
       - name: Host diagnostics (dmesg, emulator crash reports)
         if: always()

@@ -14,6 +14,15 @@ adb logcat -b all -v threadtime > "$OUT/logcat_stream_all.txt" 2>&1 &
 LCPID=$!
 (while sleep 2; do echo "$(date +%T) $(timeout 5 adb get-state 2>&1) qemu=$(pgrep -f qemu-system | head -1)" ; done > "$OUT/health.txt" 2>&1 < /dev/null) &
 HPID=$!
+# Sound: on API 34/35 the emulator process died ~0.3 s after Hwallet's opening chime opened its Web Audio output
+# (last guest lines: AAudioStream_requestStart -> setState 4, then nothing; run 38173266061). Both apps play Web Audio
+# only when the ringer is "normal" (HarkNative.ringerMode), so RINGER=silent (default) keeps audio closed, like a phone on
+# silent. RINGER=normal reproduces the crash.
+RINGER=${RINGER:-silent}; export RINGER
+if [ "$RINGER" = silent ]; then
+  adb shell cmd audio set-ringer-mode SILENT 2>&1 || adb shell cmd audio set-ringer-mode silent 2>&1 || true
+fi
+echo "ringer: $(adb shell dumpsys audio | grep -m1 -i 'ringer mode' | tr -s ' ')"
 # Vibration: VIB=block silences the haptic for both apps (appops), VIB=allow leaves it on (diagnostic control).
 VIB=${VIB:-block}; export VIB
 pass() {  # label kwallet.apk hwallet.apk

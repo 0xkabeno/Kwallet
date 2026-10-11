@@ -214,6 +214,7 @@ def run():
 
     # 1. launch Hwallet
     R['vibrate'] = os.environ.get('VIB', 'block')
+    R['ringer'] = re.sub(r'\s+', ' ', adb('shell dumpsys audio | grep -m3 -i "ringer mode"'))[:200]
     R['appops_vibrate'] = {p: adb('shell appops get %s VIBRATE' % p).strip() for p in (H, K)}
     comp, tt, raw = launch_w(H)
     for i in range(12):  # watch the first 6 s closely: the emulator used to die ~2 s after launch
@@ -248,7 +249,16 @@ def run():
     time.sleep(5)  # let balances/prices load
     home = pg.ev("!!document.querySelector('.hbar')")
     f = shot('h_home')
-    step('h_home_watch_setup', home, text=app_text(pg), toast=toast(pg), shot=f, logcat=logcat('h_home'))
+    # a system dialog over Hwallet (e.g. "Let app always run in background?", asked on first Home) eats the next taps:
+    # record it as a finding, then dismiss it with Back so the flows continue like a user who said no
+    sysdlg = None
+    for i in range(3):
+        foc = re.findall(r'mCurrentFocus=Window\{\S+ \S+ ([^}]+)\}', adb('shell dumpsys window windows | grep -m1 mCurrentFocus'))
+        if foc and not foc[0].startswith(H):
+            sysdlg = sysdlg or foc[0]; adb('shell input keyevent 4'); time.sleep(1.5)
+        else:
+            break
+    step('h_home_watch_setup', home, text=app_text(pg), toast=toast(pg), system_dialog=sysdlg, shot=f, logcat=logcat('h_home'))
 
     # 3. Browser tab -> type google.com -> page loads in the native WebView
     xy = tap(pg, '[data-tab="browser"]'); time.sleep(2)
