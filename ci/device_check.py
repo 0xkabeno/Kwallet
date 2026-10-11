@@ -267,7 +267,11 @@ def load_site(pg, name, text, match, limit=10.0, wait=40):
         if t_ok:
             break
         time.sleep(0.5)
-    time.sleep(1.5)  # let it paint, then look
+    for i in range(10):  # let it finish and paint, then look
+        if found and info.get('state') == 'complete': break
+        time.sleep(0.5)
+        if found: info = page_info(found) or info
+    time.sleep(1.5)
     bar = pg.ev("(function(){var p=document.getElementById('br-pr'); var t=hwBrowser.state(); var a=t.tabs.filter(function(x){return x.id===t.act})[0]; "
                 "return {progress_on: !!(p && p.classList.contains('on')), width: p && p.firstChild && p.firstChild.style.width, tab: a && a.url, title: a && a.title, ph: !!document.querySelector('.br-ph')}})()")
     f = shot('h_browser_' + name)
@@ -345,7 +349,10 @@ def browser(pg):
                 sheet = pg.ev("!!document.querySelector('.sheet [data-ok]')")
                 if sheet: break
                 time.sleep(0.5)
+            time.sleep(1.5)
+            vis = pg.ev("(function(){var r=document.querySelector('.sheet');if(!r)return null;var b=r.getBoundingClientRect();return [Math.round(b.top),Math.round(b.height)]})()")
             fs = shot('h_browser_appkit_connect_sheet')
+            detail['sheet_rect'] = vis
             if sheet:
                 tap(pg, '.sheet [data-ok]'); time.sleep(3)
             acc = gp.ev("window.__hwAcc", 5)

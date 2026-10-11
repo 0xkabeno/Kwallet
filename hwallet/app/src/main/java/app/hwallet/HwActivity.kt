@@ -614,6 +614,9 @@ class HwActivity : FragmentActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                // v1.7 (P1): a Browser page on screen goes back in its own history first (no sheet can be open over it:
+                // Hwallet hides the page while one is)
+                if (br?.back() == true) return
                 // let the page close an open sheet first; otherwise leave the app
                 web.evaluateJavascript("(window.kwBack && window.kwBack()) ? 1 : 0") { r ->
                     if (r != "1") moveTaskToBack(true)

@@ -132,7 +132,9 @@ class HwBrowser(
 
     fun hide() {
         post {
-            tabs.values.forEach { t -> t.web?.let { if (it.visibility == View.VISIBLE) { thumb(t); save(t); it.visibility = View.GONE; it.onPause() } } }
+            // v1.7 (P1): out of the way first (a sheet in Hwallet is waiting to be seen), then save; the switcher's thumbnail
+            // comes from snap(), so the slow software draw of a thumbnail no longer delays the hide
+            tabs.values.forEach { t -> t.web?.let { if (it.visibility == View.VISIBLE) { it.visibility = View.GONE; it.onPause(); prio(it, false); ui.post { save(t) } } } }
             visible = null
         }
     }
@@ -140,6 +142,14 @@ class HwBrowser(
     fun load(id: String, url: String) {
         if (!isWeb(url)) return
         post { val t = tabs[id] ?: return@post; val w = t.web ?: return@post; leaveSnapshot(t, w); live(t, w); t.url = url; w.loadUrl(url); startEv(t) }
+    }
+
+    /** v1.7 (P1): Android Back while a page is on screen goes back in that page first (UI thread, from HwActivity) */
+    fun back(): Boolean {
+        val t = tabs[visible ?: return false] ?: return false
+        val w = t.web ?: return false
+        if (w.visibility != View.VISIBLE || !w.canGoBack()) return false
+        live(t, w); w.goBack(); return true
     }
 
     fun nav(id: String, a: String) {
