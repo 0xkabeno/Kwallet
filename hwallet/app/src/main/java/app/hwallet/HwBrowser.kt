@@ -584,7 +584,7 @@ class HwBrowser(
     companion object {
         const val MAX_LIVE = 4
         private const val TAG = "HwBrowser"
-        /** every origin: Chromium only accepts "*" or scheme://host rules with a "*." prefix ("https://*" is invalid) */
+        // every origin: Chromium accepts only a bare star or scheme://host rules whose host wildcard is a "*." prefix (an https-star rule is invalid)
         private val ORIGINS = setOf("*")
         private const val UA = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36"
         private const val ICON_JS = "(function(){var o={m:'',a:[],i:[]};try{document.querySelectorAll('link[rel][href]').forEach(function(l){" +
