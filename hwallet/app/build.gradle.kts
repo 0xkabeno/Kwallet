@@ -1,3 +1,5 @@
+import java.security.SecureRandom
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -24,7 +26,7 @@ val genHwSecrets = tasks.register("genHwSecrets") {
     outputs.dir(hwGenDir)
     outputs.upToDateWhen { false }
     doLast {
-        val rnd = java.security.SecureRandom()
+        val rnd = SecureRandom()
         val key = ByteArray(32).also { rnd.nextBytes(it) }
         val p1 = ByteArray(32).also { rnd.nextBytes(it) }; val p2 = ByteArray(32).also { rnd.nextBytes(it) }; val p3 = ByteArray(32).also { rnd.nextBytes(it) }
         val p4 = ByteArray(32) { i -> (key[i].toInt() xor p1[i].toInt() xor p2[i].toInt() xor p3[i].toInt()).toByte() }
