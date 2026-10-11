@@ -49,39 +49,19 @@ jobs:
       - name: Python deps
         run: pip install websocket-client==1.8.0
 
-      - name: AVD cache
-        uses: actions/cache@v4
-        id: avd-cache
-        with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-34-x86_64-google_apis-pixel6
-
-      - name: Create AVD snapshot for caching
-        if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 34
-          arch: x86_64
-          target: google_apis
-          profile: pixel_6
-          ram-size: 4096M
-          force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
-          disable-animations: true
-          script: echo "AVD snapshot created"
-
+      # cold boot every run (a cached quickboot snapshot froze adb on the first try); 4 cores, a 1080x1920 screen
       - name: Run flows on the emulator
+        timeout-minutes: 30
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
           arch: x86_64
           target: google_apis
-          profile: pixel_6
-          ram-size: 4096M
-          force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          profile: pixel_2
+          cores: 4
+          ram-size: 3072M
+          heap-size: 512M
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
           script: bash ci/device_check.sh
 

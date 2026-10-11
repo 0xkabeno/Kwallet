@@ -10,11 +10,12 @@ adb shell input keyevent 82 || true
 pass() {  # label kwallet.apk hwallet.apk
   local L=$1 KA=$2 HA=$3
   echo "::group::device check: $L"
-  adb uninstall app.hwallet >/dev/null 2>&1; adb uninstall app.kwallet >/dev/null 2>&1
-  adb install -r -g "$KA" || { echo "::error::install $KA failed"; return 1; }
-  adb install -r -g "$HA" || { echo "::error::install $HA failed"; return 1; }
+  adb get-state >/dev/null 2>&1 || { echo "::error::emulator is gone before the $L pass"; return 1; }
+  timeout 60 adb uninstall app.hwallet >/dev/null 2>&1; timeout 60 adb uninstall app.kwallet >/dev/null 2>&1
+  timeout 180 adb install -r -g "$KA" || { echo "::error::install $KA failed"; return 1; }
+  timeout 180 adb install -r -g "$HA" || { echo "::error::install $HA failed"; return 1; }
   timeout 900 python3 ci/device_check.py "$OUT/$L" "$L" 2>&1 | tee "$OUT/$L.log"
-  adb exec-out screencap -p > "$OUT/$L/zz_final.png" || true
+  timeout 30 adb exec-out screencap -p > "$OUT/$L/zz_final.png" || true
   echo "::endgroup::"
   grep -h '^SUMMARY' "$OUT/$L.log" >> "$OUT/summary.txt"
 }
@@ -23,7 +24,7 @@ pass debug app/build/outputs/apk/debug/app-debug.apk hwallet/app/build/outputs/a
 if [ -f app/build/outputs/apk/release/app-release.apk ]; then
   pass release app/build/outputs/apk/release/app-release.apk hwallet/app/build/outputs/apk/release/hwallet-release.apk || RC=1
 fi
-adb logcat -d -v threadtime > "$OUT/logcat_full_tail.txt" || true
+timeout 60 adb logcat -d -v threadtime > "$OUT/logcat_full_tail.txt" || true
 cat "$OUT/summary.txt" 2>/dev/null
 python3 - "$OUT" <<'P' >> "${GITHUB_STEP_SUMMARY:-/dev/null}" || true
 import json, sys, glob, os

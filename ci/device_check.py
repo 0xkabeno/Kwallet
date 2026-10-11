@@ -46,16 +46,33 @@ def shot(name):
     return fn
 
 
+def alive():
+    try:
+        return subprocess.run([ADB, 'shell', 'echo', 'ok'], capture_output=True, text=True, timeout=15).stdout.strip() == 'ok'
+    except Exception:
+        return False
+
+
 def logcat(name):
     fn = 'logcat_%02d_%s.txt' % (SEQ[0], name)
-    open(os.path.join(OUT, fn), 'w').write(adb('logcat -d -v threadtime', 60))
-    adb('logcat -c')
+    try:
+        open(os.path.join(OUT, fn), 'w').write(adb('logcat -d -v threadtime -t 4000', 45))
+        adb('logcat -c', 15)
+    except Exception as e:
+        open(os.path.join(OUT, fn), 'w').write('logcat failed: %r (device alive: %s)' % (e, alive()))
     return fn
 
 
 def step(name, ok, **info):
+    if not alive():
+        info['device_lost'] = True
     info.update(step=name, ok=bool(ok), t=round(time.time() - T0, 1))
     R['steps'].append(info)
+    json.dump(R, open(os.path.join(OUT, 'results.json'), 'w'), indent=1)
+    if info.get('device_lost'):
+        R['harness_error'] = 'emulator stopped responding during ' + name
+        json.dump(R, open(os.path.join(OUT, 'results.json'), 'w'), indent=1)
+        raise SystemExit(3)
     log('STEP', name, 'OK' if ok else 'FAIL', json.dumps({k: v for k, v in info.items() if k not in ('step', 'ok')})[:600])
     json.dump(R, open(os.path.join(OUT, 'results.json'), 'w'), indent=1)
 
@@ -98,7 +115,7 @@ def devtools_pages(pkg, wait=20):
             if 'webview_devtools_remote_%s' % pid in adb('shell cat /proc/net/unix'):
                 adb('forward tcp:%d localabstract:webview_devtools_remote_%s' % (PORT[pkg], pid))
                 try:
-                    return json.load(urllib.request.urlopen('http://127.0.0.1:%d/json' % PORT[pkg], timeout=5))
+                    return json.load(urllib.request.urlopen('http://127.0.0.1:%d/json' % PORT[pkg], timeout=10))
                 except Exception as e:
                     log('devtools list failed', e)
         time.sleep(1)
@@ -162,7 +179,7 @@ def launch_w(pkg):
 
 # ---------------- flows ----------------
 def run():
-    if 'device' not in adb('get-state'):
+    if not alive():
         print('no device'); sys.exit(2)
     for p in (H, K):
         if p not in adb('shell pm list packages %s' % p):
@@ -180,6 +197,9 @@ def run():
 
     # 1. launch Hwallet
     comp, tt, raw = launch_w(H)
+    time.sleep(2); shot('h_launch_2s'); time.sleep(4); shot('h_launch_6s')
+    R['h_proc'] = adb('shell pidof %s' % H).strip()
+    log('h launched', comp, tt, 'pid', R['h_proc'], 'alive', alive())
     pg, meta = main_page(H, 30)
     if not pg:
         time.sleep(8); f = shot('h_launch'); step('h_launch', False, why='no DevTools page for Hwallet (WebView debugging off or app crashed)', comp=comp, total_ms=tt, shot=f, logcat=logcat('h_launch'))
