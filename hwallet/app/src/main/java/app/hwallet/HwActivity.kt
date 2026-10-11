@@ -66,6 +66,19 @@ class HwActivity : FragmentActivity() {
         pendingWc = s
         if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwWcLink&&hwWcLink(${JSONObject.quote(s)})") { r -> if (r == "true") pendingWc = "" }
     }
+    /** v1.6 (#59): a wc: link tapped inside the Browser tab pairs exactly like a scanned or opened one */
+    private fun wcLink(s: String) {
+        if (!s.startsWith("wc:") || s.length >= 4096) return
+        pendingWc = s
+        runOnUiThread { if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwWcLink&&hwWcLink(${JSONObject.quote(s)})") { r -> if (r == "true") pendingWc = "" } }
+    }
+
+    /** v1.6 (#59/#83): the Browser tab's native pages, created on first use */
+    private var br: HwBrowser? = null
+    private fun brw(): HwBrowser = br ?: HwBrowser(this, root, web,
+        js = { s -> runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript(s, null) } catch (_: Throwable) {} } },
+        onWc = { s -> wcLink(s) }).also { br = it }
+
     companion object { const val KWALLET = "app.kwallet" }
     private lateinit var root: FrameLayout
     private var fileCallback: ValueCallback<Array<Uri>>? = null
@@ -204,6 +217,34 @@ class HwActivity : FragmentActivity() {
         /** v1.5 (#67): true only while the cap is set AND the phone is on mobile data (Wi-Fi is never limited) */
         @android.webkit.JavascriptInterface
         fun capActive(): Boolean = HwNet.rate.on()
+
+        /* v1.6 (#59/#83): Browser tab (HwBrowser.kt). Tab ids are t[0-9a-z]+; positions are CSS px of the page's #br-v box. */
+        @android.webkit.JavascriptInterface
+        fun brInit(script: String) { brw().init(script) }
+        @android.webkit.JavascriptInterface
+        fun brOpen(id: String, url: String, scroll: Int) { brw().open(id, url, scroll) }
+        @android.webkit.JavascriptInterface
+        fun brShow(id: String, top: Int, bottom: Int) { brw().show(id, top, bottom) }
+        @android.webkit.JavascriptInterface
+        fun brHide() { br?.hide() }
+        @android.webkit.JavascriptInterface
+        fun brLoad(id: String, url: String) { brw().load(id, url) }
+        @android.webkit.JavascriptInterface
+        fun brNav(id: String, action: String) { br?.nav(id, action) }
+        @android.webkit.JavascriptInterface
+        fun brSnap(id: String) { br?.snap(id) }
+        @android.webkit.JavascriptInterface
+        fun brThumb(id: String): String = brw().thumbData(id)
+        @android.webkit.JavascriptInterface
+        fun brClose(id: String) { brw().close(id) }
+        @android.webkit.JavascriptInterface
+        fun brClearAll() { brw().clearAll() }
+        @android.webkit.JavascriptInterface
+        fun brUsage(): String = try { brw().usage() } catch (_: Throwable) { "{}" }
+        @android.webkit.JavascriptInterface
+        fun brReply(id: String, json: String) { if (json.length < 2_000_000) br?.reply(id, json) }
+        @android.webkit.JavascriptInterface
+        fun brEmit(origin: String, json: String) { if (json.length < 100_000) br?.emit(origin, json) }
 
         /** v1.4 (#55): the persistent activity cache. Rows for the Activity tab, newest first, read from disk (no network). */
         @android.webkit.JavascriptInterface
@@ -712,12 +753,12 @@ class HwActivity : FragmentActivity() {
         web.saveState(outState)
     }
 
-    override fun onPause() { super.onPause(); if (!signing) web.onPause() }
+    override fun onPause() { super.onPause(); if (!signing) web.onPause(); br?.pause() }
     override fun onResume() {
-        super.onResume(); web.onResume(); if (::web.isInitialized) tuneWebView(this, web)
+        super.onResume(); web.onResume(); br?.resume(); if (::web.isInitialized) tuneWebView(this, web)
         if (pendingLive) ui.postDelayed({ if (pendingLive) startLiveSafe() }, 300)
     }  // OEMs drop back to 60 Hz after resume
-    override fun onDestroy() { try { socks.values.forEach { it.cancel() }; socks.clear(); HwActDb.listener = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
+    override fun onDestroy() { try { br?.destroy(); br = null } catch (_: Throwable) {}; try { socks.values.forEach { it.cancel() }; socks.clear(); HwActDb.listener = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
 }
 
 /** Smooth rendering like Chrome: highest refresh rate, no overscroll glow.
