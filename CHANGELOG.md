@@ -1,5 +1,12 @@
 # Changelog
 
+## Kwallet v3.97.3 + Hwallet v1.7.3 (hotfix)
+
+### Fixed
+- **Hwallet stayed blank after the splash** (v1.7.2): a syntax error in the swap provider row (`'</span>'<span class="dp-v">'`) stopped Hwallet's main script from loading. Fixed; Hwallet opens normally again.
+
+Includes everything from v3.97.2 / v1.7.2. Kwallet 3.97.3 has no functional change (version kept in step with Hwallet).
+
 ## Kwallet v3.97.2 + Hwallet v1.7.2
 
 Second phone test of v3.97.1: the dApp signing fix, fluid pull to refresh, cleaner swap, live rent, and a set of quiet safety and speed features.
