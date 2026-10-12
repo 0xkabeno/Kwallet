@@ -61,7 +61,20 @@ class HwActivity : FragmentActivity() {
         }
         return if (s.startsWith("wc:") && s.length < 4096) s else ""
     }
+    /** wave B (#97b): Hwallet was opened by a dApp's WalletConnect link (pairing or a request ping). After the answer the
+     *  page calls wcReturn() so the user lands back in the dApp. */
+    @Volatile private var wcWokeAt = 0L
+    private fun wcWake(i: Intent?) {
+        val u = i?.data ?: return
+        if (i.action != Intent.ACTION_VIEW) return
+        val sc = u.scheme?.lowercase() ?: return
+        val isWc = sc == "wc" || (sc == "hwallet" && u.host == "wc") || (sc == "https" && u.host == "hwallet.app" && (u.path ?: "").startsWith("/wc"))
+        if (!isWc) return
+        wcWokeAt = System.currentTimeMillis()
+        if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwWcWoke&&hwWcWoke()", null)
+    }
     private fun takeWc(i: Intent?) {
+        wcWake(i)
         val s = wcFrom(i); if (s.isEmpty()) return
         pendingWc = s
         if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwWcLink&&hwWcLink(${JSONObject.quote(s)})") { r -> if (r == "true") pendingWc = "" }
@@ -116,6 +129,38 @@ class HwActivity : FragmentActivity() {
                 }
             }
         }
+
+        /** wave B (#97b): after a WalletConnect answer: back to the dApp when Hwallet was opened by its link (within 3 min).
+         *  redirect = the dApp's metadata.redirect.native (a deep link), else the previous app comes back (task to back). */
+        @android.webkit.JavascriptInterface
+        fun wcReturn(redirect: String): Boolean {
+            if (wcWokeAt == 0L || System.currentTimeMillis() - wcWokeAt > 180000L) return false
+            wcWokeAt = 0L
+            runOnUiThread {
+                var ok = false
+                val r = redirect.trim()
+                if (r.isNotEmpty() && r.length < 512 && !r.startsWith("javascript:", true) && !r.startsWith("intent:", true) && !r.startsWith("file:", true) && !r.startsWith("content:", true) && !r.startsWith("hwallet:", true)) {
+                    try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(r)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); ok = true } catch (_: Exception) {}
+                }
+                if (!ok) moveTaskToBack(true)
+            }
+            return true
+        }
+        @android.webkit.JavascriptInterface
+        fun wcWoke(): Boolean = wcWokeAt > 0L && System.currentTimeMillis() - wcWokeAt < 180000L
+
+        /** v1.7 (#92): WalletConnect while Hwallet is in the background. The relay socket is native (wsOpen) and the live
+         *  foreground service keeps the process, so requests still arrive. Android does not let a background app open
+         *  Kwallet, so the page asks for a heads-up notification; tapping it brings Hwallet forward and the page pops the
+         *  Kwallet sheet at once (window.hwFront). */
+        @android.webkit.JavascriptInterface
+        fun isFg(): Boolean = fgNow
+        @android.webkit.JavascriptInterface
+        fun wcNotify(kind: String, title: String, body: String) { runOnUiThread { wcPost(kind.take(16), title.take(80), body.take(160)) } }
+        @android.webkit.JavascriptInterface
+        fun wcClear() { runOnUiThread { try { (getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager).cancel(WC_NOTE) } catch (_: Throwable) {} } }
+        @android.webkit.JavascriptInterface
+        fun wcBg(on: Boolean) { wcKeep = on; if (on) runOnUiThread { try { startLiveSafe() } catch (_: Throwable) {} } }
 
         /** P2a (#97a): wake Kwallet's process + WebView engine before a signature is likely (dApp connect / request). */
         @android.webkit.JavascriptInterface
@@ -783,15 +828,38 @@ class HwActivity : FragmentActivity() {
     private fun isLight(c: Int): Boolean =
         (0.299 * Color.red(c) + 0.587 * Color.green(c) + 0.114 * Color.blue(c)) / 255.0 >= 0.5
 
-    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); takeWc(intent) }
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); if (intent.hasExtra("hw_wc_req")) wcWokeAt = System.currentTimeMillis(); takeWc(intent) }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         web.saveState(outState)
     }
 
+    /* v1.7 (#92): WalletConnect in the background */
+    @Volatile private var fgNow = false
+    @Volatile private var wcKeep = false
+    private val WC_NOTE = 7702
+    private fun wcPost(kind: String, title: String, body: String) {
+        try {
+            val nm = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
+            if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel("hw_wc") == null) {
+                nm.createNotificationChannel(android.app.NotificationChannel("hw_wc", "WalletConnect requests", android.app.NotificationManager.IMPORTANCE_HIGH).apply {
+                    description = "Connection and signature requests from apps connected with WalletConnect"; enableVibration(true); vibrationPattern = longArrayOf(0, 40, 60, 40)
+                })
+            }
+            if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) return
+            val i = Intent(this, HwActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP).putExtra("hw_wc_req", kind)
+            val pi = android.app.PendingIntent.getActivity(this, 7702, i, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
+            val n = androidx.core.app.NotificationCompat.Builder(this, "hw_wc").setSmallIcon(R.drawable.hw_stat)
+                .setContentTitle(title).setContentText(body).setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH).setCategory(androidx.core.app.NotificationCompat.CATEGORY_CALL)
+                .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_SOUND).setAutoCancel(true).setTimeoutAfter(300000L)
+                .setContentIntent(pi).addAction(0, if (kind == "connect") "Review" else "Sign in Kwallet", pi).build()
+            nm.notify(WC_NOTE, n)
+        } catch (e: Throwable) { android.util.Log.w("HwWC", "notify failed: $e") }
+    }
     /* P2a (#95): while Kwallet's sheet is over Hwallet the dApp tab stays live and visible behind it (no pause, no save) */
-    override fun onPause() { super.onPause(); if (!signing) { web.onPause(); br?.pause() } }
+    override fun onPause() { super.onPause(); fgNow = false; if (!signing) { web.onPause(); br?.pause() } }
     @Volatile private var warmAt = 0L
     fun warmKwallet() {
         val now = android.os.SystemClock.uptimeMillis(); if (now - warmAt < 30000) return; warmAt = now
@@ -803,7 +871,8 @@ class HwActivity : FragmentActivity() {
         } catch (e: Exception) { android.util.Log.w("HwWarm", "warm failed: $e") }
     }
     override fun onResume() {
-        super.onResume(); web.onResume(); br?.resume(); if (::web.isInitialized) tuneWebView(this, web)
+        super.onResume(); fgNow = true; web.onResume(); br?.resume(); if (::web.isInitialized) tuneWebView(this, web)
+        if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwFront&&hwFront()", null)
         if (pendingLive) ui.postDelayed({ if (pendingLive) startLiveSafe() }, 300)
         ui.postDelayed({ warmKwallet() }, 2500)  // P2a: keep Kwallet's sign sheet quick to open while Hwallet is in use
     }  // OEMs drop back to 60 Hz after resume

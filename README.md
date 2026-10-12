@@ -75,6 +75,9 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 - **App lock** — 6-digit PIN, auto-lock timer, two-step *Erase everything*
 - **Built-in self-test** — known-answer vectors for every chain in *Log → Verify*
 - **Clipboard auto-clear**, haptics, light and dark themes, smooth 120 Hz scrolling
+- **One sign sheet for everything** *(new in 3.97)* — every signature (Hwallet Send for every coin, Swap with its approvals, dApps, WalletConnect, fee withdrawals) opens as one translucent sheet over Hwallet, in Hwallet's navy/blue theme, light and dark. The title names the exact operation (Swap, Send, Approve, Revoke, Stake, Supply, Bridge, Sign-in, NFT listing…) and the card shows what leaves and what arrives, from a simulation where the chain allows it (Solana `simulateTransaction`, Tron constant calls, EVM decoding of Uniswap Universal Router, 1inch v6 and V3 routers)
+- **Jupiter-style network fee sheet** *(new in 3.97)* — speed rows with the fee in the coin and in dollars (Solana: Site suggested / Faster / Fastest; EVM: Low / Normal / High with Gwei; Tron: Normal / Fast as "up to X TRX"), plus a Manual Custom section: *Transaction landing* Max Cap or Exact Fee, a Solana priority fee in SOL (no micro-lamports or compute units on screen), EVM max fee, priority fee and gas limit in Gwei, or a Tron fee limit in TRX, always with the live total in the coin and in dollars
+- **Readable app requests** *(new in 3.97)* — known-program registries for Solana, EVM and Tron (SunSwap, SUN.io, JustLend, sTRX, Uniswap, 1inch, Seaport listings, Permit2 transfers); unknown programs are a quiet note under Details and red is kept for real risks (unlimited approvals to unknown spenders, nothing coming back in an NFT listing, a failing simulation)
 - **Hwallet signer** — one sign page for every chain: decoded amounts, addresses in tidy blocks, live fee and balance, a fee-change re-arm, a countdown, and hold to sign
 - **dApp signing** *(new in 3.96)* — a calm bottom sheet for `personal_sign` (with a sign-in-with-Ethereum domain check), `eth_signTypedData_v4` (Permit / Permit2 decoded), `eth_sendTransaction` with ABI decode, Solana `signMessage` / `signTransaction` (v0 + lookup tables, instructions decoded) and Tron `signMessage` / smart-contract calls. The Kwallet chip and the chain chip are always in the header
 - **Exact approvals** *(new)* — when an app asks for an unlimited ERC-20 or Permit2 allowance, Kwallet can re-encode it to the exact amount (Exact / Unlimited toggle with a clear warning); signed permits it can't change are flagged
@@ -84,6 +87,13 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 
 ### Hwallet — the quickest hot wallet
 
+- **Quick sheets everywhere** *(new in 1.7)* — Send is a sheet for every coin, the connect popup and Kwallet's sign sheet share one design in Hwallet's own theme, and a multi-step swap shows a stepper (Approve → Swap → service fee) that stays on screen across the Kwallet sheets
+- **Network fees your way** *(new in 1.7)* — the same Jupiter-style fee sheet on Send and in Swap settings: speed rows in the coin and dollars, and a Manual Custom section (Max Cap | Exact Fee; Solana priority fee and an optional Jito tip on Jupiter routes, in SOL; EVM max / priority fee in Gwei and gas limit; Tron fee limit in TRX)
+- **Readable Activity** *(new in 1.7)* — tap any row for a plain sentence ("Swapped 1 USDC for 0.0077 SOL on Jupiter", "Sent 0.01 SOL to 7xK…3f", "Approved USDC for 0x11…a3", "Closed 2 token accounts"), the balance changes read from the chain, status, network fee, date and an Explorer button, on Solana, EVM networks and Tron
+- **WalletConnect in the background** *(new in 1.7)* — the relay stays connected while Hwallet is in the background; a request shows a heads-up notification, one tap brings Hwallet forward with Kwallet's sheet already open, and after answering you go straight back to the dApp. A `wc:` link from a dApp opens Hwallet's connect sheet at once
+- **Browser rebuilt** *(new in 1.7)* — pages load on every phone again, real icons for 20 popular dApps and every site's own favicon, History and Most visited, and Hwallet announces itself early (EIP-6963 and Solana Wallet Standard, mainnet by name and by CAIP-2 id) so Jupiter, Raydium, Uniswap and AppKit can list it
+- **Reliable balances** *(new in 1.7)* — every EVM network, Solana (Token and Token-2022, any token you hold is added automatically) and Tron TRC-20; a slow node keeps the last value instead of dropping a token from your total; live swap quotes every 12 s with a countdown ring and a pull to refresh that always finishes
+- **Gem dimensions** *(new in 1.7)* — list rows, 44 dp logos and badges, header, balance size and the round action buttons follow Gem Wallet's open-source layout; Settings > **API keys** is one row with its own page (Your key / Built-in / Keyless per provider)
 - **WalletConnect** *(new in 1.6)* — Reown WalletKit for EVM networks, Solana and Tron: pair by scanning, pasting a `wc:` link or opening a deep link; connect, sign messages and typed data, approvals, contract calls and swaps, all signed in Kwallet; session list with disconnect in Settings
 - **dApp browser** *(new)* — a Browser tab with unlimited tabs saved to the phone (history, scroll, a page snapshot) that reopen from storage with little data; injected EIP-1193 + EIP-6963 Ethereum provider, Solana Wallet Standard and a TronLink-style provider; per-site connections you can revoke
 - **Swap** *(new)* — the best quote across NEAR Intents, Jupiter, LI.FI and SunSwap, in a Gem-style screen with a provider list, rate, minimum received, slippage (Auto or your own, with warnings) and an editable network fee. Every swap is signed in Kwallet; see [Fees](#fees)
@@ -100,13 +110,16 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 - **Several wallets**, tokens on every chain, TRON Energy / Bandwidth and Stake 2.0, XRP trust lines, Cardano native assets
 - **Always-on service** with a live four-coin notification and incoming-payment alerts
 - **Crash prompt** — if Hwallet ever closes unexpectedly, the next launch offers to copy the log (once per crash)
-- XMR is watch-only; XMR send is not in this release
+- XMR is watch-only; full Monero send (cold-signed in Kwallet) comes in v3.98
 
-### Known limits (v3.96 / v1.6)
+### Known limits (v3.97 / v1.7)
 
-- The dApp browser needs Android System WebView 86 or newer; on older WebView pages load but get no wallet.
-- The Tron browser provider is minimal (`tron_requestAccounts`, `trx.sign`, `signMessageV2`; no `tronWeb.contract()`).
-- XMR send is not included. The browser's main page download is not throttled by the mobile-data cap (page resources are).
+- XMR send is not included yet; full Monero comes in **v3.98**.
+- Approve → Swap is two Kwallet sheets with Hwallet's stepper between them (no Permit2 / EIP-2612 signature path yet). Approvals are always for the exact amount and skipped when the allowance is already enough.
+- The Jito tip is offered on Hwallet's own Jupiter swaps only; Kwallet never adds instructions to an app's transaction.
+- Android does not let a background app open another app, so a WalletConnect request that arrives while you are elsewhere waits for one tap on its notification.
+- The Tron browser provider is minimal (`tron_requestAccounts`, `trx.sign`, `signMessageV2`; no `tronWeb.contract()`). The browser's main page download is not throttled by the mobile-data cap (page resources are).
+- Hwallet is not listed in the WalletConnect directory yet, so AppKit's own wallet list shows it only inside Hwallet's browser.
 
 ## Fees
 
@@ -154,8 +167,8 @@ Get the latest files from **[Releases](https://github.com/0xkabeno/Kwallet/relea
 # put the downloads and SHA256SUMS.txt in one folder, then
 sha256sum -c SHA256SUMS.txt --ignore-missing      # every line must say OK
 # Android: both APKs must carry the same signing certificate
-apksigner verify --print-certs Kwallet-v3.96.apk | grep SHA-256
-apksigner verify --print-certs Hwallet-v1.6.apk  | grep SHA-256
+apksigner verify --print-certs Kwallet-v3.97.apk | grep SHA-256
+apksigner verify --print-certs Hwallet-v1.7.apk  | grep SHA-256
 ```
 
 On Android, open the APK and allow *Install unknown apps* once. Updates install over the previous version (same permanent key).

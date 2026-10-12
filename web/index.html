@@ -2624,7 +2624,7 @@ body[data-theme="dark"]:not(.md3) #settings-overlay.kws-full .kws-sec{color:#DDF
 .hp-ov,#kss{--hp-bg:#f8f9fa;--hp-card:#ffffff;--hp-card2:#f1f3f4;--hp-line:#e6e8eb;--hp-border:#dadce0;--hp-text:#202124;--hp-muted:#5f6368;--hp-soft:#80868b;
   --hp-acc:#223348;--hp-accI:#ffffff;--hp-pill:#e8ecf2;--hp-sel:#e3e8ef;--hp-up:#188038;--hp-dn:#d93025;--hp-warn:#a86f00;--hp-warnBg:#fff4dc;--hp-errBg:#fce8e6}
 [data-theme="dark"] .hp-ov,[data-theme="dark"] #kss{--hp-bg:#0e1117;--hp-card:#151b25;--hp-card2:#1d2532;--hp-line:#222b3a;--hp-border:#2a3446;--hp-text:#d9e2ef;--hp-muted:#8494ab;--hp-soft:#5f6c85;
-  --hp-acc:#ddf869;--hp-accI:#223348;--hp-pill:#232c3b;--hp-sel:#26313f;--hp-up:#34c77b;--hp-dn:#f2665e;--hp-warn:#f0c14b;--hp-warnBg:#3a321d;--hp-errBg:#3a2224}
+  --hp-acc:#5b8def;--hp-accI:#ffffff;--hp-pill:#232c3b;--hp-sel:#26313f;--hp-up:#34c77b;--hp-dn:#f2665e;--hp-warn:#f0c14b;--hp-warnBg:#3a321d;--hp-errBg:#3a2224}
 .hp-ov{position:fixed;top:0;right:0;bottom:0;left:0;z-index:60;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;-webkit-tap-highlight-color:transparent}
 .hp-dim{position:absolute;top:0;right:0;bottom:0;left:0;background:#000;opacity:0;transition:opacity .22s linear;will-change:opacity}
 .hp-ov.in .hp-dim{opacity:.5}
@@ -2808,6 +2808,54 @@ body[data-theme="dark"]:not(.md3) #settings-overlay.kws-full .kws-sec{color:#DDF
 .hp-pch.bad{color:var(--hp-dn)}
 .hp-pcok{width:100%;height:50px}
 .hp-note{font-size:13px;color:var(--hp-muted);line-height:1.4;margin:6px 2px 8px}
+/* wave B: one selected style for every picker row (also Custom), no tap flash or focus colour from the host page */
+.hp-pk .hp-pr{-webkit-tap-highlight-color:transparent;outline:0!important;box-shadow:none!important}
+.hp-pk .hp-pr:not(.on),.hp-pk .hp-pr:not(.on):focus{background:transparent!important;color:var(--hp-text)!important}
+.hp-pk .hp-pr.on,.hp-pk .hp-pr:active{background:var(--hp-sel)!important;color:var(--hp-text)!important}
+.hp-pk .hp-pr.on .hp-prc,.hp-pk .hp-prcu.on .hp-prc{color:var(--hp-acc)!important}
+/* wave B: every sheet clears the Android navigation bar / gesture area */
+:root{--hp-nav:var(--kw-sab,var(--sab,0px))}
+.hp-pk .hp-sheet{padding-bottom:max(var(--hp-nav,0px),env(safe-area-inset-bottom,0px))!important}
+.hp-pk .hp-scroll{padding-bottom:12px}
+
+/* wave B: popups wear Hwallet's navy (light) / blue (dark) accent, never the lime brand colour */
+body[data-theme="light"] .hp-ov,body:not([data-theme="dark"]) .hp-ov{--hp-acc:#223348;--hp-accI:#ffffff}
+body[data-theme="dark"] .hp-ov{--hp-acc:#5b8def;--hp-accI:#ffffff}
+
+/* v3.97 (#108-#110): Jupiter "Manual" style Custom fee section, in Hwallet's navy (light) / blue (dark) */
+.hp-mn{padding:6px 14px 16px}
+.hp-mnl{display:flex;align-items:center;justify-content:space-between;margin:10px 2px 4px}
+.hp-mnl>span{font:500 15px/20px 'RobotoE',system-ui;color:var(--hp-muted)}
+.hp-mnseg{display:flex;background:var(--hp-card2);border-radius:22px;padding:3px;flex:0 0 auto}
+.hp-mnseg button{border:0;background:transparent;color:var(--hp-muted);font:600 14px/1 'RobotoE',system-ui;height:34px;padding:0 14px;border-radius:18px;margin:0;-webkit-tap-highlight-color:transparent}
+.hp-mnseg button.on{background:var(--hp-acc);color:var(--hp-accI)}
+.hp-mnh{font:400 12.5px/17px 'RobotoE',system-ui;color:var(--hp-muted);margin:4px 2px 10px}
+.hp-mnh:empty{display:none}
+.hp-mnc{background:var(--hp-card2);border:1px solid var(--hp-line);border-radius:16px;padding:2px 14px}
+.hp-mnr{padding:12px 0;border-top:1px solid var(--hp-line)}
+.hp-mnr:first-child{border-top:0}
+.hp-mnt{display:flex;align-items:center;justify-content:space-between;min-height:30px}
+.hp-mnn{font:600 15.5px/20px 'RobotoE',system-ui;color:var(--hp-text)}
+.hp-mni{font:400 12.5px/17px 'RobotoE',system-ui;color:var(--hp-muted);margin:2px 0 0}
+.hp-mnsw{position:relative;width:46px;height:28px;border:0;border-radius:14px;background:var(--hp-border);padding:0;flex:0 0 auto;transition:background .15s;-webkit-tap-highlight-color:transparent}
+.hp-mnsw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:11px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.hp-mnsw.on{background:var(--hp-acc)}
+.hp-mnsw.on i{transform:translate3d(18px,0,0)}
+.hp-mnv{display:flex;justify-content:flex-end;margin-top:6px}
+.hp-mnin{display:flex;align-items:center;justify-content:flex-end;background:var(--hp-card);border:1px solid var(--hp-border);border-radius:12px;padding:0 12px;height:44px;min-width:58%;max-width:100%;box-sizing:border-box}
+.hp-mnin input{flex:1 1 auto;min-width:0;width:100%;border:0;outline:0;background:transparent;color:var(--hp-text);font:500 17px 'RobotoE',system-ui;text-align:right;font-variant-numeric:tabular-nums;padding:0}
+.hp-mnin em{font-style:normal;color:var(--hp-muted);margin-left:8px;font:500 14px 'RobotoE',system-ui}
+.hp-mnin:focus-within{border-color:var(--hp-acc)}
+.hp-mnsel{position:relative;display:flex;align-items:center}
+.hp-mnsel select{-webkit-appearance:none;appearance:none;border:1px solid var(--hp-border);background:var(--hp-card);color:var(--hp-text);font:500 17px 'RobotoE',system-ui;height:44px;border-radius:12px;padding:0 38px 0 14px;font-variant-numeric:tabular-nums;outline:0}
+.hp-mnsel svg{position:absolute;right:10px;width:22px;height:22px;fill:var(--hp-muted);pointer-events:none}
+.hp-mnu{text-align:right;font:400 13px/18px 'RobotoE',system-ui;color:var(--hp-muted);margin-top:4px;min-height:18px}
+.hp-mnr.off .hp-mnv,.hp-mnr.off .hp-mnu{opacity:.38;pointer-events:none}
+.hp-mntot{display:flex;align-items:center;justify-content:space-between;margin:12px 4px 0}
+.hp-mntot>span:first-child{font:500 14px 'RobotoE',system-ui;color:var(--hp-muted)}
+.hp-mntot>span:last-child{display:flex;flex-direction:column;align-items:flex-end}
+.hp-mntot b{font:600 16px 'RobotoE',system-ui;font-variant-numeric:tabular-nums}
+.hp-mntot small{font:400 13px 'RobotoE',system-ui;color:var(--hp-muted);margin-top:1px}
 </style>
 </head>
 <body data-theme="light">
@@ -10976,7 +11024,7 @@ let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
 const APP_VERSION = '3.97';
-const APP_BUILD = '2026-10-11';
+const APP_BUILD = '2026-10-12';
 let derivedRows = [];
 let copiedState = {};
 let clickOrder = {}; // key -> order number (1,2,3...)
@@ -19699,7 +19747,28 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
         '<span class="hp-prv"><b>' + esc(r.v || '') + '</b>' + (r.vs ? '<small>' + esc(r.vs) + '</small>' : '') + '</span>' +
         '<span class="hp-prc">' + (r.on ? sv(P.ok) : '') + '</span></button>';
     }).join('');
-    var cu = o.custom, cuH = cu ? '<button type="button" class="hp-pr hp-prcu' + (cu.on ? ' on' : '') + '" data-pkc><span class="hp-prl"><b>Custom</b><small>' + esc(cu.on && cu.value ? 'Up to ' + cu.value + ' ' + cu.unit : 'Set your own maximum') + '</small></span><span class="hp-prv"></span><span class="hp-prc">' + (cu.on ? sv(P.ok) : sv(P.chev, 'hp-prch')) + '</span></button>' +
+    /* v3.97 (#108-#110): Jupiter "Manual" style Custom section: Transaction landing Max Cap | Exact Fee, then rows
+       with a label, an optional on/off switch, an amount field (or a preset dropdown) in the coin and its $ value,
+       and a live total. o.manual = { on, sub, seg, mode, segHint:{cap,exact}, fields:[{k,l,info,unit,value,toggle,en,
+       presets,usd(text)}], total(state) -> {v,vs} }, o.onManual(state) -> '' or an error. state = {mode, v:{k:text}, en:{k:bool}} */
+    var MN = o.manual, mnH = '';
+    if (MN) {
+      var mode0 = MN.mode === 'exact' ? 'exact' : 'cap';
+      mnH = '<button type="button" class="hp-pr hp-prcu' + (MN.on ? ' on' : '') + '" data-pkc><span class="hp-prl"><b>Custom</b><small>' + esc(MN.on && MN.sub ? MN.sub : 'Set your own fee') + '</small></span><span class="hp-prv"></span><span class="hp-prc">' + (MN.on ? sv(P.ok) : sv(P.chev, 'hp-prch')) + '</span></button>' +
+        '<div class="hp-pcu hp-mn" hidden>' +
+        (MN.seg ? '<div class="hp-mnl"><span>Transaction landing</span><div class="hp-mnseg" role="radiogroup"><button type="button" data-mm="cap"' + (mode0 === 'cap' ? ' class="on"' : '') + '>Max Cap</button><button type="button" data-mm="exact"' + (mode0 === 'exact' ? ' class="on"' : '') + '>Exact Fee</button></div></div><div class="hp-mnh" id="hp-mnh"></div>' : '') +
+        '<div class="hp-mnc">' + (MN.fields || []).map(function (f) {
+          var ctl = f.presets ? '<span class="hp-mnsel"><select data-mf="' + esc(f.k) + '">' + f.presets.map(function (x) { return '<option value="' + esc(x) + '"' + (String(x) === String(f.value) ? ' selected' : '') + '>' + esc(x) + ' ' + esc(f.unit) + '</option>'; }).join('') + '</select>' + sv(P.chev) + '</span>'
+            : '<span class="hp-mnin"><input data-mf="' + esc(f.k) + '" inputmode="decimal" autocomplete="off" spellcheck="false" value="' + esc(f.value == null ? '' : f.value) + '" placeholder="' + esc(f.ph || '0') + '"><em>' + esc(f.unit) + '</em></span>';
+          return '<div class="hp-mnr' + (f.toggle && !f.en ? ' off' : '') + '" data-mr="' + esc(f.k) + '"><div class="hp-mnt"><span class="hp-mnn">' + esc(f.l) + '</span>' +
+            (f.toggle ? '<button type="button" class="hp-mnsw' + (f.en ? ' on' : '') + '" data-ms="' + esc(f.k) + '" role="switch" aria-checked="' + (f.en ? 'true' : 'false') + '" aria-label="' + esc(f.l) + '"><i></i></button>' : '') + '</div>' +
+            (f.info ? '<div class="hp-mni">' + esc(f.info) + '</div>' : '') +
+            '<div class="hp-mnv">' + ctl + '</div><div class="hp-mnu" data-mu="' + esc(f.k) + '"></div></div>';
+        }).join('') + '</div>' +
+        '<div class="hp-mntot"><span>Network fee</span><span><b id="hp-mntv">\u2014</b><small id="hp-mnts"></small></span></div>' +
+        '<div class="hp-pch" id="hp-pch">' + esc(MN.hint || '') + '</div><button type="button" class="hp-btn hp-ok hp-pcok" id="hp-pcok">Use this fee</button></div>';
+    }
+    var cu = MN ? null : o.custom, cuH = MN ? mnH : cu ? '<button type="button" class="hp-pr hp-prcu' + (cu.on ? ' on' : '') + '" data-pkc><span class="hp-prl"><b>Custom</b><small>' + esc(cu.on && cu.value ? 'Up to ' + cu.value + ' ' + cu.unit : 'Set your own maximum') + '</small></span><span class="hp-prv"></span><span class="hp-prc">' + (cu.on ? sv(P.ok) : sv(P.chev, 'hp-prch')) + '</span></button>' +
       '<div class="hp-pcu" hidden><label class="hp-pcl">' + esc(cu.label) + '</label><div class="hp-pcf"><input id="hp-pcin" inputmode="decimal" autocomplete="off" spellcheck="false" value="' + esc(cu.value || '') + '"><em>' + esc(cu.unit) + '</em></div>' +
       '<div class="hp-pch" id="hp-pch">' + esc(cu.hint || '') + '</div><button type="button" class="hp-btn hp-ok hp-pcok" id="hp-pcok">Use this fee</button></div>' : '';
     ov.innerHTML = '<div class="hp-dim"></div><div class="hp-sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.title || 'Network fee') + '"><div class="hp-grab"></div><div class="hp-scroll">' +
@@ -19711,23 +19780,118 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     ov.querySelector('.hp-dim').onclick = me.close; ov.querySelector('[data-pkx]').onclick = me.close;
     ov.querySelectorAll('[data-pk]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-pk'); ov.querySelectorAll('.hp-pr').forEach(function (x) { x.classList.toggle('on', x === b); }); if (o.onPick) o.onPick(k); setTimeout(me.close, 120); }; });
     var cb = ov.querySelector('[data-pkc]');
-    if (cb) {
+    if (cb && MN) {
+      var mbox = ov.querySelector('.hp-mn'), mgo = ov.querySelector('#hp-pcok'), mhint = ov.querySelector('#hp-pch'), mode = MN.mode === 'exact' ? 'exact' : 'cap', en = {};
+      (MN.fields || []).forEach(function (f) { en[f.k] = f.toggle ? !!f.en : true; });
+      function mstate() { var v = {}; ov.querySelectorAll('[data-mf]').forEach(function (i) { v[i.getAttribute('data-mf')] = String(i.value || '').trim().replace(/,/g, '.'); }); return { mode: mode, v: v, en: Object.assign({}, en) }; }
+      function mpaint() {
+        var st = mstate();
+        (MN.fields || []).forEach(function (f) { var u = ov.querySelector('[data-mu="' + f.k + '"]'); if (u) { var t = ''; try { t = f.usd && en[f.k] ? f.usd(st.v[f.k], st) || '' : ''; } catch (x) {} u.textContent = t; } var r = ov.querySelector('[data-mr="' + f.k + '"]'); if (r) r.classList.toggle('off', !en[f.k]); });
+        var tv = ov.querySelector('#hp-mntv'), ts = ov.querySelector('#hp-mnts'), T = null; try { T = MN.total ? MN.total(st) : null; } catch (x) {}
+        tv.textContent = T && T.v ? T.v : '\u2014'; ts.textContent = T && T.vs ? T.vs : '';
+        var hh = ov.querySelector('#hp-mnh'); if (hh && MN.segHint) hh.textContent = MN.segHint[mode] || '';
+        if (mhint.classList.contains('bad')) { mhint.classList.remove('bad'); mhint.textContent = MN.hint || ''; }
+      }
+      cb.onclick = function () { mbox.hidden = !mbox.hidden; cb.classList.toggle('open', !mbox.hidden); };
+      if (MN.on) { mbox.hidden = false; cb.classList.add('open'); }
+      ov.querySelectorAll('[data-mm]').forEach(function (b) { b.onclick = function () { mode = b.getAttribute('data-mm'); ov.querySelectorAll('[data-mm]').forEach(function (x) { x.classList.toggle('on', x === b); }); mpaint(); }; });
+      ov.querySelectorAll('[data-ms]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-ms'); en[k] = !en[k]; b.classList.toggle('on', en[k]); b.setAttribute('aria-checked', en[k] ? 'true' : 'false'); mpaint(); }; });
+      ov.querySelectorAll('[data-mf]').forEach(function (i) { i.addEventListener('input', mpaint); i.addEventListener('change', mpaint); });
+      var mapplying = false;
+      function mapply() {
+        if (mapplying) return; mapplying = true;
+        var e = ''; try { e = o.onManual ? o.onManual(mstate()) : ''; } catch (x) { e = 'Could not use this fee.'; }
+        mapplying = false;
+        if (e) { mhint.textContent = e; mhint.classList.add('bad'); try { mhint.scrollIntoView({ block: 'nearest' }); } catch (x) {} return; }
+        try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (x) {} me.close();
+      }
+      mgo.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      mgo.addEventListener('touchend', function (e) { e.preventDefault(); mapply(); });
+      mgo.onclick = function (e) { e.preventDefault(); mapply(); };
+      mpaint();
+    } else if (cb) {
       var box = ov.querySelector('.hp-pcu'), inp = ov.querySelector('#hp-pcin'), go = ov.querySelector('#hp-pcok'), hint = ov.querySelector('#hp-pch');
       cb.onclick = function () { box.hidden = !box.hidden; cb.classList.toggle('open', !box.hidden); if (!box.hidden) setTimeout(function () { inp.focus(); }, 60); };
       if (cu.on) { box.hidden = false; cb.classList.add('open'); }
-      go.onclick = function () { var e = o.onCustom ? o.onCustom(inp.value) : ''; if (e) { hint.textContent = e; hint.classList.add('bad'); return; } me.close(); };
-      inp.onkeydown = function (e) { if (e.key === 'Enter') go.click(); };
+      /* wave B: apply on the finger-up itself. A tap that also hides the keyboard used to move the button before the click
+         landed, so "Use this fee" did nothing. The input keeps focus until the value is applied. */
+      var applying = false;
+      function apply() {
+        if (applying) return; applying = true;
+        var e = ''; try { e = o.onCustom ? o.onCustom(inp.value) : ''; } catch (x) { e = 'Could not use this fee.'; }
+        applying = false;
+        if (e) { hint.textContent = e; hint.classList.add('bad'); try { hint.scrollIntoView({ block: 'nearest' }); } catch (x) {} return; }
+        try { inp.blur(); } catch (x) {} me.close();
+      }
+      go.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      go.addEventListener('touchend', function (e) { e.preventDefault(); apply(); });
+      go.onclick = function (e) { e.preventDefault(); apply(); };
+      inp.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); apply(); } };
     }
     /* drag the small sheet down to close */
     var sh = ov.querySelector('.hp-sheet'), y0 = null, dy = 0;
-    sh.addEventListener('touchstart', function (e) { if (!e.target.closest('input,.hp-pcu')) { y0 = e.touches[0].clientY; dy = 0; } }, { passive: true });
+    sh.addEventListener('touchstart', function (e) { if (!e.target.closest('input,select,.hp-pcu')) { y0 = e.touches[0].clientY; dy = 0; } }, { passive: true });
     sh.addEventListener('touchmove', function (e) { if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); if (dy > 4) { sh.style.transition = 'none'; sh.style.transform = 'translate3d(0,' + dy + 'px,0)'; } }, { passive: true });
     sh.addEventListener('touchend', function () { if (y0 == null) return; y0 = null; sh.style.transition = ''; sh.style.transform = ''; if (dy > 80) me.close(); });
     return me;
   }
+  /* v3.97 (#108-#110): the Manual custom fee for Hwallet's own screens (Send, Swap). Same rules as Kwallet's sheet, which
+     checks and applies them again: x = { chain:'sol'|'eth'|'trx', sym, dec, px, gas, legacy, mf, tip, gp, cu, cup, fl, flMax,
+     l1, min, jito, prev } (amounts as BigInt in base units). toT(state) -> { fee, capped, T } or { err } */
+  function mPU(t, d) { t = String(t == null ? '' : t).trim().replace(/,/g, '.'); if (!/^\d*\.?\d+$|^\d+\.$/.test(t)) return null; t = t.replace(/\.$/, ''); var p2 = t.split('.'), f = (p2[1] || '').slice(0, d); while (f.length < d) f += '0'; try { return BigInt((p2[0] || '0') + f); } catch (e) { return null; } }
+  function mFm(v, d, mx) { if (v == null) return '\u2014'; v = BigInt(v); var s2 = v.toString(); while (s2.length <= d) s2 = '0' + s2; var i = d ? s2.slice(0, s2.length - d) : s2, f = d ? s2.slice(s2.length - d).slice(0, mx == null ? d : mx).replace(/0+$/, '') : ''; return Number(i).toLocaleString('en-US') + (f ? '.' + f : ''); }
+  function mDs(v, d) { return mFm(v, d, d).replace(/,/g, ''); }
+  function mUsd(v, d, px) { if (v == null || !(px > 0)) return ''; var n = Number(v) / Math.pow(10, d) * px; if (!isFinite(n)) return ''; return n > 0 && n < 0.01 ? '< $0.01' : '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: n < 1 ? 3 : 2 }); }
+  function mInt(t) { t = String(t == null ? '' : t).trim().replace(/[, ]/g, ''); return /^\d+$/.test(t) ? BigInt(t) : null; }
+  function manToT(x, st) {
+    var v = st.v || {}, en = st.en || {}, mode = st.mode === 'exact' ? 'exact' : 'cap', B = function (y) { return y == null ? null : BigInt(y); };
+    if (x.chain === 'sol') {
+      var cu = B(x.cu || 200000), P0 = en.pf === false ? 0n : mPU(v.pf, 9); if (P0 == null) return { err: 'Enter a priority fee like 0.0001 SOL.' };
+      var cupX = P0 * 1000000n / (cu > 0n ? cu : 1n); if (cupX > 50000000n) return { err: 'That priority fee is too high.' };
+      var sug = B(x.cup || 0), cup = mode === 'cap' && sug > 0n && sug < cupX ? sug : cupX, J = 0n;
+      if (x.jito && en.jito) { J = mPU(v.jito, 9); if (J == null || J <= 0n) return { err: 'Pick a Jito tip.' }; }
+      return { fee: 5000n + (cup * cu + 999999n) / 1000000n + J, capped: mode === 'cap' && P0 > 0n, T: { cup: String(cup), cul: String(cu) }, jito: J };
+    }
+    if (x.chain === 'eth') {
+      var gas = mInt(v.gas), mf = mPU(v.mf, 9), gAuto = false; if (mf == null || mf <= 0n) return { err: 'Enter a max fee in Gwei.' };
+      if (gas == null && x.gasAuto && !String(v.gas || '').trim()) { gas = B(x.gas || 250000); gAuto = true; }
+      if (gas == null) return { err: 'Enter a gas limit (whole number).' }; if (gas < 21000n || gas > 30000000n) return { err: 'Gas limit must be between 21,000 and 30,000,000.' };
+      if (x.min != null && mf < B(x.min)) return { err: 'Below the network\u2019s current base fee (' + mFm(B(x.min), 9, 4) + ' Gwei).' };
+      var l1 = B(x.l1 || 0); if (x.legacy) return { fee: mf * gas + l1, gasAuto: gAuto, T: { mf: mDs(mf, 9), gas: String(gas) } };
+      var tip = mode === 'exact' ? mf : mPU(v.tip, 9); if (tip == null) return { err: 'Enter a priority fee in Gwei (0 is allowed).' }; if (tip > mf) tip = mf;
+      return { fee: mf * gas + l1, capped: mode === 'cap', gasAuto: gAuto, T: { mf: mDs(mf, 9), tip: mDs(tip, 9), gas: String(gas) } };
+    }
+    if (x.chain === 'trx') {
+      var fl = mPU(v.fl, 6); if (fl == null || fl <= 0n) return { err: 'Enter a fee limit in TRX.' };
+      var mx = B(x.flMax || 1000000000n); if (fl > mx) return { err: 'The fee limit can be at most ' + mFm(mx, 6, 0) + ' TRX.' };
+      return { fee: fl, capped: true, T: { fl: mDs(fl, 6) } };
+    }
+    return { err: 'Custom fees are not available here.' };
+  }
+  function manSpec(x) {
+    var prev = x.prev || null, pv = (prev && prev.v) || {}, pe = (prev && prev.en) || {}, uo = function (raw) { return raw == null ? '' : mUsd(raw, x.dec, x.px); };
+    var tot = function (st) { var r = manToT(x, st); if (r.err) return null; return { v: (r.capped ? 'Up to ' : '') + mFm(r.fee, x.dec, x.dec) + ' ' + x.sym, vs: uo(r.fee) }; };
+    if (x.chain === 'sol') {
+      var cu = BigInt(x.cu || 200000), pf0 = (BigInt(x.cup || 0) * cu + 999999n) / 1000000n, f = [
+        { k: 'pf', l: 'Priority fee', unit: 'SOL', toggle: true, en: pe.pf !== false, value: pv.pf != null ? pv.pf : mDs(pf0 > 0n ? pf0 : 10000n, 9), info: 'Paid to the validator so your transaction lands sooner.', usd: function (t) { return uo(mPU(t, 9)); } }];
+      if (x.jito) f.push({ k: 'jito', l: 'Jito tip', unit: 'SOL', toggle: true, en: !!pe.jito, presets: ['0.00001', '0.0001', '0.0005', '0.001', '0.005', '0.01'], value: pv.jito || '0.0001', info: 'A tip to Jito validators for faster, MEV-protected landing.', usd: function (t) { var u = uo(mPU(t, 9)); return u ? '\u2248 ' + u : ''; } });
+      return { seg: true, mode: prev && prev.mode, segHint: { cap: 'Max Cap: pays what the network needs now, never more than your priority fee.', exact: 'Exact Fee: always pays exactly your priority fee.' }, fields: f, total: tot, hint: 'Kwallet signs with this fee. Too low and the transaction can be dropped.' };
+    }
+    if (x.chain === 'eth') {
+      var gas = BigInt(x.gas || 21000), g = function (t, st) { var w = mPU(t, 9), gg = mInt(st && st.v && st.v.gas) || gas; return w == null ? '' : uo(w * gg); };
+      var fe = [{ k: 'mf', l: x.legacy ? 'Gas price' : 'Max fee', unit: 'Gwei', value: pv.mf != null ? pv.mf : mDs(BigInt((x.legacy ? x.gp : x.mf) || 0), 9), info: x.legacy ? 'Price per unit of gas.' : 'The most you pay per unit of gas (base fee + priority fee).', usd: g }];
+      if (!x.legacy) fe.push({ k: 'tip', l: 'Priority fee', unit: 'Gwei', value: pv.tip != null ? pv.tip : mDs(BigInt(x.tip || 0), 9), info: 'The tip to the block builder. With Exact Fee it equals the max fee.', usd: g });
+      fe.push({ k: 'gas', l: 'Gas limit', unit: 'units', value: pv.gas != null ? pv.gas : String(gas), info: 'Unused gas is never charged.' });
+      return { seg: !x.legacy, mode: prev && prev.mode, segHint: { cap: 'Max Cap: pays the base fee + priority fee, never more than the max fee.', exact: 'Exact Fee: pays exactly the max fee per gas.' }, fields: fe, total: tot, hint: 'Too low and the transaction can wait or never confirm.' };
+    }
+    if (x.chain === 'trx') return { seg: false, fields: [{ k: 'fl', l: 'Fee limit', unit: 'TRX', value: pv.fl != null ? pv.fl : mDs(BigInt(x.fl || 30000000), 6), info: 'Tron burns TRX for the energy and bandwidth you have not staked. You pay only what is used, up to this limit.', usd: function (t) { return uo(mPU(t, 6)); } }], total: tot, hint: 'Too low and the call can run out of energy, fail and still burn TRX.' };
+    return null;
+  }
+  function manSub(x, st) { var r = st ? manToT(x, st) : null; return r && !r.err ? (r.capped ? 'Up to ' : '') + mFm(r.fee, x.dec, x.dec) + ' ' + x.sym : ''; }
+  var manFee = { toT: manToT, spec: manSpec, sub: manSub, fmt: mFm, usd: mUsd, parse: mPU };
   /* Back: closes an open picker first (true = handled) */
   function pickerBack() { if (PK) { PK.close(); return true; } return false; }
-  window.HWP = { picker: picker, pickerBack: pickerBack, siteName: siteName, walletRow: walletRow, esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
+  window.HWP = { manFee: manFee, picker: picker, pickerBack: pickerBack, siteName: siteName, walletRow: walletRow, esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
     trust: trust, warns: warns, perms: perms, details: details, foot: foot, sheet: sheet, siwe: siwe, siweRows: siweRows, msgBlock: msgBlock, tree: tree, overlay: overlay };
 })();
 
@@ -19960,7 +20124,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     '.hwp-kb{display:inline-flex;align-items:center;height:30px;background:#DDF869;border-radius:10px;padding:0 8px;font:900 15px/1 RobotoE,system-ui;box-shadow:inset 0 -2px 0 rgba(34,51,72,.12),0 1px 2px rgba(34,51,72,.14)}.hwp-kb .kb-k{color:#223348!important;letter-spacing:-.6px;margin-right:.5px}.hwp-kb .kb-w{font-size:13.5px!important}' +
     '.hwp-body{max-width:560px;margin:0 auto;padding:4px 16px calc(28px + env(safe-area-inset-bottom))}' +
     '.hwp-lead{display:flex;gap:10px;align-items:center;margin:4px 0 6px;padding:12px 14px;border-radius:14px;background:var(--bg-card);border:1px solid var(--border);font:400 13.5px/19px RobotoE,system-ui;color:var(--text-muted)}.hwp-lead svg{width:18px;height:18px;flex:0 0 auto;color:var(--text)}' +
-    '.hwp-sec{padding:18px 16px 8px;font:600 14px/20px RobotoE,system-ui;letter-spacing:.1px;color:#1a73e8}[data-theme="dark"] .hwp-sec{color:#DDF869}' +
+    '.hwp-sec{padding:18px 16px 8px;font:600 14px/20px RobotoE,system-ui;letter-spacing:.1px;color:#1a73e8}[data-theme="dark"] .hwp-sec{color:#8fb3ff}' +
     '.hwp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:18px;overflow:hidden}[data-theme="dark"] .hwp-card,[data-theme="dark"] .hwp-lead{border-color:transparent}' +
     '.hwp-row{display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 8px 8px 14px}.hwp-row+.hwp-row{box-shadow:0 -1px 0 var(--border)}' +
     '.hwp-av{width:36px;height:36px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;background:#223348;color:#DDF869;font:800 15px/1 RobotoE,system-ui}' +
@@ -19972,7 +20136,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     '.hwp-f input{flex:1;min-width:0;height:44px;border:1px solid var(--border);border-radius:12px;background:var(--bg-input);color:var(--text);padding:0 12px;font:500 15px RobotoE,system-ui;outline:none}.hwp-f input:focus{border-color:var(--text)}' +
     '.hwp-step{flex:1;display:flex;align-items:center;gap:6px}.hwp-step input{text-align:center;font-variant-numeric:tabular-nums;-moz-appearance:textfield}.hwp-step input::-webkit-inner-spin-button{-webkit-appearance:none}' +
     '.hwp-step button{width:44px;height:44px;flex:0 0 auto;border:1px solid var(--border);border-radius:12px;background:var(--bg-card);color:var(--text);display:grid;place-items:center}.hwp-step button svg{width:18px;height:18px}' +
-    '.hwp-go{display:block;width:100%;height:52px;margin-top:12px;border:0;border-radius:26px;background:#DDF869;color:#223348;font:700 16px RobotoE,system-ui;box-shadow:inset 0 -2px 0 rgba(34,51,72,.14)}.hwp-go:disabled{opacity:.45}' +
+    '.hwp-go{display:block;width:100%;height:52px;margin-top:12px;border:0;border-radius:26px;background:#223348;color:#fff;font:700 16px RobotoE,system-ui}[data-theme="dark"] .hwp-go{background:#5b8def}.hwp-go:disabled{opacity:.45}' +
     '.hwp-page input:disabled,.hwp-step button:disabled{opacity:.5}' +
     '.hwp-need{display:flex;gap:8px;align-items:flex-start;margin:8px 0 4px;color:var(--text-muted);font:400 13px/18px RobotoE,system-ui}.hwp-need svg{width:16px;height:16px;flex:0 0 auto;margin-top:1px}' +
     '.hwp-err{display:flex;gap:10px;align-items:flex-start;margin:10px 0 0;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,#d93025 10%,var(--bg-card));color:#b3261e;border:1px solid color-mix(in srgb,#d93025 30%,transparent)}' +
@@ -19992,7 +20156,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     if (!t || typeof t !== 'object') return;
     if (t.dark === true || t.dark === false) document.body.setAttribute('data-theme', t.dark ? 'dark' : 'light');
     var v = t.v && typeof t.v === 'object' ? t.v : {};
-    THK.forEach(function (k) { var c = String(v[k] == null ? '' : v[k]).trim(); if (/^#[0-9a-f]{3,8}$/i.test(c) || /^rgba?\([\d.,\s%]+\)$/i.test(c)) page.style.setProperty('--hp-' + k, c); });
+    THK.forEach(function (k) { if (k === 'acc' || k === 'accI') return; var c = String(v[k] == null ? '' : v[k]).trim(); if (/^#[0-9a-f]{3,8}$/i.test(c) || /^rgba?\([\d.,\s%]+\)$/i.test(c)) page.style.setProperty('--hp-' + k, c); });
   }
   var HWICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5NiA5NiI+PHJlY3Qgd2lkdGg9Ijk2IiBoZWlnaHQ9Ijk2IiByeD0iMjgiIGZpbGw9IiNEREY4NjkiLz48cGF0aCBmaWxsPSIjMTAxNDBhIiBkPSJNMzAgMjRoMTB2MjBoMTZWMjRoMTB2NDhINTZWNTNINDB2MTlIMzB6Ii8+PC9zdmc+';
   function finish(o) {
@@ -20150,6 +20314,19 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
       if (!R.fee.levels.medium) return fail('Missing network fee.');
     }
     lastFeed = Date.now(); S.total = Math.max(1000, R.expires - Date.now());
+    /* wave B: Hwallet Send's Custom "Max fee" arrives as R.feeMax and becomes the same custom level as typed here */
+    if (R.feeMax != null && kcfOk() && (c === 'evm' || c === 'sol' || c === 'trx')) { try {
+      var X0 = parseMax(String(R.feeMax), S.gdec), b0 = R.fee.levels.medium || R.fee.levels[Object.keys(R.fee.levels)[0]] || {}, M0 = R.feeMin || {};
+      var r0 = X0 == null ? { err: 1 } : maxToFields(c, X0, { gas: R.gasLimit, legacy: kcfLegacy(R), tip: U(b0.tip), min: U(M0.maxFee), sym: S.gsym, cu: (R.sol || {}).cuLimit, nsig: 1 });
+      if (!r0.err) { var lv0 = S.level; S.cfTxt = r0.T; S.prevLevel = lv0; S.level = 'custom'; var c0 = calc(); if (c0.err) { S.cfTxt = null; S.level = lv0; } }
+    } catch (e) {} }
+    /* v3.97 (#108-#110): Hwallet Send's Manual custom fee / Fastest tier arrive as R.feeManual / R.feeTier */
+    if (R.feeTier && kcfOk()) { try { var lt = S.level; if (sendTier(String(R.feeTier))) { if (calc().err) { S.level = lt; S.tier = null; S.cfTxt = null; } } } catch (e) {} }
+    else if (R.feeManual && typeof R.feeManual === 'object' && kcfOk() && (c === 'evm' || c === 'sol' || c === 'trx')) { try {
+      var fm = { mode: R.feeManual.mode === 'exact' ? 'exact' : 'cap', v: {}, en: {} };
+      ['pf', 'jito', 'mf', 'tip', 'gas', 'fl'].forEach(function (k) { var m0 = R.feeManual.v || {}, e0 = R.feeManual.en || {}; if (m0[k] != null && String(m0[k]).length < 24) fm.v[k] = String(m0[k]); if (e0[k] != null) fm.en[k] = !!e0[k]; });
+      var rm = manualToT(c, fm, sendCtx()); if (!rm.err) { var lm = S.level; S.prevLevel = lm; S.cfTxt = rm.T; S.level = 'custom'; S.man = fm; if (calc().err) { S.cfTxt = null; S.level = lm; S.man = null; } }
+    } catch (e) {} }
     mount(); draw(); arm(600);
     setInterval(tickLive, 1000); setInterval(tickExp, 250);
   }
@@ -20203,7 +20380,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     return { R: R, err: bad ? 'Enter a valid network fee.' : err };
   }
   /* wave A: the fee picker (no gwei / micro-lamports / compute units on screen; one plain "Max fee" for Custom) */
-  var ETA = { evm: { slow: '~1 min', medium: '~30 sec', fast: '~15 sec' }, sol: { slow: '~10 sec', medium: '~5 sec', fast: '~2 sec', auto: 'Set by the app', x2: 'Faster', x4: 'Fastest' }, btc: { slow: '~1 hour', medium: '~30 min', fast: '~10 min' } };
+  var ETA = { evm: { slow: '~1 min', medium: '~30 sec', fast: '~15 sec' }, sol: { slow: '~10 sec', medium: '~5 sec', fast: '~2 sec', auto: 'Set by the app', x2: '~3 sec', x4: '~1 sec' }, btc: { slow: '~1 hour', medium: '~30 min', fast: '~10 min' } };
   function decStr(v, d) { return fmt(v, d, d).replace(/,/g, ''); }
   function parseMax(t, d) { t = String(t == null ? '' : t).trim().replace(/,/g, ''); if (!/^\d*\.?\d+$|^\d+\.$/.test(t)) return null; try { return ethers.parseUnits(t.replace(/\.$/, ''), d); } catch (e) { return null; } }
   /* a total "max fee" in the coin -> the chain's own fee fields (text, as the editors keep them) */
@@ -20222,21 +20399,102 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     if (chain === 'trx') { if (!(X > 0n)) return { err: 'Enter a fee above zero.' }; if (X > 1000000000n) return { err: 'At most 1,000 TRX.' }; return { T: { fl: decStr(X, 6) } }; }
     return { err: 'Custom fees are not available here.' };
   }
+  /* v3.97 (#108 Solana, #109 EVM, #110 Tron): one Jupiter-style fee sheet. Speed rows (fee in the coin + $ and a check)
+     and a "Manual" Custom section in the coin: Solana priority fee (+ Jito tip where it can be added), EVM max fee /
+     priority fee / gas limit in Gwei, Tron fee limit in TRX. Max Cap | Exact Fee picks how the priority fee is used. */
+  var FLAB = { evm: { slow: 'Low', medium: 'Normal', fast: 'High' }, sol: { slow: 'Slow', medium: 'Normal', fast: 'Faster', auto: 'Site suggested', x2: 'Faster', x4: 'Fastest' }, trx: { slow: 'Normal', medium: 'Normal', fast: 'Fast', auto: 'Normal', x2: 'Fast' }, btc: { slow: 'Slow', medium: 'Normal', fast: 'Fast' } };
+  function feeLab(c, k) { return ((FLAB[c] || FLAB.btc)[k]) || { slow: 'Slow', medium: 'Normal', fast: 'Fast', custom: 'Custom' }[k] || ''; }
+  function mInt(t) { t = String(t == null ? '' : t).trim().replace(/[, ]/g, ''); return /^\d+$/.test(t) ? BI(t) : null; }
+  function manualToT(chain, st, x) {
+    var v = st.v || {}, en = st.en || {}, mode = st.mode === 'exact' ? 'exact' : 'cap';
+    if (chain === 'sol') {
+      var base = BI(5000 * (x.nsig || 1)), cu = BI(x.cu || 200000), P = en.pf === false ? 0n : parseMax(v.pf, 9);
+      if (P == null) return { err: 'Enter a priority fee like 0.0001 SOL.' };
+      var cupX = P * 1000000n / (cu > 0n ? cu : 1n); if (cupX > 50000000n) return { err: 'That priority fee is too high for this transaction (at most ' + decStr(50000000n * cu / 1000000n, 9) + ' SOL).' };
+      var sug = BI(x.cup || 0), cup = mode === 'cap' && sug > 0n && sug < cupX ? sug : cupX, J = 0n;
+      if (x.jito && en.jito) { J = parseMax(v.jito, 9); if (J == null || J <= 0n) return { err: 'Pick a Jito tip.' }; }
+      var T = { cup: String(cup), cul: String(cu) }; if (J > 0n) T.jito = String(J);
+      return { T: T, fee: base + (cup * cu + 999999n) / 1000000n + J, capped: mode === 'cap' && P > 0n };
+    }
+    if (chain === 'evm') {
+      var gas = mInt(v.gas), mf = parseMax(v.mf, 9);
+      if (mf == null || mf <= 0n) return { err: 'Enter a max fee in Gwei.' };
+      if (gas == null) return { err: 'Enter a gas limit (whole number).' };
+      if (gas < 21000n || gas > 30000000n) return { err: 'Gas limit must be between 21,000 and 30,000,000.' };
+      if (x.min != null && mf < BI(x.min)) return { err: (x.legacy ? 'Gas price' : 'Max fee') + ' is below the network\u2019s current base fee (' + gwei(BI(x.min)) + ' Gwei).' };
+      var l1 = BI(x.l1 || 0);
+      if (x.legacy) return { T: { mf: decStr(mf, 9), gas: String(gas) }, fee: mf * gas + l1 };
+      var tip = mode === 'exact' ? mf : parseMax(v.tip, 9); if (tip == null) return { err: 'Enter a priority fee in Gwei (0 is allowed).' };
+      if (tip > mf) tip = mf;
+      return { T: { mf: decStr(mf, 9), tip: decStr(tip, 9), gas: String(gas) }, fee: mf * gas + l1, capped: mode === 'cap' };
+    }
+    if (chain === 'trx') {
+      var fl = parseMax(v.fl, 6); if (fl == null || fl <= 0n) return { err: 'Enter a fee limit in TRX.' };
+      var mx = BI(x.flMax || 1000000000n); if (fl > mx) return { err: 'The fee limit can be at most ' + fmt(mx, 6, 0) + ' TRX.' };
+      return { T: { fl: decStr(fl, 6) }, fee: fl, capped: true };
+    }
+    return { err: 'Custom fees are not available here.' };
+  }
+  function manualSpec(chain, x) {
+    var prev = x.prev || null, pv = (prev && prev.v) || {}, pe = (prev && prev.en) || {}, uo = function (raw) { return raw == null ? '' : usdTxt(raw, x.dec, x.px); };
+    var tot = function (st) { var r = manualToT(chain, st, x); if (r.err) return null; return { v: (r.capped ? 'Up to ' : '') + fmt(r.fee, x.dec, x.dec) + ' ' + x.sym, vs: uo(r.fee) }; };
+    if (chain === 'sol') {
+      var cu = BI(x.cu || 200000), pf0 = (BI(x.cup || 0) * cu + 999999n) / 1000000n, f = [
+        { k: 'pf', l: 'Priority fee', unit: 'SOL', toggle: true, en: pe.pf !== false, value: pv.pf != null ? pv.pf : decStr(pf0 > 0n ? pf0 : 10000n, 9), info: 'Paid to the validator so your transaction lands sooner.', usd: function (t) { return uo(parseMax(t, 9)); } }];
+      if (x.jito) f.push({ k: 'jito', l: 'Jito tip', unit: 'SOL', toggle: true, en: !!pe.jito, presets: ['0.00001', '0.0001', '0.0005', '0.001', '0.005', '0.01'], value: pv.jito || '0.0001', info: 'A tip to Jito validators for faster, MEV-protected landing.', usd: function (t) { var u = uo(parseMax(t, 9)); return u ? '\u2248 ' + u : ''; } });
+      return { seg: true, mode: prev && prev.mode, segHint: { cap: 'Max Cap: pays what the network needs now, never more than your priority fee.', exact: 'Exact Fee: always pays exactly your priority fee.' }, fields: f, total: tot,
+        hint: 'Kwallet signs with exactly this fee. Too low and the transaction can be dropped.' };
+    }
+    if (chain === 'evm') {
+      var gas = BI(x.gas || 21000), g = function (k, raw) { return function (t) { var w = parseMax(t, 9), gg = mInt(document.querySelector('[data-mf="gas"]') ? document.querySelector('[data-mf="gas"]').value : '') || gas; return w == null ? '' : uo(w * gg); }; };
+      var fe = [{ k: 'mf', l: x.legacy ? 'Gas price' : 'Max fee', unit: 'Gwei', value: pv.mf != null ? pv.mf : gwei(x.legacy ? BI(x.gp || 0) : BI(x.mf || 0)).replace(/,/g, ''), info: x.legacy ? 'Price per unit of gas.' : 'The most you pay per unit of gas (base fee + priority fee).', usd: g('mf') }];
+      if (!x.legacy) fe.push({ k: 'tip', l: 'Priority fee', unit: 'Gwei', value: pv.tip != null ? pv.tip : gwei(BI(x.tip || 0)).replace(/,/g, ''), info: 'The tip to the block builder. With Exact Fee it equals the max fee.', usd: g('tip') });
+      fe.push({ k: 'gas', l: 'Gas limit', unit: 'units', value: pv.gas != null ? pv.gas : String(gas), info: 'Unused gas is never charged.' });
+      return { seg: !x.legacy, mode: prev && prev.mode, segHint: { cap: 'Max Cap: pays the base fee + priority fee, never more than the max fee.', exact: 'Exact Fee: pays exactly the max fee per gas.' }, fields: fe, total: tot,
+        hint: 'Too low and the transaction can wait or never confirm.' };
+    }
+    if (chain === 'trx') {
+      return { seg: false, fields: [{ k: 'fl', l: 'Fee limit', unit: 'TRX', value: pv.fl != null ? pv.fl : decStr(BI(x.fl || 30000000n), 6), info: 'Tron burns TRX for the energy and bandwidth you have not staked. You pay only what is used, up to this limit.', usd: function (t) { return uo(parseMax(t, 6)); } }], total: tot,
+        hint: 'Too low and the call can run out of energy, fail and still burn TRX.' };
+    }
+    return null;
+  }
+  function manSub(chain, st, x) { var r = st ? manualToT(chain, st, x) : null; return r && !r.err ? (r.capped ? 'Up to ' : '') + fmt(r.fee, x.dec, x.dec) + ' ' + x.sym : ''; }
+  function sendCtx() {
+    var R = S.R, lv = R.fee.levels, b = lv[S.prevLevel] || lv.medium || lv[Object.keys(lv)[0]] || {}, M = R.feeMin || {}, P = R.prices || {};
+    return { sym: S.gsym, dec: S.gdec, px: +P.gasUsd || 0, gas: U(R.gasLimit), legacy: S.c === 'evm' && kcfLegacy(R), mf: U(b.maxFee), tip: U(b.tip), gp: U(b.gasPrice), cu: (R.sol || {}).cuLimit || 200000, nsig: 1,
+      cup: U(b.cuPrice), fl: U((R.trx || {}).feeLimit) || 30000000n, flMax: 1000000000n, l1: U(R.l1Fee || '0'), min: U(M.maxFee), jito: false, prev: S.man || null };
+  }
+  function sendTier(k) {
+    var R = S.R, lv = R.fee.levels;
+    if (S.c === 'sol' && k === 'x4') { var fb = lv.fast || lv.medium || {}, pr = U(fb.cuPrice) > 0n ? U(fb.cuPrice) * 2n : 20000n; S.cfTxt = { cup: String(pr), cul: String((R.sol || {}).cuLimit || 200000) }; }
+    else if (S.c === 'trx' && k === 'x2') { var fl = U((R.trx || {}).feeLimit) || 30000000n; S.cfTxt = { fl: decStr(fl * 3n / 2n, 6) }; }
+    else return false;
+    if (S.level !== 'custom') S.prevLevel = S.level; S.level = 'custom'; S.tier = k; return true;
+  }
   function openSendFee() {
     if (busy) return;
-    var R = S.R, lv = R.fee.levels, keys = ['slow', 'medium', 'fast'].filter(function (k) { return lv[k]; }), save = S.level, P = R.prices || {}, gpx = +P.gasUsd || 0, LAB = { slow: 'Slow', medium: 'Normal', fast: 'Fast' }, rows = [];
-    keys.forEach(function (k) { S.level = k; var c; try { c = calc0(); } catch (e) { c = null; } S.level = save; if (!c) return; rows.push({ k: k, l: LAB[k], sub: (ETA[S.c] || {})[k] || '', v: (c.approx ? '\u2248 ' : '') + fmt(c.fee, S.gdec, 8) + ' ' + S.gsym, vs: usdTxt(c.fee, S.gdec, gpx), on: k === save }); });
-    var cuOk = kcfOk() && (S.c === 'evm' || S.c === 'sol' || S.c === 'trx'), cur = save === 'custom' && S.last && !S.last.err ? decStr(S.last.fee, S.gdec) : '';
-    HWP.picker({ title: 'Network fee', host: $('kss'), rows: rows,
-      custom: cuOk ? { label: 'Max fee (' + S.gsym + ')', unit: S.gsym, value: cur, on: save === 'custom', hint: 'Kwallet pays at most this for the network fee. Too low and the transaction can wait or fail.' } : null,
-      onPick: function (k) { if (k === S.level) return; S.level = k; buzz(8); notice = ''; draw(); arm(450); },
-      onCustom: function (t) {
-        var X = parseMax(t, S.gdec); if (X == null) return 'Enter an amount like 0.0005';
-        var b = lv.medium || lv[Object.keys(lv)[0]] || {}, M = R.feeMin || {};
-        var r = maxToFields(S.c, X, { gas: R.gasLimit, legacy: kcfLegacy(R), tip: U(b.tip), min: U(M.maxFee), sym: S.gsym, cu: (R.sol || {}).cuLimit, nsig: 1 });
-        if (r.err) return r.err;
-        var keep = { cf: S.cfTxt, lvl: S.level }; S.cfTxt = r.T; if (S.level !== 'custom') S.prevLevel = S.level; S.level = 'custom';
-        var c = calc(); if (c.err) { S.cfTxt = keep.cf; S.level = keep.lvl; return c.err; }
+    var R = S.R, lv = R.fee.levels, keys = ['slow', 'medium', 'fast'].filter(function (k) { return lv[k]; }), save = { lv: S.level, tier: S.tier, cf: S.cfTxt, pl: S.prevLevel }, P = R.prices || {}, gpx = +P.gasUsd || 0, rows = [];
+    if (S.c === 'sol') { keys = keys.filter(function (k) { return k !== 'slow'; }); if (kcfOk()) keys.push('x4'); }
+    if (S.c === 'trx' && kcfOk()) { keys = keys.slice(0, 1); keys.push('x2'); }
+    var cur = save.tier || save.lv;
+    keys.forEach(function (k) {
+      if (!sendTier(k)) { S.level = k; S.tier = null; }
+      var c; try { c = calc(); } catch (e) { c = null; }
+      S.level = save.lv; S.tier = save.tier; S.cfTxt = save.cf; S.prevLevel = save.pl; if (!c || c.err && c.fee == null) return;
+      var L = lv[k] || {}, sub = (ETA[S.c] || {})[k] || '';
+      if (S.c === 'evm') { var gw = U(L.maxFee) > 0n ? U(L.maxFee) : U(L.gasPrice); if (gw != null) sub = gwei(gw) + ' Gwei' + (sub ? ' \u00b7 ' + sub : ''); }
+      if (S.c === 'trx') sub = 'Up to ' + fmt(k === 'x2' ? (U((R.trx || {}).feeLimit) || 30000000n) * 3n / 2n : (U((R.trx || {}).feeLimit) || 0n), 6, 2) + ' TRX \u00b7 energy + bandwidth';
+      rows.push({ k: k, l: feeLab(S.c, k), sub: sub, v: (c.approx ? '\u2248 ' : '') + fmt(c.fee, S.gdec, 8) + ' ' + S.gsym, vs: usdTxt(c.fee, S.gdec, gpx), on: k === cur });
+    });
+    var cuOk = kcfOk() && (S.c === 'evm' || S.c === 'sol' || S.c === 'trx'), x = sendCtx(), man = cuOk ? manualSpec(S.c, x) : null;
+    if (man) { man.on = save.lv === 'custom' && !save.tier; man.sub = man.on ? manSub(S.c, S.man, x) : ''; }
+    HWP.picker({ title: 'Network fee', host: $('kss'), rows: rows, manual: man,
+      onPick: function (k) { if (k === cur) return; if (!sendTier(k)) { S.level = k; S.tier = null; } buzz(8); notice = ''; draw(); arm(450); },
+      onManual: function (st) {
+        var r = manualToT(S.c, st, x); if (r.err) return r.err;
+        var keep = { cf: S.cfTxt, lvl: S.level, tier: S.tier, man: S.man }; S.cfTxt = r.T; if (S.level !== 'custom') S.prevLevel = S.level; S.level = 'custom'; S.tier = null; S.man = st;
+        var c = calc(); if (c.err) { S.cfTxt = keep.cf; S.level = keep.lvl; S.tier = keep.tier; S.man = keep.man; return c.err; }
         buzz(8); notice = ''; draw(); arm(450); return '';
       } });
   }
@@ -20310,7 +20568,10 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
       else after = S.tok ? (c.bal != null ? c.bal - c.amount : null) : (c.gbal != null ? c.gbal - c.amount - c.fee - (c.extra || 0n) : null);
     }
     var feeUsdV = gpx * Number(c.fee) / Math.pow(10, S.gdec);
-    var feeHigh = !c.err && (feeUsdV > 25 || (!S.tok && !stake && !trust && c.amount != null && c.amount > 0n && c.fee * 5n > c.amount));
+    /* wave B: "high" is measured against each chain's normal fee in its own units (never against the amount sent), and
+       a base-only fee (e.g. 5,000 lamports per Solana signature) never warns */
+    var FEENORM = { sol: 5000000n, trx: 50000000n, btc: 200000n, sui: 50000000n, xrp: 100000n, ada: 2000000n }, fnorm = FEENORM[S.c];
+    var feeHigh = !c.err && c.fee != null && (feeUsdV > 25 || (fnorm != null && c.fee > fnorm)) && !(S.c === 'sol' && c.fee <= 5000n * 4n);
     var lv = R.fee.levels, keys = ['slow', 'medium', 'fast'].filter(function (k) { return lv[k]; }), cfOn = kcfOk(), LAB = { slow: 'Slow', medium: 'Normal', fast: 'Fast', custom: 'Custom' };
     if (cfOn) keys = keys.concat(['custom']);
     var seg = keys.length > 1 ? '<div class="hp-seg" role="radiogroup">' + keys.map(function (k) { return '<button type="button" data-lv="' + k + '" class="' + (k === S.level ? 'on' : '') + '">' + (LAB[k] || k) + '</button>'; }).join('') + '</div>' : '';
@@ -20345,7 +20606,8 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     var fs = [c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : S.c === 'trx' ? 'Covered by your bandwidth' : '', c.atMost ? 'at most' : ''].filter(Boolean).join(' \u00b7 ');
     var live = R.live ? '<span class="hp-live' + (stale() ? ' stale' : '') + '" id="kss-live"><i></i><span id="kss-live-t">' + liveText() + '</span></span>' : '';
     var ed = keys.length > 1, fopen = false;
-    var flab = [ed ? (S.level === 'custom' ? 'Custom' : LAB[S.level] || '') : '', live].filter(Boolean).join(' \u00b7 ');
+    var ed = ed || (kcfOk() && (S.c === 'evm' || S.c === 'sol' || S.c === 'trx'));
+    var flab = [ed ? (S.level === 'custom' ? (S.tier ? feeLab(S.c, S.tier) : 'Custom') : feeLab(S.c, S.level)) : '', live].filter(Boolean).join(' \u00b7 ');
     main += HWP.card(HWP.kv('Network fee' + (flab ? '<small>' + flab + '</small>' : ''), fv, fs, { tap: ed, chev: ed, id: 'kss-feer', cls: 'hp-fee' + (fopen ? ' hp-open' : '') }) +
       '');
     /* wallet */
@@ -20608,6 +20870,9 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     'function increaseAllowance(address spender,uint256 added)', 'function setApprovalForAll(address operator,bool approved)',
     'function approve(address token,address spender,uint160 amount,uint48 expiration)',
     'function deposit()', 'function withdraw(uint256 amount)',
+    'function mint(uint256 mintAmount)', 'function mint()', 'function redeem(uint256 redeemTokens)', 'function redeemUnderlying(uint256 redeemAmount)',
+    'function borrow(uint256 borrowAmount)', 'function repayBorrow(uint256 repayAmount)', 'function repayBorrow()', 'function enterMarkets(address[] jTokens)', 'function exitMarket(address jToken)',
+    'function swap(address executor,(address srcToken,address dstToken,address srcReceiver,address dstReceiver,uint256 amount,uint256 minReturnAmount,uint256 flags) desc,bytes data)',
     'function execute(bytes commands,bytes[] inputs,uint256 deadline)', 'function execute(bytes commands,bytes[] inputs)',
     'function multicall(bytes[] data)', 'function multicall(uint256 deadline,bytes[] data)',
     'function swapExactTokensForTokens(uint256 amountIn,uint256 amountOutMin,address[] path,address to,uint256 deadline)',
@@ -20671,6 +20936,31 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     '0x00000000000000adc04c56bf30ac9d3c0aaf14dc': ['OpenSea', 'NFT'], '0x0000000000000068f116a894984e2db1123eb395': ['OpenSea', 'NFT'],
     '0x13f4ea83d0bd40e75c8222255bc855a974568dd4': ['PancakeSwap', 'Swap'], '0x10ed43c718714eb63d5aa57b78b54704e256024e': ['PancakeSwap', 'Swap']
   };
+  /* wave B: Uniswap Universal Router commands -> one swap (token in, amount in, token out, minimum out). V2/V3 exact-in/out,
+     WRAP_ETH / UNWRAP_WETH for native ETH, V4_SWAP exact-in (single + multi hop). Anything else: null (Steps only). */
+  function uniRouter(cmds, inputs, value) {
+    try {
+      var c = hexB(String(cmds)), C = ethers.AbiCoder.defaultAbiCoder(), r = { steps: c.length }, wrap = false, unwrap = false, sw = null;
+      for (var i = 0; i < c.length; i++) {
+        var k = c[i] & 0x3f, inp = inputs[i];
+        if (k === 0x0b) wrap = true; else if (k === 0x0c) unwrap = true;
+        else if (k === 0x00 || k === 0x01) { var d = C.decode(['address', 'uint256', 'uint256', 'bytes', 'bool'], inp), ph = String(d[3]); var t0 = '0x' + ph.slice(2, 42), t1 = '0x' + ph.slice(-40); sw = sw || (k === 0x00 ? { tin: t0, tout: t1, inAmt: d[1], minOut: d[2] } : { tin: t1, tout: t0, inAmt: d[2], minOut: d[1], exOut: 1 }); }
+        else if (k === 0x08 || k === 0x09) { var d2 = C.decode(['address', 'uint256', 'uint256', 'address[]', 'bool'], inp), pa = d2[3]; sw = sw || (k === 0x08 ? { tin: pa[0], tout: pa[pa.length - 1], inAmt: d2[1], minOut: d2[2] } : { tin: pa[0], tout: pa[pa.length - 1], inAmt: d2[2], minOut: d2[1], exOut: 1 }); }
+        else if (k === 0x10 && !sw) {
+          var v4 = C.decode(['bytes', 'bytes[]'], inp), acts = hexB(String(v4[0]));
+          for (var j = 0; j < acts.length && !sw; j++) {
+            if (acts[j] === 0x06) { var e = C.decode(['tuple(tuple(address,address,uint24,int24,address),bool,uint128,uint128,bytes)'], v4[1][j])[0], pk = e[0]; sw = { tin: e[1] ? pk[0] : pk[1], tout: e[1] ? pk[1] : pk[0], inAmt: e[2], minOut: e[3] }; }
+            else if (acts[j] === 0x07) { var e2 = C.decode(['tuple(address,tuple(address,uint24,int24,address,bytes)[],uint128,uint128)'], v4[1][j])[0], hp = e2[1]; sw = { tin: e2[0], tout: hp.length ? hp[hp.length - 1][0] : e2[0], inAmt: e2[2], minOut: e2[3] }; }
+          }
+        }
+      }
+      if (!sw) return null;
+      var Z = '0x0000000000000000000000000000000000000000';
+      r.nin = wrap || String(sw.tin).toLowerCase() === Z ? 1 : 0; r.nout = unwrap || String(sw.tout).toLowerCase() === Z ? 1 : 0;
+      r.tin = sw.tin; r.tout = sw.tout; r.inAmt = r.nin && value > 0n && !sw.exOut ? value : sw.inAmt; r.minOut = sw.minOut;
+      return r;
+    } catch (x) { return null; }
+  }
   var AAVEOP = { supply: 'Supply', deposit: 'Supply', withdraw: 'Withdraw', borrow: 'Borrow', repay: 'Repay' };
   function decodeEvmCall(tx) {
     var to = tx.to ? String(tx.to) : '', data = String(tx.data || tx.input || '0x'), value = U(tx.value || '0') || 0n, out = { rows: '', warn: [], title: '', blind: false };
@@ -20707,6 +20997,12 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
       var sd = Array.isArray(a[5]) && Array.isArray(a[5][0]) ? a[5] : [a[5]], f0 = sd[0], fl = sd[sd.length - 1], z = '0x0000000000000000000000000000000000000000';
       out.chg.push({ s: '-', v: f0.fromAmount, t: f0.sendingAssetId, nat: isNat(f0.sendingAssetId) ? 1 : 0 }, { s: '+', v: a[4], t: fl.receivingAssetId, nat: isNat(fl.receivingAssetId) ? 1 : 0, min: 1 });
       out.hero = { l: 'You pay', a: amtTok(f0.fromAmount, f0.sendingAssetId, f0.sendingAssetId === z), sub: 'You get at least ' + amtTok(a[4], fl.receivingAssetId, fl.receivingAssetId === z) }; out.rows += addrKv('Recipient', a[3]) + kv('Integrator', esc(a[1] || '—'));
+    } else if (n === 'exactInput') { var qq = a[0], ph = String(qq.path), ti = '0x' + ph.slice(2, 42), to2 = '0x' + ph.slice(-40); out.chg.push({ s: '-', v: qq.amountIn, t: ti }, { s: '+', v: qq.amountOutMinimum, t: to2, min: 1 }); out.hero = { l: 'You pay', a: amtTok(qq.amountIn, ti), sub: 'You get at least ' + amtTok(qq.amountOutMinimum, to2) }; out.rows += addrKv('Recipient', qq.recipient); }
+    else if (n === 'swap' && a[1] && a[1].srcToken) { var ds = a[1]; out.op = 'Swap'; out.title = 'Swap'; out.chg.push({ s: '-', v: ds.amount, t: ds.srcToken, nat: isNat(ds.srcToken) ? 1 : 0 }, { s: '+', v: ds.minReturnAmount, t: ds.dstToken, nat: isNat(ds.dstToken) ? 1 : 0, min: 1 }); out.hero = { l: 'You pay', a: amtTok(ds.amount, ds.srcToken, isNat(ds.srcToken)), sub: 'You get at least ' + amtTok(ds.minReturnAmount, ds.dstToken, isNat(ds.dstToken)) }; out.rows += addrKv('Recipient', ds.dstReceiver); }
+    else if (n === 'execute' && (to.toLowerCase() in EVMK) && EVMK[to.toLowerCase()][0].indexOf('Uniswap') === 0) {
+      var ur = uniRouter(a[0], a[1], value);
+      if (ur) { out.op = 'Swap'; out.title = 'Swap'; out.chg.push({ s: '-', v: ur.inAmt, t: ur.tin, nat: ur.nin }, { s: '+', v: ur.minOut, t: ur.tout, nat: ur.nout, min: 1 }); out.hero = { l: 'You pay', a: amtTok(ur.inAmt, ur.tin, ur.nin), sub: 'You get at least ' + amtTok(ur.minOut, ur.tout, ur.nout) }; out.rows += kv('Steps', String(ur.steps)); }
+      else out.rows += kv('Steps', String((a[1] && a[1].length) || 0));
     } else if (n === 'withdrawIntegratorFees' || n === 'batchWithdrawIntegratorFees') { out.rows += kv('Tokens', esc(String((n === 'withdrawIntegratorFees' ? [a[0]] : a[0]).length))); }
     else { out.rows += kv('Method', esc(n), esc(p.signature)); if (n === 'execute' || n === 'multicall') out.rows += kv('Steps', String((a[1] && a[1].length) || (a[0] && a[0].length) || 0)); }
     if (!out.hero && !out.appr) out.hero = { l: out.title, a: fmt(value, 18, 8) + ' ' + esc(DS.gsym), raw: value };
@@ -20746,6 +21042,19 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     if (pt === 'Permit' && m.spender != null) {
       var v = U(m.value); out.hero = { l: 'Allow spending', a: v != null ? amtTok(v, d.verifyingContract) : esc(m.value) }; out.rows += addrKv('Spender', m.spender) + kv('Deadline', m.deadline ? new Date(+m.deadline * 1000).toLocaleString() : '—');
       if (v != null && v >= MAXU) out.warn.push('<b>Unlimited permit.</b> The spender could move all of this token.');
+    } else if (pt === 'OrderComponents' && Array.isArray(m.offer)) {
+      /* v3.97: Seaport listing. What you give (offer) and what comes back to you (consideration to your address) */
+      var IT = { 0: 'native coin', 1: 'ERC-20', 2: 'NFT (ERC-721)', 3: 'NFT (ERC-1155)', 4: 'NFT (any of a collection)', 5: 'NFT (ERC-1155, any)' };
+      out.hero = { l: 'You list', a: m.offer.length + ' item' + (m.offer.length === 1 ? '' : 's'), sub: 'Seaport order (OpenSea and others)' };
+      m.offer.forEach(function (o) { out.rows += addrKv('Offer: ' + (IT[+o.itemType] || 'item'), String(o.token || '')) + (+o.itemType >= 2 ? kv('Token id', esc(String(o.identifierOrCriteria || '').slice(0, 40))) : kv('Amount', esc(String(o.startAmount || '')))); });
+      var mine = 0n, others = 0; (m.consideration || []).forEach(function (c) { if (String(c.recipient || '').toLowerCase() === String(DS.R.from).toLowerCase()) { if (+c.itemType === 0) mine += U(c.startAmount) || 0n; } else others++; });
+      out.rows += kv('You receive', fmt(mine, 18, 8) + ' ' + esc(DS.info.sym), others ? others + ' other payout' + (others === 1 ? '' : 's') + ' (fees, royalties)' : '');
+      if (m.endTime) out.rows += kv('Listing ends', new Date(+m.endTime * 1000).toLocaleString());
+      if (mine === 0n) out.warn.push('<b>Nothing comes back to you</b> in this order. Only sign if you mean to give these items away.');
+    } else if (pt === 'PermitTransferFrom' || pt === 'PermitBatchTransferFrom' || pt === 'PermitWitnessTransferFrom') {
+      var pp = Array.isArray(m.permitted) ? m.permitted : [m.permitted || {}];
+      pp.forEach(function (x, j) { var am = U(x.amount); if (!j) out.hero = { l: 'Allow one transfer', a: am != null ? amtTok(am, x.token) : esc(x.amount), sub: 'Permit2 signature transfer' }; out.rows += addrKv('Token', x.token); });
+      if (m.spender) out.rows += addrKv('Spender', m.spender); if (m.deadline) out.rows += kv('Valid until', new Date(+m.deadline * 1000).toLocaleString());
     } else if ((pt === 'PermitSingle' || pt === 'PermitBatch') && m.spender) {
       var ds = pt === 'PermitSingle' ? [m.details] : (m.details || []);
       ds.forEach(function (x, j) { var am = U(x.amount); if (!j) out.hero = { l: 'Allow spending' + (ds.length > 1 ? ' (' + ds.length + ' tokens)' : ''), a: am != null ? amtTok(am, x.token) : esc(x.amount) }; out.rows += addrKv('Token', x.token) + (j ? kv('Allowance', am != null ? amtTok(am, x.token) : esc(x.amount)) : ''); if (am != null && am >= (1n << 159n)) out.warn.push('<b>Unlimited Permit2 approval</b> for ' + esc(short(x.token)) + '.'); });
@@ -20852,7 +21161,30 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     }
     return f;
   }
-  var TRT = { 1: 'TransferContract', 2: 'TransferAssetContract', 4: 'VoteWitnessContract', 31: 'TriggerSmartContract', 54: 'FreezeBalanceV2Contract', 55: 'UnfreezeBalanceV2Contract', 56: 'WithdrawExpireUnfreezeContract', 57: 'DelegateResourceContract', 58: 'UnDelegateResourceContract' };
+  /* wave B: well-known Tron contracts -> [name, operation, method names]. SunSwap / SUN.io from docs.sun.io (Smart Router,
+     Universal Router, V2/V3 routers, V3/V4 position managers, Permit2); JustLend DAO from docs.justlend.org (Unitroller,
+     jTokens, sTRX). A known app never raises a warning by itself; an unknown contract is a quiet line in Details. */
+  var JLM = { mint: 'Supply', redeem: 'Withdraw', redeemUnderlying: 'Withdraw', borrow: 'Borrow', repayBorrow: 'Repay', enterMarkets: 'Use as collateral', exitMarket: 'Stop using as collateral' };
+  var TRONK = {
+    TGnC7LMji8hBpyvZt1TTEJhVpAZ5HFyJ3r: ['SunSwap Smart Router', 'Swap'], TCFNp179Lg46D16zKoumd4Poa2WFFdtqYj: ['SunSwap Smart Router', 'Swap'],
+    TJ4NNy8xZEqsowCBhLvZ45LCqPdGjkET5j: ['SunSwap Smart Router', 'Swap'], TFVisXFaijZfeyeSjCEVkHfex7HGdTxzF9: ['SunSwap Smart Router', 'Swap'],
+    TQqgNg13s2DjvXhW1ky4v6TsR8wZGvb7Y4: ['SunSwap Universal Router', 'Swap'], TNJVzGqKBWkJxJB5XYSqGAwUTV15U24pPq: ['SunSwap V2', 'Swap'],
+    TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR: ['SunSwap V2', 'Swap'], TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax: ['SunSwap V2', 'Swap'], TQAvWQpT9H916GckwWDJNhYZvQMkuRL7PN: ['SunSwap V3', 'Swap'],
+    TLSWrv7eC1AZCXkRjpqMZUmvgd99cj7pPF: ['SunSwap V3 positions', 'Liquidity'], TC8xQzPHfn5KceZV6s6GmZkBCFWWUoPXs1: ['SunSwap V4 positions', 'Liquidity'],
+    TTJxU3P8rHycAyFY4kVtGNfmnMH4ezcuM9: ['SUN.io Permit2', 'Approve'],
+    TGjYzgCyPobsNS9n6WcbdLVR9dH7mWqFx7: ['JustLend', 'Lend', JLM], TU3kjFuhtEo42tsCBtfYUAZxoqQ4yuSLQ5: ['JustLend sTRX', 'Stake TRX', { deposit: 'Stake TRX', withdraw: 'Unstake TRX' }],
+    TE2RzoSV3wFK99w6J9UnnZ4vLfXYoxvRwP: ['JustLend jTRX', 'Lend', JLM], TXJgMdjVX5dKiQaUi9QobwNxtSQaFqccvd: ['JustLend jUSDT', 'Lend', JLM],
+    TKFRELGGoRgiayhwJTNNLqCNjFoLBh3Mnf: ['JustLend jUSDD', 'Lend', JLM], TNSBA6KvSvMoTqQcEgpVK7VhHT3z7wifxy: ['JustLend jUSDC', 'Lend', JLM],
+    TSXv71Fy5XdL3Rh2QfBoUu3NAaM4sMif8R: ['JustLend jTUSD', 'Lend', JLM], TBEKggwqFkrc4KckQVR9BLucAmQugafEZf: ['JustLend jUSD1', 'Lend', JLM],
+    TD5SdLw5scR6mXgyMK2xKrFJpauDjpKqrW: ['JustLend jwstUSDT', 'Lend', JLM], TJQ9rbVe9ei3nNtyGgBL22Fuu2xYjZaLAQ: ['JustLend jsTRX', 'Lend', JLM],
+    TPXDpkg9e3eZzxqxAUyke9S4z4pGJBJw9e: ['JustLend jSUN', 'Lend', JLM], TUaUHU9Dy8x5yNi1pKnFYqHWojot61Jfto: ['JustLend jBTT', 'Lend', JLM],
+    TFpPyDCKvNFgos3g3WVsAqMrdqhB81JXHE: ['JustLend jNFT', 'Lend', JLM], TWQhCXaWz4eHK4Kd1ErSDHjMFPoPc9czts: ['JustLend jJST', 'Lend', JLM],
+    TRg6MnpsFXc82ymUPgf5qbj59ibxiEDWvv: ['JustLend jWIN', 'Lend', JLM], TDA1mWPyAjTRATMGA55UTswGAHhV2itEXR: ['JustLend jHTX', 'Lend', JLM],
+    TLeEu311Cbw63BcmMHDgDLu7fnk9fqGcqT: ['JustLend jBTC', 'Lend', JLM], TVyvpmaVmz25z2GaXBDDjzLZi5iR5dBzGd: ['JustLend jWBTC', 'Lend', JLM],
+    TR7BUFRQeq1w5jAZf1FKx85SHuX6PfMqsV: ['JustLend jETH', 'Lend', JLM], TWBxQMb6RD3qmkXUXpNwVCYbL8SHNreru6: ['JustLend jETHB', 'Lend', JLM],
+    TMz7vmyqoq4WKDiztrZpjAZPnzE9XgXaK4: ['JustLend jUSDD (old)', 'Lend', JLM]
+  };
+  var TRT = { 1: 'TransferContract', 2: 'TransferAssetContract', 4: 'VoteWitnessContract', 31: 'TriggerSmartContract', 54: 'FreezeBalanceV2Contract', 55: 'UnfreezeBalanceV2Contract', 56: 'WithdrawExpireUnfreezeContract', 57: 'DelegateResourceContract', 58: 'UnDelegateResourceContract', 13: 'WithdrawBalanceContract', 59: 'CancelAllUnfreezeV2Contract' };
   function trxB58(u) { try { return KwChains.util.b58enc(Uint8Array.from(Array.from(u).concat(Array.from(hexB(ethers.sha256(ethers.sha256(u))).slice(0, 4))))); } catch (e) { return bhex(u); } }
   function pbVint(v) { var o = []; v = BI(v); do { var b = Number(v & 0x7fn); v >>= 7n; o.push(v ? b | 0x80 : b); } while (v); return o; }
   /* #82: raw_data with a new fee_limit (field 18, the highest field, so appending keeps the canonical order) */
@@ -20879,19 +21211,29 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     var owner = val[1] ? trxB58(val[1][0]) : ''; if (owner !== R.from) { out.err = 'This transaction is for ' + short(owner) + ', not your account.'; return out; }
     out.type = TRT[type] || ('Contract type ' + type); out.title = out.type;
     var exp = f[8] ? Number(f[8][0]) : 0, fl = f[18] ? f[18][0] : 0n;
-    out.chg = []; out.op = { 1: 'Transfer', 4: 'Vote', 54: 'Stake TRX', 55: 'Unstake TRX', 56: 'Withdraw TRX', 57: 'Delegate resources', 58: 'Reclaim resources' }[type] || 'Contract call';
+    out.chg = []; out.op = { 1: 'Transfer', 4: 'Vote', 54: 'Stake TRX', 55: 'Unstake TRX', 56: 'Withdraw TRX', 57: 'Delegate resources', 58: 'Reclaim resources', 13: 'Claim rewards', 59: 'Cancel unstaking' }[type] || 'Contract call';
+    var RES = function (x) { return Number(x || 0) === 1 ? 'Energy' : Number(x || 0) === 2 ? 'TRON Power' : 'Bandwidth'; };
+    if (type === 54 || type === 55) { var fz = val[2] ? val[2][0] : 0n; out.title = out.op; out.hero = { l: out.op, a: fmt(fz, 6, 6) + ' TRX', raw: fz }; out.rows += kv('Resource', RES(val[3] && val[3][0])); if (type === 54) out.chg.push({ s: '-', v: fz, nat: 1, note: 'Staked (stays yours)' }); }
+    else if (type === 57 || type === 58) { var db = val[3] ? val[3][0] : 0n; out.title = out.op; out.hero = { l: out.op, a: fmt(db, 6, 6) + ' TRX', raw: db }; out.rows += kv('Resource', RES(val[2] && val[2][0])); if (val[4]) out.rows += addrKv(type === 57 ? 'To' : 'From', trxB58(val[4][0])); }
+    else if (type === 4) { var vs = (val[2] || []).map(function (x) { var vv = pbRead(x); return { a: vv[1] ? trxB58(vv[1][0]) : '', n: vv[2] ? vv[2][0] : 0n }; }), tot = vs.reduce(function (a, x) { return a + x.n; }, 0n); out.title = 'Vote'; out.hero = { l: 'Vote', a: tot.toString() + ' votes', sub: vs.length + ' Super Representative' + (vs.length === 1 ? '' : 's') }; vs.forEach(function (x) { out.rows += addrKv('Votes ' + x.n.toString(), x.a); }); }
+    else if (type === 56 || type === 13 || type === 59) { out.title = out.op; out.hero = { l: out.op, a: '' }; }
     if (type === 1) { out.chg.push({ s: '-', v: val[3] ? val[3][0] : 0n, nat: 1 }); out.title = 'Send TRX'; out.value = val[3] ? val[3][0] : 0n; out.hero = { l: 'You send', a: fmt(out.value, 6, 6) + ' TRX', raw: out.value }; out.rows += addrKv('To', trxB58(val[2][0])); }
     else if (type === 31) {
       var ca = trxB58(val[2][0]), cv = val[3] ? val[3][0] : 0n, data = val[4] ? '0x' + bhex(val[4][0]) : '0x';
-      out.rows += addrKv('Contract', ca, tokOf(ca) ? esc(tokOf(ca).s) : '');
+      var TK = TRONK[ca]; if (TK) out.known = TK[0];
+      out.rows += addrKv('Contract', ca, TK ? esc(TK[0]) : tokOf(ca) ? esc(tokOf(ca).s) : '');
       if (cv > 0n) { out.rows += kv('TRX sent', fmt(cv, 6, 6) + ' TRX'); out.chg.push({ s: '-', v: cv, nat: 1 }); } out.value = cv;
       var p = null; try { p = iface().parseTransaction({ data: data, value: 0n }); } catch (e) {}
       var b58a = function (a) { try { return trxB58(hexB('41' + String(a).slice(2))); } catch (e) { return a; } };
       if (p && p.name === 'transfer') { out.op = 'Transfer'; out.chg.push({ s: '-', v: p.args[1], t: ca }); out.title = 'Token transfer'; out.hero = { l: 'You send', a: amtTok(p.args[1], ca) }; out.rows += addrKv('To', b58a(p.args[0])); }
-      else if (p && p.name === 'approve' && p.fragment.inputs.length === 2) { out.op = p.args[1] === 0n ? 'Revoke' : 'Approve'; out.apprT = { tok: ca, amt: p.args[1], sp: b58a(p.args[0]) }; out.title = 'Token approval'; out.hero = { l: 'Allow spending', a: amtTok(p.args[1], ca) }; out.rows += addrKv('Spender', b58a(p.args[0])); if (p.args[1] >= MAXU) out.warn.push('<b>Unlimited approval.</b> The spender could move all of this token.'); }
+      else if (p && p.name === 'approve' && p.fragment.inputs.length === 2) { out.op = p.args[1] === 0n ? 'Revoke' : 'Approve'; out.apprT = { tok: ca, amt: p.args[1], sp: b58a(p.args[0]) }; out.title = 'Token approval'; out.hero = { l: 'Allow spending', a: amtTok(p.args[1], ca) }; var spT = TRONK[b58a(p.args[0])]; out.rows += addrKv('Spender', b58a(p.args[0]), spT ? esc(spT[0]) : ''); if (spT) out.known = spT[0]; if (p.args[1] >= MAXU) out.warn.push(spT ? 'Unlimited allowance for ' + esc(spT[0]) + '.' : '<b>Unlimited approval.</b> The spender could move all of this token.'); }
       else if (p && p.name === 'swapExactInput') { out.op = 'Swap'; out.title = 'Swap (SunSwap)'; var pa = p.args[0], dd = p.args[4]; out.chg = out.chg.filter(function (x) { return !x.nat; }); out.chg.push({ s: '-', v: dd.amountIn, t: b58a(pa[0]), nat: /^0x0{40}$/i.test(pa[0]) ? 1 : 0 }, { s: '+', v: dd.amountOutMin, t: b58a(pa[pa.length - 1]), nat: /^0x0{40}$/i.test(pa[pa.length - 1]) ? 1 : 0, min: 1 }); out.hero = { l: 'You pay', a: amtTok(dd.amountIn, b58a(pa[0]), /^0x0{40}$/i.test(pa[0])), sub: 'You get at least ' + amtTok(dd.amountOutMin, b58a(pa[pa.length - 1]), /^0x0{40}$/i.test(pa[pa.length - 1])) }; out.rows += addrKv('Recipient', b58a(dd.to)); }
-      else if (p) { out.op = OPN[p.name] || 'Contract call'; out.title = NICE[p.name] || p.name; out.rows += kv('Method', esc(p.name)); }
-      else { out.title = 'Contract call'; out.rows += kv('Method', '<span class="mono">' + esc(data.slice(0, 10)) + '</span>', 'Kwallet does not know this method'); out.warn.push('Kwallet cannot decode this call. Only sign if you trust ' + esc(DS.site) + '.'); }
+      else if (p && TK && TK[2] && TK[2][p.name]) { out.op = TK[2][p.name]; out.title = out.op + ' (' + TK[0] + ')'; out.rows += kv('Method', esc(p.name)); var am = p.args && p.args.length && typeof p.args[0] === 'bigint' ? p.args[0] : null;
+        if (am != null && /^(redeemUnderlying|borrow)$/.test(p.name)) out.chg.push({ s: '+', v: am, t: '', sym: 'tokens', note: out.op });
+        if (cv > 0n) out.hero = { l: out.op, a: fmt(cv, 6, 6) + ' TRX', raw: cv }; else if (am != null) out.hero = { l: out.op, a: am.toString(), sub: 'Raw amount, token decimals not known here' }; }
+      else if (p) { out.op = OPN[p.name] || (TK ? TK[1] : 'Contract call'); out.title = NICE[p.name] || (TK ? TK[1] : p.name); out.rows += kv('Method', esc(p.name)); }
+      else if (TK) { out.op = TK[1]; out.title = TK[1] + ' (' + TK[0] + ')'; out.rows += kv('Method', '<span class="mono">' + esc(data.slice(0, 10)) + '</span>', 'Known app: ' + esc(TK[0])); }
+      else { out.title = 'Contract call'; out.rows += kv('Method', '<span class="mono">' + esc(data.slice(0, 10)) + '</span>', 'Kwallet does not know this method'); out.warn.push('Unknown contract method. Only sign if you trust ' + esc(DS.site) + '.'); }
     } else if (TRT[type]) { out.rows += kv('Action', esc(TRT[type])); }
     else { out.warn.push('Kwallet does not know this Tron contract type.'); }
     out.feeLimit = fl; out.exp = exp;
@@ -20953,6 +21295,17 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
       var ct = {}; ['mf', 'tip', 'gas', 'cup', 'cul', 'fl'].forEach(function (k) { if (R.cfTxt[k] != null && String(R.cfTxt[k]).length < 24) ct[k] = String(R.cfTxt[k]); });
       R.cfTxt = ct; DS.level = 'custom'; cfParse();
     } else delete R.cfTxt;
+    /* v3.97 (#108-#110): Hwallet Swap / Send may preset a Manual custom fee (R.feeManual) or a speed tier (R.feeTier) */
+    var dEd = c === 'evm' || (c === 'trx' && DS.view && DS.view.raw) || (c === 'sol' && DS.view && DS.view.feeEdit);
+    if (!R.cfTxt && dEd && R.feeTier && /^(x2|x4)$/.test(String(R.feeTier))) { try { var lt0 = DS.level; if (c === 'sol') solTier(String(R.feeTier)); else if (c === 'trx') trxTier(); if (DS.level === 'custom' && dappCalc().err) { DS.level = lt0; DS.tier = null; delete R.cfTxt; R.cf = null; } } catch (e) {} }
+    else if (!R.cfTxt && dEd && R.feeManual && typeof R.feeManual === 'object') { try {
+      var fm2 = { mode: R.feeManual.mode === 'exact' ? 'exact' : 'cap', v: {}, en: {} }, lv1 = DS.level;
+      ['pf', 'mf', 'tip', 'gas', 'fl'].forEach(function (k) { var m0 = R.feeManual.v || {}, e0 = R.feeManual.en || {}; if (m0[k] != null && String(m0[k]).length < 24) fm2.v[k] = String(m0[k]); if (e0[k] != null) fm2.en[k] = !!e0[k]; });
+      if (c === 'evm' && !fm2.v.gas) { var g0 = U(((P.tx || {}).gas) || ((P.tx || {}).gasLimit)) || U(R.gasLimit); if (g0 != null) fm2.v.gas = String(g0); }
+      DS.last = dappCalc();
+      var rm2 = manualToT(c, fm2, dappCtx());
+      if (!rm2.err) { var T2 = rm2.T; delete T2.jito; if (c === 'sol' && !(DS.view.cbL >= 0)) delete T2.cul; R.cfTxt = T2; DS.level = 'custom'; DS.tier = null; DS.man = fm2; cfParse(); if (dappCalc().err) { DS.level = lv1; delete R.cfTxt; R.cf = null; DS.man = null; } }
+    } catch (e) {} }
     lastFeed = Date.now(); DS.total = Math.max(1000, R.expires - Date.now());
     mount(); dappDraw(); arm(800);
     setInterval(tickLive, 1000); setInterval(tickExp, 250);
@@ -20985,36 +21338,42 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   }
   /* wave A: dApp fee speeds. EVM: Slow / Normal / Fast. Solana: the app's own fee ("Site suggested"), Faster (2x the
      priority fee) and Fastest (4x), always with the app's compute limit. Tron: the app's fee limit. Custom: one "Max fee". */
-  function dappTierLabel() { var t = DS.tier || (DS.level === 'custom' ? 'custom' : DS.level); return { slow: 'Slow', medium: 'Normal', fast: 'Fast', auto: 'Site suggested', x2: 'Faster', x4: 'Fastest', custom: 'Custom' }[t] || ''; }
+  function dappTierLabel() { var t = DS.tier || (DS.level === 'custom' ? 'custom' : DS.level); if (t === 'custom') return 'Custom'; return feeLab(DS.c, t); }
   function dappRowsFor(keys, setter) {
-    var save = { lv: DS.level, tier: DS.tier, cf: DS.R.cf, cft: DS.R.cfTxt }, rows = [], P = DS.R.prices || {}, gpx = +P.gasUsd || 0, fdec = DS.c === 'trx' ? 6 : DS.c === 'sol' ? 9 : 18, sym = DS.gsym;
+    var save = { lv: DS.level, tier: DS.tier, cf: DS.R.cf, cft: DS.R.cfTxt }, rows = [], P = DS.R.prices || {}, gpx = +P.gasUsd || 0, fdec = DS.c === 'trx' ? 6 : DS.c === 'sol' ? 9 : 18, sym = DS.gsym, lv = DS.R.fee && DS.R.fee.levels || {};
     keys.forEach(function (k) { setter(k); var c; try { c = dappCalc(); } catch (e) { c = null; } DS.level = save.lv; DS.tier = save.tier; DS.R.cf = save.cf; DS.R.cfTxt = save.cft; if (!c || c.fee == null) return;
-      rows.push({ k: k, l: { slow: 'Slow', medium: 'Normal', fast: 'Fast', auto: 'Site suggested', x2: 'Faster', x4: 'Fastest' }[k], sub: DS.c === 'trx' ? 'Up to this amount' : (ETA[DS.c] || {})[k] || '', v: fmt(c.fee, fdec, 8) + ' ' + sym, vs: usdTxt(c.fee, fdec, gpx), on: (DS.tier || DS.level) === k }); });
+      var sub = (ETA[DS.c] || {})[k] || '';
+      if (DS.c === 'evm') { var L = lv[k] || {}, gw = c.legacy ? c.gp : c.mf; if (gw != null) sub = gwei(gw) + ' Gwei' + (sub ? ' \u00b7 ' + sub : ''); }
+      if (DS.c === 'trx') sub = 'Up to ' + fmt(c.fee, 6, 2) + ' TRX \u00b7 energy + bandwidth';
+      rows.push({ k: k, l: feeLab(DS.c, k), sub: sub, v: (DS.c === 'trx' ? 'Up to ' : '') + fmt(c.fee, fdec, 8) + ' ' + sym, vs: usdTxt(c.fee, fdec, gpx), on: (DS.tier || DS.level) === k }); });
     return rows;
   }
   function solTier(k) { var v = DS.view || {}, M = DS.R.feeMin || {}, pr = v.cuPrice > 0n ? v.cuPrice : (U(M.cuPrice) > 0n ? U(M.cuPrice) : 10000n), m = k === 'x4' ? 4n : 2n; DS.R.cfTxt = { cup: String(pr * m) }; if (v.cbL >= 0) DS.R.cfTxt.cul = String(v.cuLimit); DS.level = 'custom'; DS.tier = k; cfParse(); }
+  function trxTier() { var v = DS.view || {}, fl = BI(v.feeLimit || 0) > 0n ? BI(v.feeLimit) : 30000000n; DS.R.cfTxt = { fl: decStr(fl * 3n / 2n, 6) }; DS.level = 'custom'; DS.tier = 'x2'; cfParse(); }
+  function dappCtx() {
+    var R = DS.R, v = DS.view || {}, lv = (R.fee && R.fee.levels) || {}, L = lv[DS.level] || lv.medium || lv[Object.keys(lv)[0]] || {}, M = R.feeMin || {}, P = R.prices || {}, c0 = DS.last || {};
+    return { sym: DS.gsym, dec: DS.c === 'trx' ? 6 : DS.c === 'sol' ? 9 : 18, px: +P.gasUsd || 0, gas: c0.gas || U(R.gasLimit), legacy: !!c0.legacy, mf: c0.mf != null ? c0.mf : U(L.maxFee), tip: c0.tip != null ? c0.tip : U(L.tip), gp: c0.gp != null ? c0.gp : U(L.gasPrice),
+      cu: v.cuLimit || 200000, nsig: v.nsig || 1, cup: v.cuPrice, fl: BI(v.feeLimit || 0) > 0n ? BI(v.feeLimit) : 30000000n, flMax: 15000000000n, l1: U(R.l1Fee || '0'), min: U(M.maxFee), jito: false, prev: DS.man || null };
+  }
   function openDappFee() {
     if (busy) return;
     var R = DS.R, v = DS.view || {}, rows, keys;
     if (DS.c === 'evm') { var lv = R.fee.levels; keys = ['slow', 'medium', 'fast'].filter(function (k) { return lv[k]; }); rows = dappRowsFor(keys, function (k) { DS.level = k; DS.tier = null; }); }
     else if (DS.c === 'sol') rows = dappRowsFor(['auto', 'x2', 'x4'], function (k) { if (k === 'auto') { DS.level = 'auto'; DS.tier = null; } else solTier(k); });
-    else rows = dappRowsFor(['auto'], function () { DS.level = 'auto'; DS.tier = null; });
-    var fdec = DS.c === 'trx' ? 6 : DS.c === 'sol' ? 9 : 18, cur = DS.level === 'custom' && !DS.tier && DS.last && DS.last.fee != null && !DS.last.err ? decStr(DS.last.fee, fdec) : '';
-    HWP.picker({ title: 'Network fee', host: $('kss'), rows: rows,
-      custom: { label: 'Max fee (' + DS.gsym + ')', unit: DS.gsym, value: cur, on: DS.level === 'custom' && !DS.tier, hint: DS.c === 'trx' ? 'Up to this much TRX can be burned for energy. Too low and the call can fail and still burn TRX.' : 'Kwallet pays at most this for the network fee. Too low and the transaction can wait or fail.' },
+    else rows = dappRowsFor(['auto', 'x2'], function (k) { if (k === 'auto') { DS.level = 'auto'; DS.tier = null; } else trxTier(); });
+    var x = dappCtx(), man = manualSpec(DS.c, x);
+    if (man) { man.on = DS.level === 'custom' && !DS.tier; man.sub = man.on ? manSub(DS.c, DS.man, x) : ''; }
+    HWP.picker({ title: 'Network fee', host: $('kss'), rows: rows, manual: man,
       onPick: function (k) {
         if (k === (DS.tier || DS.level)) return;
-        if (DS.c === 'sol' && k !== 'auto') solTier(k); else { DS.level = k; DS.tier = null; }
+        if (DS.c === 'sol' && k !== 'auto') solTier(k); else if (DS.c === 'trx' && k === 'x2') trxTier(); else { DS.level = k; DS.tier = null; }
         buzz(8); notice = ''; dappDraw(); arm(450);
       },
-      onCustom: function (t) {
-        var X = parseMax(t, fdec); if (X == null) return 'Enter an amount like 0.0005';
-        var c0 = DS.last || {}, M = R.feeMin || {}, lv = R.fee.levels || {}, b = lv.medium || lv[Object.keys(lv)[0]] || {};
-        var r = maxToFields(DS.c, X, { gas: c0.gas || U(R.gasLimit), legacy: !!c0.legacy, tip: U(b.tip), min: U(M.maxFee), sym: DS.gsym, cu: v.cuLimit, nsig: v.nsig });
-        if (r.err) return r.err;
-        if (DS.c === 'sol' && !(v.cbL >= 0)) delete r.T.cul;
-        var keep = { lv: DS.level, tier: DS.tier, cf: R.cf, cft: R.cfTxt }; R.cfTxt = r.T; DS.level = 'custom'; DS.tier = null; cfParse();
-        var c = dappCalc(); if (c.err) { DS.level = keep.lv; DS.tier = keep.tier; R.cf = keep.cf; R.cfTxt = keep.cft; return c.err; }
+      onManual: function (st) {
+        var r = manualToT(DS.c, st, x); if (r.err) return r.err;
+        var T = r.T; delete T.jito; if (DS.c === 'sol' && !(v.cbL >= 0)) delete T.cul;
+        var keep = { lv: DS.level, tier: DS.tier, cf: R.cf, cft: R.cfTxt, man: DS.man }; R.cfTxt = T; DS.level = 'custom'; DS.tier = null; DS.man = st; cfParse();
+        var c = dappCalc(); if (c.err) { DS.level = keep.lv; DS.tier = keep.tier; R.cf = keep.cf; R.cfTxt = keep.cft; DS.man = keep.man; return c.err; }
         buzz(8); notice = ''; dappDraw(); arm(450); return '';
       } });
   }
@@ -21077,7 +21436,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
       var t = x.nat ? null : tokOf(x.t), sym = x.sym || (x.nat ? DS.gsym : t ? t.s : ''), dec = x.nat ? DS.gdec : x.dec != null ? +x.dec : t ? +t.d : null;
       var px = x.nat ? gpx : t && +t.p > 0 ? +t.p : +x.px || 0;
       var unl = !x.nat && (v >= MAXU || v === (1n << 160n) - 1n);
-      out.push({ icon: x.icon || tokIcon(sym, x.nat ? null : x.t), sym: sym || short(x.t), sign: x.s, pre: x.min ? '\u2265' : '', note: x.min ? 'At least' : x.note || '',
+      out.push({ icon: x.icon || tokIcon(sym, x.nat ? null : x.t), sym: sym || short(x.t), sign: x.s, pre: x.min ? '\u2265' : x.est ? '\u2248' : '', note: x.note || (x.s === '-' ? 'You send' : x.s === '+' ? (x.min ? 'You receive at least' : 'You receive') : ''),
         amt: unl ? 'Unlimited' : dec == null ? v.toString() : fmt(v, dec, 8), usd: dec == null ? '' : usdTxt(v, dec, px) });
     });
     return out;
@@ -21085,7 +21444,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   function opTitle(m, v, ae) {
     if (/sign(Message)?$/.test(m) && m !== 'eth_signTypedData_v4') return DS.siwe ? 'Sign-in' : 'Sign message';
     if (m === 'personal_sign' || m === 'solana_signMessage' || m === 'tron_signMessage') return DS.siwe ? 'Sign-in' : 'Sign message';
-    if (m === 'eth_signTypedData_v4') { var pt = v.obj && String(v.obj.primaryType); return pt === 'Permit' ? 'Permit' : pt === 'PermitSingle' || pt === 'PermitBatch' ? 'Permit2' : 'Sign typed data'; }
+    if (m === 'eth_signTypedData_v4') { var pt = v.obj && String(v.obj.primaryType); return pt === 'Permit' ? 'Permit' : pt === 'PermitSingle' || pt === 'PermitBatch' || pt === 'PermitTransferFrom' || pt === 'PermitBatchTransferFrom' || pt === 'PermitWitnessTransferFrom' ? 'Permit2' : pt === 'OrderComponents' ? 'NFT listing' : pt === 'BulkOrder' ? 'NFT listings' : 'Sign typed data'; }
     if (m === 'kw_nearAccount') return 'Share NEAR account';
     if (ae) return ae.amt === 0n ? 'Revoke' : v.appr && v.appr.p2 ? 'Permit2 approve' : 'Approve';
     if (DS.R.swap && DS.R.swap.pay) return 'Swap';
@@ -21175,8 +21534,10 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     } else if (m === 'solana_signTransaction') {
       warnsL = warnsL.concat(v.risk || []); det += (v.notes || []).concat(v.warn || []).map(function (w) { return '<div class="hp-note">' + w + '</div>'; }).join('') + v.rows + (v.tech || '') + '<div class="hp-sec">What it does</div><ol class="hp-ol">' + v.ins.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ol>';
       raw = (R.params || {}).tx;
+      if (R.sim && R.sim.error) warnsL.push('Simulation failed: ' + esc(String(R.sim.error).slice(0, 160)) + '. This transaction may fail.');
     } else if (m === 'tron_signTransaction') {
-      (v.warn || []).forEach(function (w) { if (/Unlimited|every NFT|deploys a new contract|permission|another account|phishing/.test(w)) warnsL.push(w); else det += '<div class="hp-note">' + w + '</div>'; }); det += v.rows + kv('Type', esc(v.type)); raw = (R.params || {}).tx.raw_data_hex;
+      (v.warn || []).forEach(function (w) { if (/<b>Unlimited|every NFT|deploys a new contract|permission|another account|phishing/.test(w)) warnsL.push(w); else det += '<div class="hp-note">' + w + '</div>'; }); det += v.rows + kv('Type', esc(v.type)); raw = (R.params || {}).tx.raw_data_hex;
+      if (R.sim && R.sim.error) warnsL.push('Simulation failed: ' + esc(String(R.sim.error).slice(0, 160)) + '. This transaction may fail.');
     } else if (isMsg) det += addrKv('Account', R.from, esc(DS.rec.label) + ' \u00b7 #' + DS.rec.index);
     var full = DS.full || {}; det += Object.keys(full).map(function (k) { return full[k]; }).join('');
     if (raw) det += '<div class="hp-sec">Raw data</div><div class="hp-raw">' + esc(raw) + '</div>';
