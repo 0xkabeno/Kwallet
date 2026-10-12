@@ -859,6 +859,16 @@ button.dr{cursor:pointer}
 .tp-r.on .an::after{content:" \2713";color:var(--acc)}
 body[data-theme=dark] .tp-r.on .an::after{color:#8fb3ff}
 
+.dv .dv-n{display:block;font-size:12px;line-height:16px;color:var(--swmut);margin-top:2px}
+
+/* v1.7.1 (R4): live quote ring spins while a requote runs; changed numbers flash (opacity/colour only) */
+.sw-cd.busy svg{animation:swcdR .8s linear infinite}
+@keyframes swcdR{from{transform:rotate(-90deg)}to{transform:rotate(270deg)}}
+.sw-cd .sw-cdf{stroke:var(--swblue)}
+.sw-fl-up{animation:swflU 1.2s ease-out}.sw-fl-dn{animation:swflD 1.2s ease-out}
+@keyframes swflU{0%{color:var(--up,#188038)}100%{}}
+@keyframes swflD{0%{color:var(--dn,#d93025)}100%{}}
+
 /* v1.6 wave D #72: pull to refresh: a thin calm ring in the gap under the fixed header */
 #pg.ptr-on{overscroll-behavior-y:none}
 .app .ptr{position:absolute;left:0;right:0;height:0;opacity:0;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden;z-index:1}
@@ -964,6 +974,77 @@ body[data-theme=dark] .ptr2 i{border-top-color:#5b8def;border-color:rgba(255,255
 .lg.big,.lw.big{width:64px;height:64px}
 .bdg{right:-2px;bottom:-2px;width:18px;height:18px;box-shadow:0 0 0 1.5px var(--card)}
 .lw.big .bdg{width:26px;height:26px;right:-2px;bottom:-2px;box-shadow:0 0 0 1.5px var(--bg)}
+
+/* v1.7.1 (R1): classic pull-to-refresh. Content under the header follows --ptr (transform only); plain spinner in the gap */
+#pg{--ptr:0px}
+#pg.ptr-on #app>*{transform:translate3d(0,var(--ptr),0);will-change:transform}
+#pg.ptr-on.ptr-anim #app>*{transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+#pg.ptr-on #app>header:first-child,#pg.ptr-on #app>.bar:first-child,#pg.ptr-on #app>.hbar:first-child{transform:none;transition:none}
+.ptr2{display:none!important}
+.ptr3{position:fixed;left:50%;top:0;z-index:4;width:22px;height:22px;opacity:0;transform:translate3d(-50%,0,0);pointer-events:none;will-change:transform,opacity;background:none;box-shadow:none}
+.ptr3 i{display:block;width:22px;height:22px;border-radius:50%;border:2px solid rgba(34,51,72,.16);border-top-color:#223348;box-sizing:border-box}
+body[data-theme=dark] .ptr3 i{border-color:rgba(255,255,255,.16);border-top-color:#5b8def}
+.ptr3.spin-on i{animation:ptrRot .7s linear infinite}
+
+/* v1.7.1 (R3): Gem Wallet 1:1 (dp/sp -> CSS px), from gem-android main:
+   AssetsTopBar.kt (CenterAlignedTopAppBar 64dp, TextButton wallet chip: 24dp icon + 8dp + titleLarge 22/28 + ExpandMore 24dp,
+   IconButton 48dp/24dp icons); AmountListHead.kt (column padding 0 16 8, DisplayText displaySmall 36/44, spacedBy 4dp,
+   change titleMedium 16/24 W400, Spacer 10dp, actions Row spacedBy 16dp, each action padding 8dp, circle 22dp icon + 16dp
+   padding = 54dp, label gap 8dp/(16*0.5) = 1dp, label titleMedium W400 16/24); ListItem.kt + paddings.kt (row start 16,
+   spacedBy 16, min height 72, padding 12 16 12 0, title/subtitle spacedBy 2dp, trailing Spacer16, icon 44dp, badge
+   44/2.5 = 17.6dp at +2dp with a 1.5dp ring); AssetItem.kt (title titleMedium 16/24 W500 .15, price bodyLarge 16/24 .5,
+   fiat bodyMedium 14/20 .25 after Spacer2); SwapItem.kt/SwapScene.kt (card 16 radius, 16 padding, labelMedium 12/16 W500
+   .5, spacedBy 4, input row 44dp, headlineSmall 24/32 input, headlineLarge 32/40 placeholder, token: 4dp padding, 44dp icon,
+   8dp gap, titleMedium symbol, 24dp chevron; values bodySmall 12/16 .4; switch IconButton 48dp; main action 48dp, 18sp). */
+#app .hbar{height:64px;min-height:64px;padding-left:4px;padding-right:4px;box-sizing:border-box}
+#app .hbar .ib{width:48px;height:48px}
+#app .hbar .ib svg,#app .hbar .ib .ic{width:24px;height:24px}
+#app .wsw{min-height:40px;height:40px;padding:0 12px;border-radius:20px}
+#app .wsw .hmark{width:24px;height:24px;min-width:24px;margin-right:8px;font-size:12px;line-height:24px}
+#app .wsw .wn{font-size:22px;line-height:28px;font-weight:400;letter-spacing:0}
+#app .wsw .dn2{width:24px;height:24px;margin-left:0}
+#app .hero{padding:0 16px 8px}
+#app .hero .tot{font-size:36px;line-height:44px;font-weight:400;letter-spacing:0;margin:0}
+#app .hero .chg{font-size:16px;line-height:24px;font-weight:400;letter-spacing:.15px;margin-top:4px}
+#app .acts{margin:10px 0 0;padding-bottom:8px;gap:16px;justify-content:center}
+#app .acts>.act+.act{margin-left:0}
+#app .act{padding:8px;gap:1px;border-radius:16px;min-width:70px;box-sizing:border-box}
+#app .act .ac{width:54px;height:54px;min-width:54px;padding:0;box-sizing:border-box}
+#app .act .ac svg,#app .act .ac .ic{width:22px;height:22px}
+#app .act .al2{font-size:16px;line-height:24px;font-weight:400;letter-spacing:.15px;margin-top:1px}
+#app .ar{min-height:72px;padding:12px 16px;gap:16px;box-sizing:border-box}
+#app .ar .lw,#app .ar .lg,#app .ar .lw.md,#app .ar .lg.md{width:44px;height:44px;min-width:44px}
+#app .ar .bdg{width:17.6px;height:17.6px;right:-2px;bottom:-2px;box-shadow:0 0 0 1.5px var(--card)}
+#app .ar .am{gap:2px}
+#app .ar .an{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.15px}
+#app .ar .ap{font-size:16px;line-height:24px;font-weight:400;letter-spacing:.5px}
+#app .ar.sm .ap{font-size:14px;line-height:20px;letter-spacing:.25px;padding-bottom:2px}
+#app .ar .ax{margin-left:16px;min-width:40px}
+#app .ar .aa{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.15px}
+#app .ar .au{font-size:14px;line-height:20px;letter-spacing:.25px;margin-top:2px;padding-bottom:2px}
+/* swap */
+#app .sw-body{padding:0 0 24px}
+#app .sw-card{margin:0 16px;border-radius:16px;padding:16px;min-height:0}
+#app .sw-cl{font-size:12px;line-height:16px;font-weight:500;letter-spacing:.5px;color:var(--swmut);margin-bottom:4px}
+#app .sw-r1{height:44px;min-height:44px;gap:0}
+#app .sw-in,#app .sw-out{font-size:24px;line-height:32px}
+#app .sw-in::placeholder{font-size:32px;line-height:40px}
+#app .sw-out.dim{font-size:32px;line-height:40px}
+#app .sw-tok{padding:4px;gap:8px}
+#app .sw-tok .lw.sw42,#app .sw-tok .lw.sw42 .lg{width:44px;height:44px}
+#app .sw-tok .lw.sw42 .bdg{width:17.6px;height:17.6px;right:-2px;bottom:-2px;border-width:1.5px}
+#app .sw-ts{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.15px}
+#app .sw-dn{width:24px;height:24px;margin-left:0}
+#app .sw-r2{margin-top:4px;font-size:12px;line-height:16px;letter-spacing:.4px;min-height:24px}
+#app .sw-bal{font-size:12px;line-height:16px;letter-spacing:.4px;padding:4px;border-radius:8px}
+#app .sw-mid{height:48px;margin:0;justify-content:center}
+#app .sw-flip{width:48px;height:48px}
+#app .sw-flip .swi{width:24px;height:24px}
+#app .sw-det{margin:8px 16px 0;width:calc(100% - 32px);border-radius:16px;min-height:72px;padding:12px 16px;font-size:16px;line-height:24px;box-sizing:border-box}
+#app .sw-dv{font-size:16px;line-height:24px}
+#app .sw-note{margin:12px 20px 0}
+#app .sw-foot{padding:16px 16px calc(16px + var(--sab))}
+#app .sw-go{height:48px;min-height:48px;border-radius:24px;font-size:18px;font-weight:500;letter-spacing:0}
 
 /* ===== P2a (#94/#94a): one popup design for Hwallet and Kwallet (connect, sign, message). =====
    Inlined into both apps. Written for WebView 83 too: no inset, no :has, no flex gap, no color-mix, no dvh,
@@ -1162,7 +1243,8 @@ body[data-theme=dark] .ptr2 i{border-top-color:#5b8def;border-color:rgba(255,255
 /* wave B: one selected style for every picker row (also Custom), no tap flash or focus colour from the host page */
 .hp-pk .hp-pr{-webkit-tap-highlight-color:transparent;outline:0!important;box-shadow:none!important}
 .hp-pk .hp-pr:not(.on),.hp-pk .hp-pr:not(.on):focus{background:transparent!important;color:var(--hp-text)!important}
-.hp-pk .hp-pr.on,.hp-pk .hp-pr:active{background:var(--hp-sel)!important;color:var(--hp-text)!important}
+.hp-pk .hp-pr.on,.hp-pk .hp-pr:active{background:rgba(52,97,237,.12)!important;color:var(--hp-text)!important}
+[data-theme="dark"] .hp-pk .hp-pr.on,[data-theme="dark"] .hp-pk .hp-pr:active,.kw-dark .hp-pk .hp-pr.on{background:rgba(91,141,239,.24)!important}
 .hp-pk .hp-pr.on .hp-prc,.hp-pk .hp-prcu.on .hp-prc{color:var(--hp-acc)!important}
 /* wave B: every sheet clears the Android navigation bar / gesture area */
 :root{--hp-nav:var(--kw-sab,var(--sab,0px))}
@@ -1207,6 +1289,18 @@ body[data-theme="dark"] .hp-ov{--hp-acc:#5b8def;--hp-accI:#ffffff}
 .hp-mntot>span:last-child{display:flex;flex-direction:column;align-items:flex-end}
 .hp-mntot b{font:600 16px 'RobotoE',system-ui;font-variant-numeric:tabular-nums}
 .hp-mntot small{font:400 13px 'RobotoE',system-ui;color:var(--hp-muted);margin-top:1px}
+
+/* v1.7.1 (R2): the fee picker always opens above whatever sheet opened it (H swap Details is a .sheet-ov at 9050) */
+.hp-ov.hp-pk{z-index:9200!important}
+
+/* v1.7.1 (R5): plain-language preview */
+.hp-pvh{margin:2px 2px 12px;font:500 16px/22px 'RobotoE',system-ui;color:var(--hp-text)}
+.hp-pl{list-style:none;margin:0;padding:6px 18px}
+.hp-pl li{position:relative;padding:8px 0 8px 18px;font:400 15px/21px 'RobotoE',system-ui;color:var(--hp-text)}
+.hp-pl li::before{content:'';position:absolute;left:2px;top:16px;width:6px;height:6px;border-radius:50%;background:var(--hp-muted)}
+.hp-pl li+li{border-top:1px solid var(--hp-line)}
+.hp-pl li.hp-pa{font-weight:500}
+.hp-pl li.hp-pa::before{background:var(--hp-acc)}
 
 /* Wave A (#102): Hwallet's popups use Hwallet's own live theme variables (classic, dark and Material You). */
 body[data-theme] .hp-ov{--hp-bg:var(--bg);--hp-card:var(--card);--hp-card2:var(--card2);--hp-line:var(--line);--hp-border:var(--border);--hp-text:var(--text);--hp-muted:var(--muted);--hp-soft:var(--soft);
@@ -4507,7 +4601,7 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.7';
+var APP_VERSION = '1.7.1';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -7494,6 +7588,7 @@ window.hwCrashPrompt = crashPrompt;
     if (o < u.length) { var nl = sv(); for (var l = 0; l < nl; l++) { var t = b58e(u.slice(o, o + 32)); o += 32; var nw = sv(); for (var x = 0; x < nw; x++) { var ix = u[o++], lst = alts[t] || []; if (lst[ix]) w.push(lst[ix]); } var nr = sv(); o += nr; } }
     return w;
   }
+  function solFeePayer(txb64) { var u = b64d(txb64), o = 0; function sv() { var v = 0, s = 0, b; do { b = u[o++]; v |= (b & 0x7f) << s; s += 7; } while (b & 0x80); return v; } var ns = sv(); o += ns * 64; if (u[o] & 0x80) o++; o += 3; sv(); return b58e(u.slice(o, o + 32)); }
   function solSim(txb64, alts) {
     var me = A.sol, R = CHBY.sol.rpc, WSOLM = 'So11111111111111111111111111111111111111112';
     var w; try { w = solWritable(b64d(txb64), alts || {}); } catch (e) { return Promise.resolve(null); }
@@ -7545,11 +7640,14 @@ window.hwCrashPrompt = crashPrompt;
         if (m === 'eth_signTypedData_v4') return callK(kReq(Object.assign(base, { chain: 'evm', chainId: n.chainId, network: n.id, method: m, from: A.eth, params: { typedData: typeof P.typedData === 'string' ? P.typedData : JSON.stringify(P.typedData) }, tokens: tokMap(ns, n.chainId) }))).then(kDone).then(function (r) { return r.result; });
         if (m === 'eth_sendTransaction') {
           var tx = P.tx; toast('Getting network fees…');
-          return Promise.all([evmPrep(n, tx), q.exact != null ? Promise.resolve(q.exact) : evmExact(n, tx)]).then(function (pr) {
+          return Promise.all([evmPrep(n, tx), q.exact != null ? Promise.resolve(q.exact) : evmExact(n, tx), pvCap(pvEvm(n, tx, base.site))]).then(function (pr) {
             var d = pr[0];
+            /* v1.7.1 (R5/R6): the exact preview; a raw node error never travels, only plain words */
+            if (d.sim && d.sim.error) d.sim = { error: pvErr(d.sim.error, 'eth'), plain: 1 };
+            if (pr[2] && pr[2].err) d.sim = { error: pr[2].err, plain: 1 };
             var req = kReq(Object.assign(base, { chain: 'evm', chainId: n.chainId, network: n.id, method: m, from: A.eth, live: true, params: { tx: { to: tx.to, data: tx.data || tx.input || '0x', value: tx.value || '0x0', gas: tx.gas || tx.gasLimit || undefined } },
               fee: { level: 'medium', levels: d.levels }, feeMin: d.feeMin, gasLimit: d.gas, nonce: d.nonce, l1Fee: '0', balance: { gas: d.gbal }, prices: { gasUsd: px(n.cg) }, tokens: tokMap(ns, n.chainId), sim: d.sim, swap: q.swap }));
-            if (pr[1] != null) req.exact = String(pr[1]); feeApply(req, q);
+            if (pr[1] != null) req.exact = String(pr[1]); if (pr[2]) req.pv = pr[2]; feeApply(req, q);
             var stop = evmFeed(req.id, n, tx, d);
             return callK(req).then(function (r) { stop(); return r; }, function (e) { stop(); throw e; });
           }).then(kDone).then(function (r) {
@@ -7563,11 +7661,16 @@ window.hwCrashPrompt = crashPrompt;
         var gb = (C.b.sol && C.b.sol.n) || null;
         if (m === 'solana_signMessage') return callK(kReq(Object.assign(base, { chain: 'sol', method: m, from: A.sol, params: { message: P.message, encoding: P.encoding || 'base58' } }))).then(kDone).then(function (r) { return r.result; });
         if (m === 'solana_signTransaction') return Promise.all([solAlts(P.tx), solCuMin()]).then(function (pr) {
-          return solSim(P.tx, pr[0]).then(function (sm) { pr[2] = sm; return pr; }, function () { return pr; });
+          return Promise.all([solSim(P.tx, pr[0]).catch(function () { return null; }), pvCap(pvSol(P.tx, pr[0], base.site))]).then(function (y) { pr[2] = y[0]; pr[3] = y[1]; return pr; }, function () { return pr; });
         }).then(function (pr) {
+          /* v1.7.1 (R6): a co-signed / gasless transaction (someone else pays the fee) is never flagged as failing; any
+             error that does travel is plain words */
+          var co = false; try { co = solFeePayer(P.tx) !== A.sol; } catch (e) {}
+          if (pr[2] && pr[2].error) pr[2] = co ? null : { error: pvErr(pr[2].error, 'sol'), plain: 1 };
+          if (pr[3] && pr[3].err) pr[2] = { error: pr[3].err, plain: 1 };
           var req = kReq(Object.assign(base, { chain: 'sol', method: m, from: A.sol, params: { tx: P.tx, alts: pr[0] }, balance: { gas: gb }, prices: { gasUsd: px('solana') }, tokens: tokMap(ns), swap: q.swap }));
           if (pr[1] != null) req.feeMin = { cuPrice: pr[1] };
-          if (pr[2]) req.sim = pr[2];
+          if (pr[2]) req.sim = pr[2]; if (pr[3]) req.pv = pr[3];
           feeApply(req, q); return callK(req);
         }).then(kDone).then(function (r) {
           /* Kwallet may return a changed transaction (custom priority fee): broadcast and hand back exactly what it signed */
@@ -7583,7 +7686,7 @@ window.hwCrashPrompt = crashPrompt;
         if (m === 'tron_signTransaction') {
           var t = P.tx && P.tx.transaction && P.tx.transaction.raw_data_hex ? P.tx.transaction : P.tx;
           var treq = kReq(Object.assign(base, { chain: 'trx', method: m, from: A.trx, params: { tx: { raw_data_hex: t.raw_data_hex, txID: t.txID } }, balance: { gas: (C.b.trx && C.b.trx.n) || null }, tokens: tokMap(ns), swap: q.swap }));
-          return trxFeeMin(t).then(function (fm) { if (fm) treq.feeMin = { feeLimit: fm }; if (TRXSIM) treq.sim = TRXSIM; feeApply(treq, q); if (q.exact != null) treq.exact = String(q.exact); return callK(treq); }).then(kDone).then(function (r) {
+          return Promise.all([trxFeeMin(t), pvCap(pvTrx(t, base.site))]).then(function (fx) { var fm = fx[0]; if (fm) treq.feeMin = { feeLimit: fm }; if (TRXSIM) treq.sim = { error: pvErr(TRXSIM.error, 'trx'), plain: 1 }; if (fx[1]) { treq.pv = fx[1]; if (fx[1].err) treq.sim = { error: fx[1].err, plain: 1 }; } feeApply(treq, q); if (q.exact != null) treq.exact = String(q.exact); return callK(treq); }).then(kDone).then(function (r) {
             var out = Object.assign({}, t, { signature: (t.signature || []).concat([r.result.signature]) }), chg = !!r.result.raw_data_hex && r.result.raw_data_hex !== t.raw_data_hex;
             /* a custom fee limit in Kwallet re-encodes raw_data: take its bytes and txID, keep the JSON in step */
             if (chg) { out.raw_data_hex = r.result.raw_data_hex; out.txID = r.result.txID; out.signature = [r.result.signature]; if (out.raw_data) out.raw_data = Object.assign({}, out.raw_data, { fee_limit: Number(r.result.fee_limit) }); }
@@ -8550,17 +8653,34 @@ window.hwCrashPrompt = crashPrompt;
         provUsd: prov, provTxt: prov > 0 ? fmtUsd(prov) + (provT.length ? ' (' + provT.filter(function (x, i, a) { return a.indexOf(x) === i; }).join(', ') + ')' : '') : 'None', gasUsd: gasUsd, tool: j.tool, raw: j };
     });
   }
-  /* Jupiter: the fee account is the SOL fee owner's ATA for the output mint (else the input mint) among SOL/USDC/USDT; none = no fee */
-  var FEEATA = {};
+  /* v1.7.1 (R7): Jupiter platform fee on every pair. The fee account is the SOL fee owner's ATA for the input or the output
+     mint (Jupiter takes platformFeeBps into either). Mint program is read live (Token-2022 mints are skipped: Jupiter's
+     platform fee needs a classic SPL fee account). An existing ATA is used as is; when none exists yet the swap adds one
+     createAssociatedTokenAccountIdempotent for the input-side mint (one-off rent, refundable to the fee owner), so the
+     0.3% always applies. FEEATA caches existence for the session. */
+  var FEEATA = {}, FEEPROG = {};
   function jupFeeAcct(inM, outM) {
-    var ok = [WSOL, 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'], cands = [outM, inM].filter(function (m) { return ok.indexOf(m) >= 0; });
-    if (!cands.length) return Promise.resolve(null);
-    var owner = feeAddr('sol');
-    return Promise.all(cands.map(function (m) { return pda([b58d(owner), b58d(SPL), b58d(m)], b58d(ATAP)); })).then(function (atas) {
-      var need = atas.filter(function (a) { return FEEATA[a] == null; });
-      var p = need.length ? rpc(CHBY.sol.rpc, 'getMultipleAccounts', [need, { encoding: 'base64', dataSlice: { offset: 0, length: 0 } }], 6000).then(function (r) { (r.value || []).forEach(function (v, i) { FEEATA[need[i]] = !!v; }); }, function () {}) : Promise.resolve();
-      return p.then(function () { for (var i = 0; i < atas.length; i++) if (FEEATA[atas[i]]) return { acct: atas[i], mint: cands[i] }; return null; });
+    var owner = feeAddr('sol'), cands = [outM, inM].filter(function (m, i, a) { return m && a.indexOf(m) === i; });
+    if (!owner || !cands.length) return Promise.resolve(null);
+    var needP = cands.filter(function (m) { return FEEPROG[m] == null; });
+    var pp = needP.length ? rpc(CHBY.sol.rpc, 'getMultipleAccounts', [needP, { encoding: 'base64', dataSlice: { offset: 0, length: 0 } }], 6000).then(function (r) { (r.value || []).forEach(function (v, i) { FEEPROG[needP[i]] = v ? v.owner : ''; }); }, function () { needP.forEach(function (m) { FEEPROG[m] = SPL; }); setTimeout(function () { needP.forEach(function (m) { delete FEEPROG[m]; }); }, 30000); }) : Promise.resolve();
+    return pp.then(function () {
+      var ok = cands.filter(function (m) { return FEEPROG[m] === SPL; });
+      if (!ok.length) return null;
+      return Promise.all(ok.map(function (m) { return pda([b58d(owner), b58d(SPL), b58d(m)], b58d(ATAP)); })).then(function (atas) {
+        var need = atas.filter(function (a) { return FEEATA[a] == null; });
+        var p = need.length ? rpc(CHBY.sol.rpc, 'getMultipleAccounts', [need, { encoding: 'base64', dataSlice: { offset: 0, length: 0 } }], 6000).then(function (r) { (r.value || []).forEach(function (v, i) { FEEATA[need[i]] = !!v; }); }, function () {}) : Promise.resolve();
+        return p.then(function () {
+          for (var i = 0; i < atas.length; i++) if (FEEATA[atas[i]]) return { acct: atas[i], mint: ok[i] };
+          /* none yet: create the input-side one (else the output-side one) in this swap */
+          var k = ok.indexOf(inM) >= 0 ? ok.indexOf(inM) : 0;
+          return { acct: atas[k], mint: ok[k], create: { owner: owner, mint: ok[k], ata: atas[k] } };
+        });
+      });
     });
+  }
+  function ixFeeAta(c) {
+    return { programId: ATAP, accounts: [{ pubkey: A.sol, isSigner: true, isWritable: true }, { pubkey: c.ata, isSigner: false, isWritable: true }, { pubkey: c.owner, isSigner: false, isWritable: false }, { pubkey: c.mint, isSigner: false, isWritable: false }, { pubkey: SYSP, isSigner: false, isWritable: false }, { pubkey: SPL, isSigner: false, isWritable: false }], data: b64e(Uint8Array.from([1])) };
   }
   function jupBuild(pay, recv, amt, fa) {
     var inM = pay.gas ? WSOL : pay.a, outM = recv.gas ? WSOL : recv.a;
@@ -8584,7 +8704,7 @@ window.hwCrashPrompt = crashPrompt;
     return jupFeeAcct(inM, outM).then(function (fa) {
       return jupBuild(pay, recv, amt, fa).then(function (j) {
         var pf = j.platformFee || {}, svc = fa ? String(pf.amount || 0) : '0', onOut = fa && fa.mint === outM;
-        return { out: String(j.outAmount || 0), min: String(j.otherAmountThreshold || 0), svcBps: fa ? SWBPS : 0, svcRaw: svc, svcIn: fa ? !onOut : true, svcNote: fa ? '' : 'No fee account for this pair', provTxt: 'None', fa: fa, raw: j };
+        return { out: String(j.outAmount || 0), min: String(j.otherAmountThreshold || 0), svcBps: fa ? SWBPS : 0, svcRaw: svc, svcIn: fa ? !onOut : true, svcNote: fa ? (fa.create ? 'opens the fee account once (\u2248 0.00204 SOL rent)' : '') : 'Not available for Token-2022 pairs', provTxt: 'None', fa: fa, raw: j };
       });
     });
   }
@@ -8601,8 +8721,8 @@ window.hwCrashPrompt = crashPrompt;
       return { out: String(out), min: String(min), usdOut: +best.outUsd || 0, svcBps: SWBPS, svcRaw: String(sp.fee), svcIn: true, swapIn: String(sp.rest), provTxt: pf > 0 ? 'Pool fees ' + sigFig(pf) + ' ' + pay.s + (pfUsd ? ' (' + fmtUsd(pfUsd) + ')' : '') : 'None', route: best, raw: j };
     });
   }
-  function swQuote() {
-    var my = ++SW.seq; SW.err = '';
+  function swQuote(bg) {
+    var my = ++SW.seq; SW.err = ''; SW.bg = !!bg;
     var p = SW.pay, r = SW.recv, amt = p ? decRaw(SW.amt, p.d) : null;
     if (!p || !r || !amt || amt <= 0n) { SW.quotes = []; SW.sel = ''; swPaint(); return Promise.resolve(); }
     var jobs = [['near', qNear], ['jupiter', qJup], ['lifi', qLifi], ['sunswap', qSun]].map(function (x) {
@@ -8610,17 +8730,26 @@ window.hwCrashPrompt = crashPrompt;
       if (!pr) return null;
       return pr.then(function (o) { o.id = x[0]; o.name = PROV[x[0]]; o.ok = U(o.out) > 0n; o.amt = String(amt); return o; }, function (e) { return { id: x[0], name: PROV[x[0]], ok: false, err: String(e && e.message || e).slice(0, 160) }; });
     }).filter(Boolean);
-    SW.loading = jobs.length > 0; swPaint();
+    SW.loading = jobs.length > 0; if (!bg) swPaint(); else swLive();
     if (!jobs.length) { SW.quotes = []; SW.loading = false; SW.err = 'No provider swaps this pair yet.'; swPaint(); return Promise.resolve(); }
     return Promise.all(jobs).then(function (qs) {
       if (my !== SW.seq) return;
+      /* v1.7.1 (R4): a background requote that brings nothing usable keeps the last good quotes on screen (never a stale 0) */
+      if (bg && !qs.some(function (q) { return U(q.out) > 0n; }) && SW.quotes.some(function (q) { return q.ok; })) { SW.loading = false; SW.at = Date.now(); swLive(); return; }
+      var prevOut = (curQ() || {}).out;
       qs.sort(function (a, b) { if (a.ok !== b.ok) return a.ok ? -1 : 1; var x = U(a.out) || 0n, y = U(b.out) || 0n; return x > y ? -1 : x < y ? 1 : 0; });
       SW.quotes = qs; SW.loading = false; SW.at = Date.now();
       var keep = SW.userSel && qs.some(function (q) { return q.id === SW.sel && q.ok; });
       if (!keep) { SW.sel = qs[0] && qs[0].ok ? qs[0].id : ''; SW.userSel = false; }
       if (!qs.some(function (q) { return q.ok; })) SW.err = 'No quote for this amount. ' + (qs[0] && qs[0].err ? qs[0].err : '');
       swPaint(); if (DET && DET.isConnected) detPaint();
-    });
+      var nq = curQ(); if (bg && nq && prevOut && nq.out !== prevOut) swFlash(U(nq.out) > U(prevOut) ? 'up' : 'dn');
+      swLive();
+    }, function () { if (my === SW.seq) { SW.loading = false; swPaint(); } });
+  }
+  /* v1.7.1 (R4): the rate line, output and $ values flash softly when a live requote changes them */
+  function swFlash(dir) {
+    ['sw-out', 'sw-rusd', 'sw-rate'].forEach(function (id) { var e = $(id); if (!e) return; e.classList.remove('sw-fl-up', 'sw-fl-dn'); void e.offsetWidth; e.classList.add('sw-fl-' + dir); });
   }
 
   /* ---------- Solana: compile a v0 transaction (address lookup tables supported) ---------- */
@@ -8666,7 +8795,8 @@ window.hwCrashPrompt = crashPrompt;
       return u ? Math.min(1400000, Math.max(50000, Math.ceil(u * 1.15) + 5000)) : 1400000;
     });
   }
-  function jupTx(j) {
+  function jupTx(j, fa) {
+    if (fa && fa.create) { FEEATA[fa.acct] = null; j = Object.assign({}, j, { setupInstructions: [ixFeeAta(fa.create)].concat(j.setupInstructions || []) }); }
     var alts = j.addressesByLookupTableAddress, altKeys = j.addressLookupTableAddresses;
     var bh = j.blockhashWithMetadata && j.blockhashWithMetadata.blockhash ? Promise.resolve(b58e(Uint8Array.from(j.blockhashWithMetadata.blockhash))) : rpc(CHBY.sol.rpc, 'getLatestBlockhash', [{ commitment: 'confirmed' }], 6000).then(function (r) { return r.value.blockhash; });
     return Promise.all([bh, alts ? Promise.resolve(alts) : altLoad(altKeys)]).then(function (x) {
@@ -8765,8 +8895,8 @@ window.hwCrashPrompt = crashPrompt;
   function execJup(q) {
     return jupBuild(SW.pay, SW.recv, q.amt, q.fa).then(function (j) {
       if (U(j.outAmount) < U(q.min)) throw new Error('The price moved. Review the new quote');
-      return jupTx(j);
-    }).then(function (b64) { return solTx(b64, { swap: swTag(q) }); }).then(function (h) { return { ch: 'sol', hash: h }; });
+      return jupTx(j, q.fa);
+    }).then(function (b64) { if (q.fa && q.fa.create) delete FEEATA[q.fa.acct]; return solTx(b64, { swap: swTag(q) }); }).then(function (h) { return { ch: 'sol', hash: h }; });
   }
   function execSun(q) {
     var p = SW.pay, r = SW.recv, rt = q.route, amtIn = BI(q.swapIn), v = sunVersions(rt.poolVersions || []), owner = A.trx;
@@ -8898,11 +9028,11 @@ window.hwCrashPrompt = crashPrompt;
   function swapHtml() {
     if (!SW || V.fresh) { swInit(V); V.fresh = 0; }
     return '<div class="swp" id="swp"><header class="bar sw-bar"><button class="ib" data-back aria-label="Back">' + sv('back') + '</button><div class="bt">Swap</div><button class="ib" data-sw="slip" aria-label="Slippage">' + si('tune', 'ic') + '</button></header>' +
-      '<div class="sw-body"><div class="sw-l">You Pay</div>' +
-      '<div class="sw-card"><div class="sw-r1"><input id="sw-amt" class="sw-in" inputmode="decimal" placeholder="0" autocomplete="off" value="' + esc(SW.amt) + '" aria-label="Amount to pay">' + tokBtn(SW.pay, 'pay') + '</div>' +
+      '<div class="sw-body">' +
+      '<div class="sw-card"><div class="sw-cl">You Pay</div><div class="sw-r1"><input id="sw-amt" class="sw-in" inputmode="decimal" placeholder="0" autocomplete="off" value="' + esc(SW.amt) + '" aria-label="Amount to pay">' + tokBtn(SW.pay, 'pay') + '</div>' +
       '<div class="sw-r2"><span id="sw-pusd" data-money></span><button class="sw-bal" data-sw="max" id="sw-pbal">' + balTxt(SW.pay) + '</button></div></div>' +
-      '<div class="sw-mid"><div class="sw-l">You Receive</div><button class="sw-flip" data-sw="flip" aria-label="Switch tokens">' + si('flip') + '</button></div>' +
-      '<div class="sw-card"><div class="sw-r1"><div class="sw-out" id="sw-out">0</div>' + tokBtn(SW.recv, 'recv') + '</div>' +
+      '<div class="sw-mid"><button class="sw-flip" data-sw="flip" aria-label="Switch tokens">' + si('flip') + '</button></div>' +
+      '<div class="sw-card"><div class="sw-cl">You Receive</div><div class="sw-r1"><div class="sw-out" id="sw-out">0</div>' + tokBtn(SW.recv, 'recv') + '</div>' +
       '<div class="sw-r2"><span id="sw-rusd" data-money></span><span id="sw-rbal">' + balTxt(SW.recv) + '</span></div></div>' +
       '<button class="sw-det" data-sw="det" id="sw-det" hidden><span>Details</span><span class="sw-dv"><span id="sw-rate"></span>' + si('chev') + '</span></button>' +
       '<div class="sw-note" id="sw-err" hidden></div></div>' +
@@ -8933,16 +9063,22 @@ window.hwCrashPrompt = crashPrompt;
     document.querySelectorAll('#swp [data-sw]').forEach(function (b) { b.onclick = function () { swAct(b.getAttribute('data-sw')); }; });
     $('sw-go').onclick = swGo;
     swPaint(); if (SW.amt && !SW.quotes.length) swQuote();
-    /* wave B (#87): live quotes. A fresh quote every 12 s while the screen is open (not while signing or with the details sheet
-       open), with a small countdown ring next to the rate; typing re-quotes after 450 ms as before. */
-    clearInterval(swIv); swIv = setInterval(function () {
-      if (V.v !== 'swap') { clearInterval(swIv); return; }
-      var rt = $('sw-rate'), cd = $('sw-cd'), live = !SW.busy && SW.amt && SW.quotes.length && !SW.loading;
-      if (rt && !cd && rt.parentNode) { cd = document.createElement('span'); cd.id = 'sw-cd'; cd.className = 'sw-cd'; cd.setAttribute('aria-label', 'Quote refresh'); cd.innerHTML = '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8"/><circle class="sw-cdf" cx="10" cy="10" r="8"/></svg>'; rt.parentNode.insertBefore(cd, rt.nextSibling); }
-      var left = Math.max(0, 12000 - (Date.now() - (SW.at || 0)));
-      if (cd) { cd.style.visibility = live ? '' : 'hidden'; var f = cd.querySelector('.sw-cdf'); if (f) f.style.strokeDashoffset = String((50.27 * (1 - left / 12000)).toFixed(2)); }
-      if (live && left <= 0 && !(DET && DET.isConnected) && Date.now() - (SW.lastTry || 0) > 12000) { SW.lastTry = Date.now(); swQuote(); }
-    }, 1000);
+    /* v1.7.1 (R4): live pair data. A fresh quote every 10 s while the swap screen is open (Details sheet included, never while
+       signing), prices every 30 s; typing re-quotes after 450 ms. The ring next to the rate counts down and spins while a
+       requote is in flight; changed numbers flash. Failed background requotes keep the last good quote. */
+    clearInterval(swIv); swIv = setInterval(swLive, 1000); swLive();
+  }
+  var QIV = 10000;
+  function swLive() {
+    if (V.v !== 'swap' || !SW) { clearInterval(swIv); return; }
+    var rt = $('sw-rate'), cd = $('sw-cd'), live = !SW.busy && SW.amt && SW.quotes.length;
+    if (rt && !cd && rt.parentNode) { cd = document.createElement('span'); cd.id = 'sw-cd'; cd.className = 'sw-cd'; cd.setAttribute('aria-label', 'Live quote'); cd.innerHTML = '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8"/><circle class="sw-cdf" cx="10" cy="10" r="8"/></svg>'; rt.parentNode.insertBefore(cd, rt.nextSibling); }
+    var left = Math.max(0, QIV - (Date.now() - (SW.at || 0)));
+    if (cd) { cd.style.visibility = live ? '' : 'hidden'; cd.classList.toggle('busy', !!(SW.loading && SW.bg)); var f = cd.querySelector('.sw-cdf'); if (f) f.style.strokeDashoffset = SW.loading ? '37.7' : String((50.27 * (1 - left / QIV)).toFixed(2)); }
+    if (live && !SW.loading && left <= 0 && Date.now() - (SW.lastTry || 0) > QIV - 500) {
+      SW.lastTry = Date.now(); swQuote(true);
+      if (Date.now() - (SW.pxAt || 0) > 30000) { SW.pxAt = Date.now(); Promise.resolve(fetchPrices(true)).then(function () { swPaint(); if (DET && DET.isConnected) detPaint(); }, function () {}); }
+    }
   }
   function swAct(a) {
     if (a === 'flip') { buzz(6); snd('tick', 900); var t = SW.pay; SW.pay = SW.recv; SW.recv = t; SW.quotes = []; SW.sel = ''; SW.userSel = false; render(); return; }
@@ -9015,7 +9151,7 @@ window.hwCrashPrompt = crashPrompt;
     if (SW.pay && SW.pay.ch !== 'eth' && f.lv !== 'custom' && !f.tier) lab = SW.pay.ch === 'sol' ? 'Site suggested' : SW.pay.ch === 'trx' ? 'Normal' : 'Set in Kwallet';
     return lab + est;
   }
-  function svcTxt(q) { var p = SW.pay, r = SW.recv; if (!q.svcBps) return 'None' + (q.svcNote ? ' \u00b7 ' + q.svcNote : ''); return bpsTxt(q.svcBps) + ' \u00b7 ' + esc(fmtU(q.svcRaw, q.svcIn ? p.d : r.d, 6)) + ' ' + esc(q.svcIn ? p.s : r.s); }
+  function svcTxt(q) { var p = SW.pay, r = SW.recv; if (!q.svcBps) return 'None' + (q.svcNote ? ' \u00b7 ' + q.svcNote : ''); return bpsTxt(q.svcBps) + ' \u00b7 ' + esc(fmtU(q.svcRaw, q.svcIn ? p.d : r.d, 6)) + ' ' + esc(q.svcIn ? p.s : r.s) + (q.svcNote ? '<small class="dv-n">' + esc(q.svcNote) + '</small>' : ''); }
   function detBody() {
     var q = curQ(), r = SW.recv, ok = SW.quotes.filter(function (x) { return x.ok; }), bad = SW.quotes.filter(function (x) { return !x.ok; });
     var h = '<div class="sh-h"><span class="sh-sp"></span><h3>Details</h3><button class="sh-rb" data-x aria-label="Done">' + si('check') + '</button></div>' +
@@ -9396,20 +9532,24 @@ window.hwCrashPrompt = crashPrompt;
     if (h && (h.tagName === 'HEADER' || h.classList.contains('bar') || h.classList.contains('hbar'))) kids = kids.slice(1);
     return kids;
   }
-  /* wave B (#85): the ring lives outside #app (fixed, compositor-only: transform + opacity), so a re-render during the
-     refresh can never detach it or leave content shifted; the content itself does not move. Spin runs on an inner
-     element, the drag rotation on its wrapper, so the two never fight. */
+  /* v1.7.1 (R1): classic pull. The page content itself (everything under the header) pulls down and detaches via one CSS
+     variable on #pg (transform only, so a re-render mid-refresh keeps the offset), a small plain spinner sits in the
+     opened gap above the content (no chip, no card), and the content snaps back when the refresh ends (9 s cap). */
   function ptrRing() {
-    if (!PTR.el || !PTR.el.isConnected) { var d = document.createElement('div'); d.className = 'ptr2'; d.setAttribute('aria-hidden', 'true'); d.innerHTML = '<b><i></i></b>'; document.body.appendChild(d); PTR.el = d; }
+    if (!PTR.el || !PTR.el.isConnected) { var d = document.createElement('div'); d.className = 'ptr3'; d.setAttribute('aria-hidden', 'true'); d.innerHTML = '<i></i>'; document.body.appendChild(d); PTR.el = d; }
     var app = $('app'), h = app && app.children[0], hdr = h && (h.tagName === 'HEADER' || h.classList.contains('bar') || h.classList.contains('hbar')) ? h : null;
     PTR.top = hdr ? Math.max(0, hdr.getBoundingClientRect().bottom) : 0;
     PTR.el.style.top = PTR.top + 'px';
     return PTR.el;
   }
   function ptrSet(px, anim) {
-    var r = PTR.el; if (!r) return;
-    r.style.transition = anim ? 'transform .3s cubic-bezier(.2,.8,.2,1), opacity .22s linear' : 'none';
-    r.style.transform = 'translate3d(-50%,' + Math.round(px - 44) + 'px,0)'; r.style.opacity = px ? Math.min(1, px / PTR_TH).toFixed(2) : '0';
+    var pg = $('pg'), r = PTR.el; if (!pg) return;
+    pg.classList.toggle('ptr-anim', !!anim);
+    pg.style.setProperty('--ptr', Math.round(px) + 'px');
+    if (!r) return;
+    r.style.transition = anim ? 'transform .3s cubic-bezier(.2,.8,.2,1), opacity .2s linear' : 'none';
+    r.style.transform = 'translate3d(-50%,' + Math.round(Math.max(0, px - 18) / 2) + 'px,0)';
+    r.style.opacity = px ? Math.min(1, px / PTR_TH).toFixed(2) : '0';
     if (!PTR.busy) r.firstChild.style.transform = 'rotate(' + Math.round(px * 4) + 'deg)';
   }
   /* what each screen refreshes; numbers update in place (update(), histRefresh merge) so nothing flickers */
@@ -9451,7 +9591,7 @@ window.hwCrashPrompt = crashPrompt;
       if (!PTR.on) return; PTR.on = false;
       if (!PTR.dy) return;
       if (!PTR.armed) { ptrSet(0, true); setTimeout(function () { pg.classList.remove('ptr-on'); }, 360); return; }
-      PTR.busy = true; ptrSet(PTR_HOLD, true); if (PTR.el) PTR.el.classList.add('spin-on');
+      PTR.busy = true; ptrSet(PTR_HOLD, true); if (PTR.el) { PTR.el.firstChild.style.transform = ''; PTR.el.classList.add('spin-on'); }
       var t0 = Date.now(), late = false, cap = new Promise(function (r) { setTimeout(function () { late = true; r(); }, 9000); });
       Promise.race([ptrRun(), cap]).then(function () {
         setTimeout(function () {
@@ -9532,6 +9672,357 @@ window.hwCrashPrompt = crashPrompt;
   window.hwNcoins = { slots: nSlots, cfg: ncoinsCfg, open: nCoinsOpen, slotOf: nSlotOf };
   /* test/automation hook (no state of its own) */
   window.hwNav = { go: function (v) { go(v); }, tab: function (t) { tab(t); }, view: function () { return V.v; } };
+
+
+  /* ===================== v1.7.1 (R5/R6): exact, live, plain-language transaction previews =====================
+     Hwallet computes what a transaction does before Kwallet's sheet opens, from the chain itself, and sends it in the
+     request as R.pv. Kwallet shows it as a headline, You send / You receive rows (icon, exact amount, $), approvals
+     ("Allow X to spend up to N TOKEN"), account opens/closes in plain words, and recipients/contracts by name.
+       Solana: Helius simulateTransaction (sigVerify false, replaceRecentBlockhash true, accounts = every writable account,
+               lookup-table entries included) against the same accounts read now (pre/post); any mint (SPL and Token-2022)
+               resolved by Helius DAS getAsset, else Jupiter's token list, else the mint account itself.
+       EVM:    Alchemy alchemy_simulateAssetChanges (keyed), else eth_simulateV1 with traceTransfers on the network's own
+               nodes; method and contract names from Etherscan V2 (verified ABI, matched by selector), else 4byte.
+       Tron:   TronGrid triggerconstantcontract (result, energy, Transfer/Approval logs) + getcontract (ABI, name).
+     Tokens are never hard-coded: every token is resolved live. Prices: Hwallet's own, else DefiLlama by contract.
+     pv = { head, via, send:[row], recv:[row], appr:[text], lines:[text], to:[{l,n,a}], err, na, src }
+     row = { s, sym, name, raw, dec, t, nat, amt, usd, icon, nft } (icon is a data: URL: Kwallet has no internet). */
+  var PV_CAP = 7500, PVNAME = {}, PVABI = {}, PV4 = {}, PVDAS = {};
+  function pvCap(p, ms) { return Promise.race([Promise.resolve(p).catch(function () { return null; }), new Promise(function (r) { setTimeout(function () { r(null); }, ms || PV_CAP); })]); }
+  function pvHelius(method, params, ms) {
+    return keyed('helius', function () {
+      return http('https://mainnet.helius-rpc.com/?api-key={{K:helius}}', { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params }), timeout: ms || 9000 }).then(function (j) {
+        if (j && j.error) { var e = new Error(j.error.message || 'rpc error'); e.rpc = true; throw e; } return j.result;
+      });
+    }, method === 'getAsset' || method === 'getAssetBatch' ? null : function () { return rpc(CHBY.sol.rpc, method, params, ms || 9000); });
+  }
+  function pvTron(path, body) {
+    return keyed('trongrid', function () { return http('https://api.trongrid.io' + path, { method: 'POST', body: JSON.stringify(body || {}), headers: { 'TRON-PRO-API-KEY': '{{K:trongrid}}' }, timeout: 8000 }); }, function () { return tron(path, body); });
+  }
+  function pvAmt(raw, dec) { return fmtU(raw, dec, Math.min(+dec || 0, 9)); }
+  function pvWords(s) { s = String(s || '').replace(/^_+/, ''); return s ? s.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2').replace(/_/g, ' ').replace(/^./, function (c) { return c.toUpperCase(); }) : ''; }
+  function pvLower(s) { s = pvWords(s); return s ? s.charAt(0).toLowerCase() + s.slice(1).replace(/\b([A-Z])([a-z])/g, function (m, a, b) { return a.toLowerCase() + b; }) : ''; }
+  function pvUnl(raw) { var v = U(raw); return v != null && v >= (1n << 128n); }
+  function pvRowTxt(r) { return (r.nft ? r.amt + ' \u00d7 ' : r.amt + ' ') + r.sym; }
+  /* plain words for any failure, never JSON (R6) */
+  function pvErr(e, ch, logs) {
+    var s = (typeof e === 'string' ? e : JSON.stringify(e || '')) + ' ' + (logs || []).join(' ');
+    if (/slippage|too little received|insufficient output|INSUFFICIENT_OUTPUT|Too much requested|0x1771|"Custom":6001\b|minimum amount out|Return amount is not enough|SlippageToleranceExceeded/i.test(s)) return 'The price moved more than your slippage allows. Get a new quote and try again.';
+    if (/expired|deadline|Transaction too old|BlockhashNotFound|blockhash not found|EXPIRED/i.test(s)) return 'This request has expired. Ask the app for a new one.';
+    if (/insufficient funds|InsufficientFunds|insufficient lamports|insufficient balance|exceeds balance|transfer amount exceeds|balance is not sufficient|Not enough|STF|TRANSFER_FROM_FAILED|AccountNotFound|"Custom":1\]|"Custom":1\}|custom program error: 0x1\b/i.test(s)) return 'Not enough funds for this transaction' + (ch === 'eth' ? ' (amount plus network fee)' : ch === 'sol' ? ' (amount plus fees and account rent)' : ch === 'trx' ? ' (amount plus energy)' : '') + '.';
+    if (/allowance|ERC20: insufficient allowance|TRANSFER_FROM/i.test(s)) return 'The app is not allowed to move this token yet. Approve it first.';
+    if (/nonce/i.test(s)) return 'Another transaction from this wallet is still pending. Wait for it, then try again.';
+    if (/gas required exceeds|out of gas|intrinsic gas/i.test(s)) return 'The network fee limit is too low for this transaction.';
+    return 'This transaction would fail if sent now.';
+  }
+  /* live prices for any token: Hwallet's own list first, then DefiLlama by contract */
+  var PVLL = { sol: 'solana', trx: 'tron', ethereum: 'ethereum', base: 'base', arbitrum: 'arbitrum', optimism: 'optimism', polygon: 'polygon', bsc: 'bsc', linea: 'linea' };
+  function pvPrices(key, addrs) {
+    var out = {}, need = [];
+    var list = tokList(key) || [];
+    addrs.forEach(function (a) {
+      var t = list.filter(function (x) { return String(x.a).toLowerCase() === String(a).toLowerCase(); })[0], p = t ? (+px(t.cg) || +t.px || 0) : 0;
+      if (p > 0) out[a] = p; else if (PVLL[key]) need.push(a);
+    });
+    if (!need.length) return Promise.resolve(out);
+    return http('https://coins.llama.fi/prices/current/' + need.map(function (a) { return PVLL[key] + ':' + a; }).join(','), { timeout: 4000 }).then(function (j) {
+      var c = (j && j.coins) || {}; need.forEach(function (a) { var k = Object.keys(c).filter(function (x) { return x.toLowerCase() === (PVLL[key] + ':' + a).toLowerCase(); })[0]; if (k && +c[k].price > 0) out[a] = +c[k].price; });
+      return out;
+    }, function () { return out; });
+  }
+  function pvIcons(rows) { return Promise.all(rows.map(function (r) { return r.iconUrl ? iconData(r.iconUrl).then(function (d) { r.icon = d || ''; delete r.iconUrl; }) : Promise.resolve(); })); }
+  /* one You send / You receive row */
+  function pvRow(s, raw, m, usdPx, a, nat) {
+    var dec = +m.d || 0, r = { s: s, sym: m.s || short(a, 4), name: m.n || '', raw: String(raw), dec: dec, t: nat ? '' : String(a || ''), nat: nat ? 1 : 0, amt: m.nft ? String(raw) : pvAmt(raw, dec), iconUrl: m.icon || '', nft: m.nft ? 1 : 0 };
+    if (usdPx > 0 && !m.nft) r.usd = Number(raw) / Math.pow(10, dec) * usdPx;
+    return r;
+  }
+  /* headline from the rows (exact amounts; receive side marked ≈ where the app's own route decides) */
+  function pvHead(pv, via, verb) {
+    var s = pv.send, r = pv.recv;
+    if (s.length && r.length) return (verb || 'Swap') + ' ' + s.map(pvRowTxt).join(' + ') + ' for ' + (pv.est ? '\u2248' : '') + r.map(pvRowTxt).join(' + ') + (via ? ' via ' + via : '');
+    if (s.length) return 'Send ' + s.map(pvRowTxt).join(' + ') + (pv.to && pv.to[0] ? ' to ' + (pv.to[0].n || short(pv.to[0].a, 4)) : via ? ' to ' + via : '');
+    if (r.length) return 'Receive ' + r.map(pvRowTxt).join(' + ') + (via ? ' from ' + via : '');
+    if (pv.appr.length) return pv.appr[0];
+    if (pv.lines.length) return pv.lines[0];
+    return 'No change to your balances';
+  }
+
+  /* ---------------- Solana ---------------- */
+  var PVSOLP = { 'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4': 'Jupiter', 'j1o2qRpjcyUwEvwtcfhEQefh773ZgjxcVRry7LDqg5X': 'Jupiter Limit Order', 'DCA265Vj8a9CEuX1eb1LWRnDT7uK6q1xMipnNyatn23M': 'Jupiter DCA', 'PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu': 'Jupiter Perps',
+    '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8': 'Raydium', 'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK': 'Raydium CLMM', 'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C': 'Raydium CPMM', 'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc': 'Orca',
+    'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo': 'Meteora DLMM', 'Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB': 'Meteora', '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P': 'Pump.fun', 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA': 'PumpSwap',
+    'PhoeNiXZ8ByJGLkxNfZRnkUfjvmuYqLR89jjFHGqdXY': 'Phoenix', 'MarBmsSgKXdrN1egZf5sqe1TMai9K1rChYNDJgjq7aD': 'Marinade', 'stkitrT1Uoy18Dk1fTrgPw8W6MVzoCfYoAFT4MLsmhq': 'Sanctum', 'dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH': 'Drift', 'KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD': 'Kamino Lend' };
+  function pvSolMsg(u, alts) {
+    var o = 0; function sv() { var v = 0, s = 0, b; do { b = u[o++]; v |= (b & 0x7f) << s; s += 7; } while (b & 0x80); return v; }
+    var ns = sv(); o += ns * 64; var v0 = !!(u[o] & 0x80); if (v0) o++;
+    var nrs = u[o], nros = u[o + 1], nrou = u[o + 2]; o += 3;
+    var nk = sv(), keys = [], w = [];
+    for (var i = 0; i < nk; i++) { keys.push(b58e(u.slice(o, o + 32))); o += 32; }
+    keys.forEach(function (k, i) { if (i < nrs - nros || (i >= nrs && i < nk - nrou)) w.push(k); });
+    o += 32; var ni = sv(), ixs = [];
+    for (var j = 0; j < ni; j++) { var pi = u[o++], na = sv(), ac = []; for (var q = 0; q < na; q++) ac.push(u[o++]); var nd = sv(); ixs.push({ p: pi, ac: ac, d: u.slice(o, o + nd) }); o += nd; }
+    var lw = [], lr = [];
+    if (v0 && o < u.length) { var nl = sv(); for (var l = 0; l < nl; l++) { var t = b58e(u.slice(o, o + 32)); o += 32; var lst = alts[t] || []; var nw = sv(); for (var x = 0; x < nw; x++) { var ix = u[o++]; lw.push(lst[ix] || ''); } var nr = sv(); for (var y = 0; y < nr; y++) { var iy = u[o++]; lr.push(lst[iy] || ''); } } }
+    var all = keys.concat(lw, lr); lw.forEach(function (k) { if (k) w.push(k); });
+    var cuL = 200000 * Math.max(1, ixs.length), cuP = 0n, progs = [];
+    ixs.forEach(function (x) { var pid = all[x.p]; if (progs.indexOf(pid) < 0) progs.push(pid); if (pid === 'ComputeBudget111111111111111111111111111111') { if (x.d[0] === 2 && x.d.length >= 5) cuL = (x.d[1] | (x.d[2] << 8) | (x.d[3] << 16) | (x.d[4] << 24)) >>> 0; if (x.d[0] === 3 && x.d.length >= 9) { var v = 0n; for (var b = 8; b >= 1; b--) v = (v << 8n) | BI(x.d[b]); cuP = v; } } });
+    return { keys: keys, w: w, payer: keys[0], nsig: nrs, progs: progs, fee: BI(5000 * nrs) + (cuP * BI(cuL) + 999999n) / 1000000n };
+  }
+  function pvSolMeta(mints) {
+    var need = mints.filter(function (m) { return !PVDAS[m]; });
+    var das = need.length ? pvHelius('getAssetBatch', [{ ids: need }], 8000).then(function (list) {
+      (list || []).forEach(function (a) {
+        if (!a || !a.id) return; var md = (a.content && a.content.metadata) || {}, ti = a.token_info || {}, links = (a.content && a.content.links) || {}, files = (a.content && a.content.files) || [];
+        var nft = /NFT|ProgrammableNFT|MplCore/i.test(String(a.interface || '')) && !(ti.decimals > 0);
+        PVDAS[a.id] = { s: String(ti.symbol || md.symbol || '').trim().slice(0, 14), n: String(md.name || '').trim().slice(0, 48), d: ti.decimals != null ? +ti.decimals : (nft ? 0 : null), icon: links.image || (files[0] && (files[0].cdn_uri || files[0].uri)) || '', px: ti.price_info && +ti.price_info.price_per_token || 0, nft: nft };
+      });
+    }, function () {}) : Promise.resolve();
+    return das.then(function () {
+      return Promise.all(mints.map(function (m) {
+        var d = PVDAS[m]; if (d && d.s && d.d != null) return Promise.resolve();
+        return tokenMeta('sol', null, m).then(function (t) { PVDAS[m] = Object.assign({}, d || {}, { s: (d && d.s) || t.s, n: (d && d.n) || t.n, d: d && d.d != null ? d.d : t.d, icon: (d && d.icon) || t.icon || '' }); }, function () { PVDAS[m] = PVDAS[m] || { s: short(m, 4), n: '', d: null, icon: '' }; });
+      }));
+    }).then(function () { var o = {}; mints.forEach(function (m) { o[m] = PVDAS[m] || { s: short(m, 4), d: null }; }); return o; });
+  }
+  function pvSol(txb64, alts, site) {
+    var me = A.sol, WS = 'So11111111111111111111111111111111111111112', info;
+    try { info = pvSolMsg(b64d(txb64), alts || {}); } catch (e) { return Promise.resolve(null); }
+    var addrs = [me]; info.w.forEach(function (a) { if (a && addrs.indexOf(a) < 0) addrs.push(a); });
+    var co = info.payer !== me, via = '';
+    info.progs.forEach(function (p) { if (!via && PVSOLP[p]) via = PVSOLP[p]; });
+    if (!via) via = site && site.name ? String(site.name).slice(0, 24) : '';
+    return Promise.all([
+      pvHelius('getMultipleAccounts', [addrs, { encoding: 'jsonParsed', commitment: 'confirmed' }], 8000),
+      pvHelius('simulateTransaction', [txb64, { encoding: 'base64', sigVerify: false, replaceRecentBlockhash: true, commitment: 'confirmed', accounts: { encoding: 'jsonParsed', addresses: addrs } }], 9000)
+    ]).then(function (x) {
+      var pre = (x[0] && x[0].value) || [], sim = x[1] && x[1].value;
+      if (!sim) return null;
+      var pv = { send: [], recv: [], appr: [], lines: [], to: [], via: via, src: 'Helius simulation', est: 0 };
+      if (sim.err) {
+        if (co) { pv.na = 'Preview not available for this app\u2019s transaction'; pv.head = 'Transaction from ' + (via || 'this app'); return pv; }
+        pv.err = pvErr(sim.err, 'sol', sim.logs); pv.head = 'This transaction would fail';
+        return pv;
+      }
+      var post = sim.accounts || [], tok = function (a) { var p = a && a.data && a.data.parsed; return p && p.type === 'account' && p.info ? p.info : null; };
+      var by = {}, opens = {}, opensFor = [], closes = {}, apps = [], solD = 0n, rentOpen = 0n, rentBack = 0n, gain = {};
+      addrs.forEach(function (a, i) {
+        var A0 = pre[i], A1 = post[i], l0 = A0 ? BI(A0.lamports || 0) : 0n, l1 = A1 ? BI(A1.lamports || 0) : 0n;
+        if (a === me) { solD = l1 - l0; return; }
+        var t0 = tok(A0), t1 = tok(A1), ti = t1 || t0;
+        if (ti) {
+          var mint = ti.mint, dec = +(ti.tokenAmount && ti.tokenAmount.decimals) || 0, own = ti.owner === me;
+          var v0 = t0 ? BI(t0.tokenAmount.amount) : 0n, v1 = t1 && l1 > 0n ? BI(t1.tokenAmount.amount) : 0n;
+          if (own) {
+            var b = by[mint] = by[mint] || { d: dec, v: 0n }; b.v += v1 - v0;
+            if (!A0 && A1) { opens[mint] = (opens[mint] || 0n) + l1; rentOpen += l1; }
+            if (A0 && (!A1 || l1 === 0n)) { closes[mint] = (closes[mint] || 0n) + l0; rentBack += l0; }
+            if (t1 && t1.delegate && (!t0 || t0.delegate !== t1.delegate || (t0.delegatedAmount && t1.delegatedAmount && t0.delegatedAmount.amount !== t1.delegatedAmount.amount))) apps.push({ mint: mint, dec: dec, who: t1.delegate, raw: t1.delegatedAmount ? t1.delegatedAmount.amount : '0' });
+            if (t0 && t0.delegate && t1 && !t1.delegate) apps.push({ mint: mint, dec: dec, who: t0.delegate, raw: '0', revoke: 1 });
+          } else {
+            if (v1 > v0) gain['t:' + mint] = (gain['t:' + mint] || []).concat([{ who: ti.owner, v: v1 - v0 }]);
+            if (!A0 && A1 && !co) { opensFor.push({ mint: mint, who: ti.owner, rent: l1 }); rentOpen += l1; }
+          }
+        } else if (l1 > l0 && A0 && !(A0.owner && A0.owner !== '11111111111111111111111111111111')) gain.sol = (gain.sol || []).concat([{ who: a, v: l1 - l0 }]);
+        else if (!A0 && A1 && !co && l1 > 0n && A1.owner !== 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') { opensFor.push({ app: A1.owner, rent: l1 }); rentOpen += l1; }
+      });
+      /* SOL that left for the trade itself: without the network fee (shown on its own) and account rent (own lines) */
+      var trade = solD + rentOpen - rentBack + (co ? 0n : info.fee);
+      if (trade < 0n && -trade <= 5000n) trade = 0n; if (trade > 0n && trade <= 5000n) trade = 0n;
+      var mints = Object.keys(by).concat(Object.keys(opens), Object.keys(closes), opensFor.filter(function (o) { return o.mint; }).map(function (o) { return o.mint; }), apps.map(function (o) { return o.mint; })).filter(function (m, i, a) { return a.indexOf(m) === i; });
+      return Promise.all([pvSolMeta(mints), pvPrices('sol', mints)]).then(function (mm) {
+        var M = mm[0], P = mm[1], solPx = +px('solana') || 0, sm = { s: 'SOL', n: 'Solana', d: 9, icon: '' };
+        var sym = function (m) { return (M[m] && M[m].s) || short(m, 4); };
+        if (trade < 0n) pv.send.push(pvRow('-', -trade, sm, solPx, '', 1)); else if (trade > 0n) pv.recv.push(pvRow('+', trade, sm, solPx, '', 1));
+        Object.keys(by).forEach(function (m) {
+          var d = by[m].v; if (!d) return; var meta = Object.assign({}, M[m] || {}); if (meta.d == null) meta.d = by[m].d;
+          var r = pvRow(d < 0n ? '-' : '+', d < 0n ? -d : d, meta, P[m] || (M[m] && M[m].px) || 0, m, 0);
+          (d < 0n ? pv.send : pv.recv).push(r);
+        });
+        var rentTxt = function (v) { return pvAmt(v, 9) + ' SOL'; };
+        Object.keys(opens).forEach(function (m) { pv.lines.push('Opens a ' + sym(m) + ' account (' + rentTxt(opens[m]) + ' rent, refundable)'); });
+        opensFor.forEach(function (o) { pv.lines.push(o.mint ? 'Opens a ' + sym(o.mint) + ' account for ' + short(o.who, 4) + ' (' + rentTxt(o.rent) + ' rent)' : 'Creates an account for ' + (PVSOLP[o.app] || via || 'the app') + ' (' + rentTxt(o.rent) + ' deposit)'); });
+        var cm = Object.keys(closes); if (cm.length) { var cv = cm.reduce(function (s, m) { return s + closes[m]; }, 0n); pv.lines.push(cm.length === 1 ? 'Closes your empty ' + sym(cm[0]) + ' account (+' + rentTxt(cv) + ')' : 'Closes ' + cm.length + ' empty token accounts (+' + rentTxt(cv) + ')'); }
+        apps.forEach(function (o) { var nm = PVSOLP[o.who] || short(o.who, 4), md = M[o.mint] || {}; pv.appr.push(o.revoke ? 'Removes ' + nm + '\u2019s permission to spend your ' + sym(o.mint) : 'Allow ' + nm + ' to spend up to ' + (pvUnl(o.raw) ? 'unlimited' : pvAmt(o.raw, md.d != null ? md.d : o.dec)) + ' ' + sym(o.mint)); });
+        /* who receives what you send (transfers to another owner) */
+        pv.send.forEach(function (r) { var g = gain[r.nat ? 'sol' : 't:' + r.t] || [], hit = g.filter(function (y) { return y.v === U(r.raw); })[0] || (g.length === 1 ? g[0] : null); if (hit && pv.to.length < 3) pv.to.push({ l: 'To', a: hit.who, n: PVSOLP[hit.who] || '' }); });
+        var swap = pv.send.length && pv.recv.length;
+        if (via && (swap || !pv.to.length)) pv.to.unshift({ l: 'App', n: via, a: info.progs.filter(function (p) { return PVSOLP[p]; })[0] || '' });
+        pv.head = pvHead(pv, via, 'Swap');
+        if (co) pv.lines.push((via || 'The app') + ' pays the network fee');
+        return pvIcons(pv.send.concat(pv.recv)).then(function () { return pv; });
+      });
+    });
+  }
+
+  /* ---------------- EVM ---------------- */
+  var PVSLUG = { ethereum: 'eth-mainnet', base: 'base-mainnet', arbitrum: 'arb-mainnet', optimism: 'opt-mainnet', polygon: 'polygon-mainnet', bsc: 'bnb-mainnet', linea: 'linea-mainnet' };
+  var T_XFER = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', T_APPR = '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925', T_ALL = '0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31', T_1155 = '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62', EEE = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+  function pvCanon(i) { var t = String(i.type || ''); if (/^tuple/.test(t)) return '(' + (i.components || []).map(pvCanon).join(',') + ')' + t.slice(5); return t; }
+  function pvSel(fn) { return '0x' + keccak(new TextEncoder().encode(fn.name + '(' + (fn.inputs || []).map(pvCanon).join(',') + ')')).slice(0, 8); }
+  /* Etherscan V2: verified contract name + ABI (follows a proxy to its implementation) */
+  function pvContract(n, a) {
+    var k = n.chainId + ':' + String(a).toLowerCase(); if (PVABI[k]) return PVABI[k];
+    var get = function (addr) { return keyed('etherscan', function () { return http('https://api.etherscan.io/v2/api?chainid=' + n.chainId + '&module=contract&action=getsourcecode&address=' + addr + '&apikey={{K:etherscan}}', { timeout: 6000 }); }).then(function (j) { return (j && Array.isArray(j.result) && j.result[0]) || {}; }); };
+    PVABI[k] = get(a).then(function (r) {
+      var o = { name: r.ContractName || '', abi: [] }; try { o.abi = JSON.parse(r.ABI); } catch (e) {}
+      if (r.Proxy === '1' && r.Implementation) return get(r.Implementation).then(function (r2) { try { o.abi = o.abi.concat(JSON.parse(r2.ABI)); } catch (e) {} if (!o.name || /proxy/i.test(o.name)) o.name = r2.ContractName || o.name; return o; }, function () { return o; });
+      return o;
+    }).catch(function () { return { name: '', abi: [] }; });
+    return PVABI[k];
+  }
+  function pvMethod(n, to, data, ch) {
+    var sel = String(data || '').slice(0, 10).toLowerCase(); if (sel.length < 10) return Promise.resolve({ name: '', method: '' });
+    var c = ch === 'trx' ? pvTrxContract(to) : pvContract(n, to);
+    return c.then(function (o) {
+      var f = (o.abi || []).filter(function (x) { return x.type === 'function' && pvSel(x) === sel; })[0];
+      if (f) return { name: o.name, method: f.name };
+      if (PV4[sel]) return { name: o.name, method: PV4[sel] };
+      return http('https://www.4byte.directory/api/v1/signatures/?hex_signature=' + sel, { timeout: 4000 }).then(function (j) {
+        var r = ((j && j.results) || []).sort(function (a, b) { return a.id - b.id; })[0]; PV4[sel] = r ? String(r.text_signature).split('(')[0] : ''; return { name: o.name, method: PV4[sel] };
+      }, function () { return { name: o.name, method: '' }; });
+    });
+  }
+  function pvName(n, a) { return pvContract(n, a).then(function (o) { return pvWords(o.name); }); }
+  function pvEvmMeta(n, a) { return tokenMeta('eth', n.id, a).catch(function () { return { s: short(a, 4), n: '', d: 18 }; }); }
+  function pvEvm(n, tx, site) {
+    var me = String(A.eth).toLowerCase(), data = tx.data || tx.input || '0x', call = { from: A.eth, to: tx.to, value: tx.value || '0x0', data: data };
+    if (tx.gas || tx.gasLimit) call.gas = tx.gas || tx.gasLimit;
+    var slug = PVSLUG[n.id], site0 = site && site.name ? String(site.name).slice(0, 24) : '';
+    var viaP = tx.to ? pvMethod(n, tx.to, data).catch(function () { return { name: '', method: '' }; }) : Promise.resolve({ name: '', method: 'deploy' });
+    /* changes: [{k:'NATIVE'|'ERC20'|'ERC721'|'ERC1155', ty:'TRANSFER'|'APPROVE'|'APPROVE_ALL', from, to, raw, t, m:{s,n,d,icon,nft}}] */
+    var alch = slug ? keyed('alchemy', function () {
+      return http('https://' + slug + '.g.alchemy.com/v2/{{K:alchemy}}', { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'alchemy_simulateAssetChanges', params: [call] }), timeout: 9000 }).then(function (j) {
+        if (!j || j.error || !j.result) throw new Error('alchemy');
+        var r = j.result; if (r.error) return { err: r.error.message || String(r.error) };
+        return { ch: (r.changes || []).map(function (c) {
+          var nat = c.assetType === 'NATIVE', nft = c.assetType === 'ERC721' || c.assetType === 'ERC1155' || c.assetType === 'SPECIAL_NFT';
+          return { k: c.assetType, ty: c.changeType === 'APPROVE' ? (nft && !c.tokenId ? 'APPROVE_ALL' : 'APPROVE') : 'TRANSFER', from: String(c.from || '').toLowerCase(), to: String(c.to || '').toLowerCase(), raw: nft && c.assetType === 'ERC721' ? '1' : String(c.rawAmount || '0'), t: nat ? '' : String(c.contractAddress || '').toLowerCase(),
+            m: { s: c.symbol || (nat ? n.sym : ''), n: c.name || '', d: nft ? 0 : (c.decimals != null ? +c.decimals : 18), icon: c.logo || '', nft: nft, id: c.tokenId || '' } };
+        }), src: 'Alchemy simulation' };
+      });
+    }) : Promise.reject(new Error('no slug'));
+    var sim = alch.catch(function () {
+      return rpc(n.rpc, 'eth_simulateV1', [{ blockStateCalls: [{ calls: [call] }], traceTransfers: true, validation: false }, 'latest'], 9000).then(function (res) {
+        var c0 = res && res[0] && res[0].calls && res[0].calls[0]; if (!c0) throw new Error('nosim');
+        if (c0.status === '0x0' || c0.error) return { err: (c0.error && (c0.error.message || c0.error.data)) || 'reverted' };
+        var out = [];
+        (c0.logs || []).forEach(function (l) {
+          var t0 = String(l.topics && l.topics[0] || '').toLowerCase(), adr = String(l.address).toLowerCase(), tp = l.topics || [], a1 = tp[1] ? '0x' + tp[1].slice(26).toLowerCase() : '', a2 = tp[2] ? '0x' + tp[2].slice(26).toLowerCase() : '';
+          if (t0 === T_XFER && tp.length === 3) out.push({ k: adr === EEE ? 'NATIVE' : 'ERC20', ty: 'TRANSFER', from: a1, to: a2, raw: String(hexU(l.data) || 0n), t: adr === EEE ? '' : adr });
+          else if (t0 === T_XFER && tp.length === 4) out.push({ k: 'ERC721', ty: 'TRANSFER', from: a1, to: a2, raw: '1', t: adr, id: String(hexU(tp[3]) || 0n) });
+          else if (t0 === T_APPR && tp.length === 3) out.push({ k: 'ERC20', ty: 'APPROVE', from: a1, to: a2, raw: String(hexU(l.data) || 0n), t: adr });
+          else if (t0 === T_ALL && tp.length === 3) { if (hexU(l.data)) out.push({ k: 'ERC721', ty: 'APPROVE_ALL', from: a1, to: a2, raw: '0', t: adr }); }
+          else if (t0 === T_1155 && tp.length === 4) { var d = String(l.data).slice(2); out.push({ k: 'ERC1155', ty: 'TRANSFER', from: '0x' + tp[2].slice(26).toLowerCase(), to: '0x' + tp[3].slice(26).toLowerCase(), raw: String(hexU('0x' + d.slice(64, 128)) || 0n), t: adr, id: String(hexU('0x' + d.slice(0, 64)) || 0n) }); }
+        });
+        return Promise.all(out.map(function (c) {
+          if (c.k === 'NATIVE') { c.m = { s: n.sym, n: n.name, d: 18, icon: '' }; return null; }
+          if (c.k !== 'ERC20') { c.m = { s: 'NFT', n: '', d: 0, nft: true, id: c.id }; return pvName(n, c.t).then(function (nm) { if (nm) c.m.s = nm; }, function () {}); }
+          return pvEvmMeta(n, c.t).then(function (m) { c.m = m; });
+        })).then(function () { return { ch: out, src: 'Node simulation' }; });
+      });
+    });
+    return Promise.all([sim.catch(function () { return null; }), viaP]).then(function (x) {
+      var S = x[0], V = x[1] || {}, via = pvWords(V.name) || site0, pv = { send: [], recv: [], appr: [], lines: [], to: [], via: via, est: 0 };
+      if (V.method) pv.lines.push('Calls ' + (pvWords(V.name) || short(tx.to, 4)) + ': ' + pvLower(V.method));
+      if (!S) { if (!pv.lines.length) return null; pv.partial = 1; if (tx.to) pv.to.push({ l: 'Contract', a: tx.to, n: via }); return pv; }
+      pv.src = S.src;
+      if (S.err) { pv.err = pvErr(S.err, 'eth'); pv.head = 'This transaction would fail'; return pv; }
+      var nat = {}, tk = {}, spenders = [];
+      S.ch.forEach(function (c) {
+        if (c.ty === 'TRANSFER') {
+          var out = c.from === me, inn = c.to === me; if (!out && !inn) return; if (out && inn) return;
+          var key = c.k === 'NATIVE' ? 'native' : c.t + (c.m && c.m.nft ? '#' + (c.m.id || c.id || '') : '');
+          var b = (c.k === 'NATIVE' ? nat : tk)[key] = (c.k === 'NATIVE' ? nat : tk)[key] || { v: 0n, c: c, to: [] };
+          b.v += out ? -BI(c.raw) : BI(c.raw); if (out && b.to.indexOf(c.to) < 0) b.to.push(c.to);
+        } else if (c.from === me) spenders.push(c);
+      });
+      var addrs = Object.keys(tk).map(function (k) { return tk[k].c.t; }).concat(spenders.map(function (c) { return c.t; })).filter(function (a, i, s) { return a && s.indexOf(a) === i; });
+      return Promise.all([pvPrices(n.id, addrs), Promise.all(spenders.map(function (c) { return String(c.to) === String(tx.to).toLowerCase() && via ? Promise.resolve(via) : pvName(n, c.to).catch(function () { return ''; }); }))]).then(function (y) {
+        var P = y[0], SN = y[1], tos = [];
+        Object.keys(nat).concat(Object.keys(tk)).forEach(function (k) {
+          var b = nat[k] || tk[k], v = b.v; if (!v) return;
+          var c = b.c, m = c.m || {}, r = pvRow(v < 0n ? '-' : '+', v < 0n ? -v : v, c.k === 'NATIVE' ? { s: n.sym, n: n.name, d: 18 } : m, c.k === 'NATIVE' ? +px(n.cg) || 0 : (P[c.t] || 0), c.t, c.k === 'NATIVE');
+          if (m.nft) { r.nft = 1; r.amt = String(v < 0n ? -v : v); r.sym = (m.s || 'NFT') + (m.id || c.id ? ' #' + String(m.id || c.id).slice(0, 10) : ''); }
+          (v < 0n ? pv.send : pv.recv).push(r); b.to.forEach(function (a) { if (tos.indexOf(a) < 0) tos.push(a); });
+        });
+        spenders.forEach(function (c, i) {
+          var who = SN[i] || short(c.to, 4), m = c.m || {};
+          if (c.ty === 'APPROVE_ALL') pv.appr.push('Allow ' + who + ' to move every ' + (m.s && m.s !== 'NFT' ? m.s : 'NFT in this collection'));
+          else if (U(c.raw) === 0n) pv.appr.push('Removes ' + who + '\u2019s permission to spend your ' + (m.s || 'tokens'));
+          else pv.appr.push('Allow ' + who + ' to spend up to ' + (pvUnl(c.raw) ? 'unlimited' : pvAmt(c.raw, m.d != null ? m.d : 18)) + ' ' + (m.s || 'tokens'));
+        });
+        var dst = tos.filter(function (a) { return a && a !== String(tx.to).toLowerCase(); });
+        return Promise.all(dst.slice(0, 2).map(function (a) { return rpc(n.rpc, 'eth_getCode', [a, 'latest'], 4000).then(function (code) { return code && code !== '0x' ? pvName(n, a) : ''; }, function () { return ''; }).then(function (nm) { pv.to.push({ l: 'To', a: a, n: nm || '' }); }); })).then(function () {
+          if (tx.to && (pv.recv.length || !pv.to.length)) pv.to.unshift({ l: 'Contract', a: tx.to, n: via });
+          pv.est = pv.send.length && pv.recv.length ? 1 : 0;
+          pv.head = pvHead(pv, via && pv.send.length && pv.recv.length ? via : '', 'Swap');
+          if (!pv.send.length && !pv.recv.length && pv.appr.length) pv.head = pv.appr[0];
+          return pvIcons(pv.send.concat(pv.recv)).then(function () { return pv; });
+        });
+      });
+    });
+  }
+
+  /* ---------------- Tron ---------------- */
+  var PVTC = {};
+  function pvTrxB58(h) { h = String(h || '').toLowerCase(); if (/^[0-9a-f]{40}$/.test(h)) h = '41' + h; return /^41[0-9a-f]{40}$/.test(h) ? trxB58(h) : Promise.resolve(h); }
+  function pvTrxContract(a) {
+    if (PVTC[a]) return PVTC[a];
+    PVTC[a] = pvTron('/wallet/getcontract', { value: a, visible: !/^41/.test(String(a)) }).then(function (j) { return { name: (j && j.name) || '', abi: ((j && j.abi && j.abi.entrys) || []).filter(function (e) { return e.type === 'Function'; }).map(function (e) { return { type: 'function', name: e.name, inputs: e.inputs || [] }; }) }; }).catch(function () { return { name: '', abi: [] }; });
+    return PVTC[a];
+  }
+  function pvTrx(t, site) {
+    var c = t && t.raw_data && t.raw_data.contract && t.raw_data.contract[0], v = c && c.parameter && c.parameter.value; if (!c || !v) return Promise.resolve(null);
+    var vis = !/^41/.test(String(v.owner_address)), meHex = String(trxHex(A.trx)).toLowerCase(), site0 = site && site.name ? String(site.name).slice(0, 24) : '', trxPx = +px('tron') || 0, tm = { s: 'TRX', n: 'TRON', d: 6, icon: '' };
+    var pv = { send: [], recv: [], appr: [], lines: [], to: [], via: site0, est: 0, src: 'TronGrid' };
+    var b58 = function (a) { return vis ? Promise.resolve(a) : pvTrxB58(a); };
+    if (c.type === 'TransferContract') return b58(v.to_address).then(function (to) { pv.send.push(pvRow('-', BI(v.amount || 0), tm, trxPx, '', 1)); pv.to.push({ l: 'To', a: to, n: '' }); pv.head = pvHead(pv, ''); return pv; });
+    if (c.type !== 'TriggerSmartContract') return Promise.resolve(null);
+    var data = String(v.data || ''), callv = BI(v.call_value || 0);
+    return Promise.all([
+      pvTron('/wallet/triggerconstantcontract', { owner_address: v.owner_address, contract_address: v.contract_address, data: data, call_value: v.call_value || 0, visible: vis }),
+      pvMethod(null, v.contract_address, '0x' + data, 'trx').catch(function () { return { name: '', method: '' }; }),
+      b58(v.contract_address)
+    ]).then(function (x) {
+      var r0 = x[0] || {}, V = x[1] || {}, ca = x[2], via = pvWords(V.name) || site0; pv.via = via;
+      if (V.method) pv.lines.push('Calls ' + (pvWords(V.name) || short(ca, 4)) + ': ' + pvLower(V.method));
+      var rv = (r0.result && r0.result.result === false) || (r0.transaction && r0.transaction.ret && r0.transaction.ret[0] && r0.transaction.ret[0].ret === 'REVERT');
+      if (rv) { var msg = String((r0.result && r0.result.message) || 'reverted'); try { if (/^[0-9a-f]+$/i.test(msg) && msg.length % 2 === 0) msg = decodeURIComponent(msg.replace(/../g, '%$&')); } catch (e) {} pv.err = pvErr(msg, 'trx'); pv.head = 'This transaction would fail'; return pv; }
+      var mv = {}, tos = [], apps = [], logs = r0.logs || [];
+      var mine = function (h) { return String(h).slice(-40).toLowerCase() === meHex.slice(-40); };
+      logs.forEach(function (l) {
+        var tp = (l.topics || []).map(function (s) { return String(s).toLowerCase().replace(/^0x/, ''); }), adr = String(l.address || '').toLowerCase().replace(/^0x/, '').slice(-40);
+        if (tp[0] === T_XFER.slice(2) && tp.length === 3) { var f = tp[1].slice(24), to = tp[2].slice(24), val = hexU('0x' + (l.data || '0')) || 0n; if (mine(f) === mine(to)) return; mv[adr] = (mv[adr] || 0n) + (mine(f) ? -val : val); if (mine(f)) tos.push(to); }
+        else if (tp[0] === T_APPR.slice(2) && tp.length === 3 && mine(tp[1].slice(24))) apps.push({ t: adr, sp: tp[2].slice(24), raw: String(hexU('0x' + (l.data || '0')) || 0n) });
+      });
+      /* an older node without logs: read a direct transfer/approve from the call data */
+      if (!logs.length) {
+        var sel = data.slice(0, 8).toLowerCase(), a1 = data.slice(32, 72), amt = hexU('0x' + data.slice(72, 136)) || 0n, ch = String(trxHex(ca)).toLowerCase().slice(-40);
+        if (sel === 'a9059cbb') { mv[ch] = -amt; tos.push(a1); }
+        else if (sel === '095ea7b3') apps.push({ t: ch, sp: a1, raw: String(amt) });
+      }
+      if (callv > 0n) pv.send.push(pvRow('-', callv, tm, trxPx, '', 1));
+      var toks = Object.keys(mv).concat(apps.map(function (a) { return a.t; })).filter(function (a, i, s) { return s.indexOf(a) === i; });
+      return Promise.all(toks.map(function (h) { return pvTrxB58(h); })).then(function (bs) {
+        var B = {}; toks.forEach(function (h, i) { B[h] = bs[i]; });
+        return Promise.all([Promise.all(toks.map(function (h) { return tokenMeta('trx', null, B[h]).catch(function () { return { s: short(B[h], 4), d: 6 }; }); })), pvPrices('trx', toks.map(function (h) { return B[h]; })),
+          Promise.all(apps.map(function (a) { return pvTrxB58(a.sp).then(function (s) { return pvTrxContract(s).then(function (o) { return { a: s, n: pvWords(o.name) }; }); }); })),
+          Promise.all(tos.filter(function (a, i, s) { return s.indexOf(a) === i; }).slice(0, 2).map(function (h) { return pvTrxB58(h).then(function (s) { return pvTrxContract(s).then(function (o) { return { a: s, n: pvWords(o.name) }; }); }); }))]).then(function (y) {
+          var MM = {}; toks.forEach(function (h, i) { MM[h] = y[0][i]; });
+          Object.keys(mv).forEach(function (h) { var d = mv[h]; if (!d) return; var r = pvRow(d < 0n ? '-' : '+', d < 0n ? -d : d, MM[h] || { s: 'TOKEN', d: 6 }, y[1][B[h]] || 0, B[h], 0); (d < 0n ? pv.send : pv.recv).push(r); });
+          apps.forEach(function (a, i) { var m = MM[a.t] || {}, who = (y[2][i] && (y[2][i].n || short(y[2][i].a, 4))) || 'the app'; pv.appr.push(U(a.raw) === 0n ? 'Removes ' + who + '\u2019s permission to spend your ' + (m.s || 'tokens') : 'Allow ' + who + ' to spend up to ' + (pvUnl(a.raw) ? 'unlimited' : pvAmt(a.raw, m.d != null ? m.d : 6)) + ' ' + (m.s || 'tokens')); });
+          y[3].forEach(function (o) { if (o.a !== ca) pv.to.push({ l: 'To', a: o.a, n: o.n || '' }); });
+          if (pv.recv.length || !pv.to.length) pv.to.unshift({ l: 'Contract', a: ca, n: via });
+          pv.est = pv.send.length && pv.recv.length ? 1 : 0;
+          pv.head = pvHead(pv, pv.send.length && pv.recv.length ? via : '', 'Swap');
+          if (r0.energy_used) pv.lines.push('Uses about ' + Number(r0.energy_used).toLocaleString('en-US') + ' energy');
+          return pvIcons(pv.send.concat(pv.recv)).then(function () { return pv; });
+        });
+      });
+    });
+  }
+  window.hwPv = { sol: pvSol, evm: pvEvm, trx: pvTrx, err: pvErr };
 
 
   /* ---------- TRON: TronLink-style Energy / Bandwidth bar (#37), live from TronGrid getaccountresource ---------- */

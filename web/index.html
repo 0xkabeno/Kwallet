@@ -2811,7 +2811,8 @@ body[data-theme="dark"]:not(.md3) #settings-overlay.kws-full .kws-sec{color:#DDF
 /* wave B: one selected style for every picker row (also Custom), no tap flash or focus colour from the host page */
 .hp-pk .hp-pr{-webkit-tap-highlight-color:transparent;outline:0!important;box-shadow:none!important}
 .hp-pk .hp-pr:not(.on),.hp-pk .hp-pr:not(.on):focus{background:transparent!important;color:var(--hp-text)!important}
-.hp-pk .hp-pr.on,.hp-pk .hp-pr:active{background:var(--hp-sel)!important;color:var(--hp-text)!important}
+.hp-pk .hp-pr.on,.hp-pk .hp-pr:active{background:rgba(52,97,237,.12)!important;color:var(--hp-text)!important}
+[data-theme="dark"] .hp-pk .hp-pr.on,[data-theme="dark"] .hp-pk .hp-pr:active,.kw-dark .hp-pk .hp-pr.on{background:rgba(91,141,239,.24)!important}
 .hp-pk .hp-pr.on .hp-prc,.hp-pk .hp-prcu.on .hp-prc{color:var(--hp-acc)!important}
 /* wave B: every sheet clears the Android navigation bar / gesture area */
 :root{--hp-nav:var(--kw-sab,var(--sab,0px))}
@@ -2856,6 +2857,18 @@ body[data-theme="dark"] .hp-ov{--hp-acc:#5b8def;--hp-accI:#ffffff}
 .hp-mntot>span:last-child{display:flex;flex-direction:column;align-items:flex-end}
 .hp-mntot b{font:600 16px 'RobotoE',system-ui;font-variant-numeric:tabular-nums}
 .hp-mntot small{font:400 13px 'RobotoE',system-ui;color:var(--hp-muted);margin-top:1px}
+
+/* v1.7.1 (R2): the fee picker always opens above whatever sheet opened it (H swap Details is a .sheet-ov at 9050) */
+.hp-ov.hp-pk{z-index:9200!important}
+
+/* v1.7.1 (R5): plain-language preview */
+.hp-pvh{margin:2px 2px 12px;font:500 16px/22px 'RobotoE',system-ui;color:var(--hp-text)}
+.hp-pl{list-style:none;margin:0;padding:6px 18px}
+.hp-pl li{position:relative;padding:8px 0 8px 18px;font:400 15px/21px 'RobotoE',system-ui;color:var(--hp-text)}
+.hp-pl li::before{content:'';position:absolute;left:2px;top:16px;width:6px;height:6px;border-radius:50%;background:var(--hp-muted)}
+.hp-pl li+li{border-top:1px solid var(--hp-line)}
+.hp-pl li.hp-pa{font-weight:500}
+.hp-pl li.hp-pa::before{background:var(--hp-acc)}
 </style>
 </head>
 <body data-theme="light">
@@ -11023,7 +11036,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.97';
+const APP_VERSION = '3.97.1';
 const APP_BUILD = '2026-10-12';
 let derivedRows = [];
 let copiedState = {};
@@ -21450,6 +21463,53 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     if (DS.R.swap && DS.R.swap.pay) return 'Swap';
     return v.op || 'Transaction';
   }
+  /* v1.7.1 (R5/R6): Hwallet's exact live preview (R.pv), shown in plain words: headline, You send / You receive rows,
+     approvals, account opens/closes. Kwallet re-checks the amounts it can read from the transaction itself. */
+  function kUsd(n) { n = +n; if (!(n > 0) || !isFinite(n)) return ''; return n < 0.01 ? '< $0.01' : '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function kName(a) { a = String(a || ''); var e = EVMK[a.toLowerCase()], t = TRONK[a]; return SOLP[a] || (e && e[0]) || (t && t[0]) || ''; }
+  function kPlainErr(e) {
+    var s = String(e || '');
+    if (/slippage|too little received|0x1771|"Custom":6001\b|SlippageToleranceExceeded/i.test(s)) return 'The price moved more than your slippage allows. Get a new quote and try again.';
+    if (/expired|deadline|too old|BlockhashNotFound/i.test(s)) return 'This request has expired. Ask the app for a new one.';
+    if (/insufficient|exceeds balance|not enough|STF|TRANSFER_FROM_FAILED|AccountNotFound|"Custom":1[\]}]/i.test(s)) return 'Not enough funds for this transaction.';
+    if (/^[A-Z][^{}\[\]"]{3,140}\.$/.test(s)) return s;
+    return 'This transaction would fail if sent now.';
+  }
+  function kPvMain(pv, v, warnsL) {
+    var h = '', send = Array.isArray(pv.send) ? pv.send : [], recv = Array.isArray(pv.recv) ? pv.recv : [];
+    if (pv.head && !pv.err) h += '<div class="hp-pvh">' + esc(String(pv.head).slice(0, 160)) + '</div>';
+    if (pv.na) h += HWP.cap(esc(String(pv.na).slice(0, 120)));
+    var rows = send.concat(recv).map(function (r) {
+      return { icon: /^data:image\//.test(String(r.icon || '')) ? r.icon : tokIcon(r.sym, r.nat ? null : r.t), sym: String(r.sym || '').slice(0, 24), sign: r.s === '-' ? '-' : '+', pre: r.s === '+' && pv.est ? '\u2248' : '',
+        note: r.s === '-' ? 'You send' : 'You receive', amt: String(r.amt || ''), usd: kUsd(r.usd) };
+    });
+    if (rows.length) h += HWP.changes(rows);
+    var ls = (pv.appr || []).map(function (t) { return '<li class="hp-pa">' + esc(String(t).slice(0, 160)) + '</li>'; }).concat((pv.lines || []).map(function (t) { return '<li>' + esc(String(t).slice(0, 160)) + '</li>'; }));
+    if (ls.length) h += HWP.card('<ul class="hp-pl">' + ls.join('') + '</ul>');
+    (pv.appr || []).forEach(function (t) { if (/unlimited/i.test(t) && !/^Removes/.test(t)) warnsL.push('<b>Unlimited approval.</b> ' + esc(String(t).replace(/^Allow /, '').split(' to spend')[0]) + ' could move all of this token at any time.'); });
+    /* re-check: an amount Kwallet decodes itself must match the simulated one */
+    (v.chg || []).forEach(function (x) {
+      if (x.s !== '-' || !x.t || x.v == null) return;
+      var r = send.filter(function (y) { return String(y.t).toLowerCase() === String(x.t).toLowerCase(); })[0]; if (!r) return;
+      try { if (BI(String(r.raw)) !== BI(String(x.v))) warnsL.push('<b>Amounts differ.</b> The transaction itself moves a different amount of ' + esc(r.sym) + ' than the preview shows. Check with the app before you sign.'); } catch (e) {}
+    });
+    return h;
+  }
+  function kPvDet(pv) {
+    return (pv.to || []).slice(0, 4).map(function (o) { var nm = kName(o.a) || o.n || ''; return kv(esc(String(o.l || 'Address')), nm ? esc(String(nm).slice(0, 40)) : '<span class="hp-mono">' + esc(short(o.a)) + '</span>', nm && o.a ? esc(short(o.a)) : ''); }).join('');
+  }
+  /* without Hwallet's preview: Kwallet's own decoded steps, in plain words only (no compute-budget or account counts) */
+  function kPlainIns(list) {
+    var out = [];
+    (list || []).forEach(function (t) {
+      t = String(t || '').replace(/<[^>]+>/g, '');
+      if (/^(Compute limit|Priority fee|Compute budget|Sync wrapped SOL|Advance durable nonce)/.test(t)) return;
+      t = t.replace(/^Create token account for .*/, 'Opens a token account').replace(/^Open token account$/, 'Opens a token account').replace(/^Close token account .*/, 'Closes an empty token account')
+        .replace(/ \(\d+ accounts\)$/, '').replace(/^Program ([^ ]+)$/, 'Uses an unknown app ($1)').replace(/ raw units/g, ' units');
+      if (out.indexOf(t) < 0) out.push(t);
+    });
+    return out;
+  }
   function dappDraw() {
     var R = DS.R, m = DS.m, c = dappCalc(), P = R.prices || {}, gpx = +P.gasUsd || 0, v = DS.view || {}, ae = m === 'eth_sendTransaction' ? apprEff(R) : null;
     DS.last = c; DS.key = m === 'eth_sendTransaction' ? String(c.fee) + '|' + R.nonce : '';
@@ -21462,22 +21522,24 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     var step = R.step && R.step.n && R.step.of ? 'Step ' + (+R.step.n) + ' of ' + (+R.step.of) : '';
     var body = HWP.head({ icon: R.site && R.site.icon, name: sname, url: url }) + HWP.title(opTitle(m, v, ae), step);
     /* 1. balance changes (simulated deltas from Hwallet when P2b provides them, else decoded from the request) */
+    var PV = R.pv && typeof R.pv === 'object' && !R.pv.partial ? R.pv : null, PVp = R.pv && typeof R.pv === 'object' ? R.pv : null;
+    if (isTx && PV) main += kPvMain(PV, v, warnsL);
     if (isTx) {
       var sim = R.sim && Array.isArray(R.sim.deltas) ? R.sim.deltas : null;
       if (R.swap && R.swap.pay && R.swap.recv && !sim) {
         var sp = R.swap.pay, sr = R.swap.recv;
         sim = null; v.chgSwap = [{ s: '-', v: sp.v, dec: sp.d, sym: sp.s, px: sp.px, t: sp.a, nat: sp.nat }, { s: '+', v: sr.v, dec: sr.d, sym: sr.s, px: sr.px, t: sr.a, nat: sr.nat, note: 'At least ' + (sr.min ? fmt(U(sr.min), +sr.d, 8) + ' ' + sr.s : '') }];
       }
-      var rows = chgRows(sim || v.chgSwap || v.chg || []);
-      if (!sim && v.chgSwap && !ae) { main += HWP.cap('Balance changes are estimated from the quote. Amounts are not guaranteed.') + HWP.changes(rows); rows = null; }
+      var rows = PV ? null : chgRows(sim || v.chgSwap || v.chg || []);
+      if (!PV && !sim && v.chgSwap && !ae) { main += HWP.cap('Balance changes are estimated from the quote. Amounts are not guaranteed.') + HWP.changes(rows); rows = null; }
       if (ae) {
         var ts = tokOf(v.appr.tok), tsym = ts ? ts.s : 'tokens';
         main += HWP.card(HWP.kv('<span class="hp-acc">' + (tokIcon(tsym, v.appr.tok) ? '<img class="hp-tk" style="width:28px;height:28px;margin-right:10px" alt="" src="' + tokIcon(tsym, v.appr.tok) + '">' : '') + '<span>' + esc(tsym) + '</span></span>', ae.unl ? '<b>Unlimited</b>' : fmt(ae.amt, ts ? +ts.d : 0, 8) + ' ' + esc(tsym), ae.changed ? 'Exact amount' : 'Allowance') + HWP.kv('Spender', '<span class="hp-mono">' + esc(short(String(v.appr.args[v.appr.p2 ? 1 : 0]))) + '</span>', '', { sm: true }) +
           (ae.canExact ? '<div class="hp-fed"><div class="hp-seg" role="radiogroup"><button type="button" data-al="exact" class="' + (ae.mode === 'exact' ? 'on' : '') + '">Exact amount</button><button type="button" data-al="app" class="' + (ae.mode === 'app' ? 'on' : '') + '">Unlimited</button></div></div>' : ''));
         var spK = v.appr && v.appr.args && EVMK[String(v.appr.p2 ? v.appr.args[1] : v.appr.args[0]).toLowerCase()];
         if (ae.unl && !spK) warnsL.push('<b>Unlimited approval.</b> ' + esc(DS.site) + ' could move all your ' + esc(tsym) + ' at any time.' + (ae.canExact ? '' : ' Cancel and ask the app for the exact amount if you are not sure.'));
-        if (rows && rows.length && !v.chgSwap) main += HWP.cap(sim ? 'Balance changes are estimated.' : 'Balance changes decoded from the transaction.') + HWP.changes(rows);
-      } else if (v.apprT) {
+        if (!PV && rows && rows.length && !v.chgSwap) main += HWP.cap(sim ? 'Balance changes are estimated.' : 'Balance changes decoded from the transaction.') + HWP.changes(rows);
+      } else if (v.apprT && !PV) {
         var tt = tokOf(v.apprT.tok), tts = tt ? tt.s : 'tokens';
         main += HWP.card(HWP.kv('<span class="hp-acc">' + (tokIcon(tts, v.apprT.tok) ? '<img class="hp-tk" style="width:28px;height:28px;margin-right:10px" alt="" src="' + tokIcon(tts, v.apprT.tok) + '">' : '') + '<span>' + esc(tts) + '</span></span>', v.apprT.amt >= MAXU ? '<b>Unlimited</b>' : amtTok(v.apprT.amt, v.apprT.tok), 'Allowance') + HWP.kv('Spender', '<span class="hp-mono">' + esc(short(v.apprT.sp)) + '</span>', '', { sm: true }));
       } else if (rows === null) { /* shown above (Hwallet swap quote) */
@@ -21526,21 +21588,21 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     det += kv('Network', esc(DS.info.name), DS.c === 'evm' ? 'Chain ' + esc(R.chainId) + (m === 'eth_sendTransaction' ? ' \u00b7 nonce ' + esc(R.nonce) : '') : '') + kv('Via', esc(via));
     if (m === 'eth_sendTransaction') {
       var tx = (R.params || {}).tx || {};
-      det += v.rows + (v.method ? kv('Method', '<span class="hp-mono">' + esc(v.method.split('(')[0]) + '</span>', esc(v.method.length > 60 ? v.method.slice(0, 57) + '\u2026' : v.method)) : '') +
-        kv('Gas limit', c.gas != null ? Number(c.gas).toLocaleString('en-US') : '\u2014', c.legacy ? 'Gas price ' + gwei(c.gp) + ' gwei' : 'Max fee ' + gwei(c.mf) + ' \u00b7 tip ' + gwei(c.tip) + ' gwei');
+      det += v.rows + (v.method && !(PVp && (PVp.lines || []).length) ? kv('Action', esc(String(v.method.split('(')[0]).replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/^./, function (x) { return x.toUpperCase(); }))) : '');
       (v.warn || []).forEach(function (w) { if (/Unlimited|every NFT|deploys a new contract|permission|another account|phishing/.test(w) && !(v.known && /Unlimited/.test(w))) warnsL.push(w); else det += '<div class="hp-note">' + w + '</div>'; });
-      if (R.sim && R.sim.error) warnsL.push('Simulation failed: ' + esc(String(R.sim.error).slice(0, 160)) + '. This transaction will probably fail.');
-      raw = JSON.stringify({ to: tx.to, value: tx.value || '0x0', data: ae ? ae.data : tx.data || '0x', gas: String(c.gas) }, null, 1);
+      if (R.sim && R.sim.error) warnsL.push(esc(R.sim.plain ? String(R.sim.error).slice(0, 160) : kPlainErr(R.sim.error)));
     } else if (m === 'solana_signTransaction') {
-      warnsL = warnsL.concat(v.risk || []); det += (v.notes || []).concat(v.warn || []).map(function (w) { return '<div class="hp-note">' + w + '</div>'; }).join('') + v.rows + (v.tech || '') + '<div class="hp-sec">What it does</div><ol class="hp-ol">' + v.ins.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ol>';
-      raw = (R.params || {}).tx;
-      if (R.sim && R.sim.error) warnsL.push('Simulation failed: ' + esc(String(R.sim.error).slice(0, 160)) + '. This transaction may fail.');
+      warnsL = warnsL.concat(v.risk || []); det += (v.notes || []).concat(v.warn || []).map(function (w) { return '<div class="hp-note">' + w + '</div>'; }).join('') + v.rows;
+      var pli = kPlainIns(v.ins); if (!PV && pli.length) main += HWP.card('<ul class="hp-pl">' + pli.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>');
+      /* R6: a co-signed / gasless transaction (fee paid by the app) is never flagged as failing */
+      if (R.sim && R.sim.error && v.idx === 0) warnsL.push(esc(R.sim.plain ? String(R.sim.error).slice(0, 160) : kPlainErr(R.sim.error)));
     } else if (m === 'tron_signTransaction') {
-      (v.warn || []).forEach(function (w) { if (/<b>Unlimited|every NFT|deploys a new contract|permission|another account|phishing/.test(w)) warnsL.push(w); else det += '<div class="hp-note">' + w + '</div>'; }); det += v.rows + kv('Type', esc(v.type)); raw = (R.params || {}).tx.raw_data_hex;
-      if (R.sim && R.sim.error) warnsL.push('Simulation failed: ' + esc(String(R.sim.error).slice(0, 160)) + '. This transaction may fail.');
+      (v.warn || []).forEach(function (w) { if (/<b>Unlimited|every NFT|deploys a new contract|permission|another account|phishing/.test(w)) warnsL.push(w); else det += '<div class="hp-note">' + w + '</div>'; }); det += v.rows;
+      if (R.sim && R.sim.error) warnsL.push(esc(R.sim.plain ? String(R.sim.error).slice(0, 160) : kPlainErr(R.sim.error)));
     } else if (isMsg) det += addrKv('Account', R.from, esc(DS.rec.label) + ' \u00b7 #' + DS.rec.index);
     var full = DS.full || {}; det += Object.keys(full).map(function (k) { return full[k]; }).join('');
-    if (raw) det += '<div class="hp-sec">Raw data</div><div class="hp-raw">' + esc(raw) + '</div>';
+    /* R5: no raw data, instruction counts or versions: names of who you deal with instead */
+    if (isTx && PVp) { det = kPvDet(PVp) + det; if (PVp.partial && (PVp.lines || []).length) main += HWP.card('<ul class="hp-pl">' + PVp.lines.map(function (t) { return '<li>' + esc(String(t).slice(0, 160)) + '</li>'; }).join('') + '</ul>'); }
     /* notes: fee changed, waiting for live data, errors and risks, then the quiet trust line */
     var notes = '';
     if (stale() && m === 'eth_sendTransaction') notes += HWP.warns(['<b>Waiting for live data.</b> Keep Hwallet open and online. Signing is paused until fresh values arrive.']);
