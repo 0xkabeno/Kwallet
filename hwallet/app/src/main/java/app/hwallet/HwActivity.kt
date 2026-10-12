@@ -159,6 +159,10 @@ class HwActivity : FragmentActivity() {
         fun wcNotify(kind: String, title: String, body: String) { runOnUiThread { wcPost(kind.take(16), title.take(80), body.take(160)) } }
         @android.webkit.JavascriptInterface
         fun wcClear() { runOnUiThread { try { (getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager).cancel(WC_NOTE) } catch (_: Throwable) {} } }
+        /** v1.7.2 (S17): transaction status (pending / confirmed / failed + plain reason) as a quiet notification, only while
+         *  Hwallet is not on screen (on screen the page shows its own toast). One notification per transaction id. */
+        @android.webkit.JavascriptInterface
+        fun txNotify(id: String, title: String, body: String, state: String) { if (!fgNow || state == "pending") runOnUiThread { txPost(id.take(80), title.take(80), body.take(200), state.take(12)) } }
         @android.webkit.JavascriptInterface
         fun wcBg(on: Boolean) { wcKeep = on; if (on) runOnUiThread { try { startLiveSafe() } catch (_: Throwable) {} } }
 
@@ -857,6 +861,27 @@ class HwActivity : FragmentActivity() {
                 .setContentIntent(pi).addAction(0, if (kind == "connect") "Review" else "Sign in Kwallet", pi).build()
             nm.notify(WC_NOTE, n)
         } catch (e: Throwable) { android.util.Log.w("HwWC", "notify failed: $e") }
+    }
+    private fun txPost(id: String, title: String, body: String, state: String) {
+        try {
+            val nm = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
+            if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel("hw_tx") == null) {
+                nm.createNotificationChannel(android.app.NotificationChannel("hw_tx", "Transaction status", android.app.NotificationManager.IMPORTANCE_DEFAULT).apply {
+                    description = "Pending, confirmed and failed transactions sent from this phone"; setSound(null, null)
+                })
+            }
+            if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) return
+            val nid = 7800 + (id.hashCode() and 0x3ff)
+            if (state == "pending" && fgNow) return
+            val i = Intent(this, HwActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            val pi = android.app.PendingIntent.getActivity(this, nid, i, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
+            val b = androidx.core.app.NotificationCompat.Builder(this, "hw_tx").setSmallIcon(R.drawable.hw_stat)
+                .setContentTitle(title).setContentText(body).setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(body))
+                .setContentIntent(pi).setOnlyAlertOnce(true).setSilent(state == "pending")
+                .setAutoCancel(state != "pending").setOngoing(false)
+            if (state == "pending") b.setProgress(0, 0, true).setTimeoutAfter(900000L)
+            nm.notify(nid, b.build())
+        } catch (e: Throwable) { android.util.Log.w("HwTx", "notify failed: $e") }
     }
     /* P2a (#95): while Kwallet's sheet is over Hwallet the dApp tab stays live and visible behind it (no pause, no save) */
     override fun onPause() { super.onPause(); fgNow = false; if (!signing) { web.onPause(); br?.pause() } }

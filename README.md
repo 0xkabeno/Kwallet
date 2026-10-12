@@ -87,6 +87,10 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 
 ### Hwallet — the quickest hot wallet
 
+- **dApps that just work** *(new in 1.7.2)* — Uniswap, 1inch, PancakeSwap, Stargate, Across, Jumper, Aave and OpenSea reach Kwallet's sheet on every EVM network and get the transaction hash back; Tron dApps (SunSwap, JustLend, SUN.io) get a working TronWeb; reads go to keyed fast nodes with short caches, and a connected site's chain is warmed when it opens
+- **Safety, quietly** *(new in 1.7.2)* — Settings > Security > Token approvals lists every open EVM/Tron allowance and Solana delegate with one-tap Revoke; an address book with names; a look-alike (address poisoning) warning; "Unverified" / "Risky" token badges before a swap; pending / confirmed / failed notifications with a plain reason
+- **Swap, tidier** *(new in 1.7.2)* — 25% / 50% / Max for every coin and token, best-route badge with the gain over the next provider, favourite and recent tokens first, live rent shown as one small red line, prices for every token
+- **Home and lists** *(new in 1.7.2)* — fluid pull to refresh everywhere (and in the Browser), swipe a row to Pin or Hide, spam and dust hidden automatically
 - **Quick sheets everywhere** *(new in 1.7)* — Send is a sheet for every coin, the connect popup and Kwallet's sign sheet share one design in Hwallet's own theme, and a multi-step swap shows a stepper (Approve → Swap → service fee) that stays on screen across the Kwallet sheets
 - **Network fees your way** *(new in 1.7)* — the same Jupiter-style fee sheet on Send and in Swap settings: speed rows in the coin and dollars, and a Manual Custom section (Max Cap | Exact Fee; Solana priority fee and an optional Jito tip on Jupiter routes, in SOL; EVM max / priority fee in Gwei and gas limit; Tron fee limit in TRX)
 - **Readable Activity** *(new in 1.7)* — tap any row for a plain sentence ("Swapped 1 USDC for 0.0077 SOL on Jupiter", "Sent 0.01 SOL to 7xK…3f", "Approved USDC for 0x11…a3", "Closed 2 token accounts"), the balance changes read from the chain, status, network fee, date and an Explorer button, on Solana, EVM networks and Tron
@@ -112,7 +116,7 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 - **Crash prompt** — if Hwallet ever closes unexpectedly, the next launch offers to copy the log (once per crash)
 - XMR is watch-only; full Monero send (cold-signed in Kwallet) comes in v3.98
 
-### Known limits (v3.97 / v1.7)
+### Known limits (v3.97.2 / v1.7.2)
 
 - XMR send is not included yet; full Monero comes in **v3.98**.
 - Approve → Swap is two Kwallet sheets with Hwallet's stepper between them (no Permit2 / EIP-2612 signature path yet). Approvals are always for the exact amount and skipped when the allowance is already enough.
@@ -167,8 +171,8 @@ Get the latest files from **[Releases](https://github.com/0xkabeno/Kwallet/relea
 # put the downloads and SHA256SUMS.txt in one folder, then
 sha256sum -c SHA256SUMS.txt --ignore-missing      # every line must say OK
 # Android: both APKs must carry the same signing certificate
-apksigner verify --print-certs Kwallet-v3.97.apk | grep SHA-256
-apksigner verify --print-certs Hwallet-v1.7.apk  | grep SHA-256
+apksigner verify --print-certs Kwallet-v3.97.2.apk | grep SHA-256
+apksigner verify --print-certs Hwallet-v1.7.2.apk  | grep SHA-256
 ```
 
 On Android, open the APK and allow *Install unknown apps* once. Updates install over the previous version (same permanent key).

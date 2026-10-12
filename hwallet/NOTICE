@@ -65,3 +65,5 @@ no affiliation or endorsement. Sources (fetched 2026-10-11):
   Kamino: https://kamino.com/android-chrome-192x192.png
   Drift: https://app.drift.trade/android-chrome-192x192.png
 Other sites' icons are fetched by the phone from the site itself on the first visit and cached locally.
+
+Base network logo (official Base square): https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png (Trust Wallet assets, MIT), placed on a white circle for round chips.
