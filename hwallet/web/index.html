@@ -1044,6 +1044,34 @@ body[data-theme=dark] .fw-s{color:#34c77b}
 .hp-sub span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hp-chg .hp-v{flex:0 0 auto;max-width:62%;white-space:nowrap}
 .hp-chg .hp-v small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* wave A: network fee picker (a small sheet over the sheet) */
+.hp-ov.hp-pk{z-index:70}
+.hp-pk .hp-sheet{max-height:80%}
+.hp-pkt{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px}
+.hp-pkt h3{margin:0;font-size:20px;font-weight:700;color:var(--hp-text)}
+.hp-pkl{background:var(--hp-card);border-radius:20px;overflow:hidden;margin-bottom:8px}
+.hp-pr{display:flex;align-items:center;width:100%;min-height:64px;padding:10px 12px 10px 18px;background:transparent;color:var(--hp-text);text-align:left;border:0;border-top:1px solid var(--hp-line);box-sizing:border-box;font:inherit;cursor:pointer}
+.hp-pr:first-child{border-top:0}
+.hp-pr:active{background:var(--hp-sel)}
+.hp-pr.on{background:var(--hp-sel)}
+.hp-prl{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.hp-prl b,.hp-prv b{font-weight:600;font-size:16px}
+.hp-prl small,.hp-prv small{color:var(--hp-muted);font-size:13px;margin-top:2px}
+.hp-prv{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;margin-left:10px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hp-prc{flex:0 0 auto;width:28px;height:24px;margin-left:8px;display:flex;align-items:center;justify-content:center;color:var(--hp-acc)}
+[data-theme="dark"] .hp-prc{color:var(--hp-acc)}
+.hp-prc svg{width:22px;height:22px;fill:currentColor}
+.hp-prch{color:var(--hp-soft);transform:rotate(-90deg);transition:transform .18s}
+.hp-prcu.open .hp-prch{transform:rotate(0)}
+.hp-pcu{padding:4px 16px 16px;border-top:1px solid var(--hp-line)}
+.hp-pcl{display:block;font-size:13.5px;color:var(--hp-muted);margin:10px 2px 6px}
+.hp-pcf{display:flex;align-items:center;background:var(--hp-card2);border-radius:14px;padding:0 14px;min-height:50px}
+.hp-pcf input{flex:1 1 auto;min-width:0;border:0;outline:0;background:transparent;color:var(--hp-text);font:inherit;font-size:17px;padding:10px 0}
+.hp-pcf em{font-style:normal;color:var(--hp-muted);margin-left:8px}
+.hp-pch{font-size:13px;color:var(--hp-muted);margin:8px 2px 10px;line-height:1.4}
+.hp-pch.bad{color:var(--hp-dn)}
+.hp-pcok{width:100%;height:50px}
+.hp-note{font-size:13px;color:var(--hp-muted);line-height:1.4;margin:6px 2px 8px}
 
 /* Wave A (#102): Hwallet's popups use Hwallet's own live theme variables (classic, dark and Material You). */
 body[data-theme] .hp-ov{--hp-bg:var(--bg);--hp-card:var(--card);--hp-card2:var(--card2);--hp-line:var(--line);--hp-border:var(--border);--hp-text:var(--text);--hp-muted:var(--muted);--hp-soft:var(--soft);
@@ -1073,6 +1101,8 @@ body[data-theme] .hp-ov{--hp-bg:var(--bg);--hp-card:var(--card);--hp-card2:var(-
 .snd-form .inp .pb{flex:0 0 auto}
 .snd-chev{transform:rotate(90deg)}
 .snd-fee.open .snd-chev{transform:rotate(-90deg)}
+.snd-fee.snd-one .snd-chev{display:none}
+.snd-chev{transform:none}.snd-fee.open .snd-chev{transform:none}
 
 </style>
 </head>
@@ -4141,7 +4171,49 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
     sh.addEventListener('touchend', function () { if (y0 == null) return; y0 = null; sh.style.transition = ''; sh.style.transform = ''; if (dy > 100) { var x = ov.querySelector('[data-hp-x]'); if (x) x.click(); } });
     return { el: ov, close: close };
   }
-  window.HWP = { siteName: siteName, walletRow: walletRow, esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
+  /* wave A: the network fee picker (Phantom / MetaMask style). A small sheet over the sheet: one row per speed with its
+     fee and time, a check on the selected one; tapping a row picks it and closes. An optional Custom row opens one plain
+     field "Max fee (SOL)". Back, the handle, the dim and X close it. o = { title, rows:[{k,l,sub,v,vs,on}], custom:{label,
+     unit,value,hint,on}|null, onPick(k), onCustom(text) -> '' (ok) or an error text, host } */
+  var PK = null;
+  function picker(o) {
+    if (PK) PK.close();
+    var ov = document.createElement('div'); ov.className = 'hp-ov hp-pk';
+    var rows = (o.rows || []).map(function (r) {
+      return '<button type="button" class="hp-pr' + (r.on ? ' on' : '') + '" data-pk="' + esc(r.k) + '" role="radio" aria-checked="' + (r.on ? 'true' : 'false') + '">' +
+        '<span class="hp-prl"><b>' + esc(r.l) + '</b>' + (r.sub ? '<small>' + esc(r.sub) + '</small>' : '') + '</span>' +
+        '<span class="hp-prv"><b>' + esc(r.v || '') + '</b>' + (r.vs ? '<small>' + esc(r.vs) + '</small>' : '') + '</span>' +
+        '<span class="hp-prc">' + (r.on ? sv(P.ok) : '') + '</span></button>';
+    }).join('');
+    var cu = o.custom, cuH = cu ? '<button type="button" class="hp-pr hp-prcu' + (cu.on ? ' on' : '') + '" data-pkc><span class="hp-prl"><b>Custom</b><small>' + esc(cu.on && cu.value ? 'Up to ' + cu.value + ' ' + cu.unit : 'Set your own maximum') + '</small></span><span class="hp-prv"></span><span class="hp-prc">' + (cu.on ? sv(P.ok) : sv(P.chev, 'hp-prch')) + '</span></button>' +
+      '<div class="hp-pcu" hidden><label class="hp-pcl">' + esc(cu.label) + '</label><div class="hp-pcf"><input id="hp-pcin" inputmode="decimal" autocomplete="off" spellcheck="false" value="' + esc(cu.value || '') + '"><em>' + esc(cu.unit) + '</em></div>' +
+      '<div class="hp-pch" id="hp-pch">' + esc(cu.hint || '') + '</div><button type="button" class="hp-btn hp-ok hp-pcok" id="hp-pcok">Use this fee</button></div>' : '';
+    ov.innerHTML = '<div class="hp-dim"></div><div class="hp-sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.title || 'Network fee') + '"><div class="hp-grab"></div><div class="hp-scroll">' +
+      '<div class="hp-pkt"><h3>' + esc(o.title || 'Network fee') + '</h3><button type="button" class="hp-x" data-pkx aria-label="Close">' + sv(P.x) + '</button></div><div class="hp-pkl" role="radiogroup">' + rows + cuH + '</div></div></div>';
+    (o.host || document.body).appendChild(ov);
+    void ov.offsetWidth; requestAnimationFrame(function () { ov.classList.add('in'); });
+    var closed = false, me = { el: ov, close: function () { if (closed) return; closed = true; if (PK === me) PK = null; ov.classList.remove('in'); ov.classList.add('out'); setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 210); if (o.onClose) o.onClose(); } };
+    PK = me;
+    ov.querySelector('.hp-dim').onclick = me.close; ov.querySelector('[data-pkx]').onclick = me.close;
+    ov.querySelectorAll('[data-pk]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-pk'); ov.querySelectorAll('.hp-pr').forEach(function (x) { x.classList.toggle('on', x === b); }); if (o.onPick) o.onPick(k); setTimeout(me.close, 120); }; });
+    var cb = ov.querySelector('[data-pkc]');
+    if (cb) {
+      var box = ov.querySelector('.hp-pcu'), inp = ov.querySelector('#hp-pcin'), go = ov.querySelector('#hp-pcok'), hint = ov.querySelector('#hp-pch');
+      cb.onclick = function () { box.hidden = !box.hidden; cb.classList.toggle('open', !box.hidden); if (!box.hidden) setTimeout(function () { inp.focus(); }, 60); };
+      if (cu.on) { box.hidden = false; cb.classList.add('open'); }
+      go.onclick = function () { var e = o.onCustom ? o.onCustom(inp.value) : ''; if (e) { hint.textContent = e; hint.classList.add('bad'); return; } me.close(); };
+      inp.onkeydown = function (e) { if (e.key === 'Enter') go.click(); };
+    }
+    /* drag the small sheet down to close */
+    var sh = ov.querySelector('.hp-sheet'), y0 = null, dy = 0;
+    sh.addEventListener('touchstart', function (e) { if (!e.target.closest('input,.hp-pcu')) { y0 = e.touches[0].clientY; dy = 0; } }, { passive: true });
+    sh.addEventListener('touchmove', function (e) { if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); if (dy > 4) { sh.style.transition = 'none'; sh.style.transform = 'translate3d(0,' + dy + 'px,0)'; } }, { passive: true });
+    sh.addEventListener('touchend', function () { if (y0 == null) return; y0 = null; sh.style.transition = ''; sh.style.transform = ''; if (dy > 80) me.close(); });
+    return me;
+  }
+  /* Back: closes an open picker first (true = handled) */
+  function pickerBack() { if (PK) { PK.close(); return true; } return false; }
+  window.HWP = { picker: picker, pickerBack: pickerBack, siteName: siteName, walletRow: walletRow, esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
     trust: trust, warns: warns, perms: perms, details: details, foot: foot, sheet: sheet, siwe: siwe, siweRows: siweRows, msgBlock: msgBlock, tree: tree, overlay: overlay };
 })();
 
@@ -5257,7 +5329,7 @@ var APP_VERSION = '1.7';
       '<div class="lbl">Amount</div><div class="inp amt"><input id="amt" inputmode="decimal" placeholder="0" autocomplete="off"><span class="sym" id="amt-u">' + esc(r.s) + '</span>' + (rpx(r) ? '<button class="mx snd-usd" data-usd aria-label="Enter the amount in US dollars">USD</button>' : '') + '<button class="mx" data-max>Max</button></div>' +
       '<div class="hint2"><span id="usd"></span><span>Balance ' + money(fmtA(r.raw, r.d)) + ' ' + esc(r.s) + '</span></div>' +
       '<button type="button" class="snd-fee" id="feechip" aria-expanded="false"><span class="snd-fl">' + logo(n ? n.logo : c.logo, name, '', 'xs') + 'Network fee</span><span class="snd-fv"><b id="fee">Checking…</b><em id="lvt">Normal</em></span>' + sv('chev', 'ic snd-chev') + '</button>' +
-      '<div class="seg wide snd-lv" id="lv" hidden><button data-lv="slow">Slow</button><button data-lv="medium" class="on">Normal</button><button data-lv="fast">Fast</button></div>' +
+
       '<div class="note warn" id="err" hidden></div><div class="note" id="sim" hidden></div></section></div>' +
       '<div class="hp-foot"><button class="btn pri wide big snd-go" id="go" disabled>Continue</button></div>';
   }
@@ -5284,8 +5356,13 @@ var APP_VERSION = '1.7';
       var tok = amtStr(); SND.usd = !SND.usd; buzz(6); ub.classList.toggle('on', SND.usd); ub.textContent = SND.usd ? r.s : 'USD';
       $('amt-u').textContent = SND.usd ? 'USD' : r.s; showAmt(tok === 'x' ? '' : tok); validate();
     };
-    var fc = $('feechip'); fc.onclick = function () { var lv = $('lv'); lv.hidden = !lv.hidden; fc.setAttribute('aria-expanded', lv.hidden ? 'false' : 'true'); fc.classList.toggle('open', !lv.hidden); buzz(4); };
-    $('lv').querySelectorAll('[data-lv]').forEach(function (b) { b.onclick = function () { SND.lv = b.getAttribute('data-lv'); $('lv').querySelectorAll('[data-lv]').forEach(function (x) { x.classList.toggle('on', x === b); }); $('lvt').textContent = b.textContent; buzz(6); if (SND.max) fillMax(); validate(); }; });
+    /* wave A: the same fee picker as Kwallet's sheet (Slow / Normal / Fast with fee and time, a check, tap = pick + close) */
+    var fc = $('feechip'); fc.onclick = function () {
+      if (!SND.d || SND.busy) return; var lv = SND.d.levels, ks = ['slow', 'medium', 'fast'].filter(function (k) { return lv[k]; }); if (ks.length < 2) return;
+      var gas = gasAsset(), gp = px(gas.cg), ETA = { eth: { slow: '~1 min', medium: '~30 sec', fast: '~15 sec' }, sol: { slow: '~10 sec', medium: '~5 sec', fast: '~2 sec' }, btc: { slow: '~1 hour', medium: '~30 min', fast: '~10 min' } }[SND.ch] || {};
+      buzz(4); HWP.picker({ title: 'Network fee', rows: ks.map(function (k) { var f = feeOf(k); return { k: k, l: { slow: 'Slow', medium: 'Normal', fast: 'Fast' }[k], sub: ETA[k] || '', v: f == null ? '\u2014' : (SND.d.approx ? '\u2248 ' : '') + fmtA(f, gas.d) + ' ' + gas.s, vs: f != null && gp ? fmtUsd(toNum(f, gas.d) * gp) : '', on: k === SND.lv }; }),
+        onPick: function (k) { SND.lv = k; $('lvt').textContent = { slow: 'Slow', medium: 'Normal', fast: 'Fast' }[k]; buzz(6); if (SND.max) fillMax(); validate(); } });
+    };
     $('go').onclick = review;
     var sc0 = takeScanned(), sa0 = takeScanAmt(); if (sc0) { to.value = sc0; SND.to = sc0; checkTo(); if (sa0) { am.value = sa0; } } else setTimeout(clipChip, 60);
     if (V.swapDep && sc0) { to.readOnly = true; am.readOnly = true; var nb = $('newad'); if (nb) { nb.hidden = false; nb.textContent = 'NEAR Intents deposit address for your swap. Send exactly this amount; the swap starts when it arrives.'; } }
@@ -5330,7 +5407,7 @@ var APP_VERSION = '1.7';
     SND.amt = amt; go.disabled = !!msg || !validAddr(SND.ch, SND.to) || !SND.d || (!SND.max && !(amt > 0n)) || SND.busy;
     var sk = SND.to + '|' + (SND.max ? 'max' : String(amt)); if (sk !== SND.simK) { SND.simK = sk; clearTimeout(SND.simT); SND.simT = setTimeout(simPrep, 450); }
     if (SND.d) { var f = feeOf(SND.lv); $('fee').innerHTML = SND.ch === 'trx' && f === 0n ? 'Free · covered by your bandwidth' : (SND.d.approx ? '≈ ' : '') + fmtA(f, gas.d) + ' ' + esc(gas.s) + (px(gas.cg) ? ' · ' + fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '') + (SND.d.extra ? (SND.ch === 'ada' ? ' + ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : ' + account rent') : '') + (SND.ch === 'trx' && SND.d.burnE ? ' · energy burn' : ''); }
-    var segs = $('lv'); if (segs && SND.d) { var lv = SND.d.levels; segs.querySelectorAll('[data-lv]').forEach(function (b) { b.hidden = !lv[b.getAttribute('data-lv')]; }); if (!lv[SND.lv]) { SND.lv = lv.medium ? 'medium' : Object.keys(lv)[0]; } }
+    if (SND.d) { var lv = SND.d.levels; if (!lv[SND.lv]) SND.lv = lv.medium ? 'medium' : Object.keys(lv)[0]; var fc = $('feechip'); if (fc) fc.classList.toggle('snd-one', Object.keys(lv).length < 2); if ($('lvt')) $('lvt').textContent = Object.keys(lv).length < 2 ? '' : { slow: 'Slow', medium: 'Normal', fast: 'Fast' }[SND.lv]; }
   }
   /* chain data for the request (and the live feed): one module per chain */
   var PREP = {};
@@ -9181,6 +9258,7 @@ window.hwCrashPrompt = crashPrompt;
 
   /* ---------- Android back ---------- */
   window.kwBack = function () {
+    if (window.HWP && HWP.pickerBack()) return true;
     var ov = document.querySelectorAll('.sheet-ov.show'); if (ov.length) { ov[ov.length - 1]._close(); return true; }
     var kd = document.querySelectorAll('.kwd-ov.show'); if (kd.length) { var d = kd[kd.length - 1]; if (d._close) d._close(); else { d.classList.remove('show'); setTimeout(function () { d.remove(); }, 160); } return true; }
     if (window.hwScanner && hwScanner.isOpen()) { hwScanner.close(); return true; }

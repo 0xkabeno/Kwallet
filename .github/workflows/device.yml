@@ -4,10 +4,8 @@ name: Device check (emulator)
 # WebView DevTools on, -PkwE2E=true, to catch R8-only bugs), boots an API 34 x86_64 emulator, installs Kwallet +
 # Hwallet and drives: launch H, Browser -> google.com, Swap (+ token picker), pull to refresh, launch K.
 # Screenshots, logcat and results.json are uploaded as the "device-check" artifact. Needs no secrets.
+# Manual only (user rule 2026-10-12): it no longer runs on push or pull requests.
 on:
-  push:
-    branches: [main, "v*"]
-  pull_request:
   workflow_dispatch:
     inputs:
       diag:

@@ -188,7 +188,7 @@ open class KwActivity : FragmentActivity() {
             }
         })
 
-        if (adopted) { pushInsets(); onAdopted() }
+        if (adopted) { web.onResume(); web.resumeTimers(); web.invalidate(); pushInsets(); onAdopted() }
         else if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl(startUrl())
     }
@@ -321,10 +321,20 @@ open class KwActivity : FragmentActivity() {
         curTop = top; curBot = bottom
     }
     private fun paintBars(top: Int, bottom: Int) {
-        if (::root.isInitialized) root.setBackgroundColor(bottom)
-        if (::web.isInitialized) web.setBackgroundColor(top)
-        @Suppress("DEPRECATION")
-        if (Build.VERSION.SDK_INT < 35) { window.statusBarColor = top; window.navigationBarColor = bottom }
+        /* wave A: the sign page is a sheet over the live Hwallet screen: window, root, WebView and bars stay transparent */
+        if (signPage) {
+            val tr = android.graphics.Color.TRANSPARENT
+            if (::root.isInitialized) root.setBackgroundColor(tr)
+            if (::web.isInitialized) web.setBackgroundColor(tr)
+            window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(tr))
+            @Suppress("DEPRECATION")
+            if (Build.VERSION.SDK_INT < 35) { window.statusBarColor = tr; window.navigationBarColor = tr }
+        } else {
+            if (::root.isInitialized) root.setBackgroundColor(bottom)
+            if (::web.isInitialized) web.setBackgroundColor(top)
+            @Suppress("DEPRECATION")
+            if (Build.VERSION.SDK_INT < 35) { window.statusBarColor = top; window.navigationBarColor = bottom }
+        }
         val c = WindowCompat.getInsetsController(window, window.decorView)
         val lt = isLight(top); val lb = isLight(bottom)
         if (c.isAppearanceLightStatusBars != lt) c.isAppearanceLightStatusBars = lt

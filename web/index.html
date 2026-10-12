@@ -2780,6 +2780,34 @@ body[data-theme="dark"]:not(.md3) #settings-overlay.kws-full .kws-sec{color:#DDF
 .hp-sub span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hp-chg .hp-v{flex:0 0 auto;max-width:62%;white-space:nowrap}
 .hp-chg .hp-v small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* wave A: network fee picker (a small sheet over the sheet) */
+.hp-ov.hp-pk{z-index:70}
+.hp-pk .hp-sheet{max-height:80%}
+.hp-pkt{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px}
+.hp-pkt h3{margin:0;font-size:20px;font-weight:700;color:var(--hp-text)}
+.hp-pkl{background:var(--hp-card);border-radius:20px;overflow:hidden;margin-bottom:8px}
+.hp-pr{display:flex;align-items:center;width:100%;min-height:64px;padding:10px 12px 10px 18px;background:transparent;color:var(--hp-text);text-align:left;border:0;border-top:1px solid var(--hp-line);box-sizing:border-box;font:inherit;cursor:pointer}
+.hp-pr:first-child{border-top:0}
+.hp-pr:active{background:var(--hp-sel)}
+.hp-pr.on{background:var(--hp-sel)}
+.hp-prl{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.hp-prl b,.hp-prv b{font-weight:600;font-size:16px}
+.hp-prl small,.hp-prv small{color:var(--hp-muted);font-size:13px;margin-top:2px}
+.hp-prv{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;margin-left:10px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hp-prc{flex:0 0 auto;width:28px;height:24px;margin-left:8px;display:flex;align-items:center;justify-content:center;color:var(--hp-acc)}
+[data-theme="dark"] .hp-prc{color:var(--hp-acc)}
+.hp-prc svg{width:22px;height:22px;fill:currentColor}
+.hp-prch{color:var(--hp-soft);transform:rotate(-90deg);transition:transform .18s}
+.hp-prcu.open .hp-prch{transform:rotate(0)}
+.hp-pcu{padding:4px 16px 16px;border-top:1px solid var(--hp-line)}
+.hp-pcl{display:block;font-size:13.5px;color:var(--hp-muted);margin:10px 2px 6px}
+.hp-pcf{display:flex;align-items:center;background:var(--hp-card2);border-radius:14px;padding:0 14px;min-height:50px}
+.hp-pcf input{flex:1 1 auto;min-width:0;border:0;outline:0;background:transparent;color:var(--hp-text);font:inherit;font-size:17px;padding:10px 0}
+.hp-pcf em{font-style:normal;color:var(--hp-muted);margin-left:8px}
+.hp-pch{font-size:13px;color:var(--hp-muted);margin:8px 2px 10px;line-height:1.4}
+.hp-pch.bad{color:var(--hp-dn)}
+.hp-pcok{width:100%;height:50px}
+.hp-note{font-size:13px;color:var(--hp-muted);line-height:1.4;margin:6px 2px 8px}
 </style>
 </head>
 <body data-theme="light">
@@ -19657,7 +19685,49 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     sh.addEventListener('touchend', function () { if (y0 == null) return; y0 = null; sh.style.transition = ''; sh.style.transform = ''; if (dy > 100) { var x = ov.querySelector('[data-hp-x]'); if (x) x.click(); } });
     return { el: ov, close: close };
   }
-  window.HWP = { siteName: siteName, walletRow: walletRow, esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
+  /* wave A: the network fee picker (Phantom / MetaMask style). A small sheet over the sheet: one row per speed with its
+     fee and time, a check on the selected one; tapping a row picks it and closes. An optional Custom row opens one plain
+     field "Max fee (SOL)". Back, the handle, the dim and X close it. o = { title, rows:[{k,l,sub,v,vs,on}], custom:{label,
+     unit,value,hint,on}|null, onPick(k), onCustom(text) -> '' (ok) or an error text, host } */
+  var PK = null;
+  function picker(o) {
+    if (PK) PK.close();
+    var ov = document.createElement('div'); ov.className = 'hp-ov hp-pk';
+    var rows = (o.rows || []).map(function (r) {
+      return '<button type="button" class="hp-pr' + (r.on ? ' on' : '') + '" data-pk="' + esc(r.k) + '" role="radio" aria-checked="' + (r.on ? 'true' : 'false') + '">' +
+        '<span class="hp-prl"><b>' + esc(r.l) + '</b>' + (r.sub ? '<small>' + esc(r.sub) + '</small>' : '') + '</span>' +
+        '<span class="hp-prv"><b>' + esc(r.v || '') + '</b>' + (r.vs ? '<small>' + esc(r.vs) + '</small>' : '') + '</span>' +
+        '<span class="hp-prc">' + (r.on ? sv(P.ok) : '') + '</span></button>';
+    }).join('');
+    var cu = o.custom, cuH = cu ? '<button type="button" class="hp-pr hp-prcu' + (cu.on ? ' on' : '') + '" data-pkc><span class="hp-prl"><b>Custom</b><small>' + esc(cu.on && cu.value ? 'Up to ' + cu.value + ' ' + cu.unit : 'Set your own maximum') + '</small></span><span class="hp-prv"></span><span class="hp-prc">' + (cu.on ? sv(P.ok) : sv(P.chev, 'hp-prch')) + '</span></button>' +
+      '<div class="hp-pcu" hidden><label class="hp-pcl">' + esc(cu.label) + '</label><div class="hp-pcf"><input id="hp-pcin" inputmode="decimal" autocomplete="off" spellcheck="false" value="' + esc(cu.value || '') + '"><em>' + esc(cu.unit) + '</em></div>' +
+      '<div class="hp-pch" id="hp-pch">' + esc(cu.hint || '') + '</div><button type="button" class="hp-btn hp-ok hp-pcok" id="hp-pcok">Use this fee</button></div>' : '';
+    ov.innerHTML = '<div class="hp-dim"></div><div class="hp-sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.title || 'Network fee') + '"><div class="hp-grab"></div><div class="hp-scroll">' +
+      '<div class="hp-pkt"><h3>' + esc(o.title || 'Network fee') + '</h3><button type="button" class="hp-x" data-pkx aria-label="Close">' + sv(P.x) + '</button></div><div class="hp-pkl" role="radiogroup">' + rows + cuH + '</div></div></div>';
+    (o.host || document.body).appendChild(ov);
+    void ov.offsetWidth; requestAnimationFrame(function () { ov.classList.add('in'); });
+    var closed = false, me = { el: ov, close: function () { if (closed) return; closed = true; if (PK === me) PK = null; ov.classList.remove('in'); ov.classList.add('out'); setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 210); if (o.onClose) o.onClose(); } };
+    PK = me;
+    ov.querySelector('.hp-dim').onclick = me.close; ov.querySelector('[data-pkx]').onclick = me.close;
+    ov.querySelectorAll('[data-pk]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-pk'); ov.querySelectorAll('.hp-pr').forEach(function (x) { x.classList.toggle('on', x === b); }); if (o.onPick) o.onPick(k); setTimeout(me.close, 120); }; });
+    var cb = ov.querySelector('[data-pkc]');
+    if (cb) {
+      var box = ov.querySelector('.hp-pcu'), inp = ov.querySelector('#hp-pcin'), go = ov.querySelector('#hp-pcok'), hint = ov.querySelector('#hp-pch');
+      cb.onclick = function () { box.hidden = !box.hidden; cb.classList.toggle('open', !box.hidden); if (!box.hidden) setTimeout(function () { inp.focus(); }, 60); };
+      if (cu.on) { box.hidden = false; cb.classList.add('open'); }
+      go.onclick = function () { var e = o.onCustom ? o.onCustom(inp.value) : ''; if (e) { hint.textContent = e; hint.classList.add('bad'); return; } me.close(); };
+      inp.onkeydown = function (e) { if (e.key === 'Enter') go.click(); };
+    }
+    /* drag the small sheet down to close */
+    var sh = ov.querySelector('.hp-sheet'), y0 = null, dy = 0;
+    sh.addEventListener('touchstart', function (e) { if (!e.target.closest('input,.hp-pcu')) { y0 = e.touches[0].clientY; dy = 0; } }, { passive: true });
+    sh.addEventListener('touchmove', function (e) { if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); if (dy > 4) { sh.style.transition = 'none'; sh.style.transform = 'translate3d(0,' + dy + 'px,0)'; } }, { passive: true });
+    sh.addEventListener('touchend', function () { if (y0 == null) return; y0 = null; sh.style.transition = ''; sh.style.transform = ''; if (dy > 80) me.close(); });
+    return me;
+  }
+  /* Back: closes an open picker first (true = handled) */
+  function pickerBack() { if (PK) { PK.close(); return true; } return false; }
+  window.HWP = { picker: picker, pickerBack: pickerBack, siteName: siteName, walletRow: walletRow, esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
     trust: trust, warns: warns, perms: perms, details: details, foot: foot, sheet: sheet, siwe: siwe, siweRows: siweRows, msgBlock: msgBlock, tree: tree, overlay: overlay };
 })();
 
@@ -19868,7 +19938,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     /* WAVE_A_SHEET: one sheet for every request (#106) */
     '#kss .kss-hp{flex:0 1 auto;min-height:0}#kss .kss-hp .kss-cf{border-top:0;padding:4px 0 2px}' +
     'html.kw-sign,html.kw-sign body{background:transparent!important}' +
-    'html.kw-sign body>*:not(#kss):not(.kwd-ov):not(.toast):not(script):not(style){display:none!important}' +
+    'html.kw-sign body>*:not(#kss):not(.hp-ov):not(.kwd-ov):not(.toast):not(script):not(style){display:none!important}' +
     '#kss{position:fixed;top:0;right:0;bottom:0;left:0;z-index:50;display:flex;flex-direction:column;justify-content:flex-end;color:var(--hp-text);overflow:hidden;background:rgba(8,12,18,0);transition:background .22s linear;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}' +
     '#kss.in{background:rgba(8,12,18,.46)}' +
     '.kss-pin{position:absolute;top:0;right:0;bottom:0;left:0;z-index:5;background:var(--hp-bg);color:var(--hp-text);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(var(--kw-sat,0px) + 20px) 24px calc(var(--kw-sab,0px) + 20px)}' +
@@ -19930,7 +20000,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     o = o || { status: 'rejected' }; if (REQ && REQ.id) o.id = REQ.id;
     try { KwSign.done(JSON.stringify(o)); } catch (e) {}
   }
-  window.kwSignBack = function () { if (pinOpen) { closePin(false); return true; } if (!busy) finish({ status: 'rejected' }); return true; };
+  window.kwSignBack = function () { if (window.HWP && HWP.pickerBack()) return true; if (pinOpen) { closePin(false); return true; } if (!busy) finish({ status: 'rejected' }); return true; };
 
   var BI = window.BigInt;
   function U(v) { try { return v == null || v === '' ? null : BI(String(v)); } catch (e) { return null; } }
@@ -20132,6 +20202,44 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     R.fee.levels.custom = L;
     return { R: R, err: bad ? 'Enter a valid network fee.' : err };
   }
+  /* wave A: the fee picker (no gwei / micro-lamports / compute units on screen; one plain "Max fee" for Custom) */
+  var ETA = { evm: { slow: '~1 min', medium: '~30 sec', fast: '~15 sec' }, sol: { slow: '~10 sec', medium: '~5 sec', fast: '~2 sec', auto: 'Set by the app', x2: 'Faster', x4: 'Fastest' }, btc: { slow: '~1 hour', medium: '~30 min', fast: '~10 min' } };
+  function decStr(v, d) { return fmt(v, d, d).replace(/,/g, ''); }
+  function parseMax(t, d) { t = String(t == null ? '' : t).trim().replace(/,/g, ''); if (!/^\d*\.?\d+$|^\d+\.$/.test(t)) return null; try { return ethers.parseUnits(t.replace(/\.$/, ''), d); } catch (e) { return null; } }
+  /* a total "max fee" in the coin -> the chain's own fee fields (text, as the editors keep them) */
+  function maxToFields(chain, X, o) {
+    if (chain === 'evm') {
+      var gas = BI(o.gas || 0); if (!(gas > 0n)) return { err: 'The gas estimate is missing. Try again in a moment.' };
+      var per = X / gas; if (!(per > 0n)) return { err: 'Enter a fee above zero.' };
+      if (o.min != null && per < o.min) return { err: 'Too low: the network needs at least ' + decStr(o.min * gas, 18) + ' ' + o.sym + ' now.' };
+      if (o.legacy) return { T: { mf: decStr(per, 9), gas: String(gas) } };
+      var tip = o.tip != null ? (o.tip < per ? o.tip : per) : per / 10n; return { T: { mf: decStr(per, 9), tip: decStr(tip, 9), gas: String(gas) } };
+    }
+    if (chain === 'sol') {
+      var base = BI(5000 * (o.nsig || 1)), cu = BI(o.cu || 200000); if (X < base) return { err: 'At least ' + decStr(base, 9) + ' SOL (the base network fee).' };
+      var pr = (X - base) * 1000000n / cu; if (pr > 50000000n) pr = 50000000n; return { T: { cup: String(pr), cul: String(cu) } };
+    }
+    if (chain === 'trx') { if (!(X > 0n)) return { err: 'Enter a fee above zero.' }; if (X > 1000000000n) return { err: 'At most 1,000 TRX.' }; return { T: { fl: decStr(X, 6) } }; }
+    return { err: 'Custom fees are not available here.' };
+  }
+  function openSendFee() {
+    if (busy) return;
+    var R = S.R, lv = R.fee.levels, keys = ['slow', 'medium', 'fast'].filter(function (k) { return lv[k]; }), save = S.level, P = R.prices || {}, gpx = +P.gasUsd || 0, LAB = { slow: 'Slow', medium: 'Normal', fast: 'Fast' }, rows = [];
+    keys.forEach(function (k) { S.level = k; var c; try { c = calc0(); } catch (e) { c = null; } S.level = save; if (!c) return; rows.push({ k: k, l: LAB[k], sub: (ETA[S.c] || {})[k] || '', v: (c.approx ? '\u2248 ' : '') + fmt(c.fee, S.gdec, 8) + ' ' + S.gsym, vs: usdTxt(c.fee, S.gdec, gpx), on: k === save }); });
+    var cuOk = kcfOk() && (S.c === 'evm' || S.c === 'sol' || S.c === 'trx'), cur = save === 'custom' && S.last && !S.last.err ? decStr(S.last.fee, S.gdec) : '';
+    HWP.picker({ title: 'Network fee', host: $('kss'), rows: rows,
+      custom: cuOk ? { label: 'Max fee (' + S.gsym + ')', unit: S.gsym, value: cur, on: save === 'custom', hint: 'Kwallet pays at most this for the network fee. Too low and the transaction can wait or fail.' } : null,
+      onPick: function (k) { if (k === S.level) return; S.level = k; buzz(8); notice = ''; draw(); arm(450); },
+      onCustom: function (t) {
+        var X = parseMax(t, S.gdec); if (X == null) return 'Enter an amount like 0.0005';
+        var b = lv.medium || lv[Object.keys(lv)[0]] || {}, M = R.feeMin || {};
+        var r = maxToFields(S.c, X, { gas: R.gasLimit, legacy: kcfLegacy(R), tip: U(b.tip), min: U(M.maxFee), sym: S.gsym, cu: (R.sol || {}).cuLimit, nsig: 1 });
+        if (r.err) return r.err;
+        var keep = { cf: S.cfTxt, lvl: S.level }; S.cfTxt = r.T; if (S.level !== 'custom') S.prevLevel = S.level; S.level = 'custom';
+        var c = calc(); if (c.err) { S.cfTxt = keep.cf; S.level = keep.lvl; return c.err; }
+        buzz(8); notice = ''; draw(); arm(450); return '';
+      } });
+  }
   function calc() {
     if (S.level === 'custom') {
       var e = kcfEff(S.R);
@@ -20204,7 +20312,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     var feeUsdV = gpx * Number(c.fee) / Math.pow(10, S.gdec);
     var feeHigh = !c.err && (feeUsdV > 25 || (!S.tok && !stake && !trust && c.amount != null && c.amount > 0n && c.fee * 5n > c.amount));
     var lv = R.fee.levels, keys = ['slow', 'medium', 'fast'].filter(function (k) { return lv[k]; }), cfOn = kcfOk(), LAB = { slow: 'Slow', medium: 'Normal', fast: 'Fast', custom: 'Custom' };
-    if (cfOn) { keys = keys.concat(['custom']); dappCss(); }
+    if (cfOn) keys = keys.concat(['custom']);
     var seg = keys.length > 1 ? '<div class="hp-seg" role="radiogroup">' + keys.map(function (k) { return '<button type="button" data-lv="' + k + '" class="' + (k === S.level ? 'on' : '') + '">' + (LAB[k] || k) + '</button>'; }).join('') + '</div>' : '';
     var coinKey = S.tok ? TOKLOGO[S.sym.toUpperCase()] : (S.c === 'evm' ? TOKLOGO[S.gsym] : S.info.logo), cic = (coinKey && LOGO[coinKey]) || '', nic = LOGO[S.info.logo] || '';
     var warnsL = [], infos = [], det = '';
@@ -20234,11 +20342,12 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     if (toRows) main += HWP.card(toRows);
     /* network fee: tap to change (Slow / Normal / Fast / Custom) */
     var fv = S.c === 'trx' && c.fee === 0n ? 'Free' : (c.approx ? '\u2248 ' : '') + fmt(c.fee, S.gdec, S.gdec) + ' ' + esc(S.gsym);
-    var fs = [c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : '', c.atMost ? 'at most' : '', S.c === 'trx' ? (c.fee > 0n ? 'burned from your TRX' : 'covered by your bandwidth') : ''].filter(Boolean).join(' \u00b7 ');
+    var fs = [c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : S.c === 'trx' ? 'Covered by your bandwidth' : '', c.atMost ? 'at most' : ''].filter(Boolean).join(' \u00b7 ');
     var live = R.live ? '<span class="hp-live' + (stale() ? ' stale' : '') + '" id="kss-live"><i></i><span id="kss-live-t">' + liveText() + '</span></span>' : '';
-    var ed = keys.length > 1, fopen = !!S.feeOpen || S.level === 'custom';
-    main += HWP.card(HWP.kv('Network fee<small>' + (LAB[S.level] || '') + (live ? ' \u00b7 ' : '') + live + '</small>', fv, fs, { tap: ed, chev: ed, id: 'kss-feer', cls: 'hp-fee' + (fopen ? ' hp-open' : '') }) +
-      (ed ? '<div class="hp-fed' + (fopen ? '' : ' off') + '" id="kss-fed">' + seg + (cfOn ? kcfBlock(c) : '') + '</div>' : ''));
+    var ed = keys.length > 1, fopen = false;
+    var flab = [ed ? (S.level === 'custom' ? 'Custom' : LAB[S.level] || '') : '', live].filter(Boolean).join(' \u00b7 ');
+    main += HWP.card(HWP.kv('Network fee' + (flab ? '<small>' + flab + '</small>' : ''), fv, fs, { tap: ed, chev: ed, id: 'kss-feer', cls: 'hp-fee' + (fopen ? ' hp-open' : '') }) +
+      '');
     /* wallet */
     main += HWP.card(HWP.walletRow(S.rec.label + ' \u00b7 #' + S.rec.index, R.from, nic));
     /* details: full addresses, contract, network, balances */
@@ -20246,6 +20355,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     if (!stake && !trust) det += dAddrRow('To', R.firstTime ? 'New address' : '', R.to);
     if (S.tok) { var issuer = S.c === 'xrp' ? String(S.tok).split('.')[1] : S.c === 'ada' ? String(S.tok).split('.')[0] : S.tok; det += dAddrRow(S.c === 'xrp' ? 'Issuer' : S.c === 'ada' ? 'Policy' : 'Token contract', esc(S.sym), issuer); }
     det += kv('Network', esc(S.info.name), S.c === 'evm' ? 'Chain ' + esc(R.chainId) + ' \u00b7 nonce ' + esc(R.nonce) : '');
+    if (S.c === 'trx' && c.fee > 0n) det += kv('Network fee', fmt(c.fee, 6, 6) + ' TRX', 'Burned from your TRX (not enough energy or bandwidth)');
     if (c.sendMax) det += kv('Spend at most', fmt(c.sendMax, S.dec, 8) + ' ' + esc(S.sym), 'Includes the issuer\u2019s transfer fee');
     if (c.inputs) det += kv('Inputs', String(c.inputs), c.change ? 'Change back to you: ' + fmt(c.change, S.gdec, 8) + ' ' + esc(S.gsym) : 'No change output');
     if (S.tok && !trust) det += kv('Balance', fmt(c.bal, S.dec, 6) + ' ' + esc(S.sym), after != null ? 'After: ' + fmt(after, S.dec, 6) + ' ' + esc(S.sym) : '');
@@ -20261,9 +20371,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     } else { morph($('kss-sc'), body); if ($('kss-sc').scrollTop !== top) $('kss-sc').scrollTop = top; }
     var x = page.querySelector('[data-hp-x]'); if (x) x.onclick = function () { if (!busy) finish({ status: 'rejected' }); };
     var dd = $('kss-det'); if (dd) dd.ontoggle = function () { S.detOpen = dd.open; };
-    var fr = $('kss-feer'); if (fr && fr.classList.contains('hp-tap')) fr.onclick = function () { S.feeOpen = !(S.feeOpen || S.level === 'custom'); if (!S.feeOpen && S.level === 'custom') S.feeOpen = true; var e = $('kss-fed'); if (e) e.classList.toggle('off', !S.feeOpen); fr.classList.toggle('hp-open', S.feeOpen); buzz(6); };
-    page.querySelectorAll('[data-lv]').forEach(function (b) { b.onclick = function () { var v = b.getAttribute('data-lv'); if (v === S.level || busy) return; if (v === 'custom') { S.prevLevel = S.level; if (!S.cfTxt) S.cfTxt = kcfDefaults(); } S.level = v; S.feeOpen = true; buzz(8); notice = ''; draw(); arm(450); }; });
-    page.querySelectorAll('input[data-cf]').forEach(function (i) { i.oninput = function () { if (busy) return; S.cfTxt = S.cfTxt || kcfDefaults(); S.cfTxt[i.getAttribute('data-cf')] = i.value; draw(); arm(450); }; });
+    var fr = $('kss-feer'); if (fr && fr.classList.contains('hp-tap')) fr.onclick = function () { buzz(6); openSendFee(); };
     tickExp(); syncBtn();
   }
   /* v3.93 (#49): live values change in place. The new page is diffed against the one on screen and only the text and
@@ -20548,14 +20656,33 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   function addrKv(l, a, right) { if (DS) { DS.full = DS.full || {}; DS.full[l + '|' + a] = dAddrRow(l, right || '', a); } return kv(l, '<span class="hp-mono">' + esc(short(a)) + '</span>', right || ''); }
 
   /* ---------- EVM ---------- */
+  /* wave A: well-known contracts (same address on most chains unless noted) -> [name, operation] */
+  var EVMK = {
+    '0x3fc91a3afd70395cd496c647d5a6cc9d4b2b7fad': ['Uniswap', 'Swap'], '0x66a9893cc07d91d95644aedd05d03f95e1dba8af': ['Uniswap', 'Swap'], '0xef1c6e67703c7bd7107eed8303fbe6ec2554bf6b': ['Uniswap', 'Swap'],
+    '0x7a250d5630b4cf539739df2c5dacb4c659f2488d': ['Uniswap V2', 'Swap'], '0xe592427a0aece92de3edee1f18e0157c05861564': ['Uniswap V3', 'Swap'], '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': ['Uniswap V3', 'Swap'],
+    '0x000000000004444c5dc75cb358380d2e3de08a90': ['Uniswap V4', 'Swap'], '0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e': ['Uniswap V4 positions', 'Liquidity'],
+    '0x000000000022d473030f116ddee9f6b43ac78ba3': ['Permit2', 'Approve'], '0x1111111254eeb25477b68fb85ed929f73a960582': ['1inch', 'Swap'], '0x111111125421ca6dc452d289314280a0f8842a65': ['1inch', 'Swap'],
+    '0xdef1c0ded9bec7f1a1670819833240f027b25eff': ['0x', 'Swap'], '0x0000000000001ff3684f28c67538d4d072c22734': ['0x', 'Swap'], '0xdef171fe48cf0115b1d80b88dc8eab59176fee57': ['ParaSwap', 'Swap'],
+    '0x6a000f20005980200259b80c5102003040001068': ['ParaSwap', 'Swap'], '0x9008d19f58aabd9ed0d60971565aa8510560ab41': ['CoW Swap', 'Swap'], '0xc92e8bdf79f0507f65a392b0ab4667716bfe0110': ['CoW Swap', 'Approve'],
+    '0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae': ['LI.FI', 'Swap'], '0x5c7bcd6e7de5423a257d81b442095a1a6ced35c5': ['Across', 'Bridge'], '0x8731d54e9d02c286767d56ac03e8037c07e01e98': ['Stargate', 'Bridge'],
+    '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2': ['WETH', 'Wrap'], '0x4200000000000000000000000000000000000006': ['WETH', 'Wrap'],
+    '0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2': ['Aave', 'Supply'], '0x794a61358d6845594f94dc1db02a252b5b4814ad': ['Aave', 'Supply'], '0xa238dd80c259a72e81d7e4664a9801593f98d1c5': ['Aave', 'Supply'],
+    '0xae7ab96520de3a18e5e111b5eaab095312d7fe84': ['Lido', 'Stake'], '0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0': ['Lido wstETH', 'Wrap'], '0x889edc2edab5f40e902b864ad4d7ade8e412f9b1': ['Lido', 'Unstake'],
+    '0x00000000000000adc04c56bf30ac9d3c0aaf14dc': ['OpenSea', 'NFT'], '0x0000000000000068f116a894984e2db1123eb395': ['OpenSea', 'NFT'],
+    '0x13f4ea83d0bd40e75c8222255bc855a974568dd4': ['PancakeSwap', 'Swap'], '0x10ed43c718714eb63d5aa57b78b54704e256024e': ['PancakeSwap', 'Swap']
+  };
+  var AAVEOP = { supply: 'Supply', deposit: 'Supply', withdraw: 'Withdraw', borrow: 'Borrow', repay: 'Repay' };
   function decodeEvmCall(tx) {
     var to = tx.to ? String(tx.to) : '', data = String(tx.data || tx.input || '0x'), value = U(tx.value || '0') || 0n, out = { rows: '', warn: [], title: '', blind: false };
     out.chg = [];
     if (!to) { out.title = 'Deploy contract'; out.op = 'Deploy contract'; out.warn.push('This deploys a new contract. Only continue if you wrote it.'); out.blind = true; return out; }
     if (data === '0x' || data === '') { out.op = 'Transfer'; out.chg.push({ s: '-', v: value, nat: 1 }); out.title = 'Send ' + DS.gsym; out.hero = { l: 'You send', a: fmt(value, 18, 8) + ' ' + esc(DS.gsym), raw: value }; out.rows += addrKv('To', to); return out; }
     var p = null; try { p = iface().parseTransaction({ data: data, value: value }); } catch (e) { p = null; }
-    if (!p) { out.op = 'Contract call'; if (value > 0n) out.chg.push({ s: '-', v: value, nat: 1 }); out.title = 'Contract call'; out.rows += addrKv('Contract', to) + kv('Method', '<span class="mono">' + esc(data.slice(0, 10)) + '</span>', 'Kwallet does not know this method'); out.hero = { l: 'Contract call', a: fmt(value, 18, 8) + ' ' + esc(DS.gsym), raw: value }; out.blind = true; out.warn.push('Kwallet cannot decode this call. Only sign if you trust ' + esc(DS.site) + '.'); return out; }
+    var KC = EVMK[to.toLowerCase()];
+    if (!p && KC) { out.known = KC[0]; out.op = KC[1]; out.title = KC[1]; if (value > 0n) out.chg.push({ s: '-', v: value, nat: 1 }); out.rows += addrKv('Contract', to, esc(KC[0])) + kv('Method', '<span class="mono">' + esc(data.slice(0, 10)) + '</span>'); out.hero = { l: KC[1], a: fmt(value, 18, 8) + ' ' + esc(DS.gsym), raw: value }; return out; }
+    if (!p) { out.op = 'Contract call'; if (value > 0n) out.chg.push({ s: '-', v: value, nat: 1 }); out.title = 'Contract call'; out.rows += addrKv('Contract', to) + kv('Method', '<span class="mono">' + esc(data.slice(0, 10)) + '</span>', 'Kwallet does not know this method'); out.hero = { l: 'Contract call', a: fmt(value, 18, 8) + ' ' + esc(DS.gsym), raw: value }; out.blind = true; out.warn.push('Unknown contract method (' + esc(data.slice(0, 10)) + ').'); return out; }
     var n = p.name, a = p.args; out.title = NICE[n] || n; out.method = p.signature; out.op = OPN[n] || 'Contract call';
+    if (KC) { out.known = KC[0]; if (!OPN[n] || out.op === 'Contract call') { out.op = KC[0] === 'Aave' && AAVEOP[n] ? AAVEOP[n] : KC[1]; out.title = out.op; } }
     var Z0 = '0x0000000000000000000000000000000000000000', isNat = function (x) { return String(x).toLowerCase() === Z0 || String(x).toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'; };
     out.rows += addrKv(n === 'transfer' || n === 'approve' || n === 'increaseAllowance' ? 'Token contract' : 'Contract', to, tokOf(to) ? esc(tokOf(to).s) : '');
     if (n === 'transfer') { out.chg.push({ s: '-', v: a[1], t: to }); out.hero = { l: 'You send', a: amtTok(a[1], to) }; out.rows += addrKv('To', a[0]); }
@@ -20568,7 +20695,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
       out.title = 'Permit2 approval';
       out.appr = { frag: p.fragment, args: Array.from(a), i: 2, tok: a[0], orig: a[2], unl: a[2] >= (1n << 159n), max: (1n << 160n) - 1n, p2: true };
       out.rows += addrKv('Token', a[0], tokOf(a[0]) ? esc(tokOf(a[0]).s) : '') + addrKv('Spender', a[1]) + kv('Expires', a[3] > 0n ? new Date(Number(a[3]) * 1000).toLocaleString() : 'Never');
-    } else if (n === 'setApprovalForAll') { out.op = a[1] ? 'Approve all NFTs' : 'Revoke NFT access'; out.rows += addrKv('Operator', a[0]) + kv('Access', a[1] ? '<b>All NFTs in this collection</b>' : 'Revoke'); if (a[1]) out.warn.push('This gives the operator control of every NFT in this collection.'); }
+    } else if (n === 'setApprovalForAll') { out.op = a[1] ? 'Approve all NFTs' : 'Revoke NFT access'; out.rows += addrKv('Operator', a[0]) + kv('Access', a[1] ? '<b>All NFTs in this collection</b>' : 'Revoke'); if (a[1] && !EVMK[String(a[0]).toLowerCase()]) out.warn.push('This gives the operator control of every NFT in this collection.'); }
     else if (n === 'deposit') { out.chg.push({ s: '-', v: value, nat: 1 }, { s: '+', v: value, t: to, sym: 'W' + DS.gsym }); out.hero = { l: 'Wrap', a: fmt(value, DS.gdec, 8) + ' ' + esc(DS.gsym), raw: value }; }
     else if (n === 'withdraw') { out.chg.push({ s: '-', v: a[0], t: to, sym: 'W' + DS.gsym }, { s: '+', v: a[0], nat: 1 }); out.hero = { l: 'Unwrap', a: fmt(a[0], 18, 8) + ' W' + esc(DS.gsym) }; }
     else if (/^swapExact/.test(n) && n !== 'swapExactInput') {
@@ -20634,9 +20761,32 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   }
 
   /* ---------- Solana ---------- */
-  var SOLP = { '11111111111111111111111111111111': 'System', 'ComputeBudget111111111111111111111111111111': 'Compute budget', 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA': 'Token', 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb': 'Token-2022',
-    'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL': 'Associated token account', 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr': 'Memo', 'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4': 'Jupiter',
-    'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc': 'Orca', 'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo': 'Meteora', '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8': 'Raydium', 'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK': 'Raydium CLMM' };
+  /* wave A: known Solana programs -> [name, what it does]. Ids from each project's docs / deployments (Jupiter dev docs,
+     Raydium, Orca, Meteora, Phoenix, OpenBook, Pump.fun, Sanctum, Marinade, Solana Program Library, Metaplex). An unknown
+     program is one small line in Details, never a banner. */
+  var SOLK = {
+    '11111111111111111111111111111111': ['System', 'sys'], 'ComputeBudget111111111111111111111111111111': ['Compute budget', 'sys'],
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA': ['Token', 'sys'], 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb': ['Token-2022', 'sys'],
+    'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL': ['Associated token account', 'sys'], 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr': ['Memo', 'sys'], 'Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo': ['Memo', 'sys'],
+    'AddressLookupTab1e1111111111111111111111111': ['Address lookup table', 'alt'], 'Stake11111111111111111111111111111111111111': ['Stake', 'stake'],
+    'Vote111111111111111111111111111111111111111': ['Vote', 'sys'], 'SPoo1Ku8WFXoNDMHPsrGSTSG1Y47rzgn41SLUNakuHy': ['Stake pool', 'stake'],
+    'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4': ['Jupiter', 'swap'], '61DFfeTKM7trxYcPQCM78bJ794ddZprZpAwAnLiwTpYH': ['Jupiter Ultra', 'swap'],
+    'jupoNjAxXgZ4rjzxzPMP4oxduvQsQtZzyknqvzYNrNu': ['Jupiter Limit Order', 'limit'], 'j1o2qRpjcyUwEvwtcfhEQefh773ZgjxcVRry7LDqg5X': ['Jupiter Limit Order', 'limit'],
+    'DCA265Vj8a9CEuX1eb1LWRnDT7uK6q1xMipnNyatn23M': ['Jupiter Recurring', 'dca'], 'PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu': ['Jupiter Perps', 'perps'],
+    'jup3YeL8QhtSx1e253b2FDvsMNC87fDrgQZivbrndc9': ['Jupiter Lend', 'lend'], 'jupeiUmn818Jg1ekPURTpr4mFo29p46vygyykFJ3wZC': ['Jupiter Lend', 'lend'], 'jupr81YtYssSyPt8jbnGuiWon5f6x9TcDEFxYe3Bdzi': ['Jupiter Lend', 'borrow'],
+    'jupgfSgfuAXv4B6R2Uxu85Z1qdzgju79s6MfZekN6XS': ['Jupiter Lend', 'lend'], 'jupZ4m2GqUCJ5iueMfzQf8khFfH31d4XAQt3RzCT9Vd': ['Jupiter AMM', 'swap'],
+    '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8': ['Raydium', 'swap'], 'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK': ['Raydium CLMM', 'swap'], 'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C': ['Raydium CPMM', 'swap'],
+    'routeUGWgWzqBWFcrCfv8tritsqukccJPu3q5GPP3xS': ['Raydium Router', 'swap'], 'LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj': ['Raydium LaunchLab', 'swap'],
+    'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc': ['Orca', 'swap'], 'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo': ['Meteora DLMM', 'swap'],
+    'Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB': ['Meteora DAMM', 'swap'], 'cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG': ['Meteora DAMM v2', 'swap'],
+    'dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN': ['Meteora Bonding Curve', 'swap'], 'PhoeNiXZ8ByJGLkxNfZRnkUfjvmuYqLR89jjFHGqdXY': ['Phoenix', 'swap'],
+    '2wT8Yq49kHgDzXuPxZSaeLaH1qbmGXtEyPy64bL7aD3c': ['Lifinity', 'swap'], 'opnb2LAfJYbRMAHHvqjCwQxanZn7ReEHp1k81EohpZb': ['OpenBook', 'swap'], 'srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX': ['OpenBook', 'swap'],
+    '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P': ['Pump.fun', 'swap'], 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA': ['PumpSwap', 'swap'],
+    'stkitrT1Uoy18Dk1fTrgPw8W6MVzoCfYoAFT4MLsmhq': ['Sanctum Router', 'stake'], '5ocnV1qiCgaQR8Jb8xWnVbApfaygJ8tNoZfgPwsgx9kx': ['Sanctum Infinity', 'swap'],
+    'MarBmsSgKXdrN1egZf5sqe1TMai9K1rChYNDJgjq7aD': ['Marinade', 'stake'], 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s': ['Metaplex', 'nft'], 'BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY': ['Metaplex Bubblegum', 'nft'],
+    'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d': ['Metaplex Core', 'nft'], 'L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95': ['Lighthouse (transaction guard)', 'sys']
+  };
+  var SOLP = {}; Object.keys(SOLK).forEach(function (k) { SOLP[k] = SOLK[k][0]; });
   function le64(u, o) { var v = 0n; for (var i = 7; i >= 0; i--) v = (v << 8n) | BI(u[o + i]); return v; }
   function le32(u, o) { return (u[o] | (u[o + 1] << 8) | (u[o + 2] << 16) | (u[o + 3] << 24)) >>> 0; }
   function solView() {
@@ -20648,39 +20798,43 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     var keys = st.concat(wr, ro), nsig = msg.header.numRequiredSignatures, me = st.indexOf(R.from);
     if (me < 0 || me >= nsig) { out.err = 'This transaction does not need a signature from ' + short(R.from) + '.'; return out; }
     out.tx = tx; out.idx = me; out.nsig = nsig; out.version = msg.version;
-    if (me !== 0) out.warn.push('Someone else pays the fee for this transaction (fee payer ' + esc(short(st[0])) + ').');
+    out.risk = []; out.notes = [];
+    if (me !== 0) out.notes.push('Someone else pays the network fee (fee payer ' + esc(short(st[0])) + ').');
     var unknown = [], spl = [], ops = {};
     out.cbP = -1; out.cbL = -1; out.chg = [];
     msg.compiledInstructions.forEach(function (ci, ix) {
       var pid = keys[ci.programIdIndex], d = ci.data, ac = ci.accountKeyIndexes.map(function (i) { return keys[i]; }), name = SOLP[pid] || null, t = '';
-      if (pid === '11111111111111111111111111111111' && d.length >= 12 && le32(d, 0) === 2) { t = 'Send ' + fmt(le64(d, 4), 9, 9) + ' SOL to ' + esc(short(ac[1])); ops.transfer = 1; if (ac[0] === R.from) out.solOut = (out.solOut || 0n) + le64(d, 4); }
+      if (pid === '11111111111111111111111111111111' && d.length >= 4 && le32(d, 0) === 4 && ix === 0) { t = 'Advance durable nonce'; out.risk.push('<b>Durable nonce.</b> This transaction does not expire: it can be submitted any time later, even after you forget it.'); }
+      else if (pid === '11111111111111111111111111111111' && d.length >= 4 && (le32(d, 0) === 1 || le32(d, 0) === 10) && ac[0] === R.from) { t = '<b>Assign your account</b> to ' + esc(short(ac[0])); out.risk.push('<b>Account ownership change.</b> This hands your main account to a program. You could lose everything in it.'); }
+      else if (pid === '11111111111111111111111111111111' && d.length >= 12 && le32(d, 0) === 2) { t = 'Send ' + fmt(le64(d, 4), 9, 9) + ' SOL to ' + esc(short(ac[1])); ops.transfer = 1; if (ac[0] === R.from) out.solOut = (out.solOut || 0n) + le64(d, 4); }
       else if (pid === 'ComputeBudget111111111111111111111111111111') { if (d[0] === 2 && d.length >= 5) { out.cuLimit = le32(d, 1); out.cbL = ix; } if (d[0] === 3 && d.length >= 9) { out.cuPrice = le64(d, 1); out.cbP = ix; } t = d[0] === 2 ? 'Compute limit ' + le32(d, 1) : d[0] === 3 ? 'Priority fee ' + le64(d, 1) + ' µ-lamports/CU' : 'Compute budget'; }
       else if ((pid === 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' || pid === 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb') && d.length) {
         var k = d[0];
         if (k === 3 && d.length >= 9) { ops.transfer = 1; t = 'Token transfer ' + le64(d, 1) + ' raw units to ' + esc(short(ac[1])); }
         else if (k === 12 && d.length >= 10) { var mt = tokOf(ac[1]); ops.transfer = 1; if (ac[3] === R.from) out.chg.push({ s: '-', v: le64(d, 1), t: ac[1], dec: d[9] }); t = 'Send ' + (mt ? fmt(le64(d, 1), +mt.d, 8) + ' ' + esc(mt.s) : fmt(le64(d, 1), d[9], 8) + ' of ' + esc(short(ac[1]))) + ' to ' + esc(short(ac[2])); }
-        else if (k === 4 || k === 13) { ops.approve = 1; t = '<b>Approve</b> ' + esc(short(ac[1])) + ' to spend ' + le64(d, 1) + ' raw units'; out.warn.push('This lets ' + esc(short(ac[1])) + ' spend your tokens later.'); }
-        else if (k === 9) { ops.close = (ops.close || 0) + 1; t = 'Close token account ' + esc(short(ac[0])); }
+        else if (k === 4 || k === 13) { ops.approve = 1; t = '<b>Approve</b> ' + esc(short(ac[1])) + ' to spend ' + le64(d, 1) + ' raw units'; if (!SOLK[ac[1]]) out.risk.push('<b>Token approval</b> to ' + esc(short(ac[1])) + ', an address Kwallet does not know. It could spend these tokens later.'); }
+        else if (k === 9) { ops.close = (ops.close || 0) + 1; t = 'Close token account ' + esc(short(ac[0])); if (ac[1] && ac[1] !== R.from && ac[2] === R.from) out.risk.push('Closes your token account and sends its SOL to ' + esc(short(ac[1])) + ', not to you.'); }
         else if (k === 8 || k === 15) { ops.burn = 1; t = 'Burn ' + (k === 15 && d.length >= 10 ? fmt(le64(d, 1), d[9], 8) : le64(d, 1) + ' raw units') + ' of ' + esc(short(ac[1])); if (k === 15 && d.length >= 10) out.chg.push({ s: '-', v: le64(d, 1), t: ac[1], dec: d[9] }); else if (tokOf(ac[1])) out.chg.push({ s: '-', v: le64(d, 1), t: ac[1] }); }
         else if (k === 7 || k === 14) { ops.mint = 1; t = 'Mint tokens of ' + esc(short(ac[0])); }
         else if (k === 17) t = 'Sync wrapped SOL';
         else if (k === 1 || k === 16 || k === 18) t = 'Open token account';
-        else if (k === 6) { t = '<b>Change authority</b> of ' + esc(short(ac[0])); out.warn.push('This changes who controls a token account.'); }
+        else if (k === 6) { t = '<b>Change authority</b> of ' + esc(short(ac[0])); if (ac[1] === R.from) out.risk.push('<b>Authority change.</b> This gives control of one of your token accounts to someone else.'); }
         else t = name + ' instruction ' + k;
       }
       else if (pid === 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL') t = 'Create token account for ' + esc(short(ac[2]));
       else if (pid === 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr') t = 'Memo: ' + esc(utf8(d) || bhex(d).slice(0, 40));
       else if (pid === 'Stake11111111111111111111111111111111111111') { ops.stake = 1; t = 'Stake program'; }
-      else if (name) { if (/Jupiter|Orca|Meteora|Raydium/.test(name)) ops.swap = 1; t = name + ' (' + ac.length + ' accounts)'; }
-      else { t = 'Program ' + esc(short(pid)) + ' (' + ac.length + ' accounts)'; unknown.push(pid); }
+      else if (name) { var kd = SOLK[pid][1]; if (kd !== 'sys') ops[kd] = 1; if (!out.app && kd !== 'sys' && kd !== 'alt') out.app = name; t = name + ' (' + ac.length + ' accounts)'; }
+      else { t = 'Program ' + esc(short(pid)) + ' (' + ac.length + ' accounts)'; if (unknown.indexOf(pid) < 0) unknown.push(pid); }
       out.ins.push(t);
     });
-    if (unknown.length) out.warn.push('Kwallet does not know ' + (unknown.length === 1 ? 'one program' : unknown.length + ' programs') + ' in this transaction. Only sign if you trust ' + esc(DS.site) + '.');
+    out.unknown = unknown;
+    if (unknown.length) out.notes.push((unknown.length === 1 ? '1 unknown program' : unknown.length + ' unknown programs') + ': ' + unknown.map(function (x) { return esc(short(x)); }).join(', '));
     out.fee = BI(5000 * nsig) + (out.cuPrice * BI(out.cuLimit) + 999999n) / 1000000n;
     /* #82: the priority fee / compute units can be changed only when Kwallet is the one signer and the app set them */
     out.feeEdit = me === 0 && nsig === 1 && out.cbP >= 0;
     if (out.solOut) out.chg.unshift({ s: '-', v: out.solOut, nat: 1 });
-    out.op = ops.swap ? 'Swap' : ops.approve ? 'Approve' : ops.stake ? 'Stake' : ops.burn ? 'Burn' : ops.mint ? 'Mint' : ops.transfer ? 'Transfer' : ops.close ? (ops.close > 1 ? 'Close token accounts' : 'Close token account') : unknown.length ? 'App interaction' : 'Transaction';
+    out.op = ops.limit ? 'Limit order' : ops.dca ? 'Recurring buy' : ops.perps ? 'Perps trade' : ops.borrow ? 'Borrow' : ops.lend ? 'Lend' : ops.swap ? 'Swap' : ops.stake ? 'Stake' : ops.nft ? 'NFT' : ops.approve ? 'Approve' : ops.burn ? 'Burn' : ops.mint ? 'Mint' : ops.transfer ? 'Transfer' : ops.close ? (ops.close > 1 ? 'Close token accounts' : 'Close token account') : ops.alt ? 'Lookup table' : unknown.length ? 'App transaction' : 'Transaction';
     out.hero = out.solOut ? { l: 'You send', a: fmt(out.solOut, 9, 9) + ' SOL', raw: out.solOut } : { l: out.op, a: '' };
     /* #94: instruction counts and lookup tables are technical: Details only */
     out.tech = kv('Instructions', String(msg.compiledInstructions.length), out.version === 'legacy' ? 'Legacy transaction' : 'Version 0' + (lk.length ? ' · ' + lk.length + ' lookup table' + (lk.length > 1 ? 's' : '') : ''));
@@ -20829,6 +20983,41 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     }
     return c;
   }
+  /* wave A: dApp fee speeds. EVM: Slow / Normal / Fast. Solana: the app's own fee ("Site suggested"), Faster (2x the
+     priority fee) and Fastest (4x), always with the app's compute limit. Tron: the app's fee limit. Custom: one "Max fee". */
+  function dappTierLabel() { var t = DS.tier || (DS.level === 'custom' ? 'custom' : DS.level); return { slow: 'Slow', medium: 'Normal', fast: 'Fast', auto: 'Site suggested', x2: 'Faster', x4: 'Fastest', custom: 'Custom' }[t] || ''; }
+  function dappRowsFor(keys, setter) {
+    var save = { lv: DS.level, tier: DS.tier, cf: DS.R.cf, cft: DS.R.cfTxt }, rows = [], P = DS.R.prices || {}, gpx = +P.gasUsd || 0, fdec = DS.c === 'trx' ? 6 : DS.c === 'sol' ? 9 : 18, sym = DS.gsym;
+    keys.forEach(function (k) { setter(k); var c; try { c = dappCalc(); } catch (e) { c = null; } DS.level = save.lv; DS.tier = save.tier; DS.R.cf = save.cf; DS.R.cfTxt = save.cft; if (!c || c.fee == null) return;
+      rows.push({ k: k, l: { slow: 'Slow', medium: 'Normal', fast: 'Fast', auto: 'Site suggested', x2: 'Faster', x4: 'Fastest' }[k], sub: DS.c === 'trx' ? 'Up to this amount' : (ETA[DS.c] || {})[k] || '', v: fmt(c.fee, fdec, 8) + ' ' + sym, vs: usdTxt(c.fee, fdec, gpx), on: (DS.tier || DS.level) === k }); });
+    return rows;
+  }
+  function solTier(k) { var v = DS.view || {}, M = DS.R.feeMin || {}, pr = v.cuPrice > 0n ? v.cuPrice : (U(M.cuPrice) > 0n ? U(M.cuPrice) : 10000n), m = k === 'x4' ? 4n : 2n; DS.R.cfTxt = { cup: String(pr * m) }; if (v.cbL >= 0) DS.R.cfTxt.cul = String(v.cuLimit); DS.level = 'custom'; DS.tier = k; cfParse(); }
+  function openDappFee() {
+    if (busy) return;
+    var R = DS.R, v = DS.view || {}, rows, keys;
+    if (DS.c === 'evm') { var lv = R.fee.levels; keys = ['slow', 'medium', 'fast'].filter(function (k) { return lv[k]; }); rows = dappRowsFor(keys, function (k) { DS.level = k; DS.tier = null; }); }
+    else if (DS.c === 'sol') rows = dappRowsFor(['auto', 'x2', 'x4'], function (k) { if (k === 'auto') { DS.level = 'auto'; DS.tier = null; } else solTier(k); });
+    else rows = dappRowsFor(['auto'], function () { DS.level = 'auto'; DS.tier = null; });
+    var fdec = DS.c === 'trx' ? 6 : DS.c === 'sol' ? 9 : 18, cur = DS.level === 'custom' && !DS.tier && DS.last && DS.last.fee != null && !DS.last.err ? decStr(DS.last.fee, fdec) : '';
+    HWP.picker({ title: 'Network fee', host: $('kss'), rows: rows,
+      custom: { label: 'Max fee (' + DS.gsym + ')', unit: DS.gsym, value: cur, on: DS.level === 'custom' && !DS.tier, hint: DS.c === 'trx' ? 'Up to this much TRX can be burned for energy. Too low and the call can fail and still burn TRX.' : 'Kwallet pays at most this for the network fee. Too low and the transaction can wait or fail.' },
+      onPick: function (k) {
+        if (k === (DS.tier || DS.level)) return;
+        if (DS.c === 'sol' && k !== 'auto') solTier(k); else { DS.level = k; DS.tier = null; }
+        buzz(8); notice = ''; dappDraw(); arm(450);
+      },
+      onCustom: function (t) {
+        var X = parseMax(t, fdec); if (X == null) return 'Enter an amount like 0.0005';
+        var c0 = DS.last || {}, M = R.feeMin || {}, lv = R.fee.levels || {}, b = lv.medium || lv[Object.keys(lv)[0]] || {};
+        var r = maxToFields(DS.c, X, { gas: c0.gas || U(R.gasLimit), legacy: !!c0.legacy, tip: U(b.tip), min: U(M.maxFee), sym: DS.gsym, cu: v.cuLimit, nsig: v.nsig });
+        if (r.err) return r.err;
+        if (DS.c === 'sol' && !(v.cbL >= 0)) delete r.T.cul;
+        var keep = { lv: DS.level, tier: DS.tier, cf: R.cf, cft: R.cfTxt }; R.cfTxt = r.T; DS.level = 'custom'; DS.tier = null; cfParse();
+        var c = dappCalc(); if (c.err) { DS.level = keep.lv; DS.tier = keep.tier; R.cf = keep.cf; R.cfTxt = keep.cft; return c.err; }
+        buzz(8); notice = ''; dappDraw(); arm(450); return '';
+      } });
+  }
   /* the fee editor: always in the DOM when the fee is editable (hidden until Custom), so typing never rebuilds the inputs */
   function cfFields(c) {
     var R = DS.R, T = R.cfTxt || {}, v = DS.view || {}, M = R.feeMin || {}, f = [], min = '', low = [];
@@ -20926,7 +21115,8 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
         var ts = tokOf(v.appr.tok), tsym = ts ? ts.s : 'tokens';
         main += HWP.card(HWP.kv('<span class="hp-acc">' + (tokIcon(tsym, v.appr.tok) ? '<img class="hp-tk" style="width:28px;height:28px;margin-right:10px" alt="" src="' + tokIcon(tsym, v.appr.tok) + '">' : '') + '<span>' + esc(tsym) + '</span></span>', ae.unl ? '<b>Unlimited</b>' : fmt(ae.amt, ts ? +ts.d : 0, 8) + ' ' + esc(tsym), ae.changed ? 'Exact amount' : 'Allowance') + HWP.kv('Spender', '<span class="hp-mono">' + esc(short(String(v.appr.args[v.appr.p2 ? 1 : 0]))) + '</span>', '', { sm: true }) +
           (ae.canExact ? '<div class="hp-fed"><div class="hp-seg" role="radiogroup"><button type="button" data-al="exact" class="' + (ae.mode === 'exact' ? 'on' : '') + '">Exact amount</button><button type="button" data-al="app" class="' + (ae.mode === 'app' ? 'on' : '') + '">Unlimited</button></div></div>' : ''));
-        if (ae.unl) warnsL.push('<b>Unlimited approval.</b> ' + esc(DS.site) + ' could move all your ' + esc(tsym) + ' at any time.' + (ae.canExact ? '' : ' Cancel and ask the app for the exact amount if you are not sure.'));
+        var spK = v.appr && v.appr.args && EVMK[String(v.appr.p2 ? v.appr.args[1] : v.appr.args[0]).toLowerCase()];
+        if (ae.unl && !spK) warnsL.push('<b>Unlimited approval.</b> ' + esc(DS.site) + ' could move all your ' + esc(tsym) + ' at any time.' + (ae.canExact ? '' : ' Cancel and ask the app for the exact amount if you are not sure.'));
         if (rows && rows.length && !v.chgSwap) main += HWP.cap(sim ? 'Balance changes are estimated.' : 'Balance changes decoded from the transaction.') + HWP.changes(rows);
       } else if (v.apprT) {
         var tt = tokOf(v.apprT.tok), tts = tt ? tt.s : 'tokens';
@@ -20961,17 +21151,13 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     }
     /* 2. network fee (tap to change: Slow / Normal / Fast / Custom) */
     if (isTx) {
-      var ed = DS.c === 'evm' || DS.c === 'trx' || (DS.c === 'sol' && v.feeEdit), keys, lab = { slow: 'Slow', medium: 'Normal', fast: 'Fast', auto: 'App', custom: 'Custom' };
-      if (DS.c === 'evm') { var lv = R.fee.levels; keys = ['slow', 'medium', 'fast'].filter(function (k) { return lv[k]; }); } else keys = ['auto'];
-      if (ed) keys = keys.concat(['custom']);
-      var seg = keys.length > 1 ? '<div class="hp-seg" role="radiogroup">' + keys.map(function (k) { return '<button type="button" data-lv="' + k + '" class="' + (k === DS.level ? 'on' : '') + '">' + lab[k] + '</button>'; }).join('') + '</div>' : '';
+      var ed = DS.c === 'evm' || DS.c === 'trx' || (DS.c === 'sol' && v.feeEdit);
       var fv = c.fee != null ? fmt(c.fee, fdec, fdec) + ' ' + sym : '\u2014', fs = c.fee != null ? usdTxt(c.fee, fdec, gpx) : '';
       if (DS.c === 'sol' && v.idx !== 0) fs = 'Paid by someone else';
       if (c.atMost) fs = (DS.c === 'trx' ? 'Fee limit' : 'At most') + (fs ? ' \u00b7 ' + fs : '');
       var live = R.live && m === 'eth_sendTransaction' ? '<span class="hp-live' + (stale() ? ' stale' : '') + '" id="kss-live"><i></i><span id="kss-live-t">' + liveText() + '</span></span>' : '';
-      var fopen = !!DS.feeOpen || DS.level === 'custom';
-      main += HWP.card(HWP.kv('Network fee' + (live ? '<small>' + live + '</small>' : ''), fv, fs, { tap: ed, chev: ed, id: 'kss-feer', cls: 'hp-fee' + (fopen ? ' hp-open' : '') }) +
-        (ed ? '<div class="hp-fed' + (fopen ? '' : ' off') + '" id="kss-fed">' + seg + cfBlock(c) + '</div>' : ''));
+      var tl = ed ? dappTierLabel() : '', fl2 = [tl, live].filter(Boolean).join(' \u00b7 ');
+      main += HWP.card(HWP.kv('Network fee' + (fl2 ? '<small>' + fl2 + '</small>' : ''), fv, fs, { tap: ed, chev: ed, id: 'kss-feer', cls: 'hp-fee' }));
       if (c.gbal != null) { var after = c.err ? null : c.gbal - c.amount - (DS.c === 'sol' && v.idx !== 0 ? 0n : c.fee); det += kv('Balance', fmt(c.gbal, fdec, 6) + ' ' + sym, after != null && after >= 0n ? (c.atMost ? 'After: at least ' : 'After: about ') + fmt(after < 0n ? 0n : after, fdec, 6) + ' ' + sym : ''); }
     }
     /* 3. wallet */
@@ -20983,14 +21169,14 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
       var tx = (R.params || {}).tx || {};
       det += v.rows + (v.method ? kv('Method', '<span class="hp-mono">' + esc(v.method.split('(')[0]) + '</span>', esc(v.method.length > 60 ? v.method.slice(0, 57) + '\u2026' : v.method)) : '') +
         kv('Gas limit', c.gas != null ? Number(c.gas).toLocaleString('en-US') : '\u2014', c.legacy ? 'Gas price ' + gwei(c.gp) + ' gwei' : 'Max fee ' + gwei(c.mf) + ' \u00b7 tip ' + gwei(c.tip) + ' gwei');
-      warnsL = warnsL.concat(v.warn);
+      (v.warn || []).forEach(function (w) { if (/Unlimited|every NFT|deploys a new contract|permission|another account|phishing/.test(w) && !(v.known && /Unlimited/.test(w))) warnsL.push(w); else det += '<div class="hp-note">' + w + '</div>'; });
       if (R.sim && R.sim.error) warnsL.push('Simulation failed: ' + esc(String(R.sim.error).slice(0, 160)) + '. This transaction will probably fail.');
       raw = JSON.stringify({ to: tx.to, value: tx.value || '0x0', data: ae ? ae.data : tx.data || '0x', gas: String(c.gas) }, null, 1);
     } else if (m === 'solana_signTransaction') {
-      warnsL = warnsL.concat(v.warn); det += v.rows + (v.tech || '') + '<div class="hp-sec">What it does</div><ol class="hp-ol">' + v.ins.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ol>';
+      warnsL = warnsL.concat(v.risk || []); det += (v.notes || []).concat(v.warn || []).map(function (w) { return '<div class="hp-note">' + w + '</div>'; }).join('') + v.rows + (v.tech || '') + '<div class="hp-sec">What it does</div><ol class="hp-ol">' + v.ins.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ol>';
       raw = (R.params || {}).tx;
     } else if (m === 'tron_signTransaction') {
-      warnsL = warnsL.concat(v.warn); det += v.rows + kv('Type', esc(v.type)); raw = (R.params || {}).tx.raw_data_hex;
+      (v.warn || []).forEach(function (w) { if (/Unlimited|every NFT|deploys a new contract|permission|another account|phishing/.test(w)) warnsL.push(w); else det += '<div class="hp-note">' + w + '</div>'; }); det += v.rows + kv('Type', esc(v.type)); raw = (R.params || {}).tx.raw_data_hex;
     } else if (isMsg) det += addrKv('Account', R.from, esc(DS.rec.label) + ' \u00b7 #' + DS.rec.index);
     var full = DS.full || {}; det += Object.keys(full).map(function (k) { return full[k]; }).join('');
     if (raw) det += '<div class="hp-sec">Raw data</div><div class="hp-raw">' + esc(raw) + '</div>';
@@ -21010,7 +21196,8 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
       hold($('kss-go'));
     } else { morph($('kss-sc'), body); if ($('kss-sc').scrollTop !== top) $('kss-sc').scrollTop = top; var x = page.querySelector('[data-hp-x]'); if (x) x.onclick = function () { if (!busy) finish({ status: 'rejected' }); }; }
     var dd = $('kss-det'); if (dd) dd.ontoggle = function () { DS.detOpen = dd.open; };
-    var fr = $('kss-feer'); if (fr && fr.classList.contains('hp-tap')) fr.onclick = function () { DS.feeOpen = !(DS.feeOpen || DS.level === 'custom'); if (!DS.feeOpen && DS.level === 'custom') DS.feeOpen = true; var e = $('kss-fed'); if (e) e.classList.toggle('off', !DS.feeOpen); fr.classList.toggle('hp-open', DS.feeOpen); buzz(6); };
+    var fr = $('kss-feer'); if (fr && fr.classList.contains('hp-tap')) fr.onclick = function () { buzz(6); openDappFee(); };
+    var fr0 = null; if (fr0) fr0.onclick = function () { DS.feeOpen = !(DS.feeOpen || DS.level === 'custom'); if (!DS.feeOpen && DS.level === 'custom') DS.feeOpen = true; var e = $('kss-fed'); if (e) e.classList.toggle('off', !DS.feeOpen); fr.classList.toggle('hp-open', DS.feeOpen); buzz(6); };
     page.querySelectorAll('[data-lv]').forEach(function (b) { b.onclick = function () {
       var x = b.getAttribute('data-lv'); if (x === DS.level || busy) return;
       if (x === 'custom' && !DS.R.cfTxt) { var T = {}; cfFields(DS.last).f.forEach(function (f) { T[f.k] = String(f.v).replace(/,/g, ''); }); DS.R.cfTxt = T; }
