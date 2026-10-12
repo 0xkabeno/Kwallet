@@ -1,5 +1,35 @@
 # Changelog
 
+## Kwallet v3.97 + Hwallet v1.7 (Push 3)
+
+Kwallet stays the fully secure offline signer; Hwallet becomes the quickest hot signer: every signature is one sheet over Hwallet, fees are set in the coin like Jupiter, and every transaction reads in plain language. Full Monero comes in v3.98.
+
+### Kwallet 3.97 — the offline vault
+- **One sign sheet for every signature** (#94, #102, #106): Send for every coin, Swap (approvals and the service-fee transfer included), dApps, WalletConnect and fee withdrawals all open the same translucent sheet over Hwallet, in Hwallet's navy (light) / blue (dark) theme. The old full-page sign screen is gone. Warm pre-loaded sheet opens in about 0.3 s.
+- **Exact operation names** (#94): Swap, Send, Approve, Revoke, Stake / Unstake, Delegate, Vote, Supply, Borrow, Bridge, Limit order, Recurring buy, Sign-in, NFT listing (Seaport), Permit / Permit2. Known-program registries for Solana, EVM (Uniswap Universal Router incl. V4, 1inch v6, V3 routers) and Tron (SunSwap Smart / Universal / V2 / V3 routers, SUN.io Permit2, JustLend, sTRX, native Stake 2.0 types).
+- **Balance changes** (#104): Solana simulation deltas (SOL, SPL, Token-2022) and Tron/Solana simulation errors from Hwallet; quotes shown as "You send / You receive at least". Unknown programs are a quiet Details note; red only for real risks.
+- **Jupiter-style fee sheet** (#108, #109, #110): speed rows with the fee in the coin and dollars and a check (Solana Site suggested / Faster / Fastest, EVM Low / Normal / High with Gwei, Tron Normal / Fast as "up to X TRX"), and a Manual Custom section: Transaction landing Max Cap | Exact Fee, Solana priority fee in SOL, EVM max fee / priority fee in Gwei and gas limit, Tron fee limit in TRX, with the live total. No micro-lamports or compute units on screen. "Use this fee" applies on the first tap; sheets clear the navigation bar; the "unusually high fee" warning is measured against each chain's normal fee.
+
+### Hwallet 1.7 — the hot wallet
+- **Send as a sheet** (#103) for every coin, with the same fee sheet and Manual Custom fee; **Swap settings** use it too, including an optional **Jito tip** on Jupiter routes.
+- **Swap** (#84, #87, #100): smoother layout and token picker (chips no longer clipped, quiet selection, badge room), live quotes every 12 s with a countdown ring, and a stepper (Approve exact → Swap → service fee) that stays over the Kwallet sheets; approval skipped when the allowance is enough.
+- **Readable Activity** (#98): tap a row for a plain-language headline, balance changes read from the chain, status, network fee, date, counterparty and an Explorer button (Solana, EVM networks, Tron). Swaps made on this phone read "Swap USDC → SOL" in the list.
+- **WalletConnect** (#92, #97b): requests keep arriving while Hwallet is in the background (native relay socket + the live foreground service); a heads-up notification brings Hwallet forward and Kwallet's sheet opens at once; after answering Hwallet returns to the dApp (its redirect link, else the previous app). Wallet metadata now has an https icon and the `hwallet://wc` redirect.
+- **Browser** (#86, #95, #99, #105): pages load on every phone (an invalid origin rule stopped every tab), normal HTTP cache, compositor-only progress bar, Android Back = page back, 20 bundled dApp icons plus each site's favicon, History and Most visited. Providers register at document start and again when the page is parsed and loaded; Solana Wallet Standard lists mainnet by name and by CAIP-2 id; EIP-6963 announces "Hwallet" (rdns `app.hwallet`).
+- **Balances** (#93, #107): batches fall back to single calls; a token missing from a reply keeps its last value; Solana reads Token and Token-2022 accounts and adds any held token automatically; pinned TRC-20 tokens are read directly; retries per chain. Pull to refresh (#85) spins until done, with a 9 s cap.
+- **Fees accounts** (#101): reads the fee addresses' balances directly on every chain.
+- **Settings > API keys** (#89): one row that opens its own page with Your key / Built-in / Keyless per provider and the editor.
+- **Gem dimensions** (#90c, #91): 72 dp rows, 44 dp logos with Gem's badge size and ring, 64 dp header icon and top bar, balance in Gem's display size, 54 dp round actions. Chain and token icons come from Gem Wallet's assets (MIT, credited in NOTICE).
+- No "Let app always run in background?" prompt unless you ask for it in Settings; no focus ring on the bottom bar.
+
+### Known limits
+- XMR send is not included yet; full Monero (view-key scan, Kwallet cold signing, key images) comes in **v3.98**.
+- Approve → Swap uses two Kwallet sheets with Hwallet's stepper; no Permit2 / EIP-2612 signature path yet.
+- The Jito tip is offered on Hwallet's own Jupiter swaps only; Kwallet never adds instructions to an app's transaction.
+- A WalletConnect request that arrives while another app is open needs one tap on its notification (Android blocks background app starts).
+- Hwallet is not in the WalletConnect directory yet.
+- This release was built and signed by CI; it was not tested on a device before publishing.
+
 ## Kwallet v3.96 + Hwallet v1.6 (Push 2)
 
 Hwallet becomes a full dApp wallet (WalletConnect, a dApp browser and Swap) while every key and every signature stays in Kwallet.

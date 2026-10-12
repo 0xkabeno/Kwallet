@@ -64,6 +64,8 @@ android {
         targetSdk = 34
         versionCode = code
         versionName = appVersion
+        // v3.97 P0: true only in the CI emulator job (-PkwE2E=true): lets the device check drive the WebViews over DevTools
+        buildConfigField("boolean", "E2E", if (project.findProperty("kwE2E") == "true") "true" else "false")
     }
 
     signingConfigs {

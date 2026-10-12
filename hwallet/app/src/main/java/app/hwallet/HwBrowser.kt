@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -15,6 +16,7 @@ import android.os.Looper
 import android.os.Message
 import android.os.Parcel
 import android.util.Base64
+import android.util.Log
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
@@ -30,6 +32,7 @@ import androidx.webkit.JavaScriptReplyProxy
 import androidx.webkit.WebMessageCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -47,8 +50,8 @@ import java.util.concurrent.TimeUnit
  *
  * #83 persistence, per tab in files/br/<id>/: state.bin (WebView.saveState Bundle = back/forward history),
  * page.mht (MHTML snapshot, the offline fallback), thumb.jpg (tab switcher), meta.json (url, scroll).
- * A restored tab loads with LOAD_CACHE_ELSE_NETWORK (no network for anything cached) until the user touches it or
- * reloads; offline it shows the MHTML snapshot. Closing a tab deletes its folder. At most [MAX_LIVE] WebViews stay
+ * v1.7 (P1, #86): every tab uses the normal HTTP cache (LOAD_DEFAULT); only while the phone is offline a tab loads
+ * cache-first, and an offline restored tab shows its MHTML snapshot. Closing a tab deletes its folder. At most [MAX_LIVE] WebViews stay
  * alive; older tabs are saved and destroyed, and come back from disk when selected, so the tab count is unlimited.
  *
  * All public methods may be called from the JavaScript binder thread; WebView work is posted to the UI thread.
@@ -85,7 +88,8 @@ class HwBrowser(
     private fun q(s: String) = JSONObject.quote(s)
     private fun okId(id: String) = id.length in 2..24 && id.matches(Regex("^t[0-9a-z]+$"))
     private fun dir(id: String) = File(base, id)
-    private fun post(f: () -> Unit) { ui.post { try { f() } catch (_: Throwable) {} } }
+    /** v1.7 (P1): failures are logged (v1.6 swallowed them, which hid #86: an invalid origin rule threw in make()) */
+    private fun post(f: () -> Unit) { ui.post { try { f() } catch (e: Throwable) { Log.w(TAG, "browser op failed", e) } } }
 
     // ---------------------------------------------------------------- page -> native (via HwNative)
 
@@ -104,7 +108,7 @@ class HwBrowser(
             root.addView(w, lp)
             val st = File(dir(id), "state.bin")
             if (st.exists() || File(dir(id), "page.mht").exists()) restore(t, w, url, scroll)
-            else if (isWeb(url)) { t.url = url; w.loadUrl(url) }
+            else if (isWeb(url)) { t.url = url; w.loadUrl(url); startEv(t) }
             evict()
         }
     }
@@ -115,26 +119,37 @@ class HwBrowser(
             top = (topCss * d).toInt(); bottom = (botCss * d).toInt()
             val t = tabs[id] ?: return@post
             val w = t.web ?: return@post
-            tabs.values.forEach { o -> if (o !== t) o.web?.let { if (it.visibility != View.GONE) { save(o); it.visibility = View.GONE; it.onPause() } } }
+            tabs.values.forEach { o -> if (o !== t) o.web?.let { if (it.visibility != View.GONE) { save(o); it.visibility = View.GONE; it.onPause(); prio(it, false) } } }
             val lp = (w.layoutParams as? FrameLayout.LayoutParams) ?: FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             lp.topMargin = top; lp.bottomMargin = bottom
             w.layoutParams = lp
             if (w.parent == null) root.addView(w, lp)
             w.visibility = View.VISIBLE; w.onResume(); w.bringToFront()
+            prio(w, true)
             t.shown = System.currentTimeMillis(); visible = id
         }
     }
 
     fun hide() {
         post {
-            tabs.values.forEach { t -> t.web?.let { if (it.visibility == View.VISIBLE) { thumb(t); save(t); it.visibility = View.GONE; it.onPause() } } }
+            // v1.7 (P1): out of the way first (a sheet in Hwallet is waiting to be seen), then save; the switcher's thumbnail
+            // comes from snap(), so the slow software draw of a thumbnail no longer delays the hide
+            tabs.values.forEach { t -> t.web?.let { if (it.visibility == View.VISIBLE) { it.visibility = View.GONE; it.onPause(); prio(it, false); ui.post { save(t) } } } }
             visible = null
         }
     }
 
     fun load(id: String, url: String) {
         if (!isWeb(url)) return
-        post { val t = tabs[id] ?: return@post; val w = t.web ?: return@post; leaveSnapshot(t, w); live(t, w); t.url = url; w.loadUrl(url) }
+        post { val t = tabs[id] ?: return@post; val w = t.web ?: return@post; leaveSnapshot(t, w); live(t, w); t.url = url; w.loadUrl(url); startEv(t) }
+    }
+
+    /** v1.7 (P1): Android Back while a page is on screen goes back in that page first (UI thread, from HwActivity) */
+    fun back(): Boolean {
+        val t = tabs[visible ?: return false] ?: return false
+        val w = t.web ?: return false
+        if (w.visibility != View.VISIBLE || !w.canGoBack()) return false
+        live(t, w); w.goBack(); return true
     }
 
     fun nav(id: String, a: String) {
@@ -171,7 +186,7 @@ class HwBrowser(
         post {
             tabs.values.forEach { t -> t.web?.let { w -> root.removeView(w); w.stopLoading(); w.destroy() } }
             tabs.clear(); visible = null
-            Thread { base.deleteRecursively() }.start()
+            Thread { base.deleteRecursively(); icoDir.deleteRecursively() }.start()
             try { host.clearCache(true) } catch (_: Throwable) {}
             try { CookieManager.getInstance().removeAllCookies(null); CookieManager.getInstance().flush() } catch (_: Throwable) {}
             try {
@@ -244,8 +259,15 @@ class HwBrowser(
         c != null && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     } catch (_: Throwable) { true }
 
-    /** cache first while restored and untouched, or while the mobile-data limit is on */
-    private fun mode(t: Tab): Int = if ((t.restoring && !t.touched) || HwNet.rate.on()) WebSettings.LOAD_CACHE_ELSE_NETWORK else WebSettings.LOAD_DEFAULT
+    /** v1.7 (P1, #86): the normal HTTP cache (LOAD_DEFAULT: fresh pages, cached sub-resources by their headers). Cache-first
+     *  only while the phone has no validated network, so nothing ever waits on a stale copy when the network is there. */
+    @Suppress("UNUSED_PARAMETER")
+    private fun mode(t: Tab): Int = if (!online()) WebSettings.LOAD_CACHE_ELSE_NETWORK else WebSettings.LOAD_DEFAULT
+    /** the visible tab's renderer is important; hidden tabs may be killed first under memory pressure */
+    private fun prio(w: WebView, on: Boolean) {
+        try { if (Build.VERSION.SDK_INT >= 26) w.setRendererPriorityPolicy(if (on) WebView.RENDERER_PRIORITY_IMPORTANT else WebView.RENDERER_PRIORITY_BOUND, true) } catch (_: Throwable) {}
+    }
+    private fun startEv(t: Tab) { ev(JSONObject().put("t", "nav").put("id", t.id).put("url", t.url).put("title", "").put("back", false).put("fwd", false).put("loading", true).put("progress", 10).put("offline", false)) }
     private fun live(t: Tab, w: WebView) { t.touched = true; t.restoring = false; w.settings.cacheMode = mode(t) }
 
     private fun ev(o: JSONObject) { js("window.hwBrEv&&hwBrEv(${q(o.toString())})") }
@@ -277,10 +299,18 @@ class HwBrowser(
             userAgentString = userAgentString.replace("; wv)", ")")   // some dApps refuse a "WebView" user agent
             cacheMode = mode(t)
         }
+        w.isVerticalScrollBarEnabled = false
+        if (Build.VERSION.SDK_INT >= 26) w.defaultFocusHighlightEnabled = false
+        prio(w, false)
         CookieManager.getInstance().setAcceptThirdPartyCookies(w, false)
-        // wallet providers: https only, before any page script; the message channel carries the page's real origin
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
-            WebViewCompat.addWebMessageListener(w, "hwBridge", setOf("https://*")) { _, msg: WebMessageCompat, origin: Uri, isMain: Boolean, proxy: JavaScriptReplyProxy ->
+        // wallet providers before any page script; the message channel carries the page's real origin.
+        // v1.7 (P1, #86 root cause): v1.6 passed the origin rule "https://*", which Chromium's OriginMatcher rejects
+        // (a host wildcard must be "*.domain"); addWebMessageListener threw IllegalArgumentException, make() never
+        // returned and the tab never attached or loaded (stuck at 8% on every phone). The rule is now "*" (every origin)
+        // and https-only is enforced here (origin check below) and in hw_provider.js (location.protocol). A failure to
+        // inject is logged and never stops the page from loading.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) try {
+            WebViewCompat.addWebMessageListener(w, "hwBridge", ORIGINS) { _, msg: WebMessageCompat, origin: Uri, isMain: Boolean, proxy: JavaScriptReplyProxy ->
                 val data = msg.data ?: return@addWebMessageListener
                 if (data.length > 1_000_000) return@addWebMessageListener
                 val rid = try { JSONObject(data).optString("id") } catch (_: Throwable) { "" }
@@ -296,8 +326,8 @@ class HwBrowser(
                 js("window.hwBrReq&&hwBrReq(${q(t.id)},${q(o)},${q(data)})")
             }
             val s = script
-            if (s != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(w, s, setOf("https://*"))
-        }
+            if (s != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(w, s, ORIGINS)
+        } catch (e: Throwable) { Log.e(TAG, "wallet provider injection failed; the page loads without it", e) }
         w.setOnTouchListener { _, _ -> if (!t.touched) live(t, w); false }
         w.setOnScrollChangeListener { _, _, y, _, _ -> t.scroll = y; scrollEv(t) }
         w.setDownloadListener { url, _, _, _, _ -> try { act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE)) } catch (_: Throwable) {} }
@@ -314,11 +344,13 @@ class HwBrowser(
                 outside(u.toString(), s)
                 return true
             }
-            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { navEv(t, view, true, 10) }
+            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { navEv(t, view, true, 10); lateInject(view) }
+            override fun onPageCommitVisible(view: WebView, url: String?) { lateInject(view) }
             override fun onPageFinished(view: WebView, url: String?) {
+                lateInject(view)
                 navEv(t, view, false, 100)
                 if (t.pendingScroll > 0) { val y = t.pendingScroll; t.pendingScroll = 0; ui.postDelayed({ try { view.evaluateJavascript("window.scrollTo(0,$y)", null) } catch (_: Throwable) {} }, 350) }
-                if (!t.offline && isWeb(view.url)) { save(t); snapshotSoon(t) }
+                if (!t.offline && isWeb(view.url)) { save(t); snapshotSoon(t); siteIcon(t, view) }
             }
             override fun onReceivedError(view: WebView, req: WebResourceRequest, err: WebResourceError) {
                 if (req.isForMainFrame && !t.offline && File(dir(t.id), "page.mht").exists() && (t.restoring || !online())) loadSnapshot(t, view)
@@ -332,10 +364,11 @@ class HwBrowser(
         }
         w.webChromeClient = object : WebChromeClient() {
             private var lastP = 0
-            override fun onProgressChanged(view: WebView, p: Int) { if (p - lastP >= 15 || p == 100 || p < lastP) { lastP = p; navEv(t, view, p < 100, p) } }
+            override fun onProgressChanged(view: WebView, p: Int) { if (p - lastP >= 15 || p == 100 || p < lastP) { lastP = p; navEv(t, view, p < 100, p); lateInject(view) } }
             override fun onReceivedTitle(view: WebView, title: String?) { navEv(t, view, view.progress < 100, view.progress) }
             override fun onReceivedIcon(view: WebView, icon: Bitmap?) {
                 if (icon == null || t.offline) return
+                if (icoFile(Uri.parse(view.url ?: "").host).exists()) return   // the site's own large icon is already on disk
                 try {
                     val b = Bitmap.createScaledBitmap(icon, 48, 48, true); val o = ByteArrayOutputStream(); b.compress(Bitmap.CompressFormat.PNG, 100, o)
                     if (o.size() < 11_000) ev(JSONObject().put("t", "icon").put("id", t.id).put("icon", "data:image/png;base64," + Base64.encodeToString(o.toByteArray(), Base64.NO_WRAP)))
@@ -451,8 +484,8 @@ class HwBrowser(
             val s = 360f / w.width
             val bmp = Bitmap.createBitmap(360, (w.height * s).toInt().coerceAtLeast(1), Bitmap.Config.RGB_565)
             val c = Canvas(bmp); c.scale(s, s); c.translate(-w.scrollX.toFloat(), -w.scrollY.toFloat()); w.draw(c)
-            val o = ByteArrayOutputStream(); bmp.compress(Bitmap.CompressFormat.JPEG, 70, o); bmp.recycle()
-            val d = dir(t.id); d.mkdirs(); atomic(File(d, "thumb.jpg"), o.toByteArray())
+            val d = dir(t.id)
+            io { val o = ByteArrayOutputStream(); bmp.compress(Bitmap.CompressFormat.JPEG, 70, o); bmp.recycle(); d.mkdirs(); atomic(File(d, "thumb.jpg"), o.toByteArray()) }
         } catch (_: Throwable) {}
     }
 
@@ -478,5 +511,112 @@ class HwBrowser(
     private fun atomic(f: File, b: ByteArray) { val tmp = File(f.parentFile, f.name + ".tmp"); tmp.writeBytes(b); if (!tmp.renameTo(f)) { f.delete(); tmp.renameTo(f) } }
     private fun size(f: File): Long = if (!f.exists()) 0L else if (f.isFile) f.length() else (f.listFiles() ?: emptyArray()).sumOf { size(it) }
 
-    companion object { const val MAX_LIVE = 4 }
+    /** v1.7 (P1): WebViews without DOCUMENT_START_SCRIPT (older than ~M87, e.g. the API 30 emulator's 83) still get the
+     *  providers: injected as early as the page lets us (start, every progress step, commit, finish). hw_provider.js runs once
+     *  per document (__hwProv) and only on https top pages; EIP-6963 / Wallet Standard announce it to dApps that load first. */
+    private val dss: Boolean by lazy { try { WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT) } catch (_: Throwable) { false } }
+    private val wml: Boolean by lazy { try { WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER) } catch (_: Throwable) { false } }
+    private fun lateInject(view: WebView) {
+        if (dss || !wml) return
+        val s = script ?: return
+        if (view.url?.startsWith("https://") != true) return
+        try { view.evaluateJavascript(s, null) } catch (_: Throwable) {}
+    }
+    /** what this phone's WebView supports, for Settings > About and the device check */
+    fun features(): String = JSONObject().put("documentStartScript", dss).put("webMessageListener", wml)
+        .put("webview", try { WebViewCompat.getCurrentWebViewPackage(act)?.versionName ?: "" } catch (_: Throwable) { "" }).toString()
+
+    // ---------------------------------------------------------------- v1.7 (P1, #99): site icons
+    // Bundled dApp icons live in the page (assets/dapps). For every other site the best icon is fetched once, on the first
+    // finished load: web app manifest icon > apple-touch-icon > <link rel=icon> > /favicon.ico, decoded (PNG/JPEG/WebP/ICO
+    // frame; SVG is skipped), scaled to 96 px and kept in files/ico/<host>.png for 30 days. The page asks for it by host
+    // (iconData) and gets a "site icon" event; a letter tile shows only until then or when a site has none.
+    private val icoDir = File(act.filesDir, "ico")
+    private val icoBusy = java.util.Collections.synchronizedSet(HashSet<String>())
+    private fun icoKey(h: String?): String = (h ?: "").lowercase().removePrefix("www.").replace(Regex("[^a-z0-9.-]"), "_").take(120)
+    private fun icoFile(h: String?): File = File(icoDir, icoKey(h) + ".png")
+    private fun io(f: () -> Unit) { Thread { try { f() } catch (e: Throwable) { Log.w(TAG, "browser io failed", e) } }.start() }
+
+    fun iconData(host: String): String {
+        val f = icoFile(host)
+        if (host.isEmpty() || !f.exists() || f.length() > 60_000) return ""
+        return try { "data:image/png;base64," + Base64.encodeToString(f.readBytes(), Base64.NO_WRAP) } catch (_: Throwable) { "" }
+    }
+
+    private fun siteIcon(t: Tab, view: WebView) {
+        val u = Uri.parse(view.url ?: return); val host = u.host ?: return
+        if (u.scheme != "https") return
+        val f = icoFile(host)
+        if (f.exists() && System.currentTimeMillis() - f.lastModified() < 30L * 86_400_000L) { icoEv(t, host); return }
+        if (!icoBusy.add(icoKey(host))) return
+        view.evaluateJavascript(ICON_JS) { r ->
+            val links = try { JSONObject(JSONArray("[$r]").getString(0)) } catch (_: Throwable) { JSONObject() }
+            io {
+                try {
+                    val got = bestIcon(u, links)
+                    if (got != null) { icoDir.mkdirs(); atomic(f, got); ui.post { icoEv(t, host) } }
+                } finally { icoBusy.remove(icoKey(host)) }
+            }
+        }
+    }
+
+    private fun icoEv(t: Tab, host: String) {
+        val d = iconData(host); if (d.isEmpty()) return
+        ev(JSONObject().put("t", "icon").put("id", t.id).put("host", icoKey(host)).put("icon", d).put("site", true))
+    }
+
+    /** candidates in order of preference; the first one that decodes to at least 32 px wins */
+    private fun bestIcon(page: Uri, links: JSONObject): ByteArray? {
+        val c = ArrayList<String>()
+        fun sz(a: JSONArray, i: Int) = try { a.getJSONArray(i).optInt(1, 0) } catch (_: Throwable) { 0 }
+        fun hrefs(k: String): List<String> {
+            val a = links.optJSONArray(k) ?: return emptyList()
+            return (0 until a.length()).sortedByDescending { i -> val s = sz(a, i); if (s in 96..512) 10_000 - kotlin.math.abs(s - 192) else s }
+                .mapNotNull { i -> try { a.getJSONArray(i).getString(0) } catch (_: Throwable) { null } }
+        }
+        val man = links.optString("m")
+        if (man.startsWith("https://")) try {
+            val j = JSONObject(String(get(man, 200_000) ?: ByteArray(0)))
+            val ics = j.optJSONArray("icons") ?: JSONArray()
+            (0 until ics.length()).map { ics.getJSONObject(it) }
+                .filter { !it.optString("purpose").contains("monochrome") && !it.optString("type").contains("svg") && !it.optString("src").endsWith(".svg") }
+                .sortedByDescending { o -> val s = o.optString("sizes").split(" ").last().substringBefore("x").toIntOrNull() ?: 0; if (s in 96..512) 10_000 - kotlin.math.abs(s - 192) else s }
+                .forEach { o -> try { c.add(java.net.URL(java.net.URL(man), o.getString("src")).toString()) } catch (_: Throwable) {} }
+        } catch (_: Throwable) {}
+        c.addAll(hrefs("a")); c.addAll(hrefs("i"))
+        c.add(page.scheme + "://" + page.host + "/apple-touch-icon.png"); c.add(page.scheme + "://" + page.host + "/favicon.ico")
+        for (href in c.distinct().take(8)) {
+            if (!href.startsWith("https://") || href.endsWith(".svg")) continue
+            val b = get(href, 1_000_000) ?: continue
+            val bmp = try { BitmapFactory.decodeByteArray(b, 0, b.size) } catch (_: Throwable) { null } ?: continue
+            if (bmp.width < 32 || bmp.height < 32) { bmp.recycle(); continue }
+            val s = Bitmap.createScaledBitmap(bmp, 96, 96, true)
+            val o = ByteArrayOutputStream(); s.compress(Bitmap.CompressFormat.PNG, 100, o)
+            if (s !== bmp) s.recycle(); bmp.recycle()
+            if (o.size() in 1..60_000) return o.toByteArray()
+        }
+        return null
+    }
+
+    private fun get(url: String, max: Int): ByteArray? = try {
+        HwNet.withTimeout(10000).newCall(okhttp3.Request.Builder().url(url).header("User-Agent", UA).build()).execute().use { r ->
+            val b = r.body
+            if (!r.isSuccessful || b == null || (b.contentLength() > max)) null
+            else b.byteStream().use { s -> val buf = ByteArrayOutputStream(); val tmp = ByteArray(16384); var n = 0
+                while (true) { val k = s.read(tmp); if (k < 0) break; n += k; if (n > max) return@use null; buf.write(tmp, 0, k) }
+                buf.toByteArray() }
+        }
+    } catch (_: Throwable) { null }
+
+    companion object {
+        const val MAX_LIVE = 4
+        private const val TAG = "HwBrowser"
+        // every origin: Chromium accepts only a bare star or scheme://host rules whose host wildcard is a "*." prefix (an https-star rule is invalid)
+        private val ORIGINS = setOf("*")
+        private const val UA = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36"
+        private const val ICON_JS = "(function(){var o={m:'',a:[],i:[]};try{document.querySelectorAll('link[rel][href]').forEach(function(l){" +
+            "var r=(l.getAttribute('rel')||'').toLowerCase(),s=parseInt((l.getAttribute('sizes')||'').split('x')[0])||0;" +
+            "if(r.indexOf('manifest')>=0)o.m=l.href;else if(r.indexOf('apple-touch-icon')>=0)o.a.push([l.href,s||180]);" +
+            "else if(/(^|\\s)icon/.test(r))o.i.push([l.href,s]);})}catch(e){}return JSON.stringify(o)})()"
+    }
 }

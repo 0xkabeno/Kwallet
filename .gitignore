@@ -9,3 +9,4 @@ local.properties
 *.keystore
 captures/
 hwallet/app/build/
+__pycache__/
