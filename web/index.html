@@ -3,7 +3,7 @@
 <head>
 <script>(function(){var P={touchstart:1,touchmove:1,wheel:1,mousewheel:1},o=EventTarget.prototype.addEventListener;try{EventTarget.prototype.addEventListener=function(t,f,x){if(P[t]&&(x===undefined||typeof x==='boolean'))x={capture:!!x,passive:true};return o.call(this,t,f,x);};}catch(e){}})();</script>
 <meta charset="UTF-8">
-<script>/* v3.90: SignActivity opens index.html#sign with the KwSign bridge. v3.92: the main UI is hidden from the very first paint */window.__kwSign=/(^|#)sign\b/.test(location.hash)&&!!window.KwSign;if(window.__kwSign){document.documentElement.classList.add("kw-sign");var __sh=false;try{__sh=JSON.parse(KwSign.request()||"{}").action==="dapp"}catch(e){}if(__sh)document.documentElement.classList.add("kw-sheet");var __d=false;try{__d=localStorage.getItem("wallet-theme")==="dark"}catch(e){}document.write("<style>html.kw-sign,html.kw-sign body{background:"+(__sh?"transparent":__d?"#0e1117":"#f8f9fa")+"!important}html.kw-sign body>*:not(#kss):not(.kwd-ov):not(.toast):not(script):not(style){display:none!important}</style>")}</script>
+<script>/* v3.90: SignActivity opens index.html#sign with the KwSign bridge. v3.92: the main UI is hidden from the very first paint. v3.97 wave A: every request is a transparent sheet */window.__kwSign=/(^|#)sign\b/.test(location.hash)&&!!window.KwSign;if(window.__kwSign){document.documentElement.classList.add("kw-sign");var __sh=true;document.documentElement.classList.add("kw-sheet");var __d=false;try{__d=localStorage.getItem("wallet-theme")==="dark"}catch(e){}document.write("<style>html.kw-sign,html.kw-sign body{background:"+(__sh?"transparent":__d?"#0e1117":"#f8f9fa")+"!important}html.kw-sign body>*:not(#kss):not(.kwd-ov):not(.toast):not(script):not(style){display:none!important}</style>")}</script>
 <script>
 /* v3.50: Android app draws edge-to-edge; the native shell tells us the system bar sizes */
 (function () {
@@ -2618,107 +2618,93 @@ body[data-theme="dark"]:not(.md3) #settings-overlay.kws-full .kws-sec{color:#DDF
    Inlined into both apps. Written for WebView 83 too: no inset, no :has, no flex gap, no color-mix, no dvh,
    no aspect-ratio. Motion is transform/opacity only. Sizes follow Gem Wallet's modal sheet
    (gem-android ui/components: 16dp padding, 24-28dp sheet radius, 52dp buttons, 40dp app icon). */
+/* Wave A (#102): every colour comes from the app's own theme tokens (--hp-*). Defaults are Hwallet's classic palette
+   (hw393.css light/dark); Hwallet maps them to its live variables (Material You included, hwpop_h.css) and Kwallet's sign
+   sheet takes the values Hwallet sends with the request, so both sheets look like Hwallet's Settings and Send screens. */
+.hp-ov,#kss{--hp-bg:#f8f9fa;--hp-card:#ffffff;--hp-card2:#f1f3f4;--hp-line:#e6e8eb;--hp-border:#dadce0;--hp-text:#202124;--hp-muted:#5f6368;--hp-soft:#80868b;
+  --hp-acc:#223348;--hp-accI:#ffffff;--hp-pill:#e8ecf2;--hp-sel:#e3e8ef;--hp-up:#188038;--hp-dn:#d93025;--hp-warn:#a86f00;--hp-warnBg:#fff4dc;--hp-errBg:#fce8e6}
+[data-theme="dark"] .hp-ov,[data-theme="dark"] #kss{--hp-bg:#0e1117;--hp-card:#151b25;--hp-card2:#1d2532;--hp-line:#222b3a;--hp-border:#2a3446;--hp-text:#d9e2ef;--hp-muted:#8494ab;--hp-soft:#5f6c85;
+  --hp-acc:#ddf869;--hp-accI:#223348;--hp-pill:#232c3b;--hp-sel:#26313f;--hp-up:#34c77b;--hp-dn:#f2665e;--hp-warn:#f0c14b;--hp-warnBg:#3a321d;--hp-errBg:#3a2224}
 .hp-ov{position:fixed;top:0;right:0;bottom:0;left:0;z-index:60;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;-webkit-tap-highlight-color:transparent}
 .hp-dim{position:absolute;top:0;right:0;bottom:0;left:0;background:#000;opacity:0;transition:opacity .22s linear;will-change:opacity}
 .hp-ov.in .hp-dim{opacity:.5}
 .hp-sheet{position:relative;width:100%;max-width:600px;max-height:92%;display:flex;flex-direction:column;box-sizing:border-box;
-  background:#fff;color:#14171a;border-radius:28px 28px 0 0;box-shadow:0 -6px 28px rgba(0,0,0,.18);
+  background:var(--hp-bg);color:var(--hp-text);border-radius:28px 28px 0 0;box-shadow:0 -6px 28px rgba(0,0,0,.18);
   transform:translate3d(0,100%,0);transition:transform .3s cubic-bezier(.2,.9,.25,1);will-change:transform;
   font-family:'RobotoE','Roboto',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1;text-align:left}
 .hp-ov.in .hp-sheet{transform:translate3d(0,0,0)}
 .hp-ov.out .hp-dim{opacity:0;transition-duration:.18s}
 .hp-ov.out .hp-sheet{transform:translate3d(0,100%,0);transition:transform .2s cubic-bezier(.4,0,1,1)}
-[data-theme="dark"] .hp-sheet{background:#1b1d22;color:#f2f3f5;box-shadow:0 -6px 28px rgba(0,0,0,.5)}
-.hp-grab{flex:0 0 auto;width:36px;height:4px;border-radius:2px;background:#d5d8dc;margin:8px auto 0}
-[data-theme="dark"] .hp-grab{background:#3a3d44}
+[data-theme="dark"] .hp-sheet{box-shadow:0 -6px 28px rgba(0,0,0,.5)}
+.hp-grab{flex:0 0 auto;width:36px;height:4px;border-radius:2px;background:var(--hp-border);margin:8px auto 0}
 .hp-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px 16px 4px}
-.hp-foot{flex:0 0 auto;padding:10px 16px calc(var(--kw-sab, var(--sab, 0px)) + 14px)}
+.hp-foot{flex:0 0 auto;padding:10px 16px calc(var(--kw-sab, var(--sab, 0px)) + 10px)}
 /* header: app icon, name, link, close */
 .hp-head{display:flex;align-items:center;min-height:56px;margin:0 0 14px}
-.hp-ic{width:48px;height:48px;border-radius:14px;flex:0 0 auto;object-fit:cover;background:#eef0f2;display:block}
-[data-theme="dark"] .hp-ic{background:#262930}
-.hp-icl{display:flex;align-items:center;justify-content:center;font:700 20px/1 'RobotoE',system-ui;color:#14171a}
-[data-theme="dark"] .hp-icl{color:#f2f3f5}
+.hp-ic{width:48px;height:48px;border-radius:14px;flex:0 0 auto;object-fit:cover;background:var(--hp-card2);display:block}
+.hp-icl{display:flex;align-items:center;justify-content:center;font:700 20px/1 'RobotoE',system-ui;color:var(--hp-text)}
 .hp-hm{flex:1 1 auto;min-width:0;margin:0 8px 0 14px}
 .hp-name{font:700 21px/27px 'RobotoE',system-ui;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hp-url{display:flex;align-items:center;margin-top:1px;color:#6b7075;font:400 15px/20px 'RobotoE',system-ui;min-width:0}
+.hp-url{display:flex;align-items:center;margin-top:1px;color:var(--hp-muted);font:400 15px/20px 'RobotoE',system-ui;min-width:0}
 .hp-url svg{width:17px;height:17px;flex:0 0 auto;margin-right:5px}
 .hp-url span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-[data-theme="dark"] .hp-url{color:#9a9ea6}
 .hp-x{width:44px;height:44px;flex:0 0 auto;border:0;border-radius:22px;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;margin-right:-8px}
 .hp-x svg{width:26px;height:26px}
 .hp-x:active{background:rgba(127,127,127,.14)}
 /* title, captions */
 .hp-title{font:700 26px/32px 'RobotoE',system-ui;letter-spacing:-.4px;margin:0 0 6px;color:inherit}
-.hp-stp{font:600 13px/18px 'RobotoE',system-ui;color:#6b7075;margin:0 0 2px;letter-spacing:.1px}
-.hp-cap{font:400 15px/21px 'RobotoE',system-ui;color:#6b7075;margin:0 0 14px}
-[data-theme="dark"] .hp-cap,[data-theme="dark"] .hp-stp{color:#9a9ea6}
+.hp-stp{font:600 13px/18px 'RobotoE',system-ui;color:var(--hp-muted);margin:0 0 2px;letter-spacing:.1px}
+.hp-cap{font:400 15px/21px 'RobotoE',system-ui;color:var(--hp-muted);margin:0 0 14px}
 .hp-lead{font:700 19px/25px 'RobotoE',system-ui;margin:4px 0 12px}
 /* cards and rows */
-.hp-card{background:#f3f4f6;border-radius:20px;margin:0 0 10px;overflow:hidden}
-[data-theme="dark"] .hp-card{background:#25272d}
+.hp-card{background:var(--hp-card);border-radius:20px;margin:0 0 10px;overflow:hidden}
 .hp-r{display:flex;align-items:center;min-height:64px;padding:10px 18px;box-sizing:border-box}
-.hp-r+.hp-r{border-top:1px solid rgba(0,0,0,.06)}
-[data-theme="dark"] .hp-r+.hp-r{border-top-color:rgba(255,255,255,.06)}
+.hp-r+.hp-r{border-top:1px solid var(--hp-line)}
 .hp-r.sm{min-height:52px}
-.hp-perm+.hp-r,.hp-perm+.hp-wl{border-top:1px solid rgba(0,0,0,.06)}
-[data-theme="dark"] .hp-perm+.hp-r{border-top-color:rgba(255,255,255,.06)}
+.hp-perm+.hp-r,.hp-perm+.hp-wl{border-top:1px solid var(--hp-line)}
 .hp-l{flex:1 1 auto;min-width:76px;font:500 16px/21px 'RobotoE',system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hp-l small{display:block;font:400 13px/18px 'RobotoE',system-ui;color:#6b7075;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-l small{display:block;font:400 13px/18px 'RobotoE',system-ui;color:var(--hp-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hp-v{flex:0 1 auto;min-width:0;margin-left:12px;text-align:right;font:500 16px/21px 'RobotoE',system-ui;font-variant-numeric:tabular-nums;word-break:break-word}
-.hp-v small{display:block;font:400 14px/19px 'RobotoE',system-ui;color:#6b7075}
-[data-theme="dark"] .hp-l small,[data-theme="dark"] .hp-v small{color:#9a9ea6}
-.hp-tk{width:36px;height:36px;border-radius:50%;flex:0 0 auto;margin-right:12px;object-fit:cover;display:block;background:#e3e6ea}
-[data-theme="dark"] .hp-tk{background:#33363d}
-.hp-tkl{display:flex;align-items:center;justify-content:center;font:700 15px/1 'RobotoE',system-ui;color:#3a3f45}
-[data-theme="dark"] .hp-tkl{color:#d8dbe0}
-.hp-neg{color:#d93a4e}.hp-pos{color:#1e9e5a}
-[data-theme="dark"] .hp-neg{color:#f2667a}[data-theme="dark"] .hp-pos{color:#a6f28a}
+.hp-v small{display:block;font:400 14px/19px 'RobotoE',system-ui;color:var(--hp-muted)}
+.hp-tk{width:36px;height:36px;border-radius:50%;flex:0 0 auto;margin-right:12px;object-fit:cover;display:block;background:var(--hp-card2)}
+.hp-tkl{display:flex;align-items:center;justify-content:center;font:700 15px/1 'RobotoE',system-ui;color:var(--hp-text)}
+.hp-neg{color:var(--hp-dn)}.hp-pos{color:var(--hp-up)}
 .hp-na{display:flex;align-items:flex-start;padding:16px 18px}
-.hp-na svg{width:20px;height:20px;flex:0 0 auto;margin:1px 12px 0 0;color:#6b7075}
+.hp-na svg{width:20px;height:20px;flex:0 0 auto;margin:1px 12px 0 0;color:var(--hp-muted)}
 .hp-na b{display:block;font:600 15px/20px 'RobotoE',system-ui}
-.hp-na small{display:block;margin-top:2px;font:400 13.5px/19px 'RobotoE',system-ui;color:#6b7075}
-[data-theme="dark"] .hp-na small,[data-theme="dark"] .hp-na svg{color:#9a9ea6}
+.hp-na small{display:block;margin-top:2px;font:400 13.5px/19px 'RobotoE',system-ui;color:var(--hp-muted)}
 /* wallet row */
 .hp-w{display:flex;align-items:center;justify-content:flex-end;min-width:0}
 .hp-w .hp-cic{width:20px;height:20px;border-radius:50%;margin-right:7px;flex:0 0 auto}
 .hp-w span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hp-w em{font-style:normal;color:#6b7075;margin-left:6px;font-family:'RobotoMonoE',monospace;font-size:14px}
-[data-theme="dark"] .hp-w em{color:#9a9ea6}
-.hp-chev{width:20px;height:20px;margin-left:4px;color:#8a8f95;flex:0 0 auto;transition:transform .18s}
+.hp-w em{font-style:normal;color:var(--hp-muted);margin-left:8px;font-family:'RobotoMonoE',monospace;font-size:14px;flex:0 0 auto}
+.hp-chev{width:20px;height:20px;margin-left:4px;color:var(--hp-soft);flex:0 0 auto;transition:transform .18s}
 .hp-tap{cursor:pointer}.hp-tap:active{background:rgba(127,127,127,.08)}
 .hp-open .hp-chev{transform:rotate(180deg)}
 /* permissions (connect) */
 .hp-perm{padding:10px 18px 12px}
 .hp-pr{display:flex;align-items:flex-start;padding:7px 0;font:400 16px/22px 'RobotoE',system-ui}
 .hp-pr svg{width:22px;height:22px;flex:0 0 auto;margin-right:14px}
-.hp-pr.no svg{color:#d93a4e}
-[data-theme="dark"] .hp-pr.no svg{color:#f2667a}
+.hp-pr.no svg{color:var(--hp-dn)}.hp-pr.ok svg{color:var(--hp-up)}
 /* chain chips */
 .hp-chips{display:flex;flex-wrap:wrap;padding:12px 14px 8px}
-.hp-chip{display:inline-flex;align-items:center;height:30px;padding:0 10px 0 5px;border-radius:15px;background:#e7e9ec;margin:0 6px 6px 0;font:500 13px/1 'RobotoE',system-ui}
-[data-theme="dark"] .hp-chip{background:#31343b}
+.hp-chip{display:inline-flex;align-items:center;height:30px;padding:0 10px 0 5px;border-radius:15px;background:var(--hp-card2);margin:0 6px 6px 0;font:500 13px/1 'RobotoE',system-ui}
 .hp-chip img,.hp-chip .lg{width:20px!important;height:20px!important;border-radius:50%;margin-right:6px}
-.hp-sec{font:600 13px/18px 'RobotoE',system-ui;color:#6b7075;padding:12px 18px 0}
-[data-theme="dark"] .hp-sec{color:#9a9ea6}
+.hp-sec{font:600 13px/18px 'RobotoE',system-ui;color:var(--hp-muted);padding:12px 18px 0}
 /* wallet chooser */
 .hp-wl{padding:2px 0 6px}
 .hp-wo{display:flex;align-items:center;width:100%;border:0;background:transparent;color:inherit;padding:10px 18px;text-align:left;font:500 15px/20px 'RobotoE',system-ui}
-.hp-wo i{width:20px;height:20px;border-radius:50%;border:2px solid #b8bcc2;box-sizing:border-box;margin-right:12px;flex:0 0 auto}
-.hp-wo.on i{border:6px solid #223348}
-[data-theme="dark"] .hp-wo.on i{border-color:#DDF869}
+.hp-wo i{width:20px;height:20px;border-radius:50%;border:2px solid var(--hp-soft);box-sizing:border-box;margin-right:12px;flex:0 0 auto}
+.hp-wo.on i{border:6px solid var(--hp-acc)}
 .hp-wo span{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hp-wo em{font-style:normal;color:#6b7075;font:400 13px 'RobotoMonoE',monospace;margin-left:8px}
+.hp-wo em{font-style:normal;color:var(--hp-muted);font:400 13px 'RobotoMonoE',monospace;margin-left:8px}
 /* trust line and warnings */
-.hp-trust{display:flex;align-items:center;margin:6px 2px 4px;font:400 15px/21px 'RobotoE',system-ui;color:#6b7075}
-[data-theme="dark"] .hp-trust{color:#9a9ea6}
+.hp-trust{display:flex;align-items:center;margin:6px 2px 4px;font:400 15px/21px 'RobotoE',system-ui;color:var(--hp-muted)}
 .hp-trust svg{width:18px;height:18px;flex:0 0 auto;margin-right:8px}
-.hp-trust.ok svg{color:#1e9e5a}[data-theme="dark"] .hp-trust.ok svg{color:#a6f28a}
-.hp-trust.bad{color:#d93a4e;font-weight:600}[data-theme="dark"] .hp-trust.bad{color:#f2667a}
-.hp-warn{display:flex;align-items:flex-start;border-radius:16px;padding:12px 14px;margin:0 0 10px;background:#fff4e0;color:#7a4a00;font:400 14px/20px 'RobotoE',system-ui}
-[data-theme="dark"] .hp-warn{background:#3a2f1a;color:#f5d48a}
-.hp-warn.bad{background:#fde8eb;color:#9b1c2e}
-[data-theme="dark"] .hp-warn.bad{background:#3d1e24;color:#ffb3bf}
+.hp-trust.ok svg{color:var(--hp-up)}
+.hp-trust.bad{color:var(--hp-dn);font-weight:600}
+.hp-warn{display:flex;align-items:flex-start;border-radius:16px;padding:12px 14px;margin:0 0 10px;background:var(--hp-warnBg);color:var(--hp-warn);font:400 14px/20px 'RobotoE',system-ui}
+.hp-warn.bad{background:var(--hp-errBg);color:var(--hp-dn)}
 .hp-warn svg{width:20px;height:20px;flex:0 0 auto;margin:0 10px 0 0}
 .hp-warn p{margin:0}.hp-warn p+p{margin-top:6px}.hp-warn b{font-weight:600}
 /* message, SIWE, typed data */
@@ -2726,32 +2712,28 @@ body[data-theme="dark"]:not(.md3) #settings-overlay.kws-full .kws-sec{color:#DDF
 .hp-msg.mono{font:400 13px/19px 'RobotoMonoE',monospace}
 .hp-tree{padding:8px 18px 12px;font:400 14px/20px 'RobotoE',system-ui}
 .hp-tn{padding:4px 0}
-.hp-tn>b{font-weight:500;color:#6b7075;margin-right:6px}
-[data-theme="dark"] .hp-tn>b{color:#9a9ea6}
+.hp-tn>b{font-weight:500;color:var(--hp-muted);margin-right:6px}
 .hp-tn .hp-tv{word-break:break-all}
-.hp-tc{margin:2px 0 2px 2px;padding-left:12px;border-left:2px solid rgba(127,127,127,.22)}
+.hp-tc{margin:2px 0 2px 2px;padding-left:12px;border-left:2px solid var(--hp-line)}
 .hp-mono{font-family:'RobotoMonoE',monospace;font-size:13.5px}
 /* network fee */
 .hp-fee .hp-l{font-weight:500}
 .hp-fed{padding:0 18px 12px}
 .hp-fed.off{display:none}
-.hp-seg{display:flex;background:rgba(127,127,127,.12);border-radius:12px;padding:3px;margin:4px 0 2px}
+.hp-seg{display:flex;background:var(--hp-card2);border-radius:12px;padding:3px;margin:4px 0 2px}
 .hp-seg button{flex:1 1 0;height:34px;border:0;border-radius:9px;background:transparent;color:inherit;font:500 13.5px/1 'RobotoE',system-ui;padding:0}
-.hp-seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:600}
-[data-theme="dark"] .hp-seg button.on{background:#3a3d44}
-.hp-live{display:inline-flex;align-items:center;font:400 12.5px/16px 'RobotoE',system-ui;color:#6b7075;margin-top:2px}
-.hp-live i{width:6px;height:6px;border-radius:3px;background:#1e9e5a;margin-right:5px}
-.hp-live.stale i{background:#d9a400}
+.hp-seg button.on{background:var(--hp-acc);color:var(--hp-accI);font-weight:600}
+.hp-live{display:inline-flex;align-items:center;font:400 12.5px/16px 'RobotoE',system-ui;color:var(--hp-muted);margin-top:2px}
+.hp-live i{width:6px;height:6px;border-radius:3px;background:var(--hp-up);margin-right:5px}
+.hp-live.stale i{background:var(--hp-warn)}
 /* details */
 .hp-det{margin:2px 0 6px}
-.hp-det>summary{list-style:none;cursor:pointer;display:flex;align-items:center;padding:10px 2px;color:#6b7075;font:500 14px/20px 'RobotoE',system-ui}
+.hp-det>summary{list-style:none;cursor:pointer;display:flex;align-items:center;padding:10px 2px;color:var(--hp-muted);font:500 14px/20px 'RobotoE',system-ui}
 .hp-det>summary::-webkit-details-marker{display:none}
 .hp-det>summary svg{width:18px;height:18px;margin-left:4px;transition:transform .18s}
 .hp-det[open]>summary svg{transform:rotate(180deg)}
-[data-theme="dark"] .hp-det>summary{color:#9a9ea6}
 .hp-det .hp-r{min-height:48px}
-.hp-det .hp-l{font-size:14px;color:#6b7075}
-[data-theme="dark"] .hp-det .hp-l{color:#9a9ea6}
+.hp-det .hp-l{font-size:14px;color:var(--hp-muted)}
 .hp-det .hp-v{font-size:14px}
 .hp-raw{padding:10px 18px 14px;font:400 12px/17px 'RobotoMonoE',monospace;word-break:break-all;white-space:pre-wrap;max-height:180px;overflow-y:auto}
 .hp-ol{margin:0;padding:4px 18px 12px 36px;font:400 14px/20px 'RobotoE',system-ui}
@@ -2760,27 +2742,44 @@ body[data-theme="dark"]:not(.md3) #settings-overlay.kws-full .kws-sec{color:#DDF
 .hp-act{display:flex}
 .hp-btn{flex:1 1 0;height:56px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;margin:0;border:0;border-radius:28px;font:600 18px/1 'RobotoE',system-ui;position:relative;overflow:hidden;padding:0 12px;-webkit-user-select:none;user-select:none}
 .hp-btn+.hp-btn{margin-left:12px}
-.hp-no{background:#e9eedb;color:#3d4a12}
-[data-theme="dark"] .hp-no{background:#2f3a2a;color:#cfee9a}
-.hp-ok{background:#DDF869;color:#223348;touch-action:none}
+.hp-no{background:var(--hp-card);color:var(--hp-text)}
+.hp-ok{background:var(--hp-acc);color:var(--hp-accI);touch-action:none}
 .hp-ok:disabled{opacity:.45}
-.hp-ok .kss-fill,.hp-ok .hp-fill{position:absolute;top:0;right:0;bottom:0;left:0;background:#bcd94a;transform-origin:0 50%;transform:scaleX(0)}
+.hp-ok .kss-fill,.hp-ok .hp-fill{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--hp-accI);opacity:.22;transform-origin:0 50%;transform:scaleX(0)}
 .hp-ok span{position:relative}
 .hp-btn:active{transform:scale(.985)}
-.hp-exp{display:flex;align-items:center;margin:0 4px 10px;font:400 12.5px/16px 'RobotoE',system-ui;color:#8a8f95}
+.hp-exp{display:flex;align-items:center;margin:0 4px 10px;font:400 12.5px/16px 'RobotoE',system-ui;color:var(--hp-soft)}
 .hp-exp span:first-child{flex:0 0 auto;margin-right:10px}
-.hp-eb{flex:1 1 auto;height:3px;border-radius:2px;background:rgba(127,127,127,.18);overflow:hidden}
-.hp-eb i{display:block;height:100%;background:#8a8f95;transform-origin:0 50%}
-.hp-exp.low{color:#d93a4e}.hp-exp.low .hp-eb i{background:#d93a4e}
-.hp-hint{text-align:center;font:400 12.5px/16px 'RobotoE',system-ui;color:#8a8f95;margin-top:8px;min-height:16px}
+.hp-eb{flex:1 1 auto;height:3px;border-radius:2px;background:var(--hp-card2);overflow:hidden}
+.hp-eb i{display:block;height:100%;background:var(--hp-soft);transform-origin:0 50%}
+.hp-exp.low{color:var(--hp-dn)}.hp-exp.low .hp-eb i{background:var(--hp-dn)}
+.hp-hint{text-align:center;font:400 12.5px/16px 'RobotoE',system-ui;color:var(--hp-soft);margin-top:6px}
+.hp-hint:empty{display:none}
 .hp-done{display:flex;flex-direction:column;align-items:center;padding:28px 16px calc(var(--kw-sab, var(--sab, 0px)) + 34px);font:600 18px/24px 'RobotoE',system-ui}
 .hp-done svg{width:76px;height:76px;margin-bottom:12px}
-.hp-done circle{fill:none;stroke:#1e9e5a;stroke-width:4}
-.hp-done path{fill:none;stroke:#1e9e5a;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.hp-done circle{fill:none;stroke:var(--hp-up);stroke-width:4}
+.hp-done path{fill:none;stroke:var(--hp-up);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
 @media (prefers-reduced-motion: reduce){.hp-sheet,.hp-dim{transition:none!important}}
 .hp-acc{display:flex;align-items:center;min-width:0}
 .hp-acc .lg,.hp-acc img{width:24px!important;height:24px!important;border-radius:50%;margin:0 10px 0 0!important;flex:0 0 auto}
 .hp-acc span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* wave A: the wallet row is one line (icon + name with ellipsis on the left, short address on the right, never wraps) */
+.hp-r.hp-wr{flex-wrap:nowrap}
+.hp-r.hp-wr .hp-l{flex:0 0 auto;min-width:0;margin-right:12px}
+.hp-r.hp-wr .hp-v{flex:1 1 auto;min-width:0;margin-left:0;word-break:normal}
+.hp-r.hp-wr .hp-w{width:100%}
+.hp-r.hp-wr .hp-w span{flex:0 1 auto;min-width:0}
+/* the "To" row of a send and its badge */
+.hp-to{display:flex;align-items:center;justify-content:flex-end;min-width:0}
+.hp-to span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hp-to em{font-style:normal;font-family:'RobotoMonoE',monospace;font-size:14px;color:var(--hp-muted);margin-left:8px;flex:0 0 auto}
+.hp-badge{display:inline-block;margin-top:3px;padding:3px 8px;border-radius:6px;background:var(--hp-warnBg);color:var(--hp-warn);font:600 11.5px/1.2 'RobotoE',system-ui}
+.hp-nochg{display:flex;align-items:center;margin:0 4px 10px;font:400 13px/18px 'RobotoE',system-ui;color:var(--hp-muted)}
+.hp-nochg svg{width:16px;height:16px;margin-right:6px;flex:0 0 auto}
+.hp-sub{display:flex;align-items:center;margin-top:1px;color:var(--hp-muted);font:400 15px/20px 'RobotoE',system-ui;min-width:0}
+.hp-sub span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hp-chg .hp-v{flex:0 0 auto;max-width:62%;white-space:nowrap}
+.hp-chg .hp-v small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body data-theme="light">
@@ -19541,9 +19540,17 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     if (src && safeImg(src)) return '<img class="' + cls + '" alt="" src="' + esc(src) + '" onerror="this.outerHTML=\'<span class=&quot;' + cls + ' ' + lcls + '&quot;>' + esc(letter(name)) + '</span>\'">';
     return '<span class="' + cls + ' ' + lcls + '">' + esc(letter(name)) + '</span>';
   }
+  /* wave A (#104): a short app name for the header ("Jupiter: The Home of Onchain Finance" -> "Jupiter"), else the hostname */
+  function siteName(name, url) {
+    var h = String(url || '').replace(/^[a-z]+:\/\//i, '').replace(/[\/?#].*$/, '').replace(/^www\./i, '');
+    var n = String(name || '').replace(/\s+/g, ' ').trim();
+    if (n) { var p = n.split(/\s+[|\u2013\u2014\u00b7-]\s+|:\s+/)[0].trim(); if (p.length >= 2) n = p; }
+    if (!n || n.length > 28 || /^https?:/i.test(n)) n = h || n.slice(0, 28);
+    return n;
+  }
   function head(o) {
     return '<div class="hp-head">' + icon(o.icon, o.name, 'hp-ic', 'hp-icl') + '<div class="hp-hm"><div class="hp-name">' + esc(o.name || o.url || 'App') + '</div>' +
-      (o.url ? '<div class="hp-url">' + sv(P.link) + '<span>' + esc(o.url) + '</span></div>' : '') + '</div>' +
+      (o.url ? '<div class="hp-url">' + sv(P.link) + '<span>' + esc(o.url) + '</span></div>' : o.sub ? '<div class="hp-sub"><span>' + esc(o.sub) + '</span></div>' : '') + '</div>' +
       '<button type="button" class="hp-x" data-hp-x aria-label="Close">' + sv(P.x) + '</button></div>';
   }
   function title(t, step) { return (step ? '<div class="hp-stp">' + esc(step) + '</div>' : '') + '<h2 class="hp-title">' + esc(t) + '</h2>'; }
@@ -19559,7 +19566,8 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
      No rows: "Estimate unavailable" (o.why says what Kwallet could read instead). */
   function changes(rows, o) {
     o = o || {};
-    if (!rows || !rows.length) return card('<div class="hp-na">' + sv(P.info) + '<div><b>' + esc(o.none || 'Estimate unavailable') + '</b>' + (o.why ? '<small>' + o.why + '</small>' : '') + '</div></div>', 'hp-chg');
+    /* wave A: nothing known yet (simulation comes in wave B) -> one quiet line, no card, no guesses */
+    if (!rows || !rows.length) return '<div class="hp-nochg">' + sv(P.info) + '<span>' + esc(o.none || 'Balance changes unavailable') + '</span></div>';
     return card(rows.map(function (r) {
       var cl = r.sign === '-' ? 'hp-neg' : r.sign === '+' ? 'hp-pos' : '';
       return '<div class="hp-r">' + icon(r.icon, r.sym, 'hp-tk', 'hp-tkl') + '<span class="hp-l">' + esc(r.sym) + (r.note ? '<small>' + esc(r.note) + '</small>' : '') + '</span>' +
@@ -19569,6 +19577,8 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   function walletV(name, addr, cic) {
     return '<span class="hp-w">' + (cic ? icon(cic, '', 'hp-cic', 'hp-tkl') : '') + '<span>' + esc(name || 'Wallet') + '</span>' + (addr ? '<em>' + esc(shortA(addr)) + '</em>' : '') + '</span>';
   }
+  /* wave A: the wallet row, always one line */
+  function walletRow(name, addr, cic, o) { o = o || {}; return kv('Wallet', walletV(name, addr, cic), '', { cls: 'hp-wr' + (o.cls ? ' ' + o.cls : ''), tap: o.tap, chev: o.chev, id: o.id }); }
   function shortA(a) { a = String(a || ''); return a.length > 13 ? a.slice(0, 6) + '\u2026' + a.slice(-4) : a; }
   /* level: ok (verified domain) | unk (unknown) | bad (known scam / mismatch) */
   function trust(level, text) {
@@ -19647,7 +19657,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     sh.addEventListener('touchend', function () { if (y0 == null) return; y0 = null; sh.style.transition = ''; sh.style.transform = ''; if (dy > 100) { var x = ov.querySelector('[data-hp-x]'); if (x) x.click(); } });
     return { el: ov, close: close };
   }
-  window.HWP = { esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
+  window.HWP = { siteName: siteName, walletRow: walletRow, esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
     trust: trust, warns: warns, perms: perms, details: details, foot: foot, sheet: sheet, siwe: siwe, siweRows: siweRows, msgBlock: msgBlock, tree: tree, overlay: overlay };
 })();
 
@@ -19686,11 +19696,6 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   function load() { var a = jget(PK, []); return Array.isArray(a) ? a : []; }
   function rid(n) { var b = new Uint8Array(n || 8); crypto.getRandomValues(b); return Array.prototype.map.call(b, function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); }
   function short(a) { a = String(a || ''); return a.length > 16 ? a.slice(0, 8) + '…' + a.slice(-6) : a; }
-  function logoImg(key, cls, label) {
-    var src = LOGO[key];
-    if (!src) return '<span class="kss-lg kss-lt ' + (cls || '') + '">' + esc(String(label || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 1).toUpperCase() || '?') + '</span>';
-    return '<img class="kss-lg ' + (cls || '') + '" alt="" src="' + src + '">';
-  }
 
   /* ---------- storage: secrets in the vault, a public index outside it, an optional signing copy ---------- */
   function reqPin() { try { return localStorage.getItem(RQ) === '1'; } catch (e) { return false; } }
@@ -19860,78 +19865,22 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   };
 
   var CSS = '' +
-    'html.kw-sign.kw-sheet,html.kw-sign.kw-sheet body{background:transparent!important}' +
-    '#kss.kss-sh{background:rgba(8,12,18,.46);justify-content:flex-end;transform:none}#kss.kss-sh .kss-panel{transform:translateY(40px);transition:transform .32s cubic-bezier(.22,1,.36,1)}#kss.kss-sh.in .kss-panel{transform:none}' +
-    '#kss.kss-sh .kss-hp{flex:0 1 auto;min-height:0}#kss.kss-sh.in .kss-hp{transform:translate3d(0,0,0)}#kss.kss-sh .kss-hp .kss-cf{border-top:0;padding:4px 0 2px}' +
-    '.kss-panel{display:flex;flex-direction:column;max-height:92%;background:var(--bg);border-radius:22px 22px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.22);overflow:hidden}' +
-    '.kss-grab{flex:0 0 auto;width:38px;height:4px;border-radius:2px;background:var(--border);margin:8px auto 2px}' +
-    '.kss-sh .kss-scroll{padding-top:6px}.kss-site{padding:11px 12px}.kss-site .kss-lg{width:38px;height:38px;border-radius:10px}.kss-sn{font-size:17px!important;letter-spacing:-.1px!important}' +
-    '.kss-msg{font:500 13.5px/1.5 RobotoMonoE,monospace;background:var(--bg-input);border-radius:10px;padding:10px;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto}' +
-    '.kss-raw{margin:0 0 8px}.kss-raw summary{color:var(--text-muted);font:600 13px RobotoE,system-ui;padding:8px 4px;cursor:pointer}.kss-raw .kss-ab{max-height:180px;overflow:auto;white-space:pre-wrap;font-size:12px}' +
-    '.kss-ins{margin:0;padding-left:20px;font:500 13.5px/1.5 RobotoE,system-ui}.kss-ins li{margin:2px 0}.kss-livebar{display:flex;justify-content:flex-end;margin:-2px 2px 6px}.mono{font-family:RobotoMonoE,monospace}' +
-    'html.kw-sign,html.kw-sign body{background:var(--bg)!important}' +
+    /* WAVE_A_SHEET: one sheet for every request (#106) */
+    '#kss .kss-hp{flex:0 1 auto;min-height:0}#kss .kss-hp .kss-cf{border-top:0;padding:4px 0 2px}' +
+    'html.kw-sign,html.kw-sign body{background:transparent!important}' +
     'html.kw-sign body>*:not(#kss):not(.kwd-ov):not(.toast):not(script):not(style){display:none!important}' +
-    '#kss{position:fixed;top:0;right:0;bottom:0;left:0;z-index:50;display:flex;flex-direction:column;background:var(--bg);color:var(--text);overflow:hidden;opacity:0;transform:translateY(24px);transition:opacity .22s ease,transform .3s cubic-bezier(.22,1,.36,1)}' +
-    '#kss.in{opacity:1;transform:none}' +
-    '#kss{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-feature-settings:"tnum" 1}' +
-    '.kss-scroll{flex:1;overflow:auto;padding:calc(var(--kw-sat,0px) + 6px) 14px 10px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}' +
-    'html.kw-e2e .kss-scroll{padding-top:6px}html.kw-e2e .kss-foot{padding-bottom:12px!important}' +
-    '.kss-head{display:flex;align-items:center;gap:10px;height:40px;margin-bottom:2px}' +
-    '.kss-head .kbrand{display:inline-flex;align-items:center;height:30px;background:#DDF869;color:#223348;border-radius:10px;padding:0 8px;font:900 15px/1 KwBlack,RobotoE,system-ui;letter-spacing:-.2px;box-shadow:inset 0 -2px 0 rgba(34,51,72,.12),0 1px 2px rgba(34,51,72,.14)}' +
-    '.kss-head .kbrand .kb-k{color:#223348;font-weight:900;letter-spacing:-.6px;margin-right:.5px}.kss-head .kbrand .kb-w{color:#fff;font-size:13.5px;-webkit-text-stroke:1.3px #223348;text-shadow:0 1px 0 #223348;letter-spacing:.25px}' +
-    '.kss-head h2{font:700 17px/1.2 RobotoE,system-ui;flex:1;margin:0;letter-spacing:-.1px}' +
-    '.kss-chip{display:inline-flex;align-items:center;gap:6px;font:600 12.5px/1 RobotoE,system-ui;height:30px;padding:0 10px 0 5px;border-radius:10px;background:var(--bg-card);border:1px solid var(--border);max-width:48%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-    '.kss-chip .kss-lg{width:20px;height:20px}' +
-    '.kss-lg{display:inline-block;width:48px;height:48px;border-radius:50%;object-fit:cover;flex:0 0 auto;background:transparent}' +
-    '.kss-lt{display:inline-grid;place-items:center;background:var(--bg-input);color:var(--text);font:700 20px/1 RobotoE,system-ui}' +
-    '.kss-hero{display:flex;align-items:center;gap:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:15px 14px;margin:6px 0 8px}' +
-    '.kss-hero .kss-lg{width:46px;height:46px}' +
-    '.kss-ht{flex:1;min-width:0}.kss-amt{font:700 25px/1.12 RobotoE,system-ui;letter-spacing:-.4px;word-break:break-word;font-variant-numeric:tabular-nums}' +
-    '.kss-usd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--text-muted);font:500 13.5px/18px RobotoE,system-ui;margin-top:4px;min-height:18px;font-variant-numeric:tabular-nums}' +
-    '.kss-live{display:inline-flex;align-items:center;gap:5px;font:500 12px/16px RobotoE,system-ui;color:var(--text-muted);min-width:148px;font-variant-numeric:tabular-nums;white-space:nowrap}' +
-    '.kss-live i{width:7px;height:7px;border-radius:50%;background:#1e9e5a;box-shadow:0 0 0 0 rgba(30,158,90,.5);animation:kssP 2s infinite}' +
-    '.kss-live.stale i{background:#e3a008;animation:none}' +
-    '@keyframes kssP{0%{box-shadow:0 0 0 0 rgba(30,158,90,.45)}70%{box-shadow:0 0 0 6px rgba(30,158,90,0)}100%{box-shadow:0 0 0 0 rgba(30,158,90,0)}}' +
-    '.kss-grp{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;margin-bottom:8px;overflow:hidden}' +
-    '.kss-r{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid color-mix(in srgb,var(--border) 80%,transparent);min-height:48px}.kss-r:first-child{border-top:0}' +
-    '.kss-r.col{flex-direction:column;align-items:stretch;gap:7px}' +
-    '.kss-rh{display:flex;align-items:center;justify-content:space-between;gap:10px}' +
-    '.kss-l{color:var(--text-muted);font:500 13.5px/18px RobotoE,system-ui;flex:0 0 auto}' +
-    '.kss-v{flex:1;min-width:0;text-align:right;font:500 14.5px/19px RobotoE,system-ui;word-break:break-word;font-variant-numeric:tabular-nums}' +
-    '.kss-v small{display:block;color:var(--text-muted);font:400 12.5px/17px RobotoE,system-ui;margin-top:1px}' +
-    '.kss-v .kss-lg{width:18px;height:18px;vertical-align:-4px;margin-left:6px}' +
-    '.kss-ab{font:500 13px/1.55 RobotoMonoE,monospace;letter-spacing:.2px;background:var(--bg-input);border-radius:10px;padding:8px 10px;color:var(--text);word-break:break-all;text-align:left}.kss-ab{word-spacing:3px;text-wrap:balance}' +
-    '.kss-ab b{font-weight:700}' +
-    '.kss-badge{display:inline-block;font:600 11px/1 RobotoE,system-ui;padding:4px 8px;border-radius:6px;background:color-mix(in srgb,#e3a008 18%,transparent);color:#a86f00}[data-theme="dark"] .kss-badge{color:#f0c14b}' +
-    '.kss-seg{display:inline-flex;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:2px;gap:2px}.kss-seg button{border:0;background:transparent;color:var(--text-muted);font:600 12.5px/1 RobotoE,system-ui;height:28px;padding:0 11px;border-radius:8px}' +
-    '.kss-seg button.on{background:var(--bg-card);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.16)}' +
-    '.kss-note{border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45;margin-bottom:8px;display:flex;gap:9px;align-items:flex-start}' +
-    '.kss-note b{font-weight:600}.kss-note svg{width:18px;height:18px;flex:0 0 auto;margin-top:1px}' +
-    '.kss-warn{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger)}' +
-    '.kss-info{background:var(--bg-input);color:var(--text-muted)}' +
-    '.kss-upd{background:color-mix(in srgb,#e3a008 15%,transparent);color:#8a5d00}[data-theme="dark"] .kss-upd{color:#f0c14b}' +
-    '.kss-foot{flex:0 0 auto;padding:8px 14px calc(var(--kw-sab,0px) + 12px);background:var(--bg);border-top:1px solid color-mix(in srgb,var(--border) 70%,transparent)}' +
-    '.kss-exp{display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:12px;margin:0 2px 8px;min-height:15px;font-variant-numeric:tabular-nums}' +
-    '.kss-exp .kss-eb{flex:1;height:3px;border-radius:2px;background:var(--bg-input);overflow:hidden}.kss-exp .kss-eb i{display:block;height:100%;background:var(--text-muted);transform-origin:left;transition:transform 1s linear}' +
-    '.kss-exp.low{color:var(--danger)}.kss-exp.low .kss-eb i{background:var(--danger)}' +
-    '.kss-act{display:flex;gap:8px}' +
-    '.kss-act button{flex:1;height:52px;border-radius:14px;border:0;font:700 16px/1 RobotoE,system-ui;position:relative;overflow:hidden}' +
-    '.kss-no{background:var(--bg-card);color:var(--text);border:1px solid var(--border)!important;flex:0 0 32%!important}' +
-    '.kss-go{background:#DDF869;color:#223348;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:inset 0 -2px 0 rgba(34,51,72,.12)}.kss-go:disabled{opacity:.42}' +
-    '.kss-go .kss-fill{position:absolute;top:0;right:0;bottom:0;left:0;background:#b6d43a;transform-origin:left;transform:scaleX(0)}.kss-go span{position:relative}' +
-    '.kss-done{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;flex:1;font:500 17px RobotoE,system-ui}' +
-    '.kss-ring{width:84px;height:84px}.kss-ring circle{fill:none;stroke:#1e9e5a;stroke-width:6;stroke-dasharray:240;stroke-dashoffset:240;animation:kssR .45s ease forwards}.kss-ring path{fill:none;stroke:#1e9e5a;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:kssR .28s .4s ease forwards}' +
-    '@keyframes kssR{to{stroke-dashoffset:0}}' +
-    '.kss-pin{position:absolute;top:0;right:0;bottom:0;left:0;z-index:5;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(var(--kw-sat,0px) + 20px) 24px calc(var(--kw-sab,0px) + 20px)}' +
-    '.kss-pin h3{font:600 19px RobotoE,system-ui;margin:0 0 6px}.kss-pin p{color:var(--text-muted);font-size:14px;margin:0 0 22px;min-height:18px;text-align:center}.kss-pin p.err{color:var(--danger)}' +
-    '.kss-dots{display:flex;gap:14px;margin-bottom:30px}.kss-dots i{width:13px;height:13px;border-radius:50%;border:2px solid var(--text-muted)}.kss-dots i.on{background:var(--text);border-color:var(--text)}' +
+    '#kss{position:fixed;top:0;right:0;bottom:0;left:0;z-index:50;display:flex;flex-direction:column;justify-content:flex-end;color:var(--hp-text);overflow:hidden;background:rgba(8,12,18,0);transition:background .22s linear;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}' +
+    '#kss.in{background:rgba(8,12,18,.46)}' +
+    '.kss-pin{position:absolute;top:0;right:0;bottom:0;left:0;z-index:5;background:var(--hp-bg);color:var(--hp-text);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(var(--kw-sat,0px) + 20px) 24px calc(var(--kw-sab,0px) + 20px)}' +
+    '.kss-pin h3{font:600 19px RobotoE,system-ui;margin:0 0 6px}.kss-pin p{color:var(--hp-muted);font-size:14px;margin:0 0 22px;min-height:18px;text-align:center}.kss-pin p.err{color:var(--hp-dn)}' +
+    '.kss-dots{display:flex;margin-bottom:30px}.kss-dots i{width:13px;height:13px;margin:0 7px;border-radius:50%;border:2px solid var(--hp-muted)}.kss-dots i.on{background:var(--hp-text);border-color:var(--hp-text)}' +
     '.kss-dots.shake{animation:kssS .36s}@keyframes kssS{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}' +
-    '.kss-pad{display:grid;grid-template-columns:repeat(3,76px);gap:12px 22px}.kss-pad button{width:76px;height:76px;border-radius:50%;border:0;background:var(--bg-input);color:var(--text);font:500 26px RobotoE,system-ui}' +
+    '.kss-pad{display:grid;grid-template-columns:repeat(3,76px);grid-gap:12px 22px}.kss-pad button{width:76px;height:76px;border-radius:50%;border:0;background:var(--hp-card);color:var(--hp-text);font:500 26px RobotoE,system-ui}' +
     '.kss-pad button.t{background:transparent;font-size:15px}.kss-pad button svg{width:26px;height:26px}' +
-    '.kss-pass{width:100%;max-width:320px;height:52px;border-radius:14px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);padding:0 14px;font-size:17px;margin-bottom:14px}' +
-    '.kss-pin .kss-pcan{margin-top:22px;border:0;background:transparent;color:var(--text-muted);font:600 15px RobotoE,system-ui;padding:10px 18px}' +
-    '.kss-pick{display:flex;flex-direction:column;gap:8px}.kss-pick button{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);text-align:left;width:100%}' +
-    '.kss-pick button b{display:block;font-size:15px}.kss-pick button span{color:var(--text-muted);font:12px RobotoMonoE,monospace}' +
+    '.kss-pass{width:100%;max-width:320px;height:52px;border-radius:14px;border:1px solid var(--hp-border);background:var(--hp-card);color:var(--hp-text);padding:0 14px;font-size:17px;margin-bottom:14px;box-sizing:border-box}' +
+    '.kss-pok{width:100%;max-width:320px;height:52px;border-radius:26px;border:0;background:var(--hp-acc);color:var(--hp-accI);font:600 16px RobotoE,system-ui}' +
+    '.kss-pin .kss-pcan{margin-top:22px;border:0;background:transparent;color:var(--hp-muted);font:600 15px RobotoE,system-ui;padding:10px 18px}' +
+    '#kss .hp-sheet{max-height:94%}#kss .kss-hp{transform:translate3d(0,100%,0);transition:transform .3s cubic-bezier(.2,.9,.25,1)}#kss.in .kss-hp{transform:translate3d(0,0,0)}' +
     /* v3.96 (#79) pairing page */
     '.hwp-page{position:fixed;top:0;right:0;bottom:0;left:0;z-index:9500;background:var(--bg);color:var(--text);overflow-y:auto;opacity:0;pointer-events:none;transform:translateX(28px);transition:transform .24s cubic-bezier(.2,0,0,1),opacity .16s linear;font-family:RobotoE,Roboto,system-ui,sans-serif}' +
     '.hwp-page.show{opacity:1;pointer-events:auto;transform:none}@media (prefers-reduced-motion:reduce){.hwp-page{transition:none;transform:none}}' +
@@ -19966,13 +19915,22 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   if (!window.__kwSign) return;
   try { var th = localStorage.getItem('wallet-theme') || 'light'; document.body.setAttribute('data-theme', th); } catch (e) {}
   var REQ = null, done = false;
+  /* wave A (#102): the sheet wears Hwallet's live theme (light/dark and its palette, Material You included), sent with
+     the request. Only plain colours for known tokens are taken; anything else keeps Hwallet's classic palette. */
+  var THK = ['bg', 'card', 'card2', 'line', 'border', 'text', 'muted', 'soft', 'acc', 'accI', 'pill', 'sel', 'up', 'dn', 'warn', 'warnBg', 'errBg'];
+  function applyTheme(t) {
+    if (!t || typeof t !== 'object') return;
+    if (t.dark === true || t.dark === false) document.body.setAttribute('data-theme', t.dark ? 'dark' : 'light');
+    var v = t.v && typeof t.v === 'object' ? t.v : {};
+    THK.forEach(function (k) { var c = String(v[k] == null ? '' : v[k]).trim(); if (/^#[0-9a-f]{3,8}$/i.test(c) || /^rgba?\([\d.,\s%]+\)$/i.test(c)) page.style.setProperty('--hp-' + k, c); });
+  }
+  var HWICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5NiA5NiI+PHJlY3Qgd2lkdGg9Ijk2IiBoZWlnaHQ9Ijk2IiByeD0iMjgiIGZpbGw9IiNEREY4NjkiLz48cGF0aCBmaWxsPSIjMTAxNDBhIiBkPSJNMzAgMjRoMTB2MjBoMTZWMjRoMTB2NDhINTZWNTNINDB2MTlIMzB6Ii8+PC9zdmc+';
   function finish(o) {
     if (done) return; done = true;
     o = o || { status: 'rejected' }; if (REQ && REQ.id) o.id = REQ.id;
     try { KwSign.done(JSON.stringify(o)); } catch (e) {}
   }
   window.kwSignBack = function () { if (pinOpen) { closePin(false); return true; } if (!busy) finish({ status: 'rejected' }); return true; };
-  try { REQ = JSON.parse(KwSign.request() || 'null'); } catch (e) { REQ = null; }
 
   var BI = window.BigInt;
   function U(v) { try { return v == null || v === '' ? null : BI(String(v)); } catch (e) { return null; } }
@@ -19999,43 +19957,43 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   var ICR = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>';
 
   var page = document.createElement('div'); page.id = 'kss'; page.setAttribute('role', 'dialog');
-  function bars() { if (document.documentElement.classList.contains('kw-sheet')) return; try { var c = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#f8f9fa'; if (window.HarkNative && HarkNative.setBars) HarkNative.setBars(c, c); } catch (e) {} }
   function mount() {
     if (page.isConnected) return;
-    document.body.appendChild(page); bars();
+    document.body.appendChild(page);
     requestAnimationFrame(function () { requestAnimationFrame(function () { page.classList.add('in'); try { if (KwSign.ready) KwSign.ready(); } catch (e) {} }); });
   }
-  function head(title, chip) {
-    return '<div class="kss-head"><span class="kbrand" aria-label="Kwallet"><span class="kb-k">K</span><span class="kb-w">wallet</span></span><h2>' + esc(title) + '</h2>' + (chip || '') + '</div>';
-  }
-  function frame(body, foot) { page.innerHTML = '<div class="kss-scroll" id="kss-sc">' + body + '</div><div class="kss-foot" id="kss-foot">' + (foot || '') + '</div>'; }
   function fail(msg, fix) {
     mount();
-    if (page.classList.contains('kss-sh')) {
-      /* P2a: a dApp request that cannot be signed gets the same sheet as every other popup */
-      var R0 = REQ || {}, sn = String((R0.site && R0.site.name) || host(R0.origin) || 'App').slice(0, 40);
-      page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(HWP.head({ icon: R0.site && R0.site.icon, name: sn, url: String(R0.origin || '').replace(/\/+$/, '') }) + HWP.title('Can\u2019t sign') +
-        HWP.warns([esc(msg)], true) + (fix ? HWP.card('<div class="hp-na">' + HWP.sv(HWP.P.info) + '<div><small>' + fix + '</small></div></div>') : ''),
-        '<div class="hp-act"><button type="button" class="hp-btn hp-no" id="kss-close">Close</button></div>') + '</div>';
-      $('kss-close').onclick = page.querySelector('[data-hp-x]').onclick = function () { finish({ status: 'rejected', error: msg }); };
-      buzz([30, 40, 30]); return;
-    }
-    frame(head('Can\u2019t sign') + '<div class="kss-note kss-warn">' + ICW + '<div>' + esc(msg) + '</div></div>' + (fix ? '<div class="kss-note kss-info">' + ICI + '<div>' + fix + '</div></div>' : ''),
-      '<div class="kss-act"><button type="button" class="kss-no" style="flex:1!important" id="kss-close">Close</button></div>');
-    $('kss-close').onclick = function () { finish({ status: 'rejected', error: msg }); };
+    var R0 = REQ || {}, dapp = R0.action === 'dapp';
+    var hd = dapp ? { icon: R0.site && R0.site.icon, name: HWP.siteName(R0.site && R0.site.name, R0.origin) || 'App', url: String(R0.origin || '').replace(/\/+$/, '') } : { icon: HWICON, name: 'Hwallet', sub: 'Request from Hwallet' };
+    page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(HWP.head(hd) + HWP.title('Can\u2019t sign') +
+      HWP.warns([esc(msg)], true) + (fix ? HWP.card('<div class="hp-na">' + HWP.sv(HWP.P.info) + '<div><small>' + fix + '</small></div></div>') : ''),
+      '<div class="hp-act"><button type="button" class="hp-btn hp-no" id="kss-close">Close</button></div>') + '</div>';
+    $('kss-close').onclick = page.querySelector('[data-hp-x]').onclick = function () { finish({ status: 'rejected', error: msg }); };
     buzz([30, 40, 30]);
   }
   function success(o, text) {
-    if (page.classList.contains('kss-sh')) {
-      page.innerHTML = '<div class="hp-sheet kss-hp"><div class="hp-grab"></div><div class="hp-done"><svg viewBox="0 0 84 84"><circle cx="42" cy="42" r="38"/><path d="M26 43l11 11 21-23"/></svg><div>' + esc(text) + '</div></div></div>';
-      buzz([10, 50, 18]); try { FX.notify('addr'); } catch (e) {}
-      setTimeout(function () { finish(o); }, 650); return;
-    }
-    page.innerHTML = '<div class="kss-done"><svg class="kss-ring" viewBox="0 0 84 84"><circle cx="42" cy="42" r="38"/><path d="M26 43l11 11 21-23"/></svg><div>' + esc(text) + '</div></div>';
+    var sh = page.querySelector('.hp-sheet');
+    if (sh) sh.innerHTML = '<div class="hp-grab"></div><div class="hp-done"><svg viewBox="0 0 84 84"><circle cx="42" cy="42" r="38"/><path d="M26 43l11 11 21-23"/></svg><div>' + esc(text) + '</div></div>';
     buzz([10, 50, 18]); try { FX.notify('addr'); } catch (e) {}
-    setTimeout(function () { finish(o); }, 750);
+    setTimeout(function () { finish(o); }, 650);
   }
 
+  /* wave A (#106): every request opens as the same bottom sheet over Hwallet (no full-page Kwallet screen anywhere) */
+  var started = false;
+  function start() {
+    if (started) return;
+    var raw = ''; try { raw = String(KwSign.request() || ''); } catch (e) {}
+    /* P2a (f): a sign page Kwallet pre-loaded while warm has no request yet; SignActivity calls kwSignStart() when it adopts it */
+    if (!raw && window.KwSign && KwSign.pending && KwSign.pending()) return;
+    started = true;
+    try { REQ = JSON.parse(raw || 'null'); } catch (e) { REQ = null; }
+    document.documentElement.classList.add('kw-sheet'); page.classList.add('kss-sh');
+    try { if (KwSign.sheet) KwSign.sheet(); } catch (e) {}
+    if (REQ && typeof REQ === 'object') applyTheme(REQ.theme);
+    route();
+  }
+  window.kwSignStart = start;
   function route() {
     if (!REQ || typeof REQ !== 'object') return fail('This request could not be read.');
     if ((REQ.v !== 1 && REQ.v !== 2) || !/^[0-9a-f]{16,64}$/i.test(String(REQ.id || ''))) return fail('Unknown request format.', 'Update Hwallet and Kwallet to matching versions.');
@@ -20051,13 +20009,16 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   function pairPage() {
     var all = pubList(); mount();
     if (!all.length) return fail('No seeds are paired with Hwallet yet.', 'Open Kwallet, go to <b>Settings &gt; Hwallet signer</b>, pair the seed that holds your funds, then pair again from Hwallet.');
-    frame(head('Pair Hwallet') + '<div class="kss-note kss-info">' + ICI + '<div>Choose the wallet Hwallet should watch. Only public addresses are shared; your seed stays in Kwallet.</div></div>' +
-      '<div class="kss-pick">' + all.map(function (r, i) { return '<button type="button" data-i="' + i + '">' + logoImg('ethereum', '', 'E').replace('kss-lg', 'kss-lg" style="width:36px;height:36px') + '<div><b>' + esc(r.label) + ' · #' + r.index + '</b><span>' + esc(short(r.addrs.eth || r.addrs.xmr)) + '</span></div></button>'; }).join('') + '</div>',
-      '<div class="kss-act"><button type="button" class="kss-no" style="flex:1!important" id="kss-close">Cancel</button></div>');
-    $('kss-close').onclick = function () { finish({ status: 'rejected' }); };
-    page.querySelectorAll('[data-i]').forEach(function (b) {
-      b.onclick = function () { var r = all[+b.getAttribute('data-i')]; var full = load().filter(function (x) { return x.id === r.id; })[0]; success({ status: 'paired', pair: publicExport(full || Object.assign({ xmrView: '' }, r)) }, 'Sent to Hwallet'); };
-    });
+    var pick = 0;
+    function opts() { return all.map(function (r, i) { return '<button type="button" class="hp-wo' + (i === pick ? ' on' : '') + '" data-i="' + i + '"><i></i><span>' + esc(r.label) + ' \u00b7 #' + r.index + '</span><em>' + esc(HWP.shortA(r.addrs.eth || r.addrs.xmr)) + '</em></button>'; }).join(''); }
+    var body = HWP.head({ icon: HWICON, name: 'Hwallet', sub: 'Pairing request' }) + HWP.title('Pair with Hwallet') +
+      '<div class="hp-lead">Hwallet would like to:</div>' + HWP.card(HWP.perms([['ok', 'See the public addresses of one wallet'], ['ok', 'Ask Kwallet to sign, every time'], ['no', 'Can\u2019t sign or move funds by itself']])) +
+      HWP.card('<div class="hp-sec">Wallet</div><div class="hp-wl" id="kss-pl">' + opts() + '</div>') + HWP.trust('ok', 'Your seed stays in Kwallet');
+    page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ no: 'Cancel', ok: 'Pair', okId: 'kss-go', noId: 'kss-no' })) + '</div>';
+    $('kss-no').onclick = page.querySelector('[data-hp-x]').onclick = function () { finish({ status: 'rejected' }); };
+    function wire() { page.querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { pick = +b.getAttribute('data-i'); buzz(6); $('kss-pl').innerHTML = opts(); wire(); }; }); }
+    wire();
+    $('kss-go').onclick = function () { var r = all[pick]; var full = load().filter(function (x) { return x.id === r.id; })[0]; success({ status: 'paired', pair: publicExport(full || Object.assign({ xmrView: '' }, r)) }, 'Sent to Hwallet'); };
   }
 
   /* ---------- sign: one transfer, built here from the request ---------- */
@@ -20094,6 +20055,8 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     if (!isAddr(c, R.to)) return fail('The recipient address is not valid for ' + info.name + '.');
     if (!isAddr(c, R.from)) return fail('The sending address is not valid.');
     var rec = findPub(R.from, net);
+    /* CI emulator build only (KwE2E exists only with -PkwE2E=true): a display-only wallet so the device check can open and cancel the send sheet */
+    try { if (!rec && window.KwE2E && KwE2E.on()) rec = { id: 'e2e', label: 'E2E test wallet', index: 0, e2e: true }; } catch (e) {}
     if (!rec) return fail('No paired seed owns ' + short(R.from) + '.', 'Open Kwallet, go to <b>Settings &gt; Hwallet signer</b> and pair the seed that owns this address. Import it into Kwallet first if it is not there, then pair again in Hwallet.');
     var tok = R.token && R.token !== 'native' ? R.token : null, dec = tok ? (+R.tokenDec | 0) : (c === 'evm' ? 18 : info.dec);
     if (dec < 0 || dec > 36) return fail('Bad token decimals.');
@@ -20228,14 +20191,11 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   function feeKey(c) { return String(c.fee) + '|' + (S.c === 'evm' ? S.R.nonce : S.c === 'xrp' ? (S.R.xrp || {}).sequence : ''); }
   function stale() { return !!S.R.live && Date.now() - lastFeed > 10000; }
   var KINDS = { transfer: 'Send', 'trx-freeze': 'Stake TRX', 'trx-unfreeze': 'Unstake TRX', 'trx-withdraw': 'Withdraw TRX', 'xrp-trustset': 'Add token' };
-  function addrRow(label, right, a, badge) {
-    return '<div class="kss-r col"><div class="kss-rh"><span class="kss-l">' + label + '</span><span class="kss-v">' + (right || '') + (badge || '') + '</span></div><div class="kss-ab">' + chunk(a) + '</div></div>';
-  }
   function draw() {
     var R = S.R, c = calc(), P = R.prices || {}, gpx = +P.gasUsd || 0, tpx = S.tok ? (+P.tokenUsd || 0) : gpx, kind = R.kind || 'transfer';
     S.last = c; S.key = feeKey(c);
-    var amtTxt = c.amount != null ? fmt(c.amount, S.dec, 8) : '—';
-    var after = null, stake = /^trx-/.test(kind), trust = kind === 'xrp-trustset';
+    var stake = /^trx-/.test(kind), trust = kind === 'xrp-trustset', self = String(R.to) === String(R.from);
+    var after = null;
     if (c.amount != null && !c.err) {
       if (trust) after = c.gbal != null ? c.gbal - c.fee : null;
       else if (stake) after = c.gbal != null ? (kind === 'trx-freeze' ? c.gbal - c.amount - c.fee : kind === 'trx-withdraw' ? c.gbal + c.amount - c.fee : c.gbal - c.fee) : null;
@@ -20245,52 +20205,64 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     var feeHigh = !c.err && (feeUsdV > 25 || (!S.tok && !stake && !trust && c.amount != null && c.amount > 0n && c.fee * 5n > c.amount));
     var lv = R.fee.levels, keys = ['slow', 'medium', 'fast'].filter(function (k) { return lv[k]; }), cfOn = kcfOk(), LAB = { slow: 'Slow', medium: 'Normal', fast: 'Fast', custom: 'Custom' };
     if (cfOn) { keys = keys.concat(['custom']); dappCss(); }
-    var seg = keys.length > 1 ? '<span class="kss-seg" role="radiogroup">' + keys.map(function (k) { return '<button type="button" data-lv="' + k + '" class="' + (k === S.level ? 'on' : '') + '">' + (LAB[k] || k) + '</button>'; }).join('') + '</span>' : '';
-    var coinKey = S.tok ? TOKLOGO[S.sym.toUpperCase()] : (S.c === 'evm' ? TOKLOGO[S.gsym] : S.info.logo);
-    var chip = '<span class="kss-chip">' + logoImg(S.info.logo, '', S.info.name) + esc(S.info.name) + '</span>';
-    var rows = '', self = String(R.to) === String(R.from);
-    rows += addrRow(stake || trust ? 'Account' : 'From', esc(S.rec.label) + ' · #' + S.rec.index, R.from);
-    if (!stake && !trust) rows += addrRow('To', '', R.to, R.firstTime ? '<span class="kss-badge">New address</span>' : '');
-    if (stake && kind !== 'trx-withdraw') rows += '<div class="kss-r"><span class="kss-l">Resource</span><span class="kss-v">' + (R.resource === 'ENERGY' ? 'Energy' : 'Bandwidth') + '<small>' + (kind === 'trx-freeze' ? 'Stake 2.0 · unstaking takes 14 days' : 'Available to withdraw after 14 days') + '</small></span></div>';
-    if (S.c === 'xrp' && R.xrp && R.xrp.destinationTag != null && R.xrp.destinationTag !== '') rows += '<div class="kss-r"><span class="kss-l">Destination tag</span><span class="kss-v">' + esc(R.xrp.destinationTag) + '</span></div>';
-    if (S.tok) {
-      var issuer = S.c === 'xrp' ? String(S.tok).split('.')[1] : S.c === 'ada' ? String(S.tok).split('.')[0] : S.tok;
-      rows += addrRow(S.c === 'xrp' ? 'Issuer' : S.c === 'ada' ? 'Policy' : 'Token contract', esc(S.sym), issuer);
-    }
-    rows += '<div class="kss-r"><span class="kss-l">Network</span><span class="kss-v">' + esc(S.info.name) + logoImg(S.info.logo, '', S.info.name) +
-      (S.c === 'evm' ? '<small>Chain ' + R.chainId + ' · nonce ' + esc(R.nonce) + '</small>' : '') + '</span></div>';
-    var fee = '<div class="kss-r col"><div class="kss-rh"><span class="kss-l">Network fee</span>' + seg + '</div><div class="kss-rh"><span class="kss-l"></span><span class="kss-v">' + (S.c === 'trx' && c.fee === 0n ? 'Free' : (c.approx ? '≈ ' : '') + fmt(c.fee, S.gdec, S.gdec) + ' ' + esc(S.gsym)) +
-      '<small>' + usd(c.fee, S.gdec, gpx) + (c.atMost ? ' · at most' : '') + (S.c === 'trx' ? (c.fee > 0n ? ' · burned from your TRX' : ' · covered by your bandwidth') : '') + '</small></span></div>' + (cfOn ? kcfBlock(c) : '') + '</div>';
-    if (c.extra && S.c === 'sol') fee += '<div class="kss-r"><span class="kss-l">Account rent</span><span class="kss-v">' + fmt(c.extra, 9, 8) + ' SOL<small>Opens the recipient\u2019s token account</small></span></div>';
-    if (c.extra && S.c === 'ada') fee += '<div class="kss-r"><span class="kss-l">ADA sent with it</span><span class="kss-v">' + fmt(c.extra, 6, 6) + ' ADA<small>Cardano requires this minimum with tokens</small></span></div>';
-    if (c.sendMax) fee += '<div class="kss-r"><span class="kss-l">Spend at most</span><span class="kss-v">' + fmt(c.sendMax, S.dec, 8) + ' ' + esc(S.sym) + '<small>Includes the issuer\u2019s transfer fee</small></span></div>';
-    if (c.inputs) fee += '<div class="kss-r"><span class="kss-l">Inputs</span><span class="kss-v">' + c.inputs + (c.change ? '<small>Change back to you: ' + fmt(c.change, S.gdec, 8) + ' ' + esc(S.gsym) + '</small>' : '<small>No change output</small>') + '</span></div>';
-    var balRows = '';
-    if (S.tok && !trust) balRows += '<div class="kss-r"><span class="kss-l">Balance</span><span class="kss-v">' + fmt(c.bal, S.dec, 6) + ' ' + esc(S.sym) + (after != null ? '<small>After: ' + fmt(after, S.dec, 6) + ' ' + esc(S.sym) + '</small>' : '') + '</span></div>';
-    balRows += '<div class="kss-r"><span class="kss-l">' + (S.tok && !trust ? 'Gas balance' : 'Balance') + '</span><span class="kss-v">' + fmt(c.gbal, S.gdec, 6) + ' ' + esc(S.gsym) + ((!S.tok || trust) && after != null ? '<small>After: ' + fmt(after, S.gdec, 6) + ' ' + esc(S.gsym) + (stake && kind === 'trx-freeze' ? ' liquid' : '') + '</small>' : '') + '</span></div>';
-    if (S.c === 'xrp' && R.xrp && U(R.xrp.reserve)) balRows += '<div class="kss-r"><span class="kss-l">Reserve</span><span class="kss-v">' + fmt(U(R.xrp.reserve), 6, 6) + ' XRP<small>' + (trust ? 'A trust line adds 0.2 XRP to it' : 'Stays locked on the ledger') + '</small></span></div>';
+    var seg = keys.length > 1 ? '<div class="hp-seg" role="radiogroup">' + keys.map(function (k) { return '<button type="button" data-lv="' + k + '" class="' + (k === S.level ? 'on' : '') + '">' + (LAB[k] || k) + '</button>'; }).join('') + '</div>' : '';
+    var coinKey = S.tok ? TOKLOGO[S.sym.toUpperCase()] : (S.c === 'evm' ? TOKLOGO[S.gsym] : S.info.logo), cic = (coinKey && LOGO[coinKey]) || '', nic = LOGO[S.info.logo] || '';
+    var warnsL = [], infos = [], det = '';
+    if (c.err) warnsL.push(esc(c.err));
+    if (feeHigh) warnsL.push('This network fee looks unusually high. Check it before you sign.');
+    if (self && !stake && !trust) infos.push('You are sending to your own address.');
+    if (window.__kssNoLock) infos.push('This phone has no screen lock. Set one to protect signing.');
+    if (R.note) infos.push(esc(String(R.note).slice(0, 240)));
     var notes = '';
-    if (R.note) notes += '<div class="kss-note kss-info">' + ICI + '<div>' + esc(String(R.note).slice(0, 240)) + '</div></div>';
-    if (stale()) notes += '<div class="kss-note kss-upd">' + ICR + '<div><b>Waiting for live data.</b> Keep Hwallet open and online. Signing is paused until fresh values arrive.</div></div>';
-    if (notice) notes += '<div class="kss-note kss-upd">' + ICR + '<div>' + notice + '</div></div>';
-    if (c.err) notes += '<div class="kss-note kss-warn">' + ICW + '<div>' + esc(c.err) + '</div></div>';
-    if (feeHigh) notes += '<div class="kss-note kss-warn">' + ICW + '<div>This network fee looks unusually high. Check it before you sign.</div></div>';
-    if (self && !stake && !trust) notes += '<div class="kss-note kss-info">' + ICI + '<div>You are sending to your own address.</div></div>';
-    if (window.__kssNoLock) notes += '<div class="kss-note kss-info">' + ICI + '<div>This phone has no screen lock. Set one to protect signing.</div></div>';
-    var live = R.live ? '<span class="kss-live' + (stale() ? ' stale' : '') + '" id="kss-live"><i></i><span id="kss-live-t">' + liveText() + '</span></span>' : '';
-    var sign = trust ? '' : kind === 'trx-freeze' || kind === 'trx-unfreeze' ? '' : '-';
-    var heroAmt = trust ? esc(S.sym) + ' trust line' : sign + amtTxt + ' ' + esc(S.sym);
+    if (stale()) notes += HWP.warns(['<b>Waiting for live data.</b> Keep Hwallet open and online. Signing is paused until fresh values arrive.']);
+    if (notice) notes += HWP.warns([notice]);
+    /* what leaves (or comes back to) the wallet: the amount with the coin's icon and its dollar value */
+    var amtTxt = c.amount != null ? fmt(c.amount, S.dec, 8) : '\u2014', main = '';
+    if (trust) main += HWP.card(HWP.kv('<span class="hp-acc">' + HWP.icon(cic, S.sym, 'hp-tk', 'hp-tkl') + '<span>' + esc(S.sym) + '</span></span>', 'Trust line', 'Lets this account hold ' + esc(S.sym)));
+    else {
+      var rows = [{ icon: cic, sym: S.sym, sign: kind === 'trx-withdraw' ? '+' : kind === 'trx-unfreeze' ? '' : '-', amt: amtTxt, usd: (c.amount != null ? usdTxt(c.amount, S.dec, tpx) : '') + (R.amount === 'max' ? ' \u00b7 Max' : ''),
+        note: kind === 'trx-freeze' ? 'Staked for ' + (R.resource === 'ENERGY' ? 'energy' : 'bandwidth') : kind === 'trx-unfreeze' ? 'Unstaking takes 14 days' : kind === 'trx-withdraw' ? 'Unstaked TRX back to you' : '' }];
+      if (c.extra && S.c === 'sol') rows.push({ icon: nic, sym: 'SOL', sign: '-', amt: fmt(c.extra, 9, 8), usd: usdTxt(c.extra, 9, gpx), note: 'Token account rent' });
+      if (c.extra && S.c === 'ada') rows.push({ icon: nic, sym: 'ADA', sign: '-', amt: fmt(c.extra, 6, 6), usd: usdTxt(c.extra, 6, gpx), note: 'Cardano requires this minimum with tokens' });
+      main += HWP.changes(rows);
+    }
+    /* to whom */
+    var toRows = '';
+    if (!stake && !trust) toRows += HWP.kv('To', '<span class="hp-to">' + (R.toName ? '<span>' + esc(String(R.toName).slice(0, 40)) + '</span>' : '') + '<em>' + esc(HWP.shortA(R.to)) + '</em></span>', R.firstTime ? '<span class="hp-badge">New address</span>' : '');
+    if (stake && kind !== 'trx-withdraw') toRows += HWP.kv('Resource', R.resource === 'ENERGY' ? 'Energy' : 'Bandwidth', kind === 'trx-freeze' ? 'Stake 2.0' : 'Available after 14 days');
+    if (S.c === 'xrp' && R.xrp && R.xrp.destinationTag != null && R.xrp.destinationTag !== '') toRows += HWP.kv('Destination tag', esc(R.xrp.destinationTag), '');
+    if (toRows) main += HWP.card(toRows);
+    /* network fee: tap to change (Slow / Normal / Fast / Custom) */
+    var fv = S.c === 'trx' && c.fee === 0n ? 'Free' : (c.approx ? '\u2248 ' : '') + fmt(c.fee, S.gdec, S.gdec) + ' ' + esc(S.gsym);
+    var fs = [c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : '', c.atMost ? 'at most' : '', S.c === 'trx' ? (c.fee > 0n ? 'burned from your TRX' : 'covered by your bandwidth') : ''].filter(Boolean).join(' \u00b7 ');
+    var live = R.live ? '<span class="hp-live' + (stale() ? ' stale' : '') + '" id="kss-live"><i></i><span id="kss-live-t">' + liveText() + '</span></span>' : '';
+    var ed = keys.length > 1, fopen = !!S.feeOpen || S.level === 'custom';
+    main += HWP.card(HWP.kv('Network fee<small>' + (LAB[S.level] || '') + (live ? ' \u00b7 ' : '') + live + '</small>', fv, fs, { tap: ed, chev: ed, id: 'kss-feer', cls: 'hp-fee' + (fopen ? ' hp-open' : '') }) +
+      (ed ? '<div class="hp-fed' + (fopen ? '' : ' off') + '" id="kss-fed">' + seg + (cfOn ? kcfBlock(c) : '') + '</div>' : ''));
+    /* wallet */
+    main += HWP.card(HWP.walletRow(S.rec.label + ' \u00b7 #' + S.rec.index, R.from, nic));
+    /* details: full addresses, contract, network, balances */
+    det += dAddrRow(stake || trust ? 'Account' : 'From', esc(S.rec.label) + ' \u00b7 #' + S.rec.index, R.from);
+    if (!stake && !trust) det += dAddrRow('To', R.firstTime ? 'New address' : '', R.to);
+    if (S.tok) { var issuer = S.c === 'xrp' ? String(S.tok).split('.')[1] : S.c === 'ada' ? String(S.tok).split('.')[0] : S.tok; det += dAddrRow(S.c === 'xrp' ? 'Issuer' : S.c === 'ada' ? 'Policy' : 'Token contract', esc(S.sym), issuer); }
+    det += kv('Network', esc(S.info.name), S.c === 'evm' ? 'Chain ' + esc(R.chainId) + ' \u00b7 nonce ' + esc(R.nonce) : '');
+    if (c.sendMax) det += kv('Spend at most', fmt(c.sendMax, S.dec, 8) + ' ' + esc(S.sym), 'Includes the issuer\u2019s transfer fee');
+    if (c.inputs) det += kv('Inputs', String(c.inputs), c.change ? 'Change back to you: ' + fmt(c.change, S.gdec, 8) + ' ' + esc(S.gsym) : 'No change output');
+    if (S.tok && !trust) det += kv('Balance', fmt(c.bal, S.dec, 6) + ' ' + esc(S.sym), after != null ? 'After: ' + fmt(after, S.dec, 6) + ' ' + esc(S.sym) : '');
+    det += kv(S.tok && !trust ? 'Gas balance' : 'Balance', fmt(c.gbal, S.gdec, 6) + ' ' + esc(S.gsym), (!S.tok || trust) && after != null ? 'After: ' + fmt(after, S.gdec, 6) + ' ' + esc(S.gsym) + (stake && kind === 'trx-freeze' ? ' liquid' : '') : '');
+    if (S.c === 'xrp' && R.xrp && U(R.xrp.reserve)) det += kv('Reserve', fmt(U(R.xrp.reserve), 6, 6) + ' XRP', trust ? 'A trust line adds 0.2 XRP to it' : 'Stays locked on the ledger');
+    var body = HWP.head({ icon: HWICON, name: 'Hwallet', sub: S.info.name }) + HWP.title(KINDS[kind] || 'Send') + notes + HWP.warns(warnsL, !!c.err) + main +
+      infos.map(function (t) { return HWP.cap(t); }).join('') + HWP.details(det, S.detOpen, 'kss-det');
     var sc = $('kss-sc'), top = sc ? sc.scrollTop : 0;
-    var body = head(KINDS[kind] || 'Send', chip) +
-      '<div class="kss-hero">' + logoImg(coinKey, '', S.sym) + '<div class="kss-ht"><div class="kss-amt">' + heroAmt + '</div><div class="kss-usd"><span>' + (c.amount != null && !trust ? usd(c.amount, S.dec, tpx) : trust ? 'Lets this account hold ' + esc(S.sym) : '') + (R.amount === 'max' ? ' · Max' : '') + '</span>' + live + '</div></div></div>' +
-      notes + '<div class="kss-grp">' + rows + '</div><div class="kss-grp">' + fee + balRows + '</div>';
     if (!$('kss-foot')) {
-      frame(body, '<div class="kss-exp" id="kss-exp"><span id="kss-exp-t"></span><span class="kss-eb"><i id="kss-exp-b"></i></span></div><div class="kss-act"><button type="button" class="kss-no" id="kss-no">Cancel</button>' +
-        '<button type="button" class="kss-go" id="kss-go" disabled><i class="kss-fill"></i><span>Hold to sign</span></button></div>');
+      page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ exp: true, no: 'Cancel', ok: 'Confirm', okId: 'kss-go', noId: 'kss-no', hold: true, disabled: true, hint: '' })) + '</div>';
       $('kss-no').onclick = function () { if (!busy) finish({ status: 'rejected' }); };
       hold($('kss-go'));
     } else { morph($('kss-sc'), body); if ($('kss-sc').scrollTop !== top) $('kss-sc').scrollTop = top; }
-    page.querySelectorAll('[data-lv]').forEach(function (b) { b.onclick = function () { var v = b.getAttribute('data-lv'); if (v === S.level || busy) return; if (v === 'custom') { S.prevLevel = S.level; if (!S.cfTxt) S.cfTxt = kcfDefaults(); } S.level = v; buzz(8); notice = ''; draw(); arm(450); }; });
+    var x = page.querySelector('[data-hp-x]'); if (x) x.onclick = function () { if (!busy) finish({ status: 'rejected' }); };
+    var dd = $('kss-det'); if (dd) dd.ontoggle = function () { S.detOpen = dd.open; };
+    var fr = $('kss-feer'); if (fr && fr.classList.contains('hp-tap')) fr.onclick = function () { S.feeOpen = !(S.feeOpen || S.level === 'custom'); if (!S.feeOpen && S.level === 'custom') S.feeOpen = true; var e = $('kss-fed'); if (e) e.classList.toggle('off', !S.feeOpen); fr.classList.toggle('hp-open', S.feeOpen); buzz(6); };
+    page.querySelectorAll('[data-lv]').forEach(function (b) { b.onclick = function () { var v = b.getAttribute('data-lv'); if (v === S.level || busy) return; if (v === 'custom') { S.prevLevel = S.level; if (!S.cfTxt) S.cfTxt = kcfDefaults(); } S.level = v; S.feeOpen = true; buzz(8); notice = ''; draw(); arm(450); }; });
     page.querySelectorAll('input[data-cf]').forEach(function (i) { i.oninput = function () { if (busy) return; S.cfTxt = S.cfTxt || kcfDefaults(); S.cfTxt[i.getAttribute('data-cf')] = i.value; draw(); arm(450); }; });
     tickExp(); syncBtn();
   }
@@ -20391,7 +20363,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   }
   function setBusy(on, label) {
-    busy = on; var b = $('kss-go'); if (b) { b.querySelector('span').textContent = on ? (label || 'Signing…') : (S && S.dapp ? (S.m === 'kw_nearAccount' ? 'Share' : 'Confirm') : 'Hold to sign'); if (!on) b.querySelector('.kss-fill').style.transform = 'scaleX(0)'; }
+    busy = on; var b = $('kss-go'); if (b) { b.querySelector('span').textContent = on ? (label || 'Signing…') : (S && S.dapp && S.m === 'kw_nearAccount' ? 'Share' : 'Confirm'); if (!on) b.querySelector('.kss-fill').style.transform = 'scaleX(0)'; }
     syncBtn();
     if (!on && pendingFeed) { var f = pendingFeed; pendingFeed = null; (S.dapp ? dappFeed : applyFeed)(f); }
   }
@@ -20422,7 +20394,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     var tries = 0, entry = '', el = document.createElement('div'); el.className = 'kss-pin'; el.id = 'kss-pin';
     var BS = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/></svg>';
     el.innerHTML = '<h3>' + (pass ? 'Enter your Kwallet passcode' : 'Enter your Kwallet PIN') + '</h3><p id="kss-pm">' + esc(msg || 'to sign this transaction') + '</p>' +
-      (pass ? '<input type="password" class="kss-pass" id="kss-pi" autocomplete="off"><button type="button" class="kss-go" id="kss-pok" style="width:100%;max-width:320px;height:52px;border-radius:999px;border:0;font:600 16px RobotoE,system-ui"><span>Confirm</span></button>'
+      (pass ? '<input type="password" class="kss-pass" id="kss-pi" autocomplete="off"><button type="button" class="kss-pok" id="kss-pok"><span>Confirm</span></button>'
         : '<div class="kss-dots" id="kss-dots">' + '<i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kss-pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (n) { return '<button type="button" data-k="' + n + '">' + n + '</button>'; }).join('') +
           '<button type="button" class="t" tabindex="-1" disabled></button><button type="button" data-k="0">0</button><button type="button" class="t" data-k="del" aria-label="Delete">' + BS + '</button></div>') +
       '<button type="button" class="kss-pcan" id="kss-pc">Cancel</button>';
@@ -20475,6 +20447,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   async function proceed(snap) {
     if (busy || done) return;
     if (Date.now() > S.R.expires) return finish({ status: 'expired' });
+    if (S.rec && S.rec.e2e) return finish({ status: 'rejected', error: 'The E2E test wallet cannot sign' });
     setBusy(true, 'Signing…');
     try {
       var sec = await getSecret();
@@ -20573,9 +20546,6 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   function dAddrRow(l, right, a) { return HWP.kv(l + (right ? '<small>' + right + '</small>' : ''), '<span class="hp-mono">' + esc(a) + '</span>', '', { sm: true }); }
   /* v3.96 (#80): the summary shows a short address; the full grouped address is in Details */
   function addrKv(l, a, right) { if (DS) { DS.full = DS.full || {}; DS.full[l + '|' + a] = dAddrRow(l, right || '', a); } return kv(l, '<span class="hp-mono">' + esc(short(a)) + '</span>', right || ''); }
-  function warn(t) { return '<div class="kss-note kss-warn">' + ICW + '<div>' + t + '</div></div>'; }
-  function info(t) { return '<div class="kss-note kss-info">' + ICI + '<div>' + t + '</div></div>'; }
-  function rawBox(t, label) { return '<details class="kss-raw"><summary>' + (label || 'Raw data') + '</summary><div class="kss-ab">' + esc(t) + '</div></details>'; }
 
   /* ---------- EVM ---------- */
   function decodeEvmCall(tx) {
@@ -20782,33 +20752,18 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   function dappCss() {
     if (document.getElementById('kss-dcss')) return;
     var st = document.createElement('style'); st.id = 'kss-dcss';
-    st.textContent = '.kss-src{display:flex;align-items:center;gap:8px;margin:2px 2px 10px;min-width:0;font:400 13px/18px RobotoE,system-ui;color:var(--text-muted)}' +
-      '.kss-src b{font-weight:600;color:var(--text);white-space:nowrap}.kss-src span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}' +
-      '.kss-fav{width:22px;height:22px;border-radius:6px;flex:0 0 auto;object-fit:cover}.kss-favl{display:inline-grid;place-items:center;background:var(--bg-input);color:var(--text);font:700 12px/1 RobotoE,system-ui}' +
-      '.kss-hero2{text-align:center;padding:14px 8px 16px;margin:0 0 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:16px}' +
-      '.kss-hl{font:500 13px/18px RobotoE,system-ui;color:var(--text-muted);margin-bottom:4px}' +
-      '.kss-hero2 .kss-amt{font:700 30px/1.15 RobotoE,system-ui;letter-spacing:-.6px}.kss-hero2 .kss-amt.kss-sm{font-size:20px;letter-spacing:-.2px}.kss-hero2 .kss-amt small{font:500 13px RobotoE,system-ui;color:var(--text-muted)}' +
-      '.kss-hero2 .kss-usd{justify-content:center;margin-top:6px}' +
-      '.kss-mono{font:500 13.5px/19px RobotoMonoE,monospace;letter-spacing:.1px}' +
-      '.kss-fee{display:flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums}.kss-fee b{font:600 15px/20px RobotoE,system-ui}.kss-fee small{color:var(--text-muted);font:400 12.5px/17px RobotoE,system-ui}' +
-      '.kss-cf{padding:4px 14px 12px;border-top:1px solid color-mix(in srgb,var(--border) 80%,transparent)}.kss-cf.off{display:none}' +
-      '.kss-cfr{display:flex;align-items:center;gap:10px;margin-top:8px}.kss-cfr span{flex:0 0 104px;color:var(--text-muted);font:500 13px/18px RobotoE,system-ui}' +
-      '.kss-cfr input{flex:1;min-width:0;height:40px;border:1px solid var(--border);border-radius:10px;background:var(--bg-input);color:var(--text);padding:0 10px;font:500 15px RobotoE,system-ui;font-variant-numeric:tabular-nums;text-align:right;outline:none}' +
-      '.kss-cfr input:focus{border-color:var(--text)}.kss-cfr em{flex:0 0 62px;font:400 12px RobotoE,system-ui;color:var(--text-muted);font-style:normal}' +
-      '.kss-cfm{margin-top:10px;font:400 12.5px/17px RobotoE,system-ui;color:var(--text-muted)}' +
-      '.kss-cfw{display:flex;gap:8px;align-items:flex-start;color:#a86f00;font:500 12.5px/17px RobotoE,system-ui}.kss-cfw:not(:empty){margin-top:8px}.kss-cfw svg{width:16px;height:16px;flex:0 0 auto;margin-top:1px}[data-theme="dark"] .kss-cfw{color:#f0c14b}' +
-      '.kss-risk{display:flex;align-items:center;gap:9px;padding:11px 14px;margin-bottom:8px;border-radius:12px;background:var(--bg-card);border:1px solid var(--border);font:500 13px/18px RobotoE,system-ui;color:var(--text-muted)}' +
-      '.kss-risk i{width:8px;height:8px;border-radius:50%;background:#1e9e5a;flex:0 0 auto}' +
-      '.kss-note p{margin:0}.kss-note p+p{margin-top:6px}' +
-      '.kss-det{margin:2px 0 8px}.kss-det summary{list-style:none;cursor:pointer;color:var(--text-muted);font:600 13px/18px RobotoE,system-ui;padding:10px 4px;display:flex;align-items:center;gap:6px}.kss-det summary::-webkit-details-marker{display:none}' +
-      '.kss-det summary:before{content:"";width:6px;height:6px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg);transition:transform .15s}.kss-det[open] summary:before{transform:rotate(45deg)}' +
-      '.kss-rawt{max-height:160px;overflow:auto;white-space:pre-wrap;font-size:11.5px}.kss-mg .kss-msg{max-height:200px;overflow:auto}';
+    st.textContent = '' +
+      '.kss-cf{padding:4px 14px 12px;border-top:1px solid var(--hp-line)}.kss-cf.off{display:none}' +
+      '.kss-cfr{display:flex;align-items:center;margin-top:8px}.kss-cfr span{flex:0 0 104px;margin-right:10px;color:var(--hp-muted);font:500 13px/18px RobotoE,system-ui}' +
+      '.kss-cfr input{flex:1;min-width:0;height:40px;border:1px solid var(--hp-border);border-radius:10px;background:var(--hp-card2);color:var(--hp-text);padding:0 10px;font:500 15px RobotoE,system-ui;font-variant-numeric:tabular-nums;text-align:right;outline:none}' +
+      '.kss-cfr input:focus{border-color:var(--hp-acc)}.kss-cfr em{flex:0 0 62px;margin-left:10px;font:400 12px RobotoE,system-ui;color:var(--hp-muted);font-style:normal}' +
+      '.kss-cfm{margin-top:10px;font:400 12.5px/17px RobotoE,system-ui;color:var(--hp-muted)}' +
+      '.kss-cfw{display:flex;align-items:flex-start;color:var(--hp-warn);font:500 12.5px/17px RobotoE,system-ui}.kss-cfw:not(:empty){margin-top:8px}.kss-cfw svg{width:16px;height:16px;flex:0 0 auto;margin:1px 8px 0 0}' +
+      '';
     document.head.appendChild(st);
   }
   function dappPage() {
     var R = REQ, m = String(R.method || ''), c = DCH[m];
-    document.documentElement.classList.add('kw-sheet'); page.classList.add('kss-sh');
-    try { if (KwSign.sheet) KwSign.sheet(); } catch (e) {}
     if (!c) return fail('Kwallet does not sign "' + m.slice(0, 40) + '" requests.', 'Only connect, message, typed-data and transaction requests on EVM networks, Solana and Tron are supported.');
     if (R.chain !== c) return fail('Bad request.');
     var inf, net;
@@ -20915,11 +20870,6 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     else o.fl = num(T.fl, 6);
     R.cf = o;
   }
-  function riskLine(c, warns, okText) {
-    if (c.err) warns = [esc(c.err)].concat(warns);
-    if (!warns.length) return '<div class="kss-risk"><i></i><span>' + okText + '</span></div>';
-    return '<div class="kss-note kss-warn">' + ICW + '<div>' + warns.map(function (w) { return '<p>' + w + '</p>'; }).join('') + '</div></div>';
-  }
   /* ---------- P2a (#94): the unified sheet (same design as Hwallet's connect popup, see hwpop.js) ---------- */
   function tokIcon(sym, addr) {
     var t = addr ? tokOf(addr) : null, s = String((t && t.s) || sym || '').toUpperCase();
@@ -20955,7 +20905,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   function dappDraw() {
     var R = DS.R, m = DS.m, c = dappCalc(), P = R.prices || {}, gpx = +P.gasUsd || 0, v = DS.view || {}, ae = m === 'eth_sendTransaction' ? apprEff(R) : null;
     DS.last = c; DS.key = m === 'eth_sendTransaction' ? String(c.fee) + '|' + R.nonce : '';
-    var sname = String((R.site && R.site.name) || DS.site).slice(0, 40), url = String(R.origin || '').replace(/\/+$/, '') || DS.site;
+    var sname = HWP.siteName(R.site && R.site.name, R.origin) || DS.site, url = String(R.origin || '').replace(/\/+$/, '') || DS.site;
     var via = { walletconnect: 'WalletConnect', browser: 'Hwallet Browser', swap: 'Hwallet Swap', fees: 'Hwallet Fees accounts' }[R.via] || 'Hwallet';
     var isTx = m === 'eth_sendTransaction' || /signTransaction$/.test(m), isMsg = m === 'personal_sign' || m === 'solana_signMessage' || m === 'tron_signMessage';
     var sym = DS.c === 'evm' ? DS.gsym : DS.c === 'sol' ? 'SOL' : 'TRX', fdec = DS.c === 'evm' ? 18 : DS.c === 'sol' ? 9 : 6;
@@ -20983,8 +20933,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
         main += HWP.card(HWP.kv('<span class="hp-acc">' + (tokIcon(tts, v.apprT.tok) ? '<img class="hp-tk" style="width:28px;height:28px;margin-right:10px" alt="" src="' + tokIcon(tts, v.apprT.tok) + '">' : '') + '<span>' + esc(tts) + '</span></span>', v.apprT.amt >= MAXU ? '<b>Unlimited</b>' : amtTok(v.apprT.amt, v.apprT.tok), 'Allowance') + HWP.kv('Spender', '<span class="hp-mono">' + esc(short(v.apprT.sp)) + '</span>', '', { sm: true }));
       } else if (rows === null) { /* shown above (Hwallet swap quote) */
       } else if (sim) main += HWP.cap('Balance changes are estimated. Amounts and assets involved are not guaranteed.') + HWP.changes(rows);
-      else main += (rows.length ? HWP.cap('Balance changes decoded from the transaction. Estimate unavailable.') : '') +
-        HWP.changes(rows, { why: rows.length ? '' : (v.blind || /App interaction|Contract call|Transaction/.test(v.op || '') ? 'Kwallet could not work out the balance changes offline. Check the details and only confirm if you trust ' + esc(DS.site) + '.' : 'This transaction moves no tokens out of your wallet.') });
+      else main += (rows.length ? HWP.cap('Balance changes decoded from the transaction.') : '') + HWP.changes(rows);
     }
     /* messages: readable text, sign-in fields, typed data tree */
     if (isMsg) {
@@ -21026,7 +20975,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
       if (c.gbal != null) { var after = c.err ? null : c.gbal - c.amount - (DS.c === 'sol' && v.idx !== 0 ? 0n : c.fee); det += kv('Balance', fmt(c.gbal, fdec, 6) + ' ' + sym, after != null && after >= 0n ? (c.atMost ? 'After: at least ' : 'After: about ') + fmt(after < 0n ? 0n : after, fdec, 6) + ' ' + sym : ''); }
     }
     /* 3. wallet */
-    main += HWP.card(HWP.kv('Wallet', HWP.walletV(DS.rec.label + ' \u00b7 #' + DS.rec.index, R.from, LOGO[DS.info.logo] || ''), ''));
+    main += HWP.card(HWP.walletRow(DS.rec.label + ' \u00b7 #' + DS.rec.index, R.from, LOGO[DS.info.logo] || ''));
     /* 4. details: what it does, contracts, raw */
     if (R.swap) det += kv('Swap', esc(R.swap.text || ''), esc(R.swap.sub || '')) + (R.swap.fee ? kv('Swap provider fee', esc(R.swap.fee)) : '');
     det += kv('Network', esc(DS.info.name), DS.c === 'evm' ? 'Chain ' + esc(R.chainId) + (m === 'eth_sendTransaction' ? ' \u00b7 nonce ' + esc(R.nonce) : '') : '') + kv('Via', esc(via));
@@ -21143,7 +21092,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     } catch (e) { setBusy(false); fail('Signing failed: ' + (e && e.message || e)); }
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', route); else route();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 
 </script>

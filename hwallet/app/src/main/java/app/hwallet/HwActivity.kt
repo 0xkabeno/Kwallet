@@ -795,7 +795,12 @@ class HwActivity : FragmentActivity() {
     @Volatile private var warmAt = 0L
     fun warmKwallet() {
         val now = android.os.SystemClock.uptimeMillis(); if (now - warmAt < 30000) return; warmAt = now
-        try { sendBroadcast(Intent("app.kwallet.WARM").setPackage(KWALLET)) } catch (_: Exception) {}
+        /* wave A (P2a f): an explicit component broadcast (package visibility via <queries>; the receiver needs the signature
+         * permission app.kwallet.permission.SIGN_FEED that Hwallet holds). Kwallet then pre-loads its sign page. */
+        try {
+            sendBroadcast(Intent("app.kwallet.WARM").setComponent(android.content.ComponentName(KWALLET, "$KWALLET.WarmReceiver")))
+            android.util.Log.i("HwWarm", "warm sent to Kwallet")
+        } catch (e: Exception) { android.util.Log.w("HwWarm", "warm failed: $e") }
     }
     override fun onResume() {
         super.onResume(); web.onResume(); br?.resume(); if (::web.isInitialized) tuneWebView(this, web)

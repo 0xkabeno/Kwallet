@@ -372,21 +372,80 @@ def browser(pg):
     pg.ev("(function(){var t=hwBrowser.state(); return t.tabs.length})()")
 
 
-def k_page(wait=20):
-    """Kwallet's sign page (index.html#sign) over DevTools, once its sheet is mounted"""
-    end = time.time() + wait
+def k_targets():
+    """wave A (P2a e): Kwallet's DevTools targets. Every Kwallet pid (ps, then pidof) whose
+    localabstract:webview_devtools_remote_<pid> socket exists is forwarded and listed; R['k_dbg'] keeps what was seen."""
+    pids = []
+    for l in adb('shell ps -A -o PID,NAME').splitlines():
+        p = l.split()
+        if len(p) >= 2 and p[-1] == K and p[0].isdigit(): pids.append(p[0])
+    if not pids: pids = [x for x in adb('shell pidof %s' % K).split() if x.isdigit()]
+    socks = adb('shell cat /proc/net/unix')
+    out, seen = [], {'pids': pids, 'socks': re.findall(r'webview_devtools_remote_\d+', socks)[-6:]}
+    for pid in pids:
+        name = 'webview_devtools_remote_%s' % pid
+        if name not in socks: continue
+        adb('forward tcp:%d localabstract:%s' % (PORT[K], name))
+        try:
+            lst = json.load(urllib.request.urlopen('http://127.0.0.1:%d/json' % PORT[K], timeout=6))
+            out += lst; seen.setdefault('targets', []).extend([(t.get('type'), t.get('url', '')[-40:]) for t in lst])
+        except Exception as e:
+            seen['err'] = repr(e)[:120]
+    R['k_dbg'] = seen
+    return out
+
+
+def k_page(wait=20, back_after=8.0):
+    """Kwallet's sign sheet (index.html#sign) over DevTools: the #sign target whose sheet has its Cancel button (a warm
+    pre-loaded sign page with no request is skipped). Not found after back_after seconds: one KEYCODE_BACK (= Cancel in
+    the sheet) so the following steps are not blocked, and None."""
+    t0 = time.time(); end = t0 + wait; backed = False
     while time.time() < end:
-        for p in devtools_pages(K, 3):
+        for p in k_targets():
             if p.get('type') == 'page' and '#sign' in p.get('url', ''):
                 try:
                     kp = Page(p['webSocketDebuggerUrl'])
                     if kp.ev("!!document.querySelector('#kss .hp-sheet #kss-no')", 5):
                         return kp
                     kp.close()
-                except Exception:
-                    pass
-        time.sleep(0.3)
+                except Exception as e:
+                    R.setdefault('k_page_err', []).append(repr(e)[:120])
+        if not backed and time.time() - t0 > back_after and 'SignActivity' in ''.join(re.findall(r'mCurrentFocus=Window\{[^}]*\}', adb('shell dumpsys window', 30))):
+            backed = True
+            R.setdefault('k_page_back_fallback', []).append(round(time.time() - T0, 1))
+            adb('shell input keyevent 4'); time.sleep(1.5)
+            return None
+        time.sleep(0.4)
     return None
+
+
+def k_sheet_info(kp):
+    return kp.ev("(function(){var s=document.querySelector('#kss .hp-sheet'),r=s.getBoundingClientRect(),k=document.getElementById('kss'),w=s.querySelector('.hp-wr .hp-w'),f=document.getElementById('kss-foot'),a=f?f.querySelector('.hp-act').getBoundingClientRect():null;"
+                 "return {title:(s.querySelector('.hp-title')||{}).textContent, name:(s.querySelector('.hp-name')||{}).textContent, url:(s.querySelector('.hp-url,.hp-sub')||{}).textContent,"
+                 "top:Math.round(r.top), gap_bottom:Math.round(innerHeight-r.bottom), under_buttons:a?Math.round(f.getBoundingClientRect().bottom-a.bottom):null, wallet_row_h:w?Math.round(w.getBoundingClientRect().height):null,"
+                 "dim:getComputedStyle(k).backgroundColor, sheet_bg:getComputedStyle(s).backgroundColor, confirm_bg:getComputedStyle(document.getElementById('kss-go')).backgroundColor, theme:document.body.getAttribute('data-theme'), text:s.innerText.replace(/\\s+/g,' ').slice(0,400)}})()") or {}
+
+
+def k_tap(kp, sel):
+    g = kp.ev("({dpr: devicePixelRatio, ih: innerHeight, iw: innerWidth})") or {}
+    nb = kp.ev("(function(){var b=document.querySelector(%s).getBoundingClientRect(); return {x:b.left+b.width/2, y:b.top+b.height/2}})()" % json.dumps(sel)) or {}
+    oy = max(0, SCREEN['h'] - round(g.get('ih', 0) * g.get('dpr', 1))) if g.get('ih', 0) * g.get('dpr', 1) < SCREEN['h'] - 4 else 0
+    x, y = round(nb.get('x', 0) * g.get('dpr', 1)), round(oy + nb.get('y', 0) * g.get('dpr', 1))
+    adb('shell input tap %d %d' % (x, y)); return [x, y]
+
+
+def sheet_ready_line(lc):
+    try:
+        m = re.findall(r'KwSign.*(?:sheet ready|adopted|warm received|warm sign page).*', open(os.path.join(OUT, lc), errors='ignore').read()) if lc else []
+        return [x[-110:] for x in m[-4:]] or None
+    except Exception:
+        return None
+
+
+def flush_gap(ks):
+    """the sheet sits on the bottom edge or flush on top of the navigation bar (P2a: release/17 is flush at 48 px)"""
+    g = ks.get('gap_bottom', 99)
+    return isinstance(g, (int, float)) and -2 <= g <= 64
 
 
 def k_sign_sheet(pg, tab):
@@ -405,16 +464,10 @@ def k_sign_sheet(pg, tab):
         detail['sheet_visible_s'] = t_vis
         if kp:
             time.sleep(1.2)
-            g = kp.ev("({dpr: devicePixelRatio, ih: innerHeight, iw: innerWidth})") or {}
-            info = kp.ev("(function(){var s=document.querySelector('#kss .hp-sheet'),r=s.getBoundingClientRect(),k=document.getElementById('kss');"
-                         "return {title:(s.querySelector('.hp-title')||{}).textContent, name:(s.querySelector('.hp-name')||{}).textContent, url:(s.querySelector('.hp-url')||{}).textContent,"
-                         "top:Math.round(r.top), gap_bottom:Math.round(innerHeight-r.bottom), dim:getComputedStyle(k).backgroundColor, text:s.innerText.replace(/\\s+/g,' ').slice(0,400)}})()") or {}
+            info = k_sheet_info(kp)
             detail['k_sheet'] = info
             fk = shot('k_sign_sheet_over_h')
-            nb = kp.ev("(function(){var b=document.getElementById('kss-no').getBoundingClientRect(); return {x:b.left+b.width/2, y:b.top+b.height/2}})()") or {}
-            oy = max(0, SCREEN['h'] - round(g.get('ih', 0) * g.get('dpr', 1))) if g.get('ih', 0) * g.get('dpr', 1) < SCREEN['h'] - 4 else 0
-            x, y = round(nb.get('x', 0) * g.get('dpr', 1)), round(oy + nb.get('y', 0) * g.get('dpr', 1))
-            adb('shell input tap %d %d' % (x, y)); detail['cancel_tap'] = [x, y]
+            detail['cancel_tap'] = k_tap(kp, '#kss-no')
             kp.close()
             time.sleep(2.5)
         res = None
@@ -429,17 +482,59 @@ def k_sign_sheet(pg, tab):
         detail.update(page_result=res, same_url=url0 == url1, url=url1, still_browser=pg.ev("!!document.getElementById('br-host') && !document.getElementById('br').hidden"),
                       focus=front[-1:] if front else None, shots=[locals().get('fk'), fa])
         lc = logcat('k_sign_sheet')
-        try:
-            m = re.findall(r'KwSign.*sheet ready.*', open(os.path.join(OUT, lc), errors='ignore').read()) if lc else []
-            detail['kwsign_timing'] = m[-1][-120:] if m else None
-        except Exception:
-            pass
+        detail['kwsign_timing'] = sheet_ready_line(lc)
+        detail['k_dbg'] = R.get('k_dbg')
         detail['logcat'] = lc
     except Exception as e:
         detail['__err'] = repr(e)[:300]
     ks = detail.get('k_sheet') or {}
-    ok = bool(ks) and abs(ks.get('gap_bottom', 99)) <= 2 and ks.get('top', 0) > 40 and ks.get('title') in ('Sign message', 'Sign-in') and detail.get('page_result') == 'err 4001' and detail.get('same_url') and bool(detail.get('still_browser'))
+    ok = bool(ks) and flush_gap(ks) and ks.get('top', 0) > 40 and ks.get('title') in ('Sign message', 'Sign-in') and detail.get('page_result') == 'err 4001' and detail.get('same_url') and bool(detail.get('still_browser'))
     step('k_sign_sheet_over_h', ok, **detail)
+
+
+def h_send(pg):
+    """wave A (#103/#106): Hwallet's Send sheet (over the coin screen) -> Continue (a real tap) -> Kwallet's send sheet over
+    Hwallet (E2E display-only wallet, it cannot sign) -> a real tap on Cancel -> Hwallet's Send sheet is still there."""
+    detail = {}
+    try:
+        pg.ev("document.querySelector('[data-tab=home]').click()"); time.sleep(2)
+        pg.ev("(function(){var r=[...document.querySelectorAll('#alist button.ar')].filter(function(e){var n=e.querySelector('.an');return n&&/^Ethereum/.test(n.textContent)})[0]; if(r) r.click(); return !!r})()"); time.sleep(2)
+        tap(pg, '[data-act="send"]'); time.sleep(1.5)
+        if pg.ev("!!document.querySelector('.sheet-ov [data-n=ethereum]')"):
+            tap(pg, '.sheet-ov [data-n="ethereum"]'); time.sleep(1.5)
+        detail['h_sheet'] = pg.ev("(function(){var o=document.getElementById('sndov'); if(!o) return null; var s=o.querySelector('.hp-sheet'),r=s.getBoundingClientRect(); return {top:Math.round(r.top), gap_bottom:Math.round(innerHeight-r.bottom), title:(s.querySelector('.hp-title')||{}).textContent, qr:!!s.querySelector('[data-qr]'), usd:!!s.querySelector('[data-usd]'), chip:!!s.querySelector('#feechip'), old:/Review in Kwallet/.test(s.innerText)}})()")
+        pg.ev("(function(){var t=document.getElementById('to'); t.value='0x000000000000000000000000000000000000dEaD'; t.dispatchEvent(new Event('input')); var a=document.getElementById('amt'); a.value='0.0001'; a.dispatchEvent(new Event('input')); return 1})()")
+        go = False
+        for i in range(40):
+            go = pg.ev("!!document.getElementById('go') && !document.getElementById('go').disabled")
+            if go: break
+            time.sleep(0.5)
+        detail['fee'] = pg.ev("(document.getElementById('fee')||{}).textContent")
+        fh = shot('h_send_sheet')
+        mark(); t0 = time.time()
+        detail['continue_tap'] = tap(pg, '#go') if go else None
+        kp = k_page(20) if go else None
+        detail['k_visible_s'] = round(time.time() - t0, 2) if kp else None
+        fk = fc = None
+        if kp:
+            time.sleep(1.2)
+            detail['k_sheet'] = k_sheet_info(kp)
+            fk = shot('k_send_sheet_over_h')
+            kp.ev("(function(){var f=document.getElementById('kss-feer'); if(f) f.click(); return 1})()"); time.sleep(0.6)
+            detail['fee_levels'] = kp.ev("[...document.querySelectorAll('#kss-fed [data-lv]')].map(function(b){return b.textContent})")
+            shot('k_send_sheet_fee_open')
+            detail['cancel_tap'] = k_tap(kp, '#kss-no'); kp.close(); time.sleep(2.5)
+        detail['h_after'] = pg.ev("({sheet:!!document.getElementById('sndov'), go:(document.getElementById('go')||{}).textContent, amt:(document.getElementById('amt')||{}).value, toast:(document.getElementById('toast')||{}).textContent})")
+        fc = shot('h_send_after_cancel')
+        lc = logcat('h_send')
+        detail.update(kwsign_timing=sheet_ready_line(lc), k_dbg=R.get('k_dbg'), shots=[fh, fk, fc], logcat=lc)
+        pg.ev("window.kwBack&&kwBack(); 1"); time.sleep(1)
+    except Exception as e:
+        detail['__err'] = repr(e)[:300]
+    hs, ks, ha = detail.get('h_sheet') or {}, detail.get('k_sheet') or {}, detail.get('h_after') or {}
+    ok = (hs.get('title') == 'Send' and not hs.get('old') and hs.get('chip') and ks.get('title') == 'Send' and flush_gap(ks) and ks.get('top', 0) > 40
+          and '\u2212' in (ks.get('text') or '') and 'Network fee' in (ks.get('text') or '') and bool(ha.get('sheet')) and ha.get('go') == 'Continue')
+    step('h_send_k_sheet', ok, **detail)
 
 
 # ---------------- flows ----------------
@@ -523,6 +618,9 @@ def run():
     clear_sysdlg()
 
     browser(pg)
+
+    # 3b. wave A: Hwallet Send sheet -> Kwallet send sheet -> Cancel
+    h_send(pg)
 
     # 4. Swap screen (from Home)
     tap(pg, '[data-tab="home"]'); time.sleep(2)

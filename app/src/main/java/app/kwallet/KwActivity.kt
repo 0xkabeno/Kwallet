@@ -48,6 +48,9 @@ open class KwActivity : FragmentActivity() {
     /** v3.90: the sign page subclass opens index.html#sign and adds its own bridge. */
     protected open fun startUrl(): String = "https://appassets.androidplatform.net/assets/index.html"
     protected open fun onWebReady(w: WebView) {}
+    /** v3.97 wave A (P2a f): the sign page may adopt the WebView Kwallet pre-loaded while warm (KwWarm), page already parsed. */
+    protected open fun adoptWeb(): WebView? = null
+    protected var adopted = false
     /** v3.91: the sign page opens over Hwallet (translucent, no splash) in the page's own colour. */
     protected open val signPage: Boolean = false
     protected open fun bootColor(c: Int): Int = c
@@ -103,27 +106,12 @@ open class KwActivity : FragmentActivity() {
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
             .build()
 
-        web = WebView(this)
+        val pre = if (signPage) adoptWeb() else null
+        adopted = pre != null
+        web = pre ?: WebView(this)
         web.setBackgroundColor(LIME)
-        web.isHapticFeedbackEnabled = true
-        with(web.settings) {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            databaseEnabled = true
-            allowFileAccess = false
-            allowContentAccess = true
-            mediaPlaybackRequiresUserGesture = false
-            cacheMode = WebSettings.LOAD_NO_CACHE
-            // Same layout rules as Chrome: honour the page's <meta viewport> and the
-            // phone's system font size, so the app sizes exactly like the HTML in a browser.
-            useWideViewPort = true
-            loadWithOverviewMode = false
-            textZoom = 100
-            setSupportZoom(false)
-            builtInZoomControls = false
-            displayZoomControls = false
-            if (Build.VERSION.SDK_INT >= 26) safeBrowsingEnabled = false
-        }
+        if (!adopted) kwWebSettings(web)
+        if (adopted) pageReady = true
 
         web.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
@@ -157,14 +145,7 @@ open class KwActivity : FragmentActivity() {
             }
         }
 
-        web.addJavascriptInterface(HarkNative(this,
-            onBars = { top, bottom -> runOnUiThread { applyBars(top, bottom) } },
-            insetsJson = { insetCss },
-            bio = { bioStatus() },
-            bioPrompt = { t -> runOnUiThread { bioAuth(t) } },
-            onAwake = { on -> runOnUiThread { web.keepScreenOn = on } },
-            bioCryptCb = { mode, data, title -> runOnUiThread { bioCrypt(mode, data, title) } },
-            devAuthCb = { t -> runOnUiThread { devAuth(t) } }), "HarkNative")
+        if (!adopted) web.addJavascriptInterface(kwHarkNative(this) { this }, "HarkNative")
         onWebReady(web)
         tuneWebView(this, web)
 
@@ -207,9 +188,20 @@ open class KwActivity : FragmentActivity() {
             }
         })
 
-        if (savedInstanceState != null) web.restoreState(savedInstanceState)
+        if (adopted) { pushInsets(); onAdopted() }
+        else if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl(startUrl())
     }
+    protected open fun onAdopted() {}
+
+    /* wave A: the bridge calls, reachable from a pre-loaded page's delegating HarkNative (KwWarm) as well as from this activity's own */
+    internal fun jsBars(top: Int, bottom: Int) = runOnUiThread { applyBars(top, bottom) }
+    internal fun jsInsets(): String = insetCss
+    internal fun jsBio(): String = bioStatus()
+    internal fun jsBioPrompt(t: String) = runOnUiThread { bioAuth(t) }
+    internal fun jsAwake(on: Boolean) = runOnUiThread { if (::web.isInitialized) web.keepScreenOn = on }
+    internal fun jsBioCrypt(mode: String, data: String, title: String) = runOnUiThread { bioCrypt(mode, data, title) }
+    internal fun jsDevAuth(t: String) = runOnUiThread { devAuth(t) }
 
     /** v3.92: shows the sign page once it is drawn (quick fade, compositor only). */
     protected fun revealSign() {
@@ -351,6 +343,39 @@ open class KwActivity : FragmentActivity() {
     override fun onResume() { super.onResume(); web.onResume(); if (::web.isInitialized) tuneWebView(this, web) }  // OEMs drop back to 60 Hz after resume
     override fun onDestroy() { web.destroy(); super.onDestroy() }
 }
+
+/** The one WebView setup (main app, sign page, and the sign page Kwallet pre-loads while warm). */
+fun kwWebSettings(web: WebView) {
+    web.isHapticFeedbackEnabled = true
+    with(web.settings) {
+        javaScriptEnabled = true
+        domStorageEnabled = true
+        databaseEnabled = true
+        allowFileAccess = false
+        allowContentAccess = true
+        mediaPlaybackRequiresUserGesture = false
+        cacheMode = WebSettings.LOAD_NO_CACHE
+        // Same layout rules as Chrome: honour the page's <meta viewport> and the
+        // phone's system font size, so the app sizes exactly like the HTML in a browser.
+        useWideViewPort = true
+        loadWithOverviewMode = false
+        textZoom = 100
+        setSupportZoom(false)
+        builtInZoomControls = false
+        displayZoomControls = false
+        if (Build.VERSION.SDK_INT >= 26) safeBrowsingEnabled = false
+    }
+}
+
+/** window.HarkNative whose activity-bound calls go to whichever activity hosts the page now (null = none yet: no-ops). */
+fun kwHarkNative(ctx: android.content.Context, host: () -> KwActivity?) = HarkNative(ctx,
+    onBars = { top, bottom -> host()?.jsBars(top, bottom) },
+    insetsJson = { host()?.jsInsets() ?: "{\"t\":0,\"r\":0,\"b\":0,\"l\":0}" },
+    bio = { host()?.jsBio() ?: "none" },
+    bioPrompt = { t -> host()?.jsBioPrompt(t) },
+    onAwake = { on -> host()?.jsAwake(on) },
+    bioCryptCb = { mode, data, title -> host()?.jsBioCrypt(mode, data, title) },
+    devAuthCb = { t -> host()?.jsDevAuth(t) })
 
 /** Smooth rendering like Chrome: highest refresh rate, no overscroll glow. */
 fun tuneWebView(activity: Activity, webView: WebView) {

@@ -882,107 +882,93 @@ body[data-theme=dark] .fw-s{color:#34c77b}
    Inlined into both apps. Written for WebView 83 too: no inset, no :has, no flex gap, no color-mix, no dvh,
    no aspect-ratio. Motion is transform/opacity only. Sizes follow Gem Wallet's modal sheet
    (gem-android ui/components: 16dp padding, 24-28dp sheet radius, 52dp buttons, 40dp app icon). */
+/* Wave A (#102): every colour comes from the app's own theme tokens (--hp-*). Defaults are Hwallet's classic palette
+   (hw393.css light/dark); Hwallet maps them to its live variables (Material You included, hwpop_h.css) and Kwallet's sign
+   sheet takes the values Hwallet sends with the request, so both sheets look like Hwallet's Settings and Send screens. */
+.hp-ov,#kss{--hp-bg:#f8f9fa;--hp-card:#ffffff;--hp-card2:#f1f3f4;--hp-line:#e6e8eb;--hp-border:#dadce0;--hp-text:#202124;--hp-muted:#5f6368;--hp-soft:#80868b;
+  --hp-acc:#223348;--hp-accI:#ffffff;--hp-pill:#e8ecf2;--hp-sel:#e3e8ef;--hp-up:#188038;--hp-dn:#d93025;--hp-warn:#a86f00;--hp-warnBg:#fff4dc;--hp-errBg:#fce8e6}
+[data-theme="dark"] .hp-ov,[data-theme="dark"] #kss{--hp-bg:#0e1117;--hp-card:#151b25;--hp-card2:#1d2532;--hp-line:#222b3a;--hp-border:#2a3446;--hp-text:#d9e2ef;--hp-muted:#8494ab;--hp-soft:#5f6c85;
+  --hp-acc:#ddf869;--hp-accI:#223348;--hp-pill:#232c3b;--hp-sel:#26313f;--hp-up:#34c77b;--hp-dn:#f2665e;--hp-warn:#f0c14b;--hp-warnBg:#3a321d;--hp-errBg:#3a2224}
 .hp-ov{position:fixed;top:0;right:0;bottom:0;left:0;z-index:60;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;-webkit-tap-highlight-color:transparent}
 .hp-dim{position:absolute;top:0;right:0;bottom:0;left:0;background:#000;opacity:0;transition:opacity .22s linear;will-change:opacity}
 .hp-ov.in .hp-dim{opacity:.5}
 .hp-sheet{position:relative;width:100%;max-width:600px;max-height:92%;display:flex;flex-direction:column;box-sizing:border-box;
-  background:#fff;color:#14171a;border-radius:28px 28px 0 0;box-shadow:0 -6px 28px rgba(0,0,0,.18);
+  background:var(--hp-bg);color:var(--hp-text);border-radius:28px 28px 0 0;box-shadow:0 -6px 28px rgba(0,0,0,.18);
   transform:translate3d(0,100%,0);transition:transform .3s cubic-bezier(.2,.9,.25,1);will-change:transform;
   font-family:'RobotoE','Roboto',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1;text-align:left}
 .hp-ov.in .hp-sheet{transform:translate3d(0,0,0)}
 .hp-ov.out .hp-dim{opacity:0;transition-duration:.18s}
 .hp-ov.out .hp-sheet{transform:translate3d(0,100%,0);transition:transform .2s cubic-bezier(.4,0,1,1)}
-[data-theme="dark"] .hp-sheet{background:#1b1d22;color:#f2f3f5;box-shadow:0 -6px 28px rgba(0,0,0,.5)}
-.hp-grab{flex:0 0 auto;width:36px;height:4px;border-radius:2px;background:#d5d8dc;margin:8px auto 0}
-[data-theme="dark"] .hp-grab{background:#3a3d44}
+[data-theme="dark"] .hp-sheet{box-shadow:0 -6px 28px rgba(0,0,0,.5)}
+.hp-grab{flex:0 0 auto;width:36px;height:4px;border-radius:2px;background:var(--hp-border);margin:8px auto 0}
 .hp-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px 16px 4px}
-.hp-foot{flex:0 0 auto;padding:10px 16px calc(var(--kw-sab, var(--sab, 0px)) + 14px)}
+.hp-foot{flex:0 0 auto;padding:10px 16px calc(var(--kw-sab, var(--sab, 0px)) + 10px)}
 /* header: app icon, name, link, close */
 .hp-head{display:flex;align-items:center;min-height:56px;margin:0 0 14px}
-.hp-ic{width:48px;height:48px;border-radius:14px;flex:0 0 auto;object-fit:cover;background:#eef0f2;display:block}
-[data-theme="dark"] .hp-ic{background:#262930}
-.hp-icl{display:flex;align-items:center;justify-content:center;font:700 20px/1 'RobotoE',system-ui;color:#14171a}
-[data-theme="dark"] .hp-icl{color:#f2f3f5}
+.hp-ic{width:48px;height:48px;border-radius:14px;flex:0 0 auto;object-fit:cover;background:var(--hp-card2);display:block}
+.hp-icl{display:flex;align-items:center;justify-content:center;font:700 20px/1 'RobotoE',system-ui;color:var(--hp-text)}
 .hp-hm{flex:1 1 auto;min-width:0;margin:0 8px 0 14px}
 .hp-name{font:700 21px/27px 'RobotoE',system-ui;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hp-url{display:flex;align-items:center;margin-top:1px;color:#6b7075;font:400 15px/20px 'RobotoE',system-ui;min-width:0}
+.hp-url{display:flex;align-items:center;margin-top:1px;color:var(--hp-muted);font:400 15px/20px 'RobotoE',system-ui;min-width:0}
 .hp-url svg{width:17px;height:17px;flex:0 0 auto;margin-right:5px}
 .hp-url span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-[data-theme="dark"] .hp-url{color:#9a9ea6}
 .hp-x{width:44px;height:44px;flex:0 0 auto;border:0;border-radius:22px;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;margin-right:-8px}
 .hp-x svg{width:26px;height:26px}
 .hp-x:active{background:rgba(127,127,127,.14)}
 /* title, captions */
 .hp-title{font:700 26px/32px 'RobotoE',system-ui;letter-spacing:-.4px;margin:0 0 6px;color:inherit}
-.hp-stp{font:600 13px/18px 'RobotoE',system-ui;color:#6b7075;margin:0 0 2px;letter-spacing:.1px}
-.hp-cap{font:400 15px/21px 'RobotoE',system-ui;color:#6b7075;margin:0 0 14px}
-[data-theme="dark"] .hp-cap,[data-theme="dark"] .hp-stp{color:#9a9ea6}
+.hp-stp{font:600 13px/18px 'RobotoE',system-ui;color:var(--hp-muted);margin:0 0 2px;letter-spacing:.1px}
+.hp-cap{font:400 15px/21px 'RobotoE',system-ui;color:var(--hp-muted);margin:0 0 14px}
 .hp-lead{font:700 19px/25px 'RobotoE',system-ui;margin:4px 0 12px}
 /* cards and rows */
-.hp-card{background:#f3f4f6;border-radius:20px;margin:0 0 10px;overflow:hidden}
-[data-theme="dark"] .hp-card{background:#25272d}
+.hp-card{background:var(--hp-card);border-radius:20px;margin:0 0 10px;overflow:hidden}
 .hp-r{display:flex;align-items:center;min-height:64px;padding:10px 18px;box-sizing:border-box}
-.hp-r+.hp-r{border-top:1px solid rgba(0,0,0,.06)}
-[data-theme="dark"] .hp-r+.hp-r{border-top-color:rgba(255,255,255,.06)}
+.hp-r+.hp-r{border-top:1px solid var(--hp-line)}
 .hp-r.sm{min-height:52px}
-.hp-perm+.hp-r,.hp-perm+.hp-wl{border-top:1px solid rgba(0,0,0,.06)}
-[data-theme="dark"] .hp-perm+.hp-r{border-top-color:rgba(255,255,255,.06)}
+.hp-perm+.hp-r,.hp-perm+.hp-wl{border-top:1px solid var(--hp-line)}
 .hp-l{flex:1 1 auto;min-width:76px;font:500 16px/21px 'RobotoE',system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hp-l small{display:block;font:400 13px/18px 'RobotoE',system-ui;color:#6b7075;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-l small{display:block;font:400 13px/18px 'RobotoE',system-ui;color:var(--hp-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hp-v{flex:0 1 auto;min-width:0;margin-left:12px;text-align:right;font:500 16px/21px 'RobotoE',system-ui;font-variant-numeric:tabular-nums;word-break:break-word}
-.hp-v small{display:block;font:400 14px/19px 'RobotoE',system-ui;color:#6b7075}
-[data-theme="dark"] .hp-l small,[data-theme="dark"] .hp-v small{color:#9a9ea6}
-.hp-tk{width:36px;height:36px;border-radius:50%;flex:0 0 auto;margin-right:12px;object-fit:cover;display:block;background:#e3e6ea}
-[data-theme="dark"] .hp-tk{background:#33363d}
-.hp-tkl{display:flex;align-items:center;justify-content:center;font:700 15px/1 'RobotoE',system-ui;color:#3a3f45}
-[data-theme="dark"] .hp-tkl{color:#d8dbe0}
-.hp-neg{color:#d93a4e}.hp-pos{color:#1e9e5a}
-[data-theme="dark"] .hp-neg{color:#f2667a}[data-theme="dark"] .hp-pos{color:#a6f28a}
+.hp-v small{display:block;font:400 14px/19px 'RobotoE',system-ui;color:var(--hp-muted)}
+.hp-tk{width:36px;height:36px;border-radius:50%;flex:0 0 auto;margin-right:12px;object-fit:cover;display:block;background:var(--hp-card2)}
+.hp-tkl{display:flex;align-items:center;justify-content:center;font:700 15px/1 'RobotoE',system-ui;color:var(--hp-text)}
+.hp-neg{color:var(--hp-dn)}.hp-pos{color:var(--hp-up)}
 .hp-na{display:flex;align-items:flex-start;padding:16px 18px}
-.hp-na svg{width:20px;height:20px;flex:0 0 auto;margin:1px 12px 0 0;color:#6b7075}
+.hp-na svg{width:20px;height:20px;flex:0 0 auto;margin:1px 12px 0 0;color:var(--hp-muted)}
 .hp-na b{display:block;font:600 15px/20px 'RobotoE',system-ui}
-.hp-na small{display:block;margin-top:2px;font:400 13.5px/19px 'RobotoE',system-ui;color:#6b7075}
-[data-theme="dark"] .hp-na small,[data-theme="dark"] .hp-na svg{color:#9a9ea6}
+.hp-na small{display:block;margin-top:2px;font:400 13.5px/19px 'RobotoE',system-ui;color:var(--hp-muted)}
 /* wallet row */
 .hp-w{display:flex;align-items:center;justify-content:flex-end;min-width:0}
 .hp-w .hp-cic{width:20px;height:20px;border-radius:50%;margin-right:7px;flex:0 0 auto}
 .hp-w span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hp-w em{font-style:normal;color:#6b7075;margin-left:6px;font-family:'RobotoMonoE',monospace;font-size:14px}
-[data-theme="dark"] .hp-w em{color:#9a9ea6}
-.hp-chev{width:20px;height:20px;margin-left:4px;color:#8a8f95;flex:0 0 auto;transition:transform .18s}
+.hp-w em{font-style:normal;color:var(--hp-muted);margin-left:8px;font-family:'RobotoMonoE',monospace;font-size:14px;flex:0 0 auto}
+.hp-chev{width:20px;height:20px;margin-left:4px;color:var(--hp-soft);flex:0 0 auto;transition:transform .18s}
 .hp-tap{cursor:pointer}.hp-tap:active{background:rgba(127,127,127,.08)}
 .hp-open .hp-chev{transform:rotate(180deg)}
 /* permissions (connect) */
 .hp-perm{padding:10px 18px 12px}
 .hp-pr{display:flex;align-items:flex-start;padding:7px 0;font:400 16px/22px 'RobotoE',system-ui}
 .hp-pr svg{width:22px;height:22px;flex:0 0 auto;margin-right:14px}
-.hp-pr.no svg{color:#d93a4e}
-[data-theme="dark"] .hp-pr.no svg{color:#f2667a}
+.hp-pr.no svg{color:var(--hp-dn)}.hp-pr.ok svg{color:var(--hp-up)}
 /* chain chips */
 .hp-chips{display:flex;flex-wrap:wrap;padding:12px 14px 8px}
-.hp-chip{display:inline-flex;align-items:center;height:30px;padding:0 10px 0 5px;border-radius:15px;background:#e7e9ec;margin:0 6px 6px 0;font:500 13px/1 'RobotoE',system-ui}
-[data-theme="dark"] .hp-chip{background:#31343b}
+.hp-chip{display:inline-flex;align-items:center;height:30px;padding:0 10px 0 5px;border-radius:15px;background:var(--hp-card2);margin:0 6px 6px 0;font:500 13px/1 'RobotoE',system-ui}
 .hp-chip img,.hp-chip .lg{width:20px!important;height:20px!important;border-radius:50%;margin-right:6px}
-.hp-sec{font:600 13px/18px 'RobotoE',system-ui;color:#6b7075;padding:12px 18px 0}
-[data-theme="dark"] .hp-sec{color:#9a9ea6}
+.hp-sec{font:600 13px/18px 'RobotoE',system-ui;color:var(--hp-muted);padding:12px 18px 0}
 /* wallet chooser */
 .hp-wl{padding:2px 0 6px}
 .hp-wo{display:flex;align-items:center;width:100%;border:0;background:transparent;color:inherit;padding:10px 18px;text-align:left;font:500 15px/20px 'RobotoE',system-ui}
-.hp-wo i{width:20px;height:20px;border-radius:50%;border:2px solid #b8bcc2;box-sizing:border-box;margin-right:12px;flex:0 0 auto}
-.hp-wo.on i{border:6px solid #223348}
-[data-theme="dark"] .hp-wo.on i{border-color:#DDF869}
+.hp-wo i{width:20px;height:20px;border-radius:50%;border:2px solid var(--hp-soft);box-sizing:border-box;margin-right:12px;flex:0 0 auto}
+.hp-wo.on i{border:6px solid var(--hp-acc)}
 .hp-wo span{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hp-wo em{font-style:normal;color:#6b7075;font:400 13px 'RobotoMonoE',monospace;margin-left:8px}
+.hp-wo em{font-style:normal;color:var(--hp-muted);font:400 13px 'RobotoMonoE',monospace;margin-left:8px}
 /* trust line and warnings */
-.hp-trust{display:flex;align-items:center;margin:6px 2px 4px;font:400 15px/21px 'RobotoE',system-ui;color:#6b7075}
-[data-theme="dark"] .hp-trust{color:#9a9ea6}
+.hp-trust{display:flex;align-items:center;margin:6px 2px 4px;font:400 15px/21px 'RobotoE',system-ui;color:var(--hp-muted)}
 .hp-trust svg{width:18px;height:18px;flex:0 0 auto;margin-right:8px}
-.hp-trust.ok svg{color:#1e9e5a}[data-theme="dark"] .hp-trust.ok svg{color:#a6f28a}
-.hp-trust.bad{color:#d93a4e;font-weight:600}[data-theme="dark"] .hp-trust.bad{color:#f2667a}
-.hp-warn{display:flex;align-items:flex-start;border-radius:16px;padding:12px 14px;margin:0 0 10px;background:#fff4e0;color:#7a4a00;font:400 14px/20px 'RobotoE',system-ui}
-[data-theme="dark"] .hp-warn{background:#3a2f1a;color:#f5d48a}
-.hp-warn.bad{background:#fde8eb;color:#9b1c2e}
-[data-theme="dark"] .hp-warn.bad{background:#3d1e24;color:#ffb3bf}
+.hp-trust.ok svg{color:var(--hp-up)}
+.hp-trust.bad{color:var(--hp-dn);font-weight:600}
+.hp-warn{display:flex;align-items:flex-start;border-radius:16px;padding:12px 14px;margin:0 0 10px;background:var(--hp-warnBg);color:var(--hp-warn);font:400 14px/20px 'RobotoE',system-ui}
+.hp-warn.bad{background:var(--hp-errBg);color:var(--hp-dn)}
 .hp-warn svg{width:20px;height:20px;flex:0 0 auto;margin:0 10px 0 0}
 .hp-warn p{margin:0}.hp-warn p+p{margin-top:6px}.hp-warn b{font-weight:600}
 /* message, SIWE, typed data */
@@ -990,32 +976,28 @@ body[data-theme=dark] .fw-s{color:#34c77b}
 .hp-msg.mono{font:400 13px/19px 'RobotoMonoE',monospace}
 .hp-tree{padding:8px 18px 12px;font:400 14px/20px 'RobotoE',system-ui}
 .hp-tn{padding:4px 0}
-.hp-tn>b{font-weight:500;color:#6b7075;margin-right:6px}
-[data-theme="dark"] .hp-tn>b{color:#9a9ea6}
+.hp-tn>b{font-weight:500;color:var(--hp-muted);margin-right:6px}
 .hp-tn .hp-tv{word-break:break-all}
-.hp-tc{margin:2px 0 2px 2px;padding-left:12px;border-left:2px solid rgba(127,127,127,.22)}
+.hp-tc{margin:2px 0 2px 2px;padding-left:12px;border-left:2px solid var(--hp-line)}
 .hp-mono{font-family:'RobotoMonoE',monospace;font-size:13.5px}
 /* network fee */
 .hp-fee .hp-l{font-weight:500}
 .hp-fed{padding:0 18px 12px}
 .hp-fed.off{display:none}
-.hp-seg{display:flex;background:rgba(127,127,127,.12);border-radius:12px;padding:3px;margin:4px 0 2px}
+.hp-seg{display:flex;background:var(--hp-card2);border-radius:12px;padding:3px;margin:4px 0 2px}
 .hp-seg button{flex:1 1 0;height:34px;border:0;border-radius:9px;background:transparent;color:inherit;font:500 13.5px/1 'RobotoE',system-ui;padding:0}
-.hp-seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:600}
-[data-theme="dark"] .hp-seg button.on{background:#3a3d44}
-.hp-live{display:inline-flex;align-items:center;font:400 12.5px/16px 'RobotoE',system-ui;color:#6b7075;margin-top:2px}
-.hp-live i{width:6px;height:6px;border-radius:3px;background:#1e9e5a;margin-right:5px}
-.hp-live.stale i{background:#d9a400}
+.hp-seg button.on{background:var(--hp-acc);color:var(--hp-accI);font-weight:600}
+.hp-live{display:inline-flex;align-items:center;font:400 12.5px/16px 'RobotoE',system-ui;color:var(--hp-muted);margin-top:2px}
+.hp-live i{width:6px;height:6px;border-radius:3px;background:var(--hp-up);margin-right:5px}
+.hp-live.stale i{background:var(--hp-warn)}
 /* details */
 .hp-det{margin:2px 0 6px}
-.hp-det>summary{list-style:none;cursor:pointer;display:flex;align-items:center;padding:10px 2px;color:#6b7075;font:500 14px/20px 'RobotoE',system-ui}
+.hp-det>summary{list-style:none;cursor:pointer;display:flex;align-items:center;padding:10px 2px;color:var(--hp-muted);font:500 14px/20px 'RobotoE',system-ui}
 .hp-det>summary::-webkit-details-marker{display:none}
 .hp-det>summary svg{width:18px;height:18px;margin-left:4px;transition:transform .18s}
 .hp-det[open]>summary svg{transform:rotate(180deg)}
-[data-theme="dark"] .hp-det>summary{color:#9a9ea6}
 .hp-det .hp-r{min-height:48px}
-.hp-det .hp-l{font-size:14px;color:#6b7075}
-[data-theme="dark"] .hp-det .hp-l{color:#9a9ea6}
+.hp-det .hp-l{font-size:14px;color:var(--hp-muted)}
 .hp-det .hp-v{font-size:14px}
 .hp-raw{padding:10px 18px 14px;font:400 12px/17px 'RobotoMonoE',monospace;word-break:break-all;white-space:pre-wrap;max-height:180px;overflow-y:auto}
 .hp-ol{margin:0;padding:4px 18px 12px 36px;font:400 14px/20px 'RobotoE',system-ui}
@@ -1024,27 +1006,73 @@ body[data-theme=dark] .fw-s{color:#34c77b}
 .hp-act{display:flex}
 .hp-btn{flex:1 1 0;height:56px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;margin:0;border:0;border-radius:28px;font:600 18px/1 'RobotoE',system-ui;position:relative;overflow:hidden;padding:0 12px;-webkit-user-select:none;user-select:none}
 .hp-btn+.hp-btn{margin-left:12px}
-.hp-no{background:#e9eedb;color:#3d4a12}
-[data-theme="dark"] .hp-no{background:#2f3a2a;color:#cfee9a}
-.hp-ok{background:#DDF869;color:#223348;touch-action:none}
+.hp-no{background:var(--hp-card);color:var(--hp-text)}
+.hp-ok{background:var(--hp-acc);color:var(--hp-accI);touch-action:none}
 .hp-ok:disabled{opacity:.45}
-.hp-ok .kss-fill,.hp-ok .hp-fill{position:absolute;top:0;right:0;bottom:0;left:0;background:#bcd94a;transform-origin:0 50%;transform:scaleX(0)}
+.hp-ok .kss-fill,.hp-ok .hp-fill{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--hp-accI);opacity:.22;transform-origin:0 50%;transform:scaleX(0)}
 .hp-ok span{position:relative}
 .hp-btn:active{transform:scale(.985)}
-.hp-exp{display:flex;align-items:center;margin:0 4px 10px;font:400 12.5px/16px 'RobotoE',system-ui;color:#8a8f95}
+.hp-exp{display:flex;align-items:center;margin:0 4px 10px;font:400 12.5px/16px 'RobotoE',system-ui;color:var(--hp-soft)}
 .hp-exp span:first-child{flex:0 0 auto;margin-right:10px}
-.hp-eb{flex:1 1 auto;height:3px;border-radius:2px;background:rgba(127,127,127,.18);overflow:hidden}
-.hp-eb i{display:block;height:100%;background:#8a8f95;transform-origin:0 50%}
-.hp-exp.low{color:#d93a4e}.hp-exp.low .hp-eb i{background:#d93a4e}
-.hp-hint{text-align:center;font:400 12.5px/16px 'RobotoE',system-ui;color:#8a8f95;margin-top:8px;min-height:16px}
+.hp-eb{flex:1 1 auto;height:3px;border-radius:2px;background:var(--hp-card2);overflow:hidden}
+.hp-eb i{display:block;height:100%;background:var(--hp-soft);transform-origin:0 50%}
+.hp-exp.low{color:var(--hp-dn)}.hp-exp.low .hp-eb i{background:var(--hp-dn)}
+.hp-hint{text-align:center;font:400 12.5px/16px 'RobotoE',system-ui;color:var(--hp-soft);margin-top:6px}
+.hp-hint:empty{display:none}
 .hp-done{display:flex;flex-direction:column;align-items:center;padding:28px 16px calc(var(--kw-sab, var(--sab, 0px)) + 34px);font:600 18px/24px 'RobotoE',system-ui}
 .hp-done svg{width:76px;height:76px;margin-bottom:12px}
-.hp-done circle{fill:none;stroke:#1e9e5a;stroke-width:4}
-.hp-done path{fill:none;stroke:#1e9e5a;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.hp-done circle{fill:none;stroke:var(--hp-up);stroke-width:4}
+.hp-done path{fill:none;stroke:var(--hp-up);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
 @media (prefers-reduced-motion: reduce){.hp-sheet,.hp-dim{transition:none!important}}
 .hp-acc{display:flex;align-items:center;min-width:0}
 .hp-acc .lg,.hp-acc img{width:24px!important;height:24px!important;border-radius:50%;margin:0 10px 0 0!important;flex:0 0 auto}
 .hp-acc span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* wave A: the wallet row is one line (icon + name with ellipsis on the left, short address on the right, never wraps) */
+.hp-r.hp-wr{flex-wrap:nowrap}
+.hp-r.hp-wr .hp-l{flex:0 0 auto;min-width:0;margin-right:12px}
+.hp-r.hp-wr .hp-v{flex:1 1 auto;min-width:0;margin-left:0;word-break:normal}
+.hp-r.hp-wr .hp-w{width:100%}
+.hp-r.hp-wr .hp-w span{flex:0 1 auto;min-width:0}
+/* the "To" row of a send and its badge */
+.hp-to{display:flex;align-items:center;justify-content:flex-end;min-width:0}
+.hp-to span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hp-to em{font-style:normal;font-family:'RobotoMonoE',monospace;font-size:14px;color:var(--hp-muted);margin-left:8px;flex:0 0 auto}
+.hp-badge{display:inline-block;margin-top:3px;padding:3px 8px;border-radius:6px;background:var(--hp-warnBg);color:var(--hp-warn);font:600 11.5px/1.2 'RobotoE',system-ui}
+.hp-nochg{display:flex;align-items:center;margin:0 4px 10px;font:400 13px/18px 'RobotoE',system-ui;color:var(--hp-muted)}
+.hp-nochg svg{width:16px;height:16px;margin-right:6px;flex:0 0 auto}
+.hp-sub{display:flex;align-items:center;margin-top:1px;color:var(--hp-muted);font:400 15px/20px 'RobotoE',system-ui;min-width:0}
+.hp-sub span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hp-chg .hp-v{flex:0 0 auto;max-width:62%;white-space:nowrap}
+.hp-chg .hp-v small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Wave A (#102): Hwallet's popups use Hwallet's own live theme variables (classic, dark and Material You). */
+body[data-theme] .hp-ov{--hp-bg:var(--bg);--hp-card:var(--card);--hp-card2:var(--card2);--hp-line:var(--line);--hp-border:var(--border);--hp-text:var(--text);--hp-muted:var(--muted);--hp-soft:var(--soft);
+  --hp-acc:var(--acc);--hp-accI:var(--accI);--hp-pill:var(--pill);--hp-sel:var(--sel);--hp-up:var(--up);--hp-dn:var(--dn);--hp-warn:var(--warn);--hp-warnBg:var(--warnBg);--hp-errBg:var(--errBg)}
+/* Wave A (#103): Send as a bottom sheet (Hwallet's own inputs, chips and buttons inside the popup frame).
+   Above the tab bar (30), under Hwallet's small sheets (40: network picker, warnings) and the scanner. */
+.snd-ov{z-index:35}
+.snd-sheet .snd-sc{padding-top:8px}
+.snd-top{display:flex;align-items:center;justify-content:space-between;margin:0 0 6px}
+.snd-top .hp-title{margin:0}
+.snd-form .snd-tok{background:var(--card);border-radius:20px;margin-bottom:2px}
+.snd-form .lbl{margin-top:14px}
+.snd-fee{display:flex;align-items:center;width:100%;min-height:54px;margin-top:14px;padding:8px 10px 8px 14px;border-radius:16px;background:var(--card);color:var(--text);text-align:left;box-sizing:border-box}
+.snd-fl{display:inline-flex;align-items:center;flex:0 0 auto;font-weight:600;font-size:14.5px}
+.snd-fl .lg{margin-right:8px}
+.snd-fv{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:flex-end;margin:0 4px 0 10px;font-variant-numeric:tabular-nums}
+.snd-fv b{font-weight:600;font-size:14.5px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.snd-fv em{font-style:normal;color:var(--muted);font-size:12.5px;margin-top:1px}
+.snd-chev{width:20px;height:20px;flex:0 0 auto;color:var(--soft);transition:transform .18s}
+.snd-fee.open .snd-chev{transform:rotate(180deg)}
+.snd-lv{margin-top:8px}
+.snd-usd{margin-right:6px}
+.snd-usd.on{background:var(--acc);color:var(--accI)}
+.snd-sheet .hp-foot .snd-go{margin-top:0;height:56px;border-radius:28px}
+.snd-sheet .note{margin-top:10px}
+.snd-form .inp input{min-width:0;flex:1 1 auto}
+.snd-form .inp .pb{flex:0 0 auto}
+.snd-chev{transform:rotate(90deg)}
+.snd-fee.open .snd-chev{transform:rotate(-90deg)}
 
 </style>
 </head>
@@ -3996,9 +4024,17 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
     if (src && safeImg(src)) return '<img class="' + cls + '" alt="" src="' + esc(src) + '" onerror="this.outerHTML=\'<span class=&quot;' + cls + ' ' + lcls + '&quot;>' + esc(letter(name)) + '</span>\'">';
     return '<span class="' + cls + ' ' + lcls + '">' + esc(letter(name)) + '</span>';
   }
+  /* wave A (#104): a short app name for the header ("Jupiter: The Home of Onchain Finance" -> "Jupiter"), else the hostname */
+  function siteName(name, url) {
+    var h = String(url || '').replace(/^[a-z]+:\/\//i, '').replace(/[\/?#].*$/, '').replace(/^www\./i, '');
+    var n = String(name || '').replace(/\s+/g, ' ').trim();
+    if (n) { var p = n.split(/\s+[|\u2013\u2014\u00b7-]\s+|:\s+/)[0].trim(); if (p.length >= 2) n = p; }
+    if (!n || n.length > 28 || /^https?:/i.test(n)) n = h || n.slice(0, 28);
+    return n;
+  }
   function head(o) {
     return '<div class="hp-head">' + icon(o.icon, o.name, 'hp-ic', 'hp-icl') + '<div class="hp-hm"><div class="hp-name">' + esc(o.name || o.url || 'App') + '</div>' +
-      (o.url ? '<div class="hp-url">' + sv(P.link) + '<span>' + esc(o.url) + '</span></div>' : '') + '</div>' +
+      (o.url ? '<div class="hp-url">' + sv(P.link) + '<span>' + esc(o.url) + '</span></div>' : o.sub ? '<div class="hp-sub"><span>' + esc(o.sub) + '</span></div>' : '') + '</div>' +
       '<button type="button" class="hp-x" data-hp-x aria-label="Close">' + sv(P.x) + '</button></div>';
   }
   function title(t, step) { return (step ? '<div class="hp-stp">' + esc(step) + '</div>' : '') + '<h2 class="hp-title">' + esc(t) + '</h2>'; }
@@ -4014,7 +4050,8 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
      No rows: "Estimate unavailable" (o.why says what Kwallet could read instead). */
   function changes(rows, o) {
     o = o || {};
-    if (!rows || !rows.length) return card('<div class="hp-na">' + sv(P.info) + '<div><b>' + esc(o.none || 'Estimate unavailable') + '</b>' + (o.why ? '<small>' + o.why + '</small>' : '') + '</div></div>', 'hp-chg');
+    /* wave A: nothing known yet (simulation comes in wave B) -> one quiet line, no card, no guesses */
+    if (!rows || !rows.length) return '<div class="hp-nochg">' + sv(P.info) + '<span>' + esc(o.none || 'Balance changes unavailable') + '</span></div>';
     return card(rows.map(function (r) {
       var cl = r.sign === '-' ? 'hp-neg' : r.sign === '+' ? 'hp-pos' : '';
       return '<div class="hp-r">' + icon(r.icon, r.sym, 'hp-tk', 'hp-tkl') + '<span class="hp-l">' + esc(r.sym) + (r.note ? '<small>' + esc(r.note) + '</small>' : '') + '</span>' +
@@ -4024,6 +4061,8 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
   function walletV(name, addr, cic) {
     return '<span class="hp-w">' + (cic ? icon(cic, '', 'hp-cic', 'hp-tkl') : '') + '<span>' + esc(name || 'Wallet') + '</span>' + (addr ? '<em>' + esc(shortA(addr)) + '</em>' : '') + '</span>';
   }
+  /* wave A: the wallet row, always one line */
+  function walletRow(name, addr, cic, o) { o = o || {}; return kv('Wallet', walletV(name, addr, cic), '', { cls: 'hp-wr' + (o.cls ? ' ' + o.cls : ''), tap: o.tap, chev: o.chev, id: o.id }); }
   function shortA(a) { a = String(a || ''); return a.length > 13 ? a.slice(0, 6) + '\u2026' + a.slice(-4) : a; }
   /* level: ok (verified domain) | unk (unknown) | bad (known scam / mismatch) */
   function trust(level, text) {
@@ -4102,7 +4141,7 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
     sh.addEventListener('touchend', function () { if (y0 == null) return; y0 = null; sh.style.transition = ''; sh.style.transform = ''; if (dy > 100) { var x = ov.querySelector('[data-hp-x]'); if (x) x.click(); } });
     return { el: ov, close: close };
   }
-  window.HWP = { esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
+  window.HWP = { siteName: siteName, walletRow: walletRow, esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
     trust: trust, warns: warns, perms: perms, details: details, foot: foot, sheet: sheet, siwe: siwe, siweRows: siweRows, msgBlock: msgBlock, tree: tree, overlay: overlay };
 })();
 
@@ -4580,7 +4619,11 @@ var APP_VERSION = '1.7';
   /* v1.3 (#50): one very light tick for the bottom bar: the phone's own clock-tick haptic (native), never a second buzz */
   function lightTick() { if (!hapOn()) return; try { if (window.HwNative && HwNative.tick) { HwNative.tick(); return; } } catch (e) {} try { if (navigator.vibrate) navigator.vibrate(6); } catch (e) {} }
   function scroller() { return $('pg') || document.scrollingElement; }
-  function back() { if (!stack.length) return false; V = stack.pop(); buzz(4); render('back'); refreshVisible(); return true; }
+  function back() {
+    if (!stack.length) return false; var was = V.v; V = stack.pop(); buzz(4);
+    if (was === 'send' && sendIsBg(V)) { sendSheetClose(); refreshVisible(); return true; }  /* the screen behind the sheet is already there */
+    render('back'); refreshVisible(); return true;
+  }
   /* v1.3 (#44/#46/#50): the bar never re-renders; the pill slides first (same frame as the tick), the page swaps on the next frame,
      so a heavy page can never delay the pill or the haptic */
   var tabRaf = 0;
@@ -4632,10 +4675,13 @@ var APP_VERSION = '1.7';
 
   function render(anim) {
     var box = $('app'); if (!box) return;
+    /* wave A (#103): Send opens as a sheet over the current screen, which stays as it is behind the dim */
+    if (V.v === 'send') { sendSheetOpen(); return; }
+    sendSheetClose();
     var h = '';
     try { h = ({ home: homeHtml, activity: activityHtml, browser: browserHtml, settings: settingsHtml, coin: coinHtml, nets: netsHtml, setup: setupHtml, send: sendHtml, pick: pickHtml, search: pickHtml, wallets: walletsHtml, stake: stakeHtml, swap: swapHtml })[V.v](); } catch (e) { console.error(e); h = homeHtml(); V = { v: 'home' }; }
     if (HB && HB.unmount) HB.unmount();
-    box.innerHTML = h; bind(); if (V.v === 'send') sendAfter(); if (V.v === 'swap') swapAfter();
+    box.innerHTML = h; bind(); if (V.v === 'swap') swapAfter();
     if (anim) { box.classList.remove('in', 'back', 'fade'); void box.offsetWidth; box.classList.add(anim === 'back' ? 'back' : anim === 'fade' ? 'fade' : 'in'); }
     scroller().scrollTop = 0; syncNav(); paintBars(); lastSig = homeSig();
     afterRender();
@@ -5160,7 +5206,10 @@ var APP_VERSION = '1.7';
   /* ---------- Kwallet bridge ---------- */
   var SIGN = null, LIVE = null;
   window.hwSignDone = function (json) { var o = null; try { o = JSON.parse(json || 'null'); } catch (e) {} stopLive(); var cb = SIGN; SIGN = null; if (cb) cb(o || { status: 'rejected' }); };
-  function callK(req) { return new Promise(function (res) { SIGN = res; try { HwNative.sign(JSON.stringify(req)); } catch (e) { SIGN = null; res({ status: 'missing' }); } }); }
+  /* wave A (#102): Kwallet's sheet wears Hwallet's live theme (light/dark, classic or Material You): the tokens go with every request */
+  var THV = ['bg', 'card', 'card2', 'line', 'border', 'text', 'muted', 'soft', 'acc', 'accI', 'pill', 'sel', 'up', 'dn', 'warn', 'warnBg', 'errBg'];
+  function hwTheme() { var o = { dark: document.body.getAttribute('data-theme') === 'dark', v: {} }; try { var cs = getComputedStyle(document.body); THV.forEach(function (k) { var v = cs.getPropertyValue('--' + k).trim(); if (v) o.v[k] = v; }); } catch (e) {} return o; }
+  function callK(req) { req.theme = req.theme || hwTheme(); return new Promise(function (res) { SIGN = res; try { HwNative.sign(JSON.stringify(req)); } catch (e) { SIGN = null; res({ status: 'missing' }); } }); }
   function pairNative() {
     if (!(window.HwNative && HwNative.sign)) { pairErr('Pairing works in the Hwallet app with Kwallet on the same phone.'); return; }
     var ki = kwInfo(); if (ki && ki.installed === false) { pairErr('Kwallet isn\u2019t installed on this phone. Install it, then pair.'); render(); return; }
@@ -5176,31 +5225,67 @@ var APP_VERSION = '1.7';
 
   /* ---------- send ---------- */
   var SND = null;
+  /* wave A (#103): Send is a bottom sheet over the screen it was opened from (same design as the dApp and Kwallet sheets):
+     token row with balance, recipient with paste + QR, amount with Max and a USD toggle, a network fee chip, Continue -> Kwallet's sheet */
+  var SNDBG = null;
+  function sendSheetOpen() {
+    var ov = $('sndov'), fresh = !ov;
+    if (fresh) { ov = document.createElement('div'); ov.className = 'hp-ov snd-ov'; ov.id = 'sndov'; document.body.appendChild(ov); SNDBG = stack[stack.length - 1] || null; }
+    ov.innerHTML = '<div class="hp-dim"></div><div class="hp-sheet snd-sheet" role="dialog" aria-modal="true" aria-label="Send">' + sendHtml() + '</div>';
+    if (fresh) { void ov.offsetWidth; requestAnimationFrame(function () { ov.classList.add('in'); }); } else ov.classList.add('in');
+    ov.querySelector('.hp-dim').onclick = function () { if (SND && SND.busy) return; back(); };
+    ov.querySelector('[data-sx]').onclick = function () { if (SND && SND.busy) return; back(); };
+    var sh = ov.querySelector('.hp-sheet'), sc = ov.querySelector('.hp-scroll'), y0 = null, dy = 0;
+    sh.addEventListener('touchstart', function (e) { if (sc.scrollTop <= 0 && !e.target.closest('.hp-foot,input,button')) { y0 = e.touches[0].clientY; dy = 0; } }, { passive: true });
+    sh.addEventListener('touchmove', function (e) { if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); if (dy > 4) { sh.style.transition = 'none'; sh.style.transform = 'translate3d(0,' + dy + 'px,0)'; } }, { passive: true });
+    sh.addEventListener('touchend', function () { if (y0 == null) return; y0 = null; sh.style.transition = ''; sh.style.transform = ''; if (dy > 100 && !(SND && SND.busy)) back(); });
+    sendAfter();
+  }
+  function sendSheetClose() {
+    var ov = $('sndov'); if (!ov) return; ov.id = ''; SNDBG = null;
+    ov.classList.remove('in'); ov.classList.add('out'); setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 220);
+  }
+  function sendIsBg(v) { return !!SNDBG && v === SNDBG; }
   function sendHtml() {
     var r = curAsset(), n = curNet(), c = CHBY[V.ch], name = n ? n.name : c.name;
     var ph = { eth: '0x…', sol: 'Solana address', btc: 'bc1…, 1… or 3…', trx: 'T…', sui: '0x…', xrp: 'r…', ada: 'addr1…' }[V.ch];
-    return topbar('Send ' + esc(r.s)) +
-      '<section class="form"><div class="ar sm" style="background:var(--card);border-radius:20px;margin-bottom:4px">' + alogo(V.ch, V.ch === 'eth' ? V.net : null, r, 'md').replace(/class="lg /g, 'class="lg md ') + '<span class="am"><span class="an">' + esc(r.s) + '</span><span class="ap">' + esc(name) + '</span></span><span class="ax"><span class="aa" data-money>' + money(esc(fmtA(r.raw, r.d))) + '</span><span class="au" data-money>' + money(r.raw != null && rpx(r) ? fmtUsd(usdOf(r)) : '') + '</span></span></div>' +
-      '<div class="lbl">To</div><div class="inp"><input id="to" placeholder="' + ph + '" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="pb" data-p aria-label="Paste">' + sv('paste') + '</button></div>' +
+    return '<div class="hp-grab"></div><div class="hp-scroll snd-sc" id="snd-sc"><div class="snd-top"><h2 class="hp-title">Send</h2><button type="button" class="hp-x" data-sx aria-label="Close">' + HWP.sv(HWP.P.x) + '</button></div>' +
+      '<section class="form snd-form"><div class="ar sm snd-tok">' + alogo(V.ch, V.ch === 'eth' ? V.net : null, r, 'md').replace(/class="lg /g, 'class="lg md ') + '<span class="am"><span class="an">' + esc(r.s) + '</span><span class="ap">' + esc(name) + '</span></span><span class="ax"><span class="aa" data-money>' + money(esc(fmtA(r.raw, r.d))) + '</span><span class="au" data-money>' + money(r.raw != null && rpx(r) ? fmtUsd(usdOf(r)) : '') + '</span></span></div>' +
+      '<div class="lbl">To</div><div class="inp"><input id="to" placeholder="' + ph + '" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="pb" data-p aria-label="Paste">' + sv('paste') + '</button><button class="pb" data-qr aria-label="Scan QR code">' + sv('qr') + '</button></div>' +
       '<div class="note warn" id="poison" hidden></div><div class="note" id="newad" hidden>First time sending to this address. Check it carefully.</div>' +
       (V.ch === 'xrp' ? '<div class="lbl">Destination tag (exchanges need it)</div><div class="inp"><input id="tag" inputmode="numeric" placeholder="Optional" autocomplete="off"></div>' : '') +
-      '<div class="lbl">Amount</div><div class="inp amt"><input id="amt" inputmode="decimal" placeholder="0" autocomplete="off"><span class="sym">' + esc(r.s) + '</span><button class="mx" data-max>Max</button></div>' +
+      '<div class="lbl">Amount</div><div class="inp amt"><input id="amt" inputmode="decimal" placeholder="0" autocomplete="off"><span class="sym" id="amt-u">' + esc(r.s) + '</span>' + (rpx(r) ? '<button class="mx snd-usd" data-usd aria-label="Enter the amount in US dollars">USD</button>' : '') + '<button class="mx" data-max>Max</button></div>' +
       '<div class="hint2"><span id="usd"></span><span>Balance ' + money(fmtA(r.raw, r.d)) + ' ' + esc(r.s) + '</span></div>' +
-      '<div class="lbl">Network fee</div><div class="seg wide" id="lv"><button data-lv="slow">Slow</button><button data-lv="medium" class="on">Medium</button><button data-lv="fast">Fast</button></div>' +
-      '<div class="hint2"><span id="fee">Checking the network…</span><span style="display:inline-flex;align-items:center;gap:6px">' + logo(n ? n.logo : c.logo, name, '', 'xs') + esc(name) + '</span></div>' +
-      '<div class="note warn" id="err" hidden></div><div class="note" id="sim" hidden></div>' +
-      '<button class="btn pri wide big" id="go" disabled>Review in Kwallet</button><p class="hint">Kwallet opens on this phone, shows every detail live and signs. Your keys never come here.</p></section>';
+      '<button type="button" class="snd-fee" id="feechip" aria-expanded="false"><span class="snd-fl">' + logo(n ? n.logo : c.logo, name, '', 'xs') + 'Network fee</span><span class="snd-fv"><b id="fee">Checking…</b><em id="lvt">Normal</em></span>' + sv('chev', 'ic snd-chev') + '</button>' +
+      '<div class="seg wide snd-lv" id="lv" hidden><button data-lv="slow">Slow</button><button data-lv="medium" class="on">Normal</button><button data-lv="fast">Fast</button></div>' +
+      '<div class="note warn" id="err" hidden></div><div class="note" id="sim" hidden></div></section></div>' +
+      '<div class="hp-foot"><button class="btn pri wide big snd-go" id="go" disabled>Continue</button></div>';
   }
+  /* the amount field holds token units, or US dollars after the USD toggle; the request is always in token units */
+  function amtStr() {
+    var v = String($('amt').value || '').replace(/,/g, '').trim(); if (!SND || !SND.usd) return v;
+    var p = rpx(SND.r), n = parseFloat(v); if (!(p > 0) || !isFinite(n) || n < 0) return v ? 'x' : '';
+    return (n / p).toFixed(Math.min(SND.r.d, 12)).replace(/\.?0+$/, '');
+  }
+  function showAmt(tok) { var am = $('amt'); if (!SND.usd) { am.value = tok; return; } var p = rpx(SND.r), n = parseFloat(tok); am.value = p > 0 && isFinite(n) ? (Math.floor(n * p * 100) / 100).toFixed(2) : ''; }
   function gasAsset() { return assets(V.ch, V.net)[0]; }
   function sendAfter() {
     var r = curAsset();
-    SND = { ch: V.ch, net: V.net, r: r, lv: 'medium', d: null, max: false, to: '', busy: false };
+    SND = { ch: V.ch, net: V.net, r: r, lv: 'medium', d: null, max: false, to: '', busy: false, usd: false };
+    try { if (window.HwNative && HwNative.warmK) HwNative.warmK(); } catch (e) {}  /* wave A: Kwallet pre-loads its sign sheet while the user types */
     var to = $('to'), am = $('amt');
     to.oninput = function () { SND.to = to.value.trim(); checkTo(); validate(); if (SND.ch === 'sol' && SND.r.a) prep(true); };
     am.oninput = function () { SND.max = false; validate(); };
-    document.querySelector('[data-p]').onclick = function () { paste().then(function (t) { if (!t) { toast('Nothing to paste'); return; } to.value = t; to.oninput(); }); };
-    document.querySelector('[data-max]').onclick = function () { SND.max = true; buzz(6); fillMax(); validate(); };
-    $('lv').querySelectorAll('[data-lv]').forEach(function (b) { b.onclick = function () { SND.lv = b.getAttribute('data-lv'); $('lv').querySelectorAll('[data-lv]').forEach(function (x) { x.classList.toggle('on', x === b); }); buzz(6); if (SND.max) fillMax(); validate(); }; });
+    var box = $('sndov') || document;
+    box.querySelector('[data-p]').onclick = function () { paste().then(function (t) { if (!t) { toast('Nothing to paste'); return; } to.value = t; to.oninput(); }); };
+    box.querySelector('[data-max]').onclick = function () { SND.max = true; buzz(6); fillMax(); validate(); };
+    var qb = box.querySelector('[data-qr]'); if (qb) qb.onclick = function () { buzz(6); SND.scan = true; if (window.hwScanner) hwScanner.open('scan'); };
+    var ub = box.querySelector('[data-usd]'); if (ub) ub.onclick = function () {
+      var tok = amtStr(); SND.usd = !SND.usd; buzz(6); ub.classList.toggle('on', SND.usd); ub.textContent = SND.usd ? r.s : 'USD';
+      $('amt-u').textContent = SND.usd ? 'USD' : r.s; showAmt(tok === 'x' ? '' : tok); validate();
+    };
+    var fc = $('feechip'); fc.onclick = function () { var lv = $('lv'); lv.hidden = !lv.hidden; fc.setAttribute('aria-expanded', lv.hidden ? 'false' : 'true'); fc.classList.toggle('open', !lv.hidden); buzz(4); };
+    $('lv').querySelectorAll('[data-lv]').forEach(function (b) { b.onclick = function () { SND.lv = b.getAttribute('data-lv'); $('lv').querySelectorAll('[data-lv]').forEach(function (x) { x.classList.toggle('on', x === b); }); $('lvt').textContent = b.textContent; buzz(6); if (SND.max) fillMax(); validate(); }; });
     $('go').onclick = review;
     var sc0 = takeScanned(), sa0 = takeScanAmt(); if (sc0) { to.value = sc0; SND.to = sc0; checkTo(); if (sa0) { am.value = sa0; } } else setTimeout(clipChip, 60);
     if (V.swapDep && sc0) { to.readOnly = true; am.readOnly = true; var nb = $('newad'); if (nb) { nb.hidden = false; nb.textContent = 'NEAR Intents deposit address for your swap. Send exactly this amount; the swap starts when it arrives.'; } }
@@ -5221,15 +5306,16 @@ var APP_VERSION = '1.7';
     var r = SND.r, am = $('amt');
     if (r.gas) {
       var g = U(r.raw), f = feeOf(SND.lv); if (g == null || f == null) { am.value = ''; return; }
-      var v = g - f - (SND.d.reserve || 0n); am.value = v > 0n ? fmtU(v, r.d, r.d).replace(/,/g, '') : '0';
-      if (SND.ch === 'btc' || SND.ch === 'ada') am.value = (SND.d.maxAmt ? fmtU(SND.d.maxAmt(SND.lv), r.d, r.d) : am.value).replace(/,/g, '');
-    } else am.value = fmtU(r.raw, r.d, r.d).replace(/,/g, '');
+      var v = g - f - (SND.d.reserve || 0n), t = v > 0n ? fmtU(v, r.d, r.d).replace(/,/g, '') : '0';
+      if (SND.ch === 'btc' || SND.ch === 'ada') t = (SND.d.maxAmt ? fmtU(SND.d.maxAmt(SND.lv), r.d, r.d) : t).replace(/,/g, '');
+      showAmt(t);
+    } else showAmt(fmtU(r.raw, r.d, r.d).replace(/,/g, ''));
   }
   function validate() {
     var go = $('go'), er = $('err'), r = SND.r; if (!go) return;
-    var gas = gasAsset(), msg = '', amt = SND.max ? null : parseUnits($('amt').value, r.d);
-    var shown = SND.max ? parseUnits($('amt').value, r.d) : amt, up = rpx(r);
-    $('usd').textContent = shown != null && up ? '≈ ' + fmtUsd(toNum(shown, r.d) * up) : '';
+    var gas = gasAsset(), msg = '', amt = SND.max ? null : parseUnits(amtStr(), r.d);
+    var shown = SND.max ? parseUnits(amtStr(), r.d) : amt, up = rpx(r);
+    $('usd').textContent = shown != null && up ? (SND.usd ? '≈ ' + fmtA(shown, r.d) + ' ' + r.s : '≈ ' + fmtUsd(toNum(shown, r.d) * up)) : '';
     if (SND.ch === 'xrp' && $('tag').value && !/^\d{1,10}$/.test($('tag').value)) msg = 'Destination tag must be a number.';
     if (!validAddr(SND.ch, SND.to)) msg = SND.to ? 'That is not a valid ' + (SND.ch === 'eth' ? curNet().name : CHBY[SND.ch].name) + ' address.' : '';
     else if (!SND.d) msg = '';
@@ -5251,7 +5337,7 @@ var APP_VERSION = '1.7';
   function prep(quiet) {
     var me = SND, f = PREP[SND.ch === 'eth' ? 'evm' : SND.ch];
     f(SND).then(function (d) { if (me !== SND) return; SND.d = d; if (SND.max) fillMax(); validate(); }).catch(function (e) { if (me !== SND) return; if (!quiet) $('fee').textContent = 'Could not reach the network. Retrying…'; console.warn(e); });
-    clearTimeout(SND.pt); SND.pt = setTimeout(function () { if (V.v === 'send' && me === SND && !SND.busy) prep(true); }, 15000);
+    clearTimeout(SND.pt); SND.pt = setTimeout(function () { if (V.v === 'send' && me === SND && !SND.busy && $('sndov')) prep(true); }, 15000);
   }
   function hyst(prev, next, key) {
     /* keep the last levels unless the medium fee moved by more than 3% (a calm Kwallet page) */
@@ -5443,6 +5529,7 @@ var APP_VERSION = '1.7';
     });
   };
 
+  function toName(ch, to) { var t = String(to || '').toLowerCase(), k = ch === 'eth' ? 'eth' : ch; var w = (W || []).filter(function (x) { return x.A && typeof x.A[k] === 'string' && x.A[k].toLowerCase() === t; })[0]; return w ? String(w.label || '').slice(0, 40) : ''; }
   function review(kindReq) {
     if (!SND || SND.busy || !SND.d) return;
     if (kindReq && kindReq.target) kindReq = null;
@@ -5453,14 +5540,14 @@ var APP_VERSION = '1.7';
       token: r.gas ? 'native' : r.a, tokenSym: r.s, tokenDec: r.d, amount: SND.max ? 'max' : SND.amt.toString(),
       balance: { token: String(d.tbal != null ? d.tbal : r.raw), gas: String(d.gbal != null ? d.gbal : gas.raw) },
       fee: { level: SND.lv, levels: d.levels },
-      prices: { gasUsd: px(gas.cg), tokenUsd: px(r.cg), ts: C.pt }, firstTime: RCP.indexOf(to.toLowerCase()) < 0, live: true,
+      prices: { gasUsd: px(gas.cg), tokenUsd: px(r.cg), ts: C.pt }, firstTime: RCP.indexOf(to.toLowerCase()) < 0, live: true, toName: toName(ch, to),
       created: now, expires: now + 120000 }, d.req(), kindReq || {});
     if (req.kind && req.kind !== 'transfer') { req.to = req.from; req.firstTime = false; }
     if (SND.ch === 'xrp' && !r.gas) req.tokenDec = 15;
-    SND.busy = true; validate(); $('go').textContent = 'Waiting for Kwallet…';
+    SND.busy = true; validate(); $('go').textContent = 'Opening Kwallet…';
     startLive(req);
     callK(req).then(function (res) {
-      SND.busy = false; if ($('go')) $('go').textContent = 'Review in Kwallet';
+      SND.busy = false; if ($('go')) $('go').textContent = 'Continue';
       if (!res || res.status !== 'signed' || !res.raw) {
         var m = { rejected: 'Cancelled in Kwallet', expired: 'The request expired. Try again', refused: res && res.error || 'Kwallet refused the request', missing: 'Install Kwallet v3.92 on this phone' }[res && res.status] || (res && res.error) || 'Not signed';
         toast(m); validate(); return;
@@ -5477,8 +5564,11 @@ var APP_VERSION = '1.7';
         try { if (typeof swSent === 'function') swSent(to, hash); } catch (e) {}
         if (RCP.indexOf(to.toLowerCase()) < 0) { RCP.unshift(to.toLowerCase()); RCP = RCP.slice(0, 300); jset('hw-recips', RCP); }
         buzz([10, 50, 18]); snd('ok'); toast(req.kind && req.kind !== 'transfer' ? 'Done. Waiting for the network' : 'Sent. Waiting for the network');
-        watchTx(ch, SND.net, hash); var back0 = stack.pop() || { v: 'home' }; V = SND.kindBack ? back0 : { v: 'coin', ch: ch, net: SND.net, tk: r.key }; render('in');
-      }, function (e) { SND.busy = false; if ($('go')) $('go').textContent = 'Review in Kwallet'; toast('Broadcast failed: ' + String(e && e.message || e).slice(0, 140)); validate(); });
+        watchTx(ch, SND.net, hash); var back0 = stack.pop() || { v: 'home' }, sh = $('sndov') && $('sndov').querySelector('.hp-sheet');
+        /* #98b: a short success state in the same sheet, then back to the coin screen */
+        if (sh) sh.innerHTML = '<div class="hp-grab"></div><div class="hp-done"><svg viewBox="0 0 84 84"><circle cx="42" cy="42" r="38"/><path d="M26 43l11 11 21-23"/></svg><div>Sent</div></div>';
+        setTimeout(function () { V = SND && SND.kindBack ? back0 : { v: 'coin', ch: ch, net: SND ? SND.net : null, tk: r.key }; render('in'); }, sh ? 800 : 0);
+      }, function (e) { SND.busy = false; if ($('go')) $('go').textContent = 'Continue'; toast('Broadcast failed: ' + String(e && e.message || e).slice(0, 140)); validate(); });
     });
   }
   /* live data for Kwallet's open sign page.
@@ -6587,6 +6677,8 @@ var APP_VERSION = '1.7';
     var ch = null; ['btc', 'trx', 'xrp', 'ada', 'sui', 'eth', 'sol'].some(function (k) { if (validAddr(k, a)) { ch = k; return true; } return false; });
     if (!ch) { textSheet(t); return; }
     closeScanner();
+    /* wave A: the QR button of the Send sheet fills its recipient (and amount) instead of starting a new send */
+    if (V.v === 'send' && SND && SND.scan && $('to')) { SND.scan = false; if (ch !== SND.ch) { toast('That is a ' + CHBY[ch].name + ' address'); return; } var ti = $('to'); ti.value = a; ti.oninput(); if (pay && pay.amt && $('amt') && !$('amt').value && !SND.usd) { $('amt').value = pay.amt; $('amt').oninput(); } snd('addr'); buzz(8); return; }
     if (!A[ch]) { toast(CHBY[ch].name + ' address scanned. Add a ' + CHBY[ch].name + ' address to send'); return; }
     SCANNED = a; SCAN_AMT = pay && pay.amt ? pay.amt : ''; snd('addr'); buzz(8);
     if (ch === 'eth') {
@@ -6704,11 +6796,11 @@ window.hwCrashPrompt = crashPrompt;
     var site = o.site || {}, tr = o.trust || { cls: 'unk' }, lv = tr.cls === 'ok' ? 'ok' : tr.cls === 'bad' ? 'bad' : 'unk';
     var need = o.ns || [], wl = W.filter(function (w) { return need.every(function (n) { return n === 'eip155' ? w.A.eth : n === 'solana' ? w.A.sol : n === 'tron' ? w.A.trx : true; }); });
     var a0 = (o.accs || [])[0] || {}, wname = (A.label || 'Wallet') + (o.accs && o.accs.length > 1 ? ' \u00b7 ' + o.accs.length + ' accounts' : '');
-    var wrow = HWP.kv('Wallet', HWP.walletV(wname, a0.addr, ''), '', { tap: wl.length > 1, chev: wl.length > 1, id: 'hp-wr' });
+    var wrow = HWP.walletRow(wname, a0.addr, '', { tap: wl.length > 1, chev: wl.length > 1, id: 'hp-wr' });
     var wlist = wl.length > 1 ? '<div class="hp-wl" id="hp-wl" hidden>' + wl.map(function (w) { var ad = need[0] === 'solana' ? w.A.sol : need[0] === 'tron' ? w.A.trx : w.A.eth; return '<button type="button" class="hp-wo' + (w.id === WID ? ' on' : '') + '" data-wid="' + esc(w.id) + '"><i></i><span>' + esc(w.label) + '</span><em>' + esc(HWP.shortA(ad)) + '</em></button>'; }).join('') + '</div>' : '';
     var accRows = (o.accs || []).length > 1 ? o.accs.map(function (x) { return HWP.kv('<span class="hp-acc">' + (x.logo || '') + '<span>' + esc(x.name) + '</span></span>', '<span class="hp-mono">' + esc(HWP.shortA(x.addr)) + '</span>', '', { sm: true }); }).join('') : '';
     var chips = (o.chains || []).map(function (c) { return '<span class="hp-chip">' + c.logo + esc(c.name) + '</span>'; }).join('');
-    var inner = HWP.head({ icon: siteSrc(site), name: site.name || site.host, url: String(site.origin || ('https://' + site.host)).replace(/\/+$/, '') });
+    var inner = HWP.head({ icon: siteSrc(site), name: HWP.siteName(site.name, site.origin || site.host), url: String(site.origin || ('https://' + site.host)).replace(/\/+$/, '') });
     if (o.err) inner += HWP.title('Can\u2019t connect') + HWP.warns([esc(o.err)], true);
     else inner += '<div class="hp-lead">This app would like to:</div>' + HWP.card(HWP.perms() + wrow + wlist + accRows) +
       (chips ? HWP.card('<div class="hp-sec">Networks</div><div class="hp-chips">' + chips + '</div>') : '') +
