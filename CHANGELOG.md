@@ -1,5 +1,32 @@
 # Changelog
 
+## Kwallet v3.97.2 + Hwallet v1.7.2
+
+Second phone test of v3.97.1: the dApp signing fix, fluid pull to refresh, cleaner swap, live rent, and a set of quiet safety and speed features.
+
+### Fixed
+- **dApp swaps on every EVM chain never reached Kwallet** (Uniswap, 1inch, Stargate, Across, Jumper/LI.FI, Aave, OpenSea…): when a dApp put `chainId` in its transaction, Hwallet's chain check did `+BigInt(...)`, which throws "Cannot convert a BigInt value to a number". The request was rejected as an internal error before the sheet opened (Uniswap shows that as "Swap failed · Try adjusting slippage"). Chain ids are now parsed safely (hex, decimal, number, CAIP-2).
+- dApp requests can no longer be blocked by Hwallet's own extras: a failed preview, simulation, allowance lookup or fee read falls back (gas price levels, the app's gas or a safe default) and the sheet always opens. Fees never go below the node's gas price (BNB Chain zero-tip blocks).
+- `eth_sendTransaction` answers only with the 0x transaction hash after the broadcast (node answer, else Kwallet's, else computed from the signed bytes); failures are plain `-32603` errors, user cancels `4001`. No early auto-reject while Kwallet's sheet is open. Bigint values from pages travel as hex; quantities are normalised to hex.
+- Every other read-only JSON-RPC method is proxied to the active chain's node instead of being refused; `wallet_switchEthereumChain` updates the page's chain id at once.
+- **Tron dApps**: the injected `tronWeb` is now a working TronWeb surface (addresses, units, transactionBuilder incl. triggerSmartContract / triggerConstantContract / estimateEnergy, trx reads, sign / multiSign / signMessageV2, sendRawTransaction, `contract().at()` with call/send, `fullNode.request`) talking to TronGrid through Hwallet, so SunSwap, JustLend and SUN.io reach Kwallet's sheet.
+- **Pull to refresh** could stay stuck (Activity). Rewritten as one fluid state machine for Home, networks, coin/token pages and Activity: content follows the finger with rubber-band resistance, the spinner turns with the pull, and the content always eases back when the refresh ends or at 9 s. The Activity refresh button uses the same path. New: pull to refresh in the in-app Browser (reloads the page, only when it is at the top).
+- **Base logo** is the official Base square (Trust Wallet assets); token icons fall back from Gem's CDN to Trust Wallet's repo before a letter tile.
+
+### Kwallet 3.97.2
+- dApp sheet: plain titles (Swap, Send, Approve, Revoke; never "Contract call"), the real app/protocol name instead of a page title like "Home" or a contract name like "Aggregator", no method-call rows, amounts at sensible precision, network fee on one line with $ under it and a plain "Normal" subtitle.
+- A live fee change updates in place; you are asked to hold again only if the fee rose more than 20%.
+- Account rent is one small line under the amounts: red "−0.00204 SOL account rent · refunded when closed" (exact, from the simulated account size, Token-2022 included), green "+X SOL rent back" when accounts close; rent is counted in the balance after.
+
+### Hwallet 1.7.2
+- **Swap**: 25% / 50% / Max on You Pay for every coin and token (Max keeps the network fee only on the gas coin); missing prices (e.g. USDS) fetched from Jupiter / DefiLlama / CoinGecko; service fee as "0.3% · 0.000003 SOL" (never "0 SOL") with a small red "+0.00204 SOL one-time fee-account rent" only when that account must be opened (live rent); unclipped flip button; best-route badge and how much more it gives than the next provider; favourites and recent tokens at the top of the token picker; a small "Unverified" / "Risky" badge (GoPlus honeypot, sell-block, tax and freeze checks) on tokens before you swap; quotes, prices, gas and icons warmed when the screen opens.
+- **Faster dApps**: keyed nodes first (Alchemy, Helius, TronGrid with your key), identical reads shared, short caches for block number / gas / balances, cheap answers (chain id, accounts) straight from the page, and the site's chain warmed when a connected site opens.
+- **Token approvals** (Settings > Security): every open EVM / Tron allowance and Solana delegate, read live, with one-tap Revoke signed in Kwallet.
+- **Address book** with names and chain icons (Send and Settings), and a stronger **address-poisoning warning** (look-alike of any address you know; addresses that only sent you a zero-value transfer).
+- **Transaction notifications**: pending, confirmed or failed with a plain reason, for sends, swaps and dApp transactions.
+- **Home**: swipe a token row to Pin or Hide; spam and dust tokens are hidden automatically (toggle in the hidden group).
+- Balances and prices show at once from the phone's cache and refresh quietly.
+
 ## Kwallet v3.97.1 + Hwallet v1.7.1 (fix release)
 
 Fixes from the first phone test of v3.97 / v1.7.
