@@ -1,5 +1,20 @@
 # Changelog
 
+## Kwallet v3.97.1 + Hwallet v1.7.1 (fix release)
+
+Fixes from the first phone test of v3.97 / v1.7.
+
+### Kwallet 3.97.1
+- **Plain-language preview** (R5): the sign sheet no longer shows instruction counts, versions, compute-budget lines, account counts or raw data. It opens with one headline ("Swap 0.001 SOL for ≈0.1069 USDC via Jupiter"), then You send / You receive rows with icon, exact amount and $, approvals as "Allow X to spend up to N TOKEN" (or unlimited), account opens/closes with their rent, and recipients/contracts by name. Kwallet re-checks the token amounts it can decode itself and warns if they differ.
+- **Plain errors** (R6): no raw JSON; common failures read "Not enough funds", "The price moved more than your slippage allows", "This request has expired". Co-signed / gasless transactions (fee paid by the app, e.g. Jupiter Ultra) are never flagged as failing; "Preview not available for this app's transaction" only when the changes cannot be computed.
+- Fee sheets: the selected row has the same blue tint everywhere (no green).
+
+### Hwallet 1.7.1
+- **Exact previews from the chain** (R5), computed before Kwallet's sheet opens, every token resolved live: Solana via Helius simulateTransaction (all writable accounts, lookup tables included) and Helius DAS for any mint (SPL and Token-2022); EVM via Alchemy simulateAssetChanges, else eth_simulateV1, with method/contract names from Etherscan V2 verified ABIs or 4byte; Tron via TronGrid triggerconstantcontract logs and getcontract. Prices from Hwallet, else DefiLlama.
+- **Pull to refresh** (R1): the classic pull: the content itself moves down, a small plain spinner sits in the gap, the content snaps back when done (9 s cap). The floating circle is gone. Transform-only.
+- **Swap** (R2, R4, R7): the Network fee sheet opens on top of Details; live pair data (requote every 10 s and on typing, spinning ring while it runs, rate/output/$ flash on change, a failed requote keeps the last good quote, prices every 30 s); the 0.3% service fee now applies to every Jupiter pair: the fee owner's token account is found for the input or output mint (classic SPL), and created once in the swap when it does not exist yet.
+- **Gem 1:1 dimensions** (R3) on home (top bar, wallet chip, balance block, round actions, token rows) and the swap screen, taken from gem-android's AssetsTopBar, AmountListHead, ListItem, AssetItem, IconWithBadge, paddings and SwapItem.
+
 ## Kwallet v3.97 + Hwallet v1.7 (Push 3)
 
 Kwallet stays the fully secure offline signer; Hwallet becomes the quickest hot signer: every signature is one sheet over Hwallet, fees are set in the coin like Jupiter, and every transaction reads in plain language. Full Monero comes in v3.98.
