@@ -116,7 +116,7 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 - **Crash prompt** — if Hwallet ever closes unexpectedly, the next launch offers to copy the log (once per crash)
 - XMR is watch-only; full Monero send (cold-signed in Kwallet) comes in v3.98
 
-### Known limits (v3.97.2 / v1.7.2)
+### Known limits (v3.97.3 / v1.7.3)
 
 - XMR send is not included yet; full Monero comes in **v3.98**.
 - Approve → Swap is two Kwallet sheets with Hwallet's stepper between them (no Permit2 / EIP-2612 signature path yet). Approvals are always for the exact amount and skipped when the allowance is already enough.
@@ -171,8 +171,8 @@ Get the latest files from **[Releases](https://github.com/0xkabeno/Kwallet/relea
 # put the downloads and SHA256SUMS.txt in one folder, then
 sha256sum -c SHA256SUMS.txt --ignore-missing      # every line must say OK
 # Android: both APKs must carry the same signing certificate
-apksigner verify --print-certs Kwallet-v3.97.2.apk | grep SHA-256
-apksigner verify --print-certs Hwallet-v1.7.2.apk  | grep SHA-256
+apksigner verify --print-certs Kwallet-v3.97.3.apk | grep SHA-256
+apksigner verify --print-certs Hwallet-v1.7.3.apk  | grep SHA-256
 ```
 
 On Android, open the APK and allow *Install unknown apps* once. Updates install over the previous version (same permanent key).

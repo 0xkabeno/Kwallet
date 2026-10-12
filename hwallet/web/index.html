@@ -4921,7 +4921,7 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.7.2';
+var APP_VERSION = '1.7.3';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -9792,7 +9792,7 @@ window.hwCrashPrompt = crashPrompt;
   function provRow(q) {
     var r = SW.recv, on = q.id === SW.sel, okq = SW.quotes.filter(function (x) { return x.ok; }), best = okq.length > 1 && okq[0] === q;
     return '<button class="dp-r' + (on ? ' on' : '') + (q.ok ? '' : ' off') + '" data-p="' + q.id + '"' + (q.ok ? '' : ' disabled') + '><span class="dp-lg"><img alt="" src="' + (PLOGO[q.id] || '') + '">' + (on ? '<span class="dp-ck">' + si('check') + '</span>' : '') + '</span>' +
-      '<span class="dp-n">' + esc(q.name) + (best ? '<i class="dp-best">Best</i>' : '') + '</span>'<span class="dp-v">' + (q.ok ? '<b>' + esc(fmtU(q.out, r.d, 6)) + ' ' + esc(r.s) + '</b><span>' + money(fmtUsd(outUsd(q))) + '</span>' : '<span class="dp-x">' + esc(q.err && q.err.length < 48 ? q.err : 'No quote') + '</span>') + '</span></button>';
+      '<span class="dp-n">' + esc(q.name) + (best ? '<i class="dp-best">Best</i>' : '') + '</span><span class="dp-v">' + (q.ok ? '<b>' + esc(fmtU(q.out, r.d, 6)) + ' ' + esc(r.s) + '</b><span>' + money(fmtUsd(outUsd(q))) + '</span>' : '<span class="dp-x">' + esc(q.err && q.err.length < 48 ? q.err : 'No quote') + '</span>') + '</span></button>';
   }
   function netFeeTxt(q) {
     var f = SW.fee, lab = f.tier ? { x2: SW.pay && SW.pay.ch === 'trx' ? 'Fast' : 'Faster', x4: 'Fastest' }[f.tier] : { slow: 'Low', medium: 'Normal', fast: 'High', custom: 'Custom' }[f.lv] || 'Normal';
