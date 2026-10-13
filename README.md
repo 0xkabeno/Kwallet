@@ -119,7 +119,9 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 - **Monero, end to end** *(new in 1.8 / 3.98)* — the balance and history come from a view-key scan on the phone (monero-ts / wallet2 in WebAssembly, in a background worker): it starts at the wallet's restore height, keeps its cache on the phone and continues where it stopped, with a progress bar (% and blocks left). Receive with the main address or a new subaddress (QR), send with live fee levels: Hwallet builds the unsigned transaction, Kwallet signs it offline in the same sign sheet (CLSAG + Bulletproofs+, spend key never leaves Kwallet) after checking the recipient, amount and fee, Hwallet broadcasts it and imports the key images. Incoming XMR shows in Activity (with confirmations) and as a notification. Settings > Monero: node (automatic public HTTPS nodes or your own), scan start, sync spent status, rescan
 - **Saved fee speed and a Jupiter-style recap** *(new in 1.8.1 / 3.98.1)* — the network fee speed you pick (Slow / Normal / Fast / Fastest / Custom) is remembered per chain and used in Send, Swap and every dApp / WalletConnect approval until you change it ("Site suggested" stays a choice on dApp sheets). Kwallet's dApp approvals and the Send review show a hero You send / You receive card, compact rows (rate, route, minimum received, fee with its speed), account rent as one small grey line with an info sheet, and one full-width Confirm in the style's own colour (OG lime in Kwallet / navy in Hwallet, Material You on Android 12+, Miuix blue)
 
-### Known limits (v3.98.1 / v1.8.1)
+- **Jupiter-style sheets, Inter and a single-line Settings** *(new in 1.8.2 / 3.98.2)* — every Confirm / Cancel is a pair of equal pills (Confirm green #ACF47D, Cancel red) in every style and theme; dApp and Send sheets are compact (one grouped balance-change card, fee and wallet cards, a grey trust line); the Inter typeface is bundled offline with tabular numbers and subscript zeros for tiny amounts (0.0₅6); Settings rows are single-line with the value on the right, regrouped (Wallets · Appearance · Sending & fees · Network incl. Monero · Security · Background & alerts · About) with a Saved fee speeds page; the Browser start page is compact and Most visited can be reordered by long-press and drag or trimmed with the small red x
+
+### Known limits (v3.98.2 / v1.8.2)
 
 - Monero: the scan runs inside Hwallet (WebView worker); it continues in the background while Hwallet's always-on service keeps the app alive, and resumes from its saved cache when Hwallet is opened again after Android closed it. Nodes must be HTTPS (Android blocks plain http). The node learns your IP and which blocks you download, never your view key. A wallet with a very large number of small outputs may exceed one Kwallet request (≈ 400 kB); send a smaller amount first. Monero needs Android System WebView 97 or later. The browser HTML builds have no Monero engine (it ships as `xmr/hwxmr.js` inside the APKs).
 - Approve → Swap is two Kwallet sheets with Hwallet's stepper between them (no Permit2 / EIP-2612 signature path yet). Approvals are always for the exact amount and skipped when the allowance is already enough.
@@ -174,8 +176,8 @@ Get the latest files from **[Releases](https://github.com/0xkabeno/Kwallet/relea
 # put the downloads and SHA256SUMS.txt in one folder, then
 sha256sum -c SHA256SUMS.txt --ignore-missing      # every line must say OK
 # Android: both APKs must carry the same signing certificate
-apksigner verify --print-certs Kwallet-v3.98.1.apk | grep SHA-256
-apksigner verify --print-certs Hwallet-v1.8.1.apk  | grep SHA-256
+apksigner verify --print-certs Kwallet-v3.98.2.apk | grep SHA-256
+apksigner verify --print-certs Hwallet-v1.8.2.apk  | grep SHA-256
 ```
 
 On Android, open the APK and allow *Install unknown apps* once. Updates install over the previous version (same permanent key).
