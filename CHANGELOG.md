@@ -1,5 +1,21 @@
 # Changelog
 
+## Kwallet v3.98.3 + Hwallet v1.8.3
+
+Polish from the phone test of v3.98.2 (its layout stays as it was).
+
+### Changed
+- **One tap on Confirm signs.** Hold to confirm is gone from every operation: send, swap, approve, sign message, dApp, WalletConnect, Monero and key images. The button still waits a moment after any change on the sheet, and Settings > Hwallet > Require PIN to sign still adds one PIN or biometric check.
+- **Balance-change amounts flush right.** In every sign sheet (dApp, Send, WalletConnect, Monero) of both apps, the amount and its $ value sit right-aligned at the card edge, and every row has the same height.
+- **Rent is a row in the card.** When a transaction opens an account, a "Rent" row with the SOL icon sits right under the first SOL row, with the red amount and its $ value (tap it to read what rent is). The separate grey rent line is gone. An account closed shows a green "Rent back" row.
+- **Send: no stacked sheets.** While Kwallet's signer is up, Hwallet's Send sheet is hidden behind it (no second handle); it comes back as it was if you cancel.
+- **Send: no "First time sending to this address" banner.** "Save to address book" stays.
+- **Send: tidier To field.** Contacts, Paste and Scan are three matching 40dp round tonal buttons with outline icons and even spacing.
+- **Dialogs:** text centred in every dialog button, 24dp side padding for dialog content. Saved fee speeds shows proper network names (BNB Chain, Ethereum, Base and so on).
+
+### Fixed
+- **QR scanner with the camera off:** the scanner is now a full opaque screen (before, the Send sheet showed through it). The camera-off message sits in the middle with an Allow camera button (or Open settings when Android will not ask again), Choose photo and Paste. X goes straight back to the Send sheet, and the camera starts by itself when you come back from the app settings with Camera allowed.
+
 ## Kwallet v3.98.2 + Hwallet v1.8.2
 
 A calmer, denser look across both apps, after the phone test of v3.98.1.
