@@ -1,5 +1,15 @@
 # Changelog
 
+## Kwallet v3.98.6 + Hwallet v1.8.6
+
+Quick fix for Hwallet Settings from the phone test of v3.98.5. Kwallet only changes its version number.
+
+### Fixed
+- **Settings pages clear the status bar.** Every Settings sub-page header now sits below the Android status bar (the same top inset as the main Settings page), so the back arrow no longer collides with the clock. Long titles such as "Notifications & background" use a slightly smaller size and end with an ellipsis instead of running under the system icons.
+- **Compact Settings.** Tighter rows and padding on the main Settings page and on every sub-page.
+- **Wallets & pairing values.** "Pair with Kwallet" shows a short "Add or refresh" that fits, and Wallets shows "1 wallet · name", the same as on the main page.
+- **Support card.** The previous Support Hwallet card is back (chain badge, short address, copy icon), now at the foot of Settings and stretched to fill the space down to the bottom bar, with readable dark-on-lime text. Tapping a row copies that chain's donation address with a toast such as "ETH address copied" and a brief tick on the copy icon.
+
 ## Kwallet v3.98.5 + Hwallet v1.8.5
 
 Hwallet Swap fixes from the phone test of v3.98.4.
