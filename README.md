@@ -111,14 +111,14 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 - **Clipboard paste chip** — Send offers "Paste <address> (Chain)" when you copied a valid address
 - **Mobile data speed limit** — cap Hwallet's traffic on mobile data from 1 KB/s up to unlimited; **Wi-Fi is never limited**, and the limit switches live when the network changes
 - **Gem-style design** with Kwallet's themes (light, dark, Material You), sounds and haptics; fixed bottom bar with a sliding pill; Settings as a full page
-- **UI style** (Settings > UI style, in Hwallet and in Kwallet): **OG** (the classic look, default), **Material UI** (Material 3 shapes, type, controls, sheets and motion) or **Miuix** (Xiaomi HyperOS style after [compose-miuix-ui/miuix](https://github.com/compose-miuix-ui/miuix), Apache-2.0). Same screens and flows in all three; only Hwallet's navy / Kwallet's lime colours are kept. Kwallet's sign sheet over Hwallet follows Hwallet's style
+- **UI style** (Settings > UI style, in Hwallet and in Kwallet): **OG** (the classic look, default), **Material UI** (Material 3 shapes, type, controls, sheets and motion) or **Miuix** (Xiaomi HyperOS style after [compose-miuix-ui/miuix](https://github.com/compose-miuix-ui/miuix), Apache-2.0). Same screens and flows in all three; only Hwallet's navy / Kwallet's lime colours are kept. Kwallet's sign sheet over Hwallet follows Hwallet's style. *(3.97.5)* One shared skin compiled into both apps (identical dimensions), applied system wide: every screen, popup, list, menu and toast in both apps switches
 - **Pull to refresh** in the selected style on Home, networks, token pages, Activity and in the Browser (every page, http too)
 - **Several wallets**, tokens on every chain, TRON Energy / Bandwidth and Stake 2.0, XRP trust lines, Cardano native assets
 - **Always-on service** with a live four-coin notification and incoming-payment alerts
 - **Crash prompt** — if Hwallet ever closes unexpectedly, the next launch offers to copy the log (once per crash)
 - XMR is watch-only; full Monero send (cold-signed in Kwallet) comes in v3.98
 
-### Known limits (v3.97.4 / v1.7.4)
+### Known limits (v3.97.5 / v1.7.5)
 
 - XMR send is not included yet; full Monero comes in **v3.98**.
 - Approve → Swap is two Kwallet sheets with Hwallet's stepper between them (no Permit2 / EIP-2612 signature path yet). Approvals are always for the exact amount and skipped when the allowance is already enough.
@@ -173,8 +173,8 @@ Get the latest files from **[Releases](https://github.com/0xkabeno/Kwallet/relea
 # put the downloads and SHA256SUMS.txt in one folder, then
 sha256sum -c SHA256SUMS.txt --ignore-missing      # every line must say OK
 # Android: both APKs must carry the same signing certificate
-apksigner verify --print-certs Kwallet-v3.97.4.apk | grep SHA-256
-apksigner verify --print-certs Hwallet-v1.7.4.apk  | grep SHA-256
+apksigner verify --print-certs Kwallet-v3.97.5.apk | grep SHA-256
+apksigner verify --print-certs Hwallet-v1.7.5.apk  | grep SHA-256
 ```
 
 On Android, open the APK and allow *Install unknown apps* once. Updates install over the previous version (same permanent key).

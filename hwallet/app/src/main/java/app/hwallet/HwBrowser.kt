@@ -111,44 +111,80 @@ class HwBrowser(
         return p
     }
     private fun pullOff() {
+        if (pOn) tabs.values.forEach { t -> t.web?.let { pullRelease(it) } }
         pull?.let { it.reset(); it.visibility = View.GONE }
         ui.removeCallbacks(pCap); pTab = null; pOn = false; pCand = false
         tabs.values.forEach { t -> t.web?.translationY = 0f }
     }
-    private fun pullTouch(t: Tab, w: WebView, e: MotionEvent) {
+    /* v1.7.5: page-at-top probe. canScrollVertically() only sees the page's root scroller; dApps that scroll an inner box
+       (body fixed, #root overflow:auto) looked "at top" all the time, so a scroll-up inside them pulled the page. On finger-down
+       the page is asked (evaluateJavascript, works on http and https, nothing persistent is injected) whether the element under
+       the finger has a scrolled ancestor; the pull only engages once the answer is "at top". */
+    private var pSeq = 0
+    private var pT0 = 0L
+    private var pTop: Boolean? = null
+    private var pOver = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+    private fun probeTop(w: WebView, x: Float, y: Float) {
+        val seq = ++pSeq; pTop = null
+        try {
+            @Suppress("DEPRECATION") val sc = (w.scale.takeIf { it > 0f } ?: act.resources.displayMetrics.density)
+            val cx = (x / sc).toInt(); val cy = (y / sc).toInt()
+            val js = "(function(x,y){try{var se=document.scrollingElement||document.documentElement;if((se&&se.scrollTop>0)||window.scrollY>0)return 0;" +
+                "var e=document.elementFromPoint(x,y);while(e&&e.nodeType===1&&e!==document.body&&e!==document.documentElement){" +
+                "if(e.scrollTop>0){var o=getComputedStyle(e).overflowY;if(o==='auto'||o==='scroll'||o==='overlay')return 0}e=e.parentElement}" +
+                "return 1}catch(_){return 1}})($cx,$cy)"
+            w.evaluateJavascript(js) { r -> if (seq == pSeq) { pTop = r?.trim() != "0"; if (pTop == false) { pCand = false } } }
+        } catch (_: Throwable) { pTop = true }
+    }
+    private fun pullEngage(w: WebView, e: MotionEvent) {
+        pOn = true; py0 = e.rawY
+        // the page stops seeing this finger (no click, no drag, no overscroll stretch) while the pull runs
+        try { val c = MotionEvent.obtain(e); c.action = MotionEvent.ACTION_CANCEL; w.onTouchEvent(c); c.recycle() } catch (_: Throwable) {}
+        try { pOver = w.overScrollMode; w.overScrollMode = View.OVER_SCROLL_NEVER } catch (_: Throwable) {}
+        pv(w)
+    }
+    private fun pullRelease(w: WebView) { try { w.overScrollMode = pOver } catch (_: Throwable) {} }
+    /** true = the event belongs to the pull (the WebView does not get it) */
+    private fun pullTouch(t: Tab, w: WebView, e: MotionEvent): Boolean {
         try {
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     pOn = false; py0 = e.rawY; px0 = e.rawX
-                    pCand = visible == t.id && !w.canScrollVertically(-1) && pull?.busy != true
+                    pCand = visible == t.id && !w.canScrollVertically(-1) && pull?.busy != true && pTab == null
+                    if (pCand) probeTop(w, e.x, e.y)
                 }
-                MotionEvent.ACTION_POINTER_DOWN -> { if (pOn) pull?.cancel(); pOn = false; pCand = false }
+                MotionEvent.ACTION_POINTER_DOWN -> { if (pOn) { pull?.cancel(); pullRelease(w); pOn = false; pCand = false; return true }; pCand = false }
                 MotionEvent.ACTION_MOVE -> {
-                    if (!pCand) return
+                    if (pOn) {
+                        if (w.canScrollVertically(-1)) { pOn = false; pCand = false; pull?.cancel(); pullRelease(w); return true }
+                        pull?.drag(Math.max(0f, e.rawY - py0)); return true
+                    }
+                    if (!pCand) return false
                     val d = act.resources.displayMetrics.density
                     val dy = e.rawY - py0; val dx = Math.abs(e.rawX - px0); val slop = 8f * d
-                    if (!pOn) {
-                        if (dy < -slop || (dx > slop * 2f && dx > dy)) { pCand = false; return }
-                        if (dy > slop && dy > dx * 1.5f && !w.canScrollVertically(-1)) { pOn = true; py0 = e.rawY; pv(w) } else return
-                    }
-                    if (w.canScrollVertically(-1)) { pOn = false; pCand = false; pull?.cancel(); return }
-                    pull?.drag(Math.max(0f, e.rawY - py0))
+                    if (dy < -slop || (dx > slop * 2f && dx > dy)) { pCand = false; return false }
+                    val top = pTop ?: return false          // the page has not answered yet: wait (it answers within a frame or two)
+                    if (!top) { pCand = false; return false }
+                    if (dy > slop && dy > dx * 1.5f && !w.canScrollVertically(-1)) { pullEngage(w, e); pull?.drag(0f); return true }
+                    return false
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (pOn) {
-                        pOn = false
-                        val p = pull
-                        if (p != null && p.release()) {
-                            live(t, w)
-                            if (t.offline) { leaveSnapshot(t, w); if (isWeb(t.url)) w.loadUrl(t.url) } else w.reload()
-                            pTab = t; ui.removeCallbacks(pCap); ui.postDelayed(pCap, 9000)
-                        }
-                    }
                     pCand = false
+                    if (pOn) {
+                        pOn = false; pullRelease(w)
+                        val p = pull
+                        if (p != null && p.release() && pTab == null) {
+                            live(t, w)
+                            pTab = t; pT0 = android.os.SystemClock.uptimeMillis(); ui.removeCallbacks(pCap); ui.postDelayed(pCap, 9000)
+                            if (t.offline) { leaveSnapshot(t, w); if (isWeb(t.url)) w.loadUrl(t.url) } else w.reload()
+                        }
+                        return true
+                    }
                 }
-                MotionEvent.ACTION_CANCEL -> { if (pOn) pull?.cancel(); pOn = false; pCand = false }
+                MotionEvent.ACTION_CANCEL -> { if (pOn) { pull?.cancel(); pullRelease(w); pOn = false; pCand = false; return true }; pCand = false }
             }
         } catch (x: Throwable) { Log.w(TAG, "pull to refresh", x) }
+        return false
     }
     private fun pullDone(t: Tab) { if (pTab === t) { ui.removeCallbacks(pCap); pTab = null; try { pull?.finish() } catch (_: Throwable) {} } }
 
@@ -397,7 +433,7 @@ class HwBrowser(
             val s = script
             if (s != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(w, s, ORIGINS)
         } catch (e: Throwable) { Log.e(TAG, "wallet provider injection failed; the page loads without it", e) }
-        w.setOnTouchListener { _, e -> if (!t.touched) live(t, w); pullTouch(t, w, e); false }
+        w.setOnTouchListener { _, e -> if (!t.touched) live(t, w); pullTouch(t, w, e) }
         w.setOnScrollChangeListener { _, _, y, _, _ -> t.scroll = y; scrollEv(t) }
         w.setDownloadListener { url, _, _, _, _ -> try { act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE)) } catch (_: Throwable) {} }
 
@@ -434,7 +470,7 @@ class HwBrowser(
         }
         w.webChromeClient = object : WebChromeClient() {
             private var lastP = 0
-            override fun onProgressChanged(view: WebView, p: Int) { if (p - lastP >= 15 || p == 100 || p < lastP) { lastP = p; navEv(t, view, p < 100, p); lateInject(view) } }
+            override fun onProgressChanged(view: WebView, p: Int) { if (p == 100 && android.os.SystemClock.uptimeMillis() - pT0 > 400) pullDone(t); if (p - lastP >= 15 || p == 100 || p < lastP) { lastP = p; navEv(t, view, p < 100, p); lateInject(view) } }
             override fun onReceivedTitle(view: WebView, title: String?) { navEv(t, view, view.progress < 100, view.progress) }
             override fun onReceivedIcon(view: WebView, icon: Bitmap?) {
                 if (icon == null || t.offline) return
