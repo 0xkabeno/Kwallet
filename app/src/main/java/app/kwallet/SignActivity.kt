@@ -73,7 +73,7 @@ class SignActivity : KwActivity() {
         if (!BuildConfig.E2E) window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         if (Build.VERSION.SDK_INT >= 31) window.setHideOverlayWindows(true)
         val ok = callerOk(); callerChecked = ok
-        req = if (ok) (intent.getStringExtra("req") ?: "").take(65536) else ""
+        req = if (ok) (intent.getStringExtra("req") ?: "").take(400000) else ""   /* v3.98: a Monero request carries the unsigned set + exported outputs */
         reqId = try { JSONObject(req).optString("id", "") } catch (_: Exception) { "" }
         setResult(RESULT_CANCELED, Intent().putExtra("res", if (ok) "{\"status\":\"rejected\"}" else "{\"status\":\"refused\",\"error\":\"Only Hwallet signed with the Kwallet key can ask Kwallet to sign\"}"))
         super.onCreate(null)
@@ -117,7 +117,7 @@ class SignActivity : KwActivity() {
     private fun reply(json: String) {
         if (replied) return
         replied = true
-        setResult(RESULT_OK, Intent().putExtra("res", json.take(262144)))
+        setResult(RESULT_OK, Intent().putExtra("res", json.take(400000)))
         finish()
         @Suppress("DEPRECATION") overridePendingTransition(0, 0)
     }

@@ -1,0 +1,11 @@
+Kwallet - third-party notices
+
+Monero engine (web/xmr/hwxmr.js, since v3.98; the same file ships in Hwallet as hwallet/web/xmr/hwxmr.js):
+  monero-ts 0.11.20 - MIT License, Copyright (c) woodser - https://github.com/woodser/monero-ts
+  The Monero Project wallet2 and cryptography, compiled to WebAssembly by monero-ts - BSD 3-Clause License,
+    Copyright (c) 2014-2025 The Monero Project - https://github.com/monero-project/monero
+  Boost (Boost Software License 1.0), libsodium (ISC License), and the JavaScript dependencies listed at the end of
+  hwxmr.js (axios, decimal.js, crypto-js, buffer, safe-buffer: MIT; ieee754: BSD-3-Clause).
+  In Kwallet the engine runs with no network access: it only signs Monero transactions offline.
+
+Hwallet's own notices are in hwallet/NOTICE.
