@@ -1,5 +1,21 @@
 # Changelog
 
+## Kwallet v3.97.5 + Hwallet v1.7.5
+
+UI styles redone from the phone test of v3.97.4.
+
+### Changed
+- **One shared skin for both apps.** Hwallet and Kwallet compile the same style file, so Material UI and Miuix render with the same dimensions in both (page side margin, card corners, row heights, type, switches, buttons, sheets, dialogs, snackbars).
+- **System wide.** Besides the hand-tuned components, every corner and every interface font in both apps (every screen, list, card, chip, menu, sheet, dialog, toast, picker, scanner, browser chrome, swap, send, receive, Activity, token pages, setup and pairing, Kwallet's generator, lock and sign sheet) now follows the selected style; nothing keeps the OG shape when Material UI or Miuix is on. Monospace (addresses, keys, seeds) and the brand marks stay as they are.
+- **Carbon-copy values.** Miuix: Card 16dp, 12dp from the screen edge; BasicComponent 56dp / 16dp, 17sp Medium title, 14sp summary; SmallTitle 14sp Bold 28x8dp; Switch 49x28; Button 16dp / 16x13dp / 17sp; TextField 16dp with a 2dp focus border; SuperDialog 32dp at the bottom, 12dp outside, 24dp inside, centred 18sp title; SuperBottomSheet 28dp, 640dp max, 45x4 handle; NavigationBar 64dp, 26dp icons, bold label, no indicator; TopAppBar 32sp large title, 20sp Medium collapsed; Snackbar 16dp; TabRow contour 45dp; press overlay; smooth corners where the WebView supports `corner-shape`. Material 3: list items 56/72dp, cards 12dp, NavigationBar 80dp with the 64x32 indicator centred on the icon, top app bar titles 22/28 and 28/36, Switch 52x32, buttons 40dp full round (56dp for main actions), outlined fields 56dp/4dp, dialogs 28dp, sheets 28dp with the 32x4 handle, snackbar 4dp, menus 4dp, 10% state layer.
+
+### Fixed
+- Hwallet's Settings cards were narrower than Kwallet's under Miuix (an extra 12dp inset): both now sit 12dp (Miuix) / 16dp (Material UI) from the screen edge.
+- Kwallet's generator screen under Miuix/Material UI: the page no longer shifts off the left edge, the S/V key buttons stay one joined pair, the Addr buttons and Import keep their size (the style no longer resizes Kwallet's generator buttons, it only reshapes them).
+- Hwallet's bottom bar: the selected-tab pill is centred on the icon (it hung to the right of the Settings icon); Miuix shows no pill, as in Miuix.
+- Snackbars no longer slide half off screen in the new styles.
+- **Browser pull to refresh**: only starts when the page is really at the top, including pages that scroll an inner box (the page is asked on finger-down whether the touched element's scroll box is at the top); once the pull starts the page stops getting the finger (no stray taps or overscroll stretch); release reloads once; the indicator closes when the page has loaded (or after 9 s).
+
 ## Kwallet v3.97.4 + Hwallet v1.7.4
 
 ### New
