@@ -3,7 +3,7 @@
 <head>
 <script>(function(){var P={touchstart:1,touchmove:1,wheel:1,mousewheel:1},o=EventTarget.prototype.addEventListener;try{EventTarget.prototype.addEventListener=function(t,f,x){if(P[t]&&(x===undefined||typeof x==='boolean'))x={capture:!!x,passive:true};return o.call(this,t,f,x);};}catch(e){}})();</script>
 <meta charset="UTF-8">
-<script>try{var __u=localStorage.getItem("kw-ui");document.documentElement.setAttribute("data-ui",__u==="m3"||__u==="miuix"?__u:"og")}catch(e){document.documentElement.setAttribute("data-ui","og")}document.documentElement.className+=" kwa"</script>
+<script>try{var __u=localStorage.getItem("kw-ui");document.documentElement.setAttribute("data-ui",__u==="m3"||__u==="miuix"?__u:"og")}catch(e){document.documentElement.setAttribute("data-ui","og")}document.documentElement.className+=" kwa";try{var __a=window.HarkNative&&HarkNative.dynamicColors?JSON.parse(String(HarkNative.dynamicColors())||'{}').a1:null;if(__a&&__a['600']&&__a['200']){var __st=document.documentElement.style;__st.setProperty('--u-dyn-l',__a['600']);__st.setProperty('--u-dyn-lo',__a['0']||'#FFFFFF');__st.setProperty('--u-dyn-d',__a['200']);__st.setProperty('--u-dyn-do',__a['800']||'#000000')}}catch(e){}</script>
 <script>/* v3.90: SignActivity opens index.html#sign with the KwSign bridge. v3.92: the main UI is hidden from the very first paint. v3.97 wave A: every request is a transparent sheet */window.__kwSign=/(^|#)sign\b/.test(location.hash)&&!!window.KwSign;if(window.__kwSign){document.documentElement.classList.add("kw-sign");var __sh=true;document.documentElement.classList.add("kw-sheet");var __d=false;try{__d=localStorage.getItem("wallet-theme")==="dark"}catch(e){}document.write("<style>html.kw-sign,html.kw-sign body{background:"+(__sh?"transparent":__d?"#0e1117":"#f8f9fa")+"!important}html.kw-sign body>*:not(#kss):not(.kwd-ov):not(.toast):not(script):not(style){display:none!important}</style>")}</script>
 <script>
 /* v3.50: Android app draws edge-to-edge; the native shell tells us the system bar sizes */
@@ -2872,11 +2872,49 @@ body[data-theme="dark"] .hp-ov{--hp-acc:#5b8def;--hp-accI:#ffffff}
 .hp-pl li.hp-pa::before{background:var(--hp-acc)}
 
 /* v1.7.2 (S6/S20): compact rent line under the amounts; one-line fee values */
-.hp-rent{font-size:12px;line-height:16px;color:#d14343;margin:-2px 6px 10px;font-weight:500}
+.hp-rent{font-size:12px;line-height:16px;color:var(--hp-muted);margin:-2px 6px 10px;font-weight:400}
 .hp-rent em{font-style:normal;opacity:.75;margin-left:4px}
-.hp-rent.back{color:#1f9d55}
-body[data-theme=dark] .hp-rent{color:#ff7a7a}body[data-theme=dark] .hp-rent.back{color:#4cd38a}
 .hp-nw{white-space:nowrap}
+
+/* ===== v3.98.1 / H 1.8.1 (push 7) ===== */
+/* #4: account rent = one small grey line under the receive card, info icon -> what rent is */
+.hp-rentl{display:flex;align-items:center;width:100%;margin:6px 0 2px;padding:2px 6px;border:0;background:transparent;color:var(--hp-muted);font:400 12.5px/17px 'RobotoE',system-ui;text-align:left;-webkit-tap-highlight-color:transparent}
+.hp-rentl span{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-rentl svg{flex:0 0 auto;width:15px;height:15px;margin-left:5px;opacity:.85}
+.hp-rentl:active{opacity:.6}
+.hp-infp{margin:0 4px 12px;font:400 15px/21px 'RobotoE',system-ui;color:var(--hp-text)}
+.hp-inf .hp-pcok{width:100%;margin-top:8px}
+/* #60 header rule on Kwallet sign sheets: Kwallet chip top-left, chain chip top-right */
+.hp-top{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px}
+.hp-kc{display:inline-flex;align-items:center;height:28px;padding:0 8px;border-radius:9px;background:#DDF869;font:900 14px/1 'RobotoE',system-ui;box-shadow:inset 0 -2px 0 rgba(34,51,72,.12)}
+.hp-kc .kb-k{color:#223348;letter-spacing:-.5px;margin-right:.5px}.hp-kc .kb-w{color:#223348;font-size:12.5px}
+.hp-cc{display:inline-flex;align-items:center;height:28px;padding:0 10px 0 4px;border-radius:14px;background:var(--hp-card);font:600 13px/1 'RobotoE',system-ui;color:var(--hp-text);max-width:60%}
+.hp-cc span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-cci{width:20px;height:20px;border-radius:50%;margin-right:6px;flex:0 0 auto;object-fit:cover}
+span.hp-cci{display:inline-flex;align-items:center;justify-content:center;font-size:10px;background:var(--hp-card2)}
+/* #6 Jupiter-style recap: hero send / arrow / receive, compact rows */
+.hp-hero{position:relative;margin:4px 0 10px}
+.hp-hc{background:var(--hp-card);border-radius:20px;padding:12px 16px 14px}
+.hp-hl{font:500 13px/18px 'RobotoE',system-ui;color:var(--hp-muted);margin-bottom:6px}
+.hp-hrow{display:flex;align-items:center}
+.hp-hrow+.hp-hrow{margin-top:10px}
+.hp-htk{width:36px;height:36px;border-radius:50%;flex:0 0 auto;margin-right:12px;object-fit:cover;background:var(--hp-card2)}
+span.hp-htk{display:flex;align-items:center;justify-content:center;font:700 15px/1 'RobotoE',system-ui}
+.hp-hm2{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.hp-ha{font:600 24px/30px 'RobotoE',system-ui;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.hp-ha em{font-style:normal;font-weight:500;font-size:17px;color:var(--hp-muted)}
+.hp-hu{font:400 13.5px/18px 'RobotoE',system-ui;color:var(--hp-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-harr{position:relative;height:6px;z-index:1}
+.hp-harr span{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:12px;background:var(--hp-bg);display:flex;align-items:center;justify-content:center}
+.hp-harr svg{width:20px;height:20px;color:var(--hp-muted);background:var(--hp-card);border-radius:9px;padding:4px;box-sizing:content-box}
+.hp-cmp .hp-r{min-height:40px;padding:9px 16px}
+.hp-cmp .hp-r+.hp-r{border-top:0}
+.hp-cmp .hp-l{font:400 14px/19px 'RobotoE',system-ui;color:var(--hp-muted)}
+.hp-cmp .hp-l small{font-size:12.5px;line-height:16px}
+.hp-cmp .hp-v{font:500 14px/19px 'RobotoE',system-ui}
+.hp-cmp .hp-v small{font-size:12.5px;line-height:16px}
+.hp-cmp .hp-chev{width:18px;height:18px;margin-left:4px;flex:0 0 auto;color:var(--hp-soft)}
+.hp-cmp .hp-fee .hp-l small{color:var(--hp-text);font-weight:500}
 </style>
 <style id="ui-skin">/* ---- auto layer (generated from the app CSS by uiskin.py) ---- */
 html[data-ui="m3"],html[data-ui="m3"] body{font-family:var(--u-font)!important}
@@ -2948,8 +2986,6 @@ html[data-ui="m3"] .modal-overlay .modal .bk-pick .btn{border-radius:999px!impor
 html[data-ui="m3"] .qr-box h3{font-family:var(--u-font)!important}
 html[data-ui="m3"] .toast{font-family:var(--u-font)!important}
 html[data-ui="m3"] .panel > .row > #word-count{font-family:var(--u-font)!important}
-html[data-ui="m3"] .top .net button{border-radius:999px!important}
-html[data-ui="m3"] .top .net .net-pill{border-radius:999px!important}
 html[data-ui="m3"] .imp-wrap .btn,html[data-ui="m3"] .imp-wrap button{border-radius:999px!important}
 html[data-ui="m3"] .lb-pager{border-radius:12px!important}
 html[data-ui="m3"] .btn-a,html[data-ui="m3"] .btn-k{border-radius:999px!important}
@@ -3117,6 +3153,18 @@ html[data-ui="m3"] .hp-mntot b{font-family:var(--u-font)!important}
 html[data-ui="m3"] .hp-mntot small{font-family:var(--u-font)!important}
 html[data-ui="m3"] .hp-pvh{font-family:var(--u-font)!important}
 html[data-ui="m3"] .hp-pl li{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-rentl{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-infp{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-kc{border-radius:8px!important;font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-cc{border-radius:12px!important;font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-hc{border-radius:12px!important}
+html[data-ui="m3"] .hp-hl{font-family:var(--u-font)!important}
+html[data-ui="m3"] span.hp-htk{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-ha{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-hu{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-harr svg{border-radius:8px!important}
+html[data-ui="m3"] .hp-cmp .hp-l{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-cmp .hp-v{font-family:var(--u-font)!important}
 html[data-ui="miuix"],html[data-ui="miuix"] body{font-family:var(--u-font)!important}
 html[data-ui="miuix"] .panel{border-radius:12px!important}
 html[data-ui="miuix"] input[type="text"]{font-family:'RobotoMonoE', 'Roboto Mono', ui-monospace, monospace!important}
@@ -3197,8 +3245,6 @@ html[data-ui="miuix"] .modal-overlay .modal .bk-pick .btn{border-radius:16px!imp
 html[data-ui="miuix"] .qr-box h3{font-family:var(--u-font)!important}
 html[data-ui="miuix"] .toast{border-radius:12px!important;font-family:var(--u-font)!important}
 html[data-ui="miuix"] .panel > .row > #word-count{font-family:var(--u-font)!important}
-html[data-ui="miuix"] .top .net button{border-radius:16px!important}
-html[data-ui="miuix"] .top .net .net-pill{border-radius:16px!important}
 html[data-ui="miuix"] .imp-wrap .btn,html[data-ui="miuix"] .imp-wrap button{border-radius:16px!important}
 html[data-ui="miuix"] .lb-pager{border-radius:16px!important}
 html[data-ui="miuix"] .btn-a,html[data-ui="miuix"] .btn-k{border-radius:16px!important}
@@ -3364,6 +3410,18 @@ html[data-ui="miuix"] .hp-mntot b{font-family:var(--u-font)!important}
 html[data-ui="miuix"] .hp-mntot small{font-family:var(--u-font)!important}
 html[data-ui="miuix"] .hp-pvh{font-family:var(--u-font)!important}
 html[data-ui="miuix"] .hp-pl li{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-rentl{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-infp{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-kc{border-radius:12px!important;font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-cc{border-radius:12px!important;font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-hc{border-radius:16px!important}
+html[data-ui="miuix"] .hp-hl{font-family:var(--u-font)!important}
+html[data-ui="miuix"] span.hp-htk{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-ha{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-hu{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-harr svg{border-radius:12px!important}
+html[data-ui="miuix"] .hp-cmp .hp-l{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-cmp .hp-v{font-family:var(--u-font)!important}
 html[data-ui="m3"]:not(#u-a):not(#u-b){--u-font: 'RobotoE','Roboto',system-ui,sans-serif; --u-ease: cubic-bezier(.2,0,0,1); --u-dec: cubic-bezier(.05,.7,.1,1); --u-acc: cubic-bezier(.3,0,.8,.15);
   --u-px: 16px; --u-sec-x: 32px; --u-sec-pt: 16px; --u-sec-pb: 8px; --u-sec-fs: 14px; --u-sec-lh: 20px; --u-sec-fw: 500; --u-sec-ls: .1px;
   --u-card-r: 12px; --u-row-min: 56px; --u-row-py: 8px; --u-row-pl: 16px; --u-row-pr: 16px; --u-row-gap: 16px;
@@ -3451,7 +3509,7 @@ html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .al2{font: 400 13px/17px var(--u-f
 html[data-ui="m3"]:not(#u-a):not(#u-b).hwa .btn,html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .btn,html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-btn,html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-btn,html[data-ui="m3"]:not(#u-a):not(#u-b) .sw-go,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sw-go,html[data-ui="m3"]:not(#u-a):not(#u-b) .snd-go,html[data-ui="miuix"]:not(#u-a):not(#u-b) .snd-go{height: var(--u-btn-h) !important; min-height: 0 !important; padding: 0 var(--u-btn-px) !important; border-radius: var(--u-btn-r) !important;
   font: var(--u-btn-fw) var(--u-btn-fs)/var(--u-btn-lh) var(--u-font) !important; letter-spacing: var(--u-btn-ls) !important; min-width: 0; box-sizing: border-box;}
 html[data-ui="m3"]:not(#u-a):not(#u-b).hwa .btn.big,html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .btn.big,html[data-ui="m3"]:not(#u-a):not(#u-b).hwa .btn.wide,html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .btn.wide,html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-btn,html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-btn,html[data-ui="m3"]:not(#u-a):not(#u-b) .sw-go,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sw-go,html[data-ui="m3"]:not(#u-a):not(#u-b) .snd-go,html[data-ui="miuix"]:not(#u-a):not(#u-b) .snd-go{height: var(--u-cta-h) !important; border-radius: var(--u-cta-r) !important; font-size: var(--u-cta-fs) !important; line-height: var(--u-cta-lh) !important; letter-spacing: var(--u-cta-ls) !important;}
-html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .btn:not(.pri):not(.dng),html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-btn:not(.hp-go){background: var(--card2, var(--hp-card2, var(--bg-input))) !important;}
+html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .btn:not(.pri):not(.dng),html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-btn:not(.hp-go):not(.hp-ok):not(.hp-pcok){background: var(--card2, var(--hp-card2, var(--bg-input))) !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b).hwa .btn:active:not(:disabled),html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .btn:active:not(:disabled){transform: none !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b).hwa .pb,html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .pb,html[data-ui="m3"]:not(#u-a):not(#u-b).hwa .mx,html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .mx{border-radius: var(--u-chip-r) !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b) .seg,html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-seg{background: transparent !important; border: 1px solid var(--border, var(--hp-border)) !important; border-radius: 20px !important; padding: 0 !important; gap: 0 !important; overflow: hidden; box-sizing: border-box;}
@@ -3490,13 +3548,12 @@ html[data-ui="miuix"]:not(#u-a):not(#u-b) .sw,html[data-ui="miuix"]:not(#u-a):no
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .sw::after,html[data-ui="miuix"]:not(#u-a):not(#u-b) .kws-sw::after{top: 4px !important; left: 4px !important; width: 20px !important; height: 20px !important; box-shadow: none !important; background: #fff !important; transform: none !important; transition: transform .4s cubic-bezier(.34,1.3,.64,1) !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .on > .sw,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sw.on,html[data-ui="miuix"]:not(#u-a):not(#u-b) .on .kws-sw{background: var(--acc, var(--accent)) !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .on > .sw::after,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sw.on::after,html[data-ui="miuix"]:not(#u-a):not(#u-b) .on .kws-sw::after{transform: translateX(21px) !important; left: 4px !important; top: 4px !important; width: 20px !important; height: 20px !important; background: var(--accI, #fff) !important;}
-html[data-ui="m3"]:not(#u-a):not(#u-b) .wc-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .snd-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .tp-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .wc-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .snd-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .tp-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sheet{border-radius: var(--u-sheet-r) var(--u-sheet-r) 0 0 !important; max-width: 640px !important; margin-left: auto; margin-right: auto; box-sizing: border-box;}
+html[data-ui="m3"]:not(#u-a):not(#u-b) .wc-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .snd-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .tp-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .wc-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .snd-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .tp-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sheet{border-radius: var(--u-sheet-r) var(--u-sheet-r) 0 0 !important; max-width: 600px !important; margin-left: auto; margin-right: auto; box-sizing: border-box;}
 html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-grab,html[data-ui="m3"]:not(#u-a):not(#u-b) .grab{width: 32px !important; height: 4px !important; border-radius: 2px !important; margin: 22px auto !important; background: var(--muted, var(--hp-muted)) !important; opacity: .4 !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-grab,html[data-ui="miuix"]:not(#u-a):not(#u-b) .grab{width: 45px !important; height: 4px !important; border-radius: 2px !important; margin: 10px auto !important; background: var(--muted, var(--hp-muted)) !important; opacity: .35 !important; transition: width .15s linear !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-grab:active,html[data-ui="miuix"]:not(#u-a):not(#u-b) .grab:active{width: 55px !important;}
-html[data-ui="miuix"]:not(#u-a):not(#u-b) .wc-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .snd-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .tp-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sheet{padding-left: 24px !important; padding-right: 24px !important; box-shadow: none !important;}
+html[data-ui="miuix"]:not(#u-a):not(#u-b) .wc-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .snd-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .tp-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sheet{box-shadow: none !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-sheet{box-shadow: none !important;}
-html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-sheet .hp-scroll,html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-sheet .hp-foot{padding-left: 24px !important; padding-right: 24px !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b) .sheet h3,html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-title,html[data-ui="m3"]:not(#u-a):not(#u-b) .tp-h,html[data-ui="m3"]:not(#u-a):not(#u-b) .sh-h{font: 400 24px/32px var(--u-font) !important; letter-spacing: 0 !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .sheet h3,html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-title,html[data-ui="miuix"]:not(#u-a):not(#u-b) .tp-h,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sh-h{font: 500 18px/24px var(--u-font) !important; letter-spacing: 0 !important; text-align: center !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b) .sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sheet{transition: transform .4s var(--u-dec) !important;}
@@ -3530,7 +3587,7 @@ html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-opt{height: auto !important; min-
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-act{gap: 12px !important; padding: 12px 24px 0 !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-act > span{display: none !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-act button{flex: 1 1 0 !important; min-width: 0 !important; height: 50px !important; padding: 0 16px !important; border-radius: 16px !important; background: var(--card2, var(--bg-input)) !important; color: var(--text) !important; font: 500 17px/24px var(--u-font) !important;}
-html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-act button:last-child{background: var(--acc, var(--accent)) !important; color: var(--accI, #fff) !important;}
+html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-act button:last-child{background: var(--u-pri, var(--acc, var(--accent))) !important; color: var(--u-onpri, var(--accI, #fff)) !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b) .kwd-ov .kwd,html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-ov .kwd{transition: transform .3s var(--u-dec), opacity .2s linear !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-ov:not(.show) .kwd{transform: translateY(40px) !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b) .toast{left: 12px !important; right: 12px !important; border-radius: 4px !important; min-height: 48px !important; padding: 14px 16px !important; font: 400 14px/20px var(--u-font) !important; letter-spacing: .25px !important; text-align: left !important; box-shadow: 0 3px 6px rgba(0,0,0,.15) !important; max-width: none !important; width: auto !important; box-sizing: border-box;}
@@ -3570,7 +3627,54 @@ html[data-ui="m3"]:not(#u-a):not(#u-b).kwa .btn:active:not(:disabled),html[data-
 .ptrMx{flex-direction: column; align-items: center; justify-content: flex-start; height: 0; color: var(--muted, var(--text-muted));}
 .ptrMx canvas{width: 20px; flex: 0 0 auto;}
 .ptrMx span{color: inherit; margin-top: 6px; font: 700 14px/1.2 system-ui,'MiSans','RobotoE',sans-serif; white-space: nowrap;}
-@media (prefers-reduced-motion: reduce){.ptrM3 .m3sp,.ptrM3 .m3sp circle{animation-duration: 3s;}}</style>
+@media (prefers-reduced-motion: reduce){.ptrM3 .m3sp,.ptrM3 .m3sp circle{animation-duration: 3s;}}
+
+
+
+html.kwa body { --u-pri: #DDF869; --u-onpri: #223348; }
+html.hwa body { --u-pri: #223348; --u-onpri: #ffffff; }
+html[data-ui="m3"].kwa body { --u-pri: var(--u-dyn-l, #DDF869); --u-onpri: var(--u-dyn-lo, #223348); }
+html[data-ui="m3"].kwa body[data-theme="dark"] { --u-pri: var(--u-dyn-d, #DDF869); --u-onpri: var(--u-dyn-do, #223348); }
+html[data-ui="m3"].hwa body { --u-pri: var(--u-dyn-l, #223348); --u-onpri: var(--u-dyn-lo, #ffffff); }
+html[data-ui="m3"].hwa body[data-theme="dark"] { --u-pri: var(--u-dyn-d, #223348); --u-onpri: var(--u-dyn-do, #ffffff); }
+html[data-ui="miuix"] body { --u-pri: #3482FF; --u-onpri: #ffffff; }
+html[data-ui="miuix"] body[data-theme="dark"] { --u-pri: #277AF7; --u-onpri: #ffffff; }
+
+
+html:not(#p7a):not(#p7b):not(#p7c) .hp-ok, html:not(#p7a):not(#p7b):not(#p7c) .hp-pcok, html:not(#p7a):not(#p7b):not(#p7c) .kss-pok, html:not(#p7a):not(#p7b):not(#p7c) .snd-sheet .snd-go, html.hwa:not(#p7a):not(#p7b):not(#p7c) .btn.pri, html:not(#p7a):not(#p7b):not(#p7c) .sw-go {
+  background: var(--u-pri) !important; color: var(--u-onpri) !important; border-color: transparent !important; opacity: 1; filter: none !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-ok:disabled, html:not(#p7a):not(#p7b):not(#p7c) .hp-pcok:disabled, html:not(#p7a):not(#p7b):not(#p7c) .kss-pok:disabled, html:not(#p7a):not(#p7b):not(#p7c) .snd-sheet .snd-go:disabled, html.hwa:not(#p7a):not(#p7b):not(#p7c) .btn.pri:disabled, html:not(#p7a):not(#p7b):not(#p7c) .sw-go:disabled {
+  background: var(--u-pri) !important; color: var(--u-onpri) !important; opacity: .38 !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-ok .kss-fill, html:not(#p7a):not(#p7b):not(#p7c) .hp-ok .hp-fill { background: var(--u-onpri) !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-seg button.on, html:not(#p7a):not(#p7b):not(#p7c) .hp-mnseg button.on { background: var(--u-pri) !important; color: var(--u-onpri) !important; }
+
+
+html:not(#p7a):not(#p7b):not(#p7c) .hp-act.hp-col { display: block !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-act.hp-col .hp-btn { width: 100% !important; margin: 0 !important; display: flex !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-act.hp-col .hp-no { height: 44px !important; min-height: 0 !important; margin-top: 6px !important; background: transparent !important; color: var(--hp-muted) !important;
+  font-weight: 600 !important; font-size: 15px !important; box-shadow: none !important; border: 0 !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-act.hp-col .hp-no:active { background: rgba(127,127,127,.12) !important; transform: none !important; }
+
+
+html:not(#p7a):not(#p7b):not(#p7c) .hp-sheet .hp-scroll, html:not(#p7a):not(#p7b):not(#p7c) .hp-sheet .hp-foot { padding-left: 16px !important; padding-right: 16px !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-sheet { max-width: 600px !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-r > .hp-l { flex: 0 0 auto !important; max-width: 64%; overflow: visible !important; text-overflow: clip !important; white-space: normal !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-r > .hp-l small { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-r > .hp-v { flex: 1 1 0 !important; min-width: 0 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; word-break: normal !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-r > .hp-v > * { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-r > .hp-v > small { display: block; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-r.hp-wr > .hp-l { max-width: none; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-chg .hp-r > .hp-v { flex: 0 1 auto !important; max-width: 62%; }
+
+html:not(#p7a):not(#p7b):not(#p7c) .hp-det .hp-r > .hp-v, html:not(#p7a):not(#p7b):not(#p7c) .hp-det .hp-r > .hp-v > * { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; word-break: break-word !important; }
+
+
+html.kwa:not(#p7a):not(#p7b):not(#p7c) .top .net { border-radius: var(--r-ctl, 10px) !important; }
+html.kwa:not(#p7a):not(#p7b):not(#p7c) .top .net button { border-radius: 8px !important; font-family: 'RobotoE', 'Roboto', system-ui, sans-serif !important; font-weight: 600 !important; box-shadow: none !important; }
+html.kwa:not(#p7a):not(#p7b):not(#p7c) .top .net .net-pill { border-radius: 8px !important; }
+html[data-ui="m3"].kwa:not(#p7a):not(#p7b):not(#p7c) .top .net .net-pill, html[data-ui="miuix"].kwa:not(#p7a):not(#p7b):not(#p7c) .top .net .net-pill { background: var(--u-pri) !important; }
+html[data-ui="m3"].kwa:not(#p7a):not(#p7b):not(#p7c) .top .net button.on, html[data-ui="miuix"].kwa:not(#p7a):not(#p7b):not(#p7c) .top .net button.on { color: var(--u-onpri) !important; }
+</style>
 </head>
 <body data-theme="light">
 <script>
@@ -11737,7 +11841,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98';
+const APP_VERSION = '3.98.1';
 const APP_BUILD = '2026-10-13';
 let derivedRows = [];
 let copiedState = {};
@@ -20320,6 +20424,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     ok: 'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
     no: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
     chev: 'M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z',
+    down: 'M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z',
     info: 'M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
     warn: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
     shield: 'M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z',
@@ -20384,13 +20489,64 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     return '<div class="hp-perm">' + rows.map(function (r) { return '<div class="hp-pr ' + r[0] + '">' + sv(r[0] === 'ok' ? P.ok : P.no) + '<span>' + esc(r[1]) + '</span></div>'; }).join('') + '</div>';
   }
   function details(inner, open, id) { return inner ? '<details class="hp-det"' + (id ? ' id="' + id + '"' : '') + (open ? ' open' : '') + '><summary>Details' + sv(P.chev) + '</summary>' + card(inner) + '</details>' : ''; }
+  /* v3.98.1 (#5): no "Request expires in" bar any more (an expired request closes on its own with a toast).
+     o.col (#6): one full-width Confirm with Cancel as a text button under it (dApp approvals and the Send review). */
   function foot(o) {
     o = o || {};
-    return (o.exp ? '<div class="hp-exp" id="kss-exp"><span id="kss-exp-t"></span><span class="hp-eb"><i id="kss-exp-b"></i></span></div>' : '') +
-      '<div class="hp-act"><button type="button" class="hp-btn hp-no" id="' + (o.noId || 'hp-no') + '">' + esc(o.no || 'Cancel') + '</button>' +
-      '<button type="button" class="hp-btn hp-ok" id="' + (o.okId || 'hp-ok') + '"' + (o.disabled ? ' disabled' : '') + '>' + (o.hold ? '<i class="kss-fill"></i>' : '') + '<span>' + esc(o.ok || 'Confirm') + '</span></button></div>' +
+    var okB = '<button type="button" class="hp-btn hp-ok" id="' + (o.okId || 'hp-ok') + '"' + (o.disabled ? ' disabled' : '') + '>' + (o.hold ? '<i class="kss-fill"></i>' : '') + '<span>' + esc(o.ok || 'Confirm') + '</span></button>',
+      noB = '<button type="button" class="hp-btn hp-no' + (o.col ? ' hp-txt' : '') + '" id="' + (o.noId || 'hp-no') + '">' + esc(o.no || 'Cancel') + '</button>';
+    return '<div class="hp-act' + (o.col ? ' hp-col' : '') + '">' + (o.col ? okB + noB : noB + okB) + '</div>' +
       (o.hint != null ? '<div class="hp-hint" id="hp-hint">' + esc(o.hint) + '</div>' : '');
   }
+  /* v3.98.1 (#60 header rule): the Kwallet chip top-left and the chain chip top-right of every Kwallet sign sheet */
+  function topBar(chain, chainIcon) {
+    return '<div class="hp-top"><span class="hp-kc" aria-label="Kwallet"><span class="kb-k">K</span><span class="kb-w">wallet</span></span>' +
+      (chain ? '<span class="hp-cc">' + (chainIcon ? icon(chainIcon, chain, 'hp-cci', 'hp-tkl') : '') + '<span>' + esc(chain) + '</span></span>' : '') + '</div>';
+  }
+  /* v3.98.1 (#6): Jupiter-style recap. A hero card "You send" (icon, big amount, $), an arrow, a hero card "You receive";
+     rows = { icon, sym, amt, usd, pre }. o = { sendL, recvL, after (html under the receive card, e.g. the rent line) } */
+  function hero(send, recv, o) {
+    o = o || {}; send = send || []; recv = recv || [];
+    function side(lbl, rows, cls) {
+      return '<div class="hp-hc ' + cls + '"><div class="hp-hl">' + esc(lbl) + '</div>' + rows.map(function (r) {
+        return '<div class="hp-hrow">' + icon(r.icon, r.sym, 'hp-htk', 'hp-tkl') + '<span class="hp-hm2"><span class="hp-ha">' + (r.pre ? esc(r.pre) + ' ' : '') + esc(r.amt) + ' <em>' + esc(r.sym) + '</em></span>' +
+          (r.usd || r.note ? '<span class="hp-hu">' + esc([r.usd, r.note].filter(Boolean).join(' \u00b7 ')) + '</span>' : '') + '</span></div>';
+      }).join('') + '</div>';
+    }
+    var h = '';
+    if (send.length) h += side(o.sendL || 'You send', send, 'hp-hs');
+    if (send.length && recv.length) h += '<div class="hp-harr"><span>' + sv(P.down) + '</span></div>';
+    if (recv.length) h += side(o.recvL || 'You receive', recv, 'hp-hr');
+    return h ? '<div class="hp-hero">' + h + (o.after || '') + '</div>' : (o.after || '');
+  }
+  /* compact recap rows: [label, value html, sub, kv options] */
+  function rows(list) { list = (list || []).filter(Boolean); return list.length ? card(list.map(function (r) { var op = r[3] || {}; op.sm = true; return kv(r[0], r[1], r[2] || '', op); }).join(''), 'hp-cmp') : ''; }
+  /* v3.98.1 (#4): account rent as one small grey line with an info icon (tap = what rent is). txt is plain text */
+  function rent(txt, k) { return '<button type="button" class="hp-rentl" data-hp-rent="' + esc(k || 'own') + '">' + '<span>' + esc(txt) + '</span>' + sv(P.info) + '</button>'; }
+  var RENT_B = {
+    own: ['Solana keeps a small deposit, called rent, in every account that holds a token, so the account can exist on chain. This transaction opens such an account in your wallet (for a token you do not hold yet).',
+      'Rent is not a fee. It stays yours: you get it back when the empty token account is closed.'],
+    one: ['Solana keeps a small deposit, called rent, in every account the app opens for this transaction.', 'This deposit goes to an account the app keeps (not to your wallet), so it does not come back to you.'],
+    back: ['An empty token account in your wallet is closed by this transaction, so its rent deposit comes back to your SOL balance.'],
+    to: ['Solana keeps a small deposit, called rent, in every account that holds a token. The recipient has no account for this token yet, so this transfer opens one for them and you pay its rent.',
+      'The deposit belongs to the new account: whoever owns it gets it back if the account is closed later.'] };
+  function rentInfo(host, k) { return info({ title: k === 'back' ? 'Rent back' : 'Account rent', body: RENT_B[k] || RENT_B.own, host: host }); }
+  /* a small sheet with a title, a few paragraphs and one button (same frame as the fee picker) */
+  function info(o) {
+    if (PK) PK.close();
+    var ov = document.createElement('div'); ov.className = 'hp-ov hp-pk hp-inf';
+    ov.innerHTML = '<div class="hp-dim"></div><div class="hp-sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.title || '') + '"><div class="hp-grab"></div><div class="hp-scroll">' +
+      '<div class="hp-pkt"><h3>' + esc(o.title || '') + '</h3><button type="button" class="hp-x" data-pkx aria-label="Close">' + sv(P.x) + '</button></div>' +
+      (o.body || []).map(function (t) { return '<p class="hp-infp">' + esc(t) + '</p>'; }).join('') + '<button type="button" class="hp-btn hp-ok hp-pcok" data-pkok>' + esc(o.ok || 'Got it') + '</button></div></div>';
+    (o.host || document.body).appendChild(ov);
+    void ov.offsetWidth; requestAnimationFrame(function () { ov.classList.add('in'); });
+    var closed = false, me = { el: ov, close: function () { if (closed) return; closed = true; if (PK === me) PK = null; ov.classList.remove('in'); ov.classList.add('out'); setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 210); } };
+    PK = me;
+    ov.querySelector('.hp-dim').onclick = me.close; ov.querySelector('[data-pkx]').onclick = me.close; ov.querySelector('[data-pkok]').onclick = me.close;
+    return me;
+  }
+  /* wires every rent line inside root to its info sheet */
+  function bindRent(root, host) { if (!root) return; var b = root.querySelectorAll('[data-hp-rent]'); for (var i = 0; i < b.length; i++) b[i].onclick = function (e) { if (e && e.stopPropagation) e.stopPropagation(); rentInfo(host, this.getAttribute('data-hp-rent')); }; }
   function sheet(inner, footHtml) { return '<div class="hp-grab"></div><div class="hp-scroll" id="kss-sc">' + inner + '</div>' + (footHtml != null ? '<div class="hp-foot" id="kss-foot">' + footHtml + '</div>' : ''); }
   /* ---------- messages ---------- */
   /* EIP-4361 (and the Solana form of it): every field, or null when the text is not a sign-in message */
@@ -20609,7 +20765,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   /* Back: closes an open picker first (true = handled) */
   function pickerBack() { if (PK) { PK.close(); return true; } return false; }
   window.HWP = { manFee: manFee, picker: picker, pickerBack: pickerBack, siteName: siteName, walletRow: walletRow, esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
-    trust: trust, warns: warns, perms: perms, details: details, foot: foot, sheet: sheet, siwe: siwe, siweRows: siweRows, msgBlock: msgBlock, tree: tree, overlay: overlay };
+    trust: trust, warns: warns, perms: perms, details: details, foot: foot, sheet: sheet, topBar: topBar, hero: hero, rows: rows, rent: rent, rentInfo: rentInfo, info: info, bindRent: bindRent, siwe: siwe, siweRows: siweRows, msgBlock: msgBlock, tree: tree, overlay: overlay };
 })();
 
 </script>
@@ -20911,6 +21067,8 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   function finish(o) {
     if (done) return; done = true;
     o = o || { status: 'rejected' }; if (REQ && REQ.id) o.id = REQ.id;
+    /* v3.98.1 (#3): a fee speed the user picked here goes back to Hwallet, which keeps it per chain for the next time */
+    try { if (S && S.feeUser && o.status !== 'expired') o.feePick = { dapp: !!S.dapp, c: S.c, network: S.c === 'evm' ? String((S.info && S.info.id) || '') : '', level: S.level, tier: S.tier || null, man: S.level === 'custom' && !S.tier && S.man ? S.man : null }; } catch (e) {}
     try { KwSign.done(JSON.stringify(o)); } catch (e) {}
   }
   window.kwSignBack = function () { if (window.HWP && HWP.pickerBack()) return true; if (pinOpen) { closePin(false); return true; } if (!busy) finish({ status: 'rejected' }); return true; };
@@ -21129,7 +21287,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
       det += kv('Network', 'Monero', 'Checked against what is signed: recipient, amount and fee');
     }
     var body = HWP.head({ icon: HWICON, name: 'Hwallet', sub: 'Monero' }) + HWP.title(KINDS[S.kind] || 'Send') + main + HWP.trust('ok', 'Signed offline in Kwallet') + (det ? HWP.details(det, false, 'kss-det') : '');
-    page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ exp: true, no: 'Cancel', ok: 'Confirm', okId: 'kss-go', noId: 'kss-no', hold: true, disabled: true, hint: '' })) + '</div>';
+    page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ no: 'Cancel', ok: 'Confirm', okId: 'kss-go', noId: 'kss-no', hold: true, disabled: true, hint: '' })) + '</div>';
     $('kss-no').onclick = function () { if (!busy) { kxStop(); finish({ status: 'rejected' }); } };
     var x = page.querySelector('[data-hp-x]'); if (x) x.onclick = function () { if (!busy) { kxStop(); finish({ status: 'rejected' }); } };
     hold($('kss-go')); tickExp(); syncBtn();
@@ -21395,12 +21553,12 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     var cuOk = kcfOk() && (S.c === 'evm' || S.c === 'sol' || S.c === 'trx'), x = sendCtx(), man = cuOk ? manualSpec(S.c, x) : null;
     if (man) { man.on = save.lv === 'custom' && !save.tier; man.sub = man.on ? manSub(S.c, S.man, x) : ''; }
     HWP.picker({ title: 'Network fee', host: $('kss'), rows: rows, manual: man,
-      onPick: function (k) { if (k === cur) return; if (!sendTier(k)) { S.level = k; S.tier = null; } buzz(8); notice = ''; S.feeBase = null; draw(); arm(450); },
+      onPick: function (k) { if (k === cur) return; if (!sendTier(k)) { S.level = k; S.tier = null; } S.feeUser = true; buzz(8); notice = ''; S.feeBase = null; draw(); arm(450); },
       onManual: function (st) {
         var r = manualToT(S.c, st, x); if (r.err) return r.err;
         var keep = { cf: S.cfTxt, lvl: S.level, tier: S.tier, man: S.man }; S.cfTxt = r.T; if (S.level !== 'custom') S.prevLevel = S.level; S.level = 'custom'; S.tier = null; S.man = st;
         var c = calc(); if (c.err) { S.cfTxt = keep.cf; S.level = keep.lvl; S.tier = keep.tier; S.man = keep.man; return c.err; }
-        buzz(8); notice = ''; S.feeBase = null; draw(); arm(450); return '';
+        S.feeUser = true; buzz(8); notice = ''; S.feeBase = null; draw(); arm(450); return '';
       } });
   }
   function calc() {
@@ -21496,16 +21654,18 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     else {
       var rows = [{ icon: cic, sym: S.sym, sign: kind === 'trx-withdraw' ? '+' : kind === 'trx-unfreeze' ? '' : '-', amt: amtTxt, usd: (c.amount != null ? usdTxt(c.amount, S.dec, tpx) : '') + (R.amount === 'max' ? ' \u00b7 Max' : ''),
         note: kind === 'trx-freeze' ? 'Staked for ' + (R.resource === 'ENERGY' ? 'energy' : 'bandwidth') : kind === 'trx-unfreeze' ? 'Unstaking takes 14 days' : kind === 'trx-withdraw' ? 'Unstaked TRX back to you' : '' }];
-      if (c.extra && S.c === 'sol') rows.push({ icon: nic, sym: 'SOL', sign: '-', amt: fmt(c.extra, 9, 8), usd: usdTxt(c.extra, 9, gpx), note: 'Token account rent' });
+      /* v3.98.1 (#4): the recipient's token-account rent is one small grey line (info icon), not a red amount row */
+      var rentH = c.extra && S.c === 'sol' ? HWP.rent('+' + kSig(c.extra, 9, 4) + ' SOL rent \u00b7 opens the recipient\u2019s token account', 'to') : '';
       if (c.extra && S.c === 'ada') rows.push({ icon: nic, sym: 'ADA', sign: '-', amt: fmt(c.extra, 6, 6), usd: usdTxt(c.extra, 6, gpx), note: 'Cardano requires this minimum with tokens' });
-      main += HWP.changes(rows);
+      /* v3.98.1 (#6): Jupiter-style hero card */
+      var hs = rows.filter(function (r) { return r.sign !== '+'; }), hr = rows.filter(function (r) { return r.sign === '+'; });
+      main += HWP.hero(hs, hr, { sendL: kind === 'trx-freeze' ? 'You stake' : kind === 'trx-unfreeze' ? 'You unstake' : 'You send', recvL: 'You receive', after: rentH });
     }
     /* to whom */
     var toRows = '';
     if (!stake && !trust) toRows += HWP.kv('To', '<span class="hp-to">' + (R.toName ? '<span>' + esc(String(R.toName).slice(0, 40)) + '</span>' : '') + '<em>' + esc(HWP.shortA(R.to)) + '</em></span>', R.firstTime ? '<span class="hp-badge">New address</span>' : '');
     if (stake && kind !== 'trx-withdraw') toRows += HWP.kv('Resource', R.resource === 'ENERGY' ? 'Energy' : 'Bandwidth', kind === 'trx-freeze' ? 'Stake 2.0' : 'Available after 14 days');
     if (S.c === 'xrp' && R.xrp && R.xrp.destinationTag != null && R.xrp.destinationTag !== '') toRows += HWP.kv('Destination tag', esc(R.xrp.destinationTag), '');
-    if (toRows) main += HWP.card(toRows);
     /* network fee: tap to change (Slow / Normal / Fast / Custom) */
     var fv = S.c === 'trx' && c.fee === 0n ? 'Free' : (c.approx ? '\u2248 ' : '') + fmt(c.fee, S.gdec, S.gdec) + ' ' + esc(S.gsym);
     var fs = [c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : S.c === 'trx' ? 'Covered by your bandwidth' : '', c.atMost ? 'at most' : ''].filter(Boolean).join(' \u00b7 ');
@@ -21513,8 +21673,8 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     var ed = keys.length > 1, fopen = false;
     var ed = ed || (kcfOk() && (S.c === 'evm' || S.c === 'sol' || S.c === 'trx'));
     var flab = [ed ? (S.level === 'custom' ? (S.tier ? feeLab(S.c, S.tier) : 'Custom') : feeLab(S.c, S.level)) : '', live].filter(Boolean).join(' \u00b7 ');
-    main += HWP.card(HWP.kv('Network fee' + (flab ? '<small>' + flab + '</small>' : ''), fv, fs, { tap: ed, chev: ed, id: 'kss-feer', cls: 'hp-fee' + (fopen ? ' hp-open' : '') }) +
-      '');
+    /* compact recap rows: recipient, then the network fee with its speed */
+    main += HWP.card(toRows + HWP.kv('Network fee' + (flab ? '<small>' + flab + '</small>' : ''), fv, fs, { tap: ed, chev: ed, id: 'kss-feer', cls: 'hp-fee' + (fopen ? ' hp-open' : '') }), 'hp-cmp');
     /* wallet */
     main += HWP.card(HWP.walletRow(S.rec.label + ' \u00b7 #' + S.rec.index, R.from, nic));
     /* details: full addresses, contract, network, balances */
@@ -21528,14 +21688,15 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     if (S.tok && !trust) det += kv('Balance', fmt(c.bal, S.dec, 6) + ' ' + esc(S.sym), after != null ? 'After: ' + fmt(after, S.dec, 6) + ' ' + esc(S.sym) : '');
     det += kv(S.tok && !trust ? 'Gas balance' : 'Balance', fmt(c.gbal, S.gdec, 6) + ' ' + esc(S.gsym), (!S.tok || trust) && after != null ? 'After: ' + fmt(after, S.gdec, 6) + ' ' + esc(S.gsym) + (stake && kind === 'trx-freeze' ? ' liquid' : '') : '');
     if (S.c === 'xrp' && R.xrp && U(R.xrp.reserve)) det += kv('Reserve', fmt(U(R.xrp.reserve), 6, 6) + ' XRP', trust ? 'A trust line adds 0.2 XRP to it' : 'Stays locked on the ledger');
-    var body = HWP.head({ icon: HWICON, name: 'Hwallet', sub: S.info.name }) + HWP.title(KINDS[kind] || 'Send') + notes + HWP.warns(warnsL, !!c.err) + main +
+    var body = HWP.topBar(S.info.name, nic) + HWP.head({ icon: HWICON, name: 'Hwallet', sub: S.info.name }) + HWP.title(KINDS[kind] || 'Send') + notes + HWP.warns(warnsL, !!c.err) + main +
       infos.map(function (t) { return HWP.cap(t); }).join('') + HWP.details(det, S.detOpen, 'kss-det');
     var sc = $('kss-sc'), top = sc ? sc.scrollTop : 0;
     if (!$('kss-foot')) {
-      page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ exp: true, no: 'Cancel', ok: 'Confirm', okId: 'kss-go', noId: 'kss-no', hold: true, disabled: true, hint: '' })) + '</div>';
+      page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ col: true, no: 'Cancel', ok: 'Confirm', okId: 'kss-go', noId: 'kss-no', hold: true, disabled: true, hint: '' })) + '</div>';
       $('kss-no').onclick = function () { if (!busy) finish({ status: 'rejected' }); };
       hold($('kss-go'));
     } else { morph($('kss-sc'), body); if ($('kss-sc').scrollTop !== top) $('kss-sc').scrollTop = top; }
+    HWP.bindRent(page, $('kss'));
     var x = page.querySelector('[data-hp-x]'); if (x) x.onclick = function () { if (!busy) finish({ status: 'rejected' }); };
     var dd = $('kss-det'); if (dd) dd.ontoggle = function () { S.detOpen = dd.open; };
     var fr = $('kss-feer'); if (fr && fr.classList.contains('hp-tap')) fr.onclick = function () { buzz(6); openSendFee(); };
@@ -21577,15 +21738,13 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     if (isStale !== !!wasStale) { S.wasStale = isStale; if (!holding && !busy) (S.dapp ? dappDraw : draw)(); }
     tickExp();
   }
-  /* v3.92: a real per-second countdown. The deadline is fixed when the page opens; live data never moves it. */
+  /* v3.98.1 (#5): no countdown bar. The deadline is still fixed when the page opens (live data never moves it); when it
+     passes, Confirm turns off and the sheet closes on its own with a short toast. */
   var expGone = false;
   function tickExp() {
     if (!S) return;
-    var left = S.R.expires - Date.now(), s = Math.max(0, Math.ceil(left / 1000)), t = $('kss-exp-t'), bar = $('kss-exp-b'), box = $('kss-exp');
-    if (t) t.textContent = s > 0 ? 'Request expires in ' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2) : 'Request expired';
-    if (bar) bar.style.transform = 'scaleX(' + Math.max(0, Math.min(1, left / Math.max(1, S.total))) + ')';
-    if (box) box.classList.toggle('low', s <= 15);
-    if (s <= 0 && !expGone && !busy) { expGone = true; syncBtn(); buzz([30, 40, 30]); setTimeout(function () { if (!busy) finish({ status: 'expired' }); }, 1200); }
+    var left = S.R.expires - Date.now();
+    if (left <= 0 && !expGone && !busy && !holding) { expGone = true; syncBtn(); toast('Request expired'); setTimeout(function () { if (!busy) finish({ status: 'expired' }); }, 900); }
   }
 
   /* ---------- live updates from Hwallet (fee, balance, price, nonce / blockhash) ---------- */
@@ -22277,14 +22436,14 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
       onPick: function (k) {
         if (k === (DS.tier || DS.level)) return;
         if (DS.c === 'sol' && k !== 'auto') solTier(k); else if (DS.c === 'trx' && k === 'x2') trxTier(); else { DS.level = k; DS.tier = null; }
-        buzz(8); notice = ''; DS.feeBase = null; dappDraw(); arm(450);
+        DS.feeUser = true; DS.man = null; buzz(8); notice = ''; DS.feeBase = null; dappDraw(); arm(450);
       },
       onManual: function (st) {
         var r = manualToT(DS.c, st, x); if (r.err) return r.err;
         var T = r.T; delete T.jito; if (DS.c === 'sol' && !(v.cbL >= 0)) delete T.cul;
         var keep = { lv: DS.level, tier: DS.tier, cf: R.cf, cft: R.cfTxt, man: DS.man }; R.cfTxt = T; DS.level = 'custom'; DS.tier = null; DS.man = st; cfParse();
         var c = dappCalc(); if (c.err) { DS.level = keep.lv; DS.tier = keep.tier; R.cf = keep.cf; R.cfTxt = keep.cft; DS.man = keep.man; return c.err; }
-        buzz(8); notice = ''; DS.feeBase = null; dappDraw(); arm(450); return '';
+        DS.feeUser = true; buzz(8); notice = ''; DS.feeBase = null; dappDraw(); arm(450); return '';
       } });
   }
   /* the fee editor: always in the DOM when the fee is editable (hidden until Custom), so typing never rebuilds the inputs */
@@ -22378,22 +22537,38 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     if (/^[A-Z][^{}\[\]"]{3,140}\.$/.test(s)) return s;
     return 'This transaction would fail if sent now.';
   }
-  function kPvMain(pv, v, warnsL) {
+  /* v3.98.1 (#4): rent from the simulation as small grey lines (paid: refundable or one-time; back) */
+  function kRentLine(rn) {
+    if (!rn || typeof rn !== 'object') return '';
+    var ro = U(rn.open) || 0n, rb = U(rn.back) || 0n, oth = U(rn.other) || 0n, h = '';
+    if (ro > 0n) h += HWP.rent('+' + kSig(ro, 9, 4) + ' SOL rent \u00b7 ' + (oth > 0n && oth >= ro ? 'one-time' : 'refundable'), oth > 0n && oth >= ro ? 'one' : 'own');
+    if (rb > 0n) h += HWP.rent('+' + kSig(rb, 9, 4) + ' SOL rent back \u00b7 ' + (rn.nb > 1 ? (+rn.nb) + ' accounts closed' : 'empty account closed'), 'back');
+    return h;
+  }
+  /* v3.98.1 (#6): decoded / quoted balance-change rows as the hero (send above, receive below) */
+  function kHero(rows, after) {
+    rows = (rows || []).map(function (r) { var o = {}; for (var k in r) o[k] = r[k]; if (/^(You (send|receive)|At least)/.test(String(o.note || ''))) o.note = ''; return o; });
+    if (!rows.length) return HWP.changes(rows) + (after || '');
+    return HWP.hero(rows.filter(function (r) { return r.sign === '-'; }), rows.filter(function (r) { return r.sign !== '-'; }), { after: after || '' });
+  }
+  function kNum(x) { if (!(x > 0) || !isFinite(x)) return ''; if (x >= 1000) return x.toLocaleString('en-US', { maximumFractionDigits: 2 }); return Number(x.toPrecision(6)).toLocaleString('en-US', { maximumFractionDigits: 12 }); }
+  function kRate(sr, rr) {
+    if (!sr || !rr || sr.length !== 1 || rr.length !== 1) return '';
+    var a = parseFloat(String(sr[0].amt).replace(/,/g, '')), b = parseFloat(String(rr[0].amt).replace(/,/g, ''));
+    var x = a > 0 && b > 0 ? kNum(b / a) : ''; return x ? '1 ' + sr[0].sym + ' \u2248 ' + x + ' ' + rr[0].sym : '';
+  }
+  function kPvMain(pv, v, warnsL, o) {
     var h = '', send = Array.isArray(pv.send) ? pv.send : [], recv = Array.isArray(pv.recv) ? pv.recv : [];
-    if (pv.head && !pv.err) h += '<div class="hp-pvh">' + esc(String(pv.head).slice(0, 160)) + '</div>';
     if (pv.na) h += HWP.cap(esc(String(pv.na).slice(0, 120)));
     var rows = send.concat(recv).map(function (r) {
       return { icon: /^data:image\//.test(String(r.icon || '')) ? r.icon : tokIcon(r.sym, r.nat ? null : r.t), sym: String(r.sym || '').slice(0, 24), sign: r.s === '-' ? '-' : '+', pre: r.s === '+' && pv.est ? '\u2248' : '',
-        note: r.s === '-' ? 'You send' : 'You receive', amt: String(r.amt || ''), usd: kUsd(r.usd) };
+        note: '', amt: String(r.amt || ''), usd: kUsd(r.usd) };
     });
-    if (rows.length) h += HWP.changes(rows);
-    /* v1.7.2 (S6): account rent in one small line under the amounts (red = paid, green = back), exact from the simulation */
-    var rn = pv.rent && typeof pv.rent === 'object' ? pv.rent : null;
-    if (rn) {
-      var ro = U(rn.open) || 0n, rb = U(rn.back) || 0n, rsym = 'SOL', rpx = +rn.px || 0, oth = U(rn.other) || 0n;
-      if (ro > 0n) h += '<div class="hp-rent">\u2212' + kSig(ro, 9, 4) + ' ' + rsym + ' account rent' + (oth > 0n && oth >= ro ? ' \u00b7 one-time' : ' \u00b7 refunded when closed') + (rpx ? ' <em>' + kUsd(Number(ro) / 1e9 * rpx) + '</em>' : '') + '</div>';
-      if (rb > 0n) h += '<div class="hp-rent back">+' + kSig(rb, 9, 4) + ' ' + rsym + ' rent back' + (rn.nb > 1 ? ' \u00b7 ' + (+rn.nb) + ' accounts closed' : ' \u00b7 empty account closed') + (rpx ? ' <em>' + kUsd(Number(rb) / 1e9 * rpx) + '</em>' : '') + '</div>';
-    }
+    var rentH = kRentLine(pv.rent && typeof pv.rent === 'object' ? pv.rent : null);
+    /* the headline only when there are no amounts to show (the hero says it otherwise) */
+    if (pv.head && !pv.err && !rows.length) h = '<div class="hp-pvh">' + esc(String(pv.head).slice(0, 160)) + '</div>' + h;
+    if (rows.length) h += kHero(rows, rentH); else h += rentH;
+    if (o) { o.send = rows.filter(function (r) { return r.sign === '-'; }); o.recv = rows.filter(function (r) { return r.sign !== '-'; }); }
     var ls = (pv.appr || []).map(function (t) { return '<li class="hp-pa">' + esc(String(t).slice(0, 160)) + '</li>'; }).concat((pv.lines || []).map(function (t) { return '<li>' + esc(String(t).slice(0, 160)) + '</li>'; }));
     if (ls.length) h += HWP.card('<ul class="hp-pl">' + ls.join('') + '</ul>');
     (pv.appr || []).forEach(function (t) { if (/unlimited/i.test(t) && !/^Removes/.test(t)) warnsL.push('<b>Unlimited approval.</b> ' + esc(String(t).replace(/^Allow /, '').split(' to spend')[0]) + ' could move all of this token at any time.'); });
@@ -22430,10 +22605,11 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     var warnsL = [], det = '', main = '', raw = '';
     if (isMsg && DS.text != null) DS.siwe = HWP.siwe(DS.text);
     var step = R.step && R.step.n && R.step.of ? 'Step ' + (+R.step.n) + ' of ' + (+R.step.of) : '';
-    var body = HWP.head({ icon: R.site && R.site.icon, name: sname, url: url }) + HWP.title(opTitle(m, v, ae), step);
+    var body = HWP.topBar(DS.info.name, LOGO[DS.info.logo] || '') + HWP.head({ icon: R.site && R.site.icon, name: sname, url: url }) + HWP.title(opTitle(m, v, ae), step);
     /* 1. balance changes (simulated deltas from Hwallet when P2b provides them, else decoded from the request) */
     var PV = R.pv && typeof R.pv === 'object' && !R.pv.partial ? R.pv : null, PVp = R.pv && typeof R.pv === 'object' ? R.pv : null;
-    if (isTx && PV) main += kPvMain(PV, v, warnsL);
+    var hS = [], hR = [];
+    if (isTx && PV) { var po = {}; main += kPvMain(PV, v, warnsL, po); hS = po.send || []; hR = po.recv || []; }
     if (isTx) {
       var sim = R.sim && Array.isArray(R.sim.deltas) ? R.sim.deltas : null;
       if (R.swap && R.swap.pay && R.swap.recv && !sim) {
@@ -22441,7 +22617,8 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
         sim = null; v.chgSwap = [{ s: '-', v: sp.v, dec: sp.d, sym: sp.s, px: sp.px, t: sp.a, nat: sp.nat }, { s: '+', v: sr.v, dec: sr.d, sym: sr.s, px: sr.px, t: sr.a, nat: sr.nat, note: 'At least ' + (sr.min ? fmt(U(sr.min), +sr.d, 8) + ' ' + sr.s : '') }];
       }
       var rows = PV ? null : chgRows(sim || v.chgSwap || v.chg || []);
-      if (!PV && !sim && v.chgSwap && !ae) { main += HWP.cap('Balance changes are estimated from the quote. Amounts are not guaranteed.') + HWP.changes(rows); rows = null; }
+      if (rows) { hS = rows.filter(function (r) { return r.sign === '-'; }); hR = rows.filter(function (r) { return r.sign !== '-'; }); }
+      if (!PV && !sim && v.chgSwap && !ae) { main += HWP.cap('Balance changes are estimated from the quote. Amounts are not guaranteed.') + kHero(rows); rows = null; }
       if (ae) {
         var ts = tokOf(v.appr.tok), tsym = ts ? ts.s : 'tokens';
         main += HWP.card(HWP.kv('<span class="hp-acc">' + (tokIcon(tsym, v.appr.tok) ? '<img class="hp-tk" style="width:28px;height:28px;margin-right:10px" alt="" src="' + tokIcon(tsym, v.appr.tok) + '">' : '') + '<span>' + esc(tsym) + '</span></span>', ae.unl ? '<b>Unlimited</b>' : fmt(ae.amt, ts ? +ts.d : 0, 8) + ' ' + esc(tsym), ae.changed ? 'Exact amount' : 'Allowance') + HWP.kv('Spender', '<span class="hp-mono">' + esc(short(String(v.appr.args[v.appr.p2 ? 1 : 0]))) + '</span>', '', { sm: true }) +
@@ -22453,8 +22630,8 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
         var tt = tokOf(v.apprT.tok), tts = tt ? tt.s : 'tokens';
         main += HWP.card(HWP.kv('<span class="hp-acc">' + (tokIcon(tts, v.apprT.tok) ? '<img class="hp-tk" style="width:28px;height:28px;margin-right:10px" alt="" src="' + tokIcon(tts, v.apprT.tok) + '">' : '') + '<span>' + esc(tts) + '</span></span>', v.apprT.amt >= MAXU ? '<b>Unlimited</b>' : amtTok(v.apprT.amt, v.apprT.tok), 'Allowance') + HWP.kv('Spender', '<span class="hp-mono">' + esc(short(v.apprT.sp)) + '</span>', '', { sm: true }));
       } else if (rows === null) { /* shown above (Hwallet swap quote) */
-      } else if (sim) main += HWP.cap('Balance changes are estimated. Amounts and assets involved are not guaranteed.') + HWP.changes(rows);
-      else main += (rows.length ? HWP.cap('Balance changes decoded from the transaction.') : '') + HWP.changes(rows);
+      } else if (sim) main += HWP.cap('Balance changes are estimated. Amounts and assets involved are not guaranteed.') + kHero(rows);
+      else main += (rows.length ? HWP.cap('Balance changes decoded from the transaction.') : '') + kHero(rows);
     }
     /* messages: readable text, sign-in fields, typed data tree */
     if (isMsg) {
@@ -22488,7 +22665,14 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
       if (c.atMost) fs = (DS.c === 'trx' ? 'Fee limit' : 'At most') + (fs ? ' \u00b7 ' + fs : '');
       var live = R.live && m === 'eth_sendTransaction' ? '<span class="hp-live' + (stale() ? ' stale' : '') + '" id="kss-live"><i></i><span id="kss-live-t">' + liveText() + '</span></span>' : '';
       var tl = ed ? dappTierLabel() : '', fl2 = tl || (stale() ? live : '');
-      main += HWP.card(HWP.kv('Network fee' + (fl2 ? '<small>' + fl2 + '</small>' : ''), fv, fs, { tap: ed, chev: ed, id: 'kss-feer', cls: 'hp-fee' }));
+      /* v3.98.1 (#6): compact recap rows: rate, route, minimum received, network fee with its speed */
+      var cmp = [], rate = ae ? '' : kRate(hS, hR), sw = R.swap && R.swap.pay ? R.swap : null;
+      var route = PVp && PVp.via ? String(PVp.via).slice(0, 40) : sw && sw.sub ? String(sw.sub).split(' \u00b7 ')[0].slice(0, 40) : '';
+      if (rate) cmp.push(['Rate', esc(rate)]);
+      if (route && (hS.length || hR.length)) cmp.push(['Route', esc(route)]);
+      if (sw && sw.recv && U(sw.recv.min) != null) cmp.push(['Min received', fmt(U(sw.recv.min), +sw.recv.d, 8) + ' ' + esc(sw.recv.s)]);
+      cmp.push(['Network fee' + (fl2 ? '<small>' + fl2 + '</small>' : ''), fv, fs, { tap: ed, chev: ed, id: 'kss-feer', cls: 'hp-fee' }]);
+      main += HWP.rows(cmp);
       var rentNet = DS.c === 'sol' && PV && PV.rent ? (U(PV.rent.open) || 0n) - (U(PV.rent.back) || 0n) : 0n;
       if (c.gbal != null) { var after = c.err ? null : c.gbal - c.amount - rentNet - (DS.c === 'sol' && v.idx !== 0 ? 0n : c.fee); det += kv('Balance', fmt(c.gbal, fdec, 6) + ' ' + sym, after != null && after >= 0n ? (c.atMost ? 'After: at least ' : 'After: about ') + fmt(after < 0n ? 0n : after, fdec, 6) + ' ' + sym : ''); }
     }
@@ -22524,12 +22708,13 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     body += notes + HWP.warns(warnsL, tl === 'bad' || !!c.err || warnsL.some(function (w) { return /phishing|Known scam|another account/.test(w); })) + main + HWP.trust(tl, R.trustText ? String(R.trustText).slice(0, 80) : '') + HWP.details(det, DS.detOpen, 'kss-det');
     var sc = $('kss-sc'), top = sc ? sc.scrollTop : 0;
     if (!$('kss-foot')) {
-      page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ exp: true, no: 'Cancel', ok: m === 'kw_nearAccount' ? 'Share' : 'Confirm', okId: 'kss-go', noId: 'kss-no', hold: true, disabled: true, hint: '' })) + '</div>';
+      page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ col: true, no: 'Cancel', ok: m === 'kw_nearAccount' ? 'Share' : 'Confirm', okId: 'kss-go', noId: 'kss-no', hold: true, disabled: true, hint: '' })) + '</div>';
       $('kss-no').onclick = function () { if (!busy) finish({ status: 'rejected' }); };
       page.querySelector('[data-hp-x]').onclick = function () { if (!busy) finish({ status: 'rejected' }); };
       hold($('kss-go'));
     } else { morph($('kss-sc'), body); if ($('kss-sc').scrollTop !== top) $('kss-sc').scrollTop = top; var x = page.querySelector('[data-hp-x]'); if (x) x.onclick = function () { if (!busy) finish({ status: 'rejected' }); }; }
     var dd = $('kss-det'); if (dd) dd.ontoggle = function () { DS.detOpen = dd.open; };
+    HWP.bindRent(page, $('kss'));
     var fr = $('kss-feer'); if (fr && fr.classList.contains('hp-tap')) fr.onclick = function () { buzz(6); openDappFee(); };
     var fr0 = null; if (fr0) fr0.onclick = function () { DS.feeOpen = !(DS.feeOpen || DS.level === 'custom'); if (!DS.feeOpen && DS.level === 'custom') DS.feeOpen = true; var e = $('kss-fed'); if (e) e.classList.toggle('off', !DS.feeOpen); fr.classList.toggle('hp-open', DS.feeOpen); buzz(6); };
     page.querySelectorAll('[data-lv]').forEach(function (b) { b.onclick = function () {

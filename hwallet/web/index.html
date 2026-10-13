@@ -1356,11 +1356,49 @@ body[data-theme="dark"] .hp-ov{--hp-acc:#5b8def;--hp-accI:#ffffff}
 .hp-pl li.hp-pa::before{background:var(--hp-acc)}
 
 /* v1.7.2 (S6/S20): compact rent line under the amounts; one-line fee values */
-.hp-rent{font-size:12px;line-height:16px;color:#d14343;margin:-2px 6px 10px;font-weight:500}
+.hp-rent{font-size:12px;line-height:16px;color:var(--hp-muted);margin:-2px 6px 10px;font-weight:400}
 .hp-rent em{font-style:normal;opacity:.75;margin-left:4px}
-.hp-rent.back{color:#1f9d55}
-body[data-theme=dark] .hp-rent{color:#ff7a7a}body[data-theme=dark] .hp-rent.back{color:#4cd38a}
 .hp-nw{white-space:nowrap}
+
+/* ===== v3.98.1 / H 1.8.1 (push 7) ===== */
+/* #4: account rent = one small grey line under the receive card, info icon -> what rent is */
+.hp-rentl{display:flex;align-items:center;width:100%;margin:6px 0 2px;padding:2px 6px;border:0;background:transparent;color:var(--hp-muted);font:400 12.5px/17px 'RobotoE',system-ui;text-align:left;-webkit-tap-highlight-color:transparent}
+.hp-rentl span{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-rentl svg{flex:0 0 auto;width:15px;height:15px;margin-left:5px;opacity:.85}
+.hp-rentl:active{opacity:.6}
+.hp-infp{margin:0 4px 12px;font:400 15px/21px 'RobotoE',system-ui;color:var(--hp-text)}
+.hp-inf .hp-pcok{width:100%;margin-top:8px}
+/* #60 header rule on Kwallet sign sheets: Kwallet chip top-left, chain chip top-right */
+.hp-top{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px}
+.hp-kc{display:inline-flex;align-items:center;height:28px;padding:0 8px;border-radius:9px;background:#DDF869;font:900 14px/1 'RobotoE',system-ui;box-shadow:inset 0 -2px 0 rgba(34,51,72,.12)}
+.hp-kc .kb-k{color:#223348;letter-spacing:-.5px;margin-right:.5px}.hp-kc .kb-w{color:#223348;font-size:12.5px}
+.hp-cc{display:inline-flex;align-items:center;height:28px;padding:0 10px 0 4px;border-radius:14px;background:var(--hp-card);font:600 13px/1 'RobotoE',system-ui;color:var(--hp-text);max-width:60%}
+.hp-cc span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-cci{width:20px;height:20px;border-radius:50%;margin-right:6px;flex:0 0 auto;object-fit:cover}
+span.hp-cci{display:inline-flex;align-items:center;justify-content:center;font-size:10px;background:var(--hp-card2)}
+/* #6 Jupiter-style recap: hero send / arrow / receive, compact rows */
+.hp-hero{position:relative;margin:4px 0 10px}
+.hp-hc{background:var(--hp-card);border-radius:20px;padding:12px 16px 14px}
+.hp-hl{font:500 13px/18px 'RobotoE',system-ui;color:var(--hp-muted);margin-bottom:6px}
+.hp-hrow{display:flex;align-items:center}
+.hp-hrow+.hp-hrow{margin-top:10px}
+.hp-htk{width:36px;height:36px;border-radius:50%;flex:0 0 auto;margin-right:12px;object-fit:cover;background:var(--hp-card2)}
+span.hp-htk{display:flex;align-items:center;justify-content:center;font:700 15px/1 'RobotoE',system-ui}
+.hp-hm2{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.hp-ha{font:600 24px/30px 'RobotoE',system-ui;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.hp-ha em{font-style:normal;font-weight:500;font-size:17px;color:var(--hp-muted)}
+.hp-hu{font:400 13.5px/18px 'RobotoE',system-ui;color:var(--hp-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-harr{position:relative;height:6px;z-index:1}
+.hp-harr span{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:12px;background:var(--hp-bg);display:flex;align-items:center;justify-content:center}
+.hp-harr svg{width:20px;height:20px;color:var(--hp-muted);background:var(--hp-card);border-radius:9px;padding:4px;box-sizing:content-box}
+.hp-cmp .hp-r{min-height:40px;padding:9px 16px}
+.hp-cmp .hp-r+.hp-r{border-top:0}
+.hp-cmp .hp-l{font:400 14px/19px 'RobotoE',system-ui;color:var(--hp-muted)}
+.hp-cmp .hp-l small{font-size:12.5px;line-height:16px}
+.hp-cmp .hp-v{font:500 14px/19px 'RobotoE',system-ui}
+.hp-cmp .hp-v small{font-size:12.5px;line-height:16px}
+.hp-cmp .hp-chev{width:18px;height:18px;margin-left:4px;flex:0 0 auto;color:var(--hp-soft)}
+.hp-cmp .hp-fee .hp-l small{color:var(--hp-text);font-weight:500}
 
 /* Wave A (#102): Hwallet's popups use Hwallet's own live theme variables (classic, dark and Material You). */
 body[data-theme] .hp-ov{--hp-bg:var(--bg);--hp-card:var(--card);--hp-card2:var(--card2);--hp-line:var(--line);--hp-border:var(--border);--hp-text:var(--text);--hp-muted:var(--muted);--hp-soft:var(--soft);
@@ -1642,6 +1680,18 @@ html[data-ui="m3"] .hp-mntot b{font-family:var(--u-font)!important}
 html[data-ui="m3"] .hp-mntot small{font-family:var(--u-font)!important}
 html[data-ui="m3"] .hp-pvh{font-family:var(--u-font)!important}
 html[data-ui="m3"] .hp-pl li{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-rentl{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-infp{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-kc{border-radius:8px!important;font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-cc{border-radius:12px!important;font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-hc{border-radius:12px!important}
+html[data-ui="m3"] .hp-hl{font-family:var(--u-font)!important}
+html[data-ui="m3"] span.hp-htk{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-ha{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-hu{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-harr svg{border-radius:8px!important}
+html[data-ui="m3"] .hp-cmp .hp-l{font-family:var(--u-font)!important}
+html[data-ui="m3"] .hp-cmp .hp-v{font-family:var(--u-font)!important}
 html[data-ui="m3"] .snd-form .snd-tok{border-radius:12px!important}
 html[data-ui="m3"] .snd-fee{border-radius:12px!important}
 html[data-ui="m3"] .snd-sheet .hp-foot .snd-go{border-radius:999px!important}
@@ -1811,6 +1861,18 @@ html[data-ui="miuix"] .hp-mntot b{font-family:var(--u-font)!important}
 html[data-ui="miuix"] .hp-mntot small{font-family:var(--u-font)!important}
 html[data-ui="miuix"] .hp-pvh{font-family:var(--u-font)!important}
 html[data-ui="miuix"] .hp-pl li{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-rentl{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-infp{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-kc{border-radius:12px!important;font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-cc{border-radius:12px!important;font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-hc{border-radius:16px!important}
+html[data-ui="miuix"] .hp-hl{font-family:var(--u-font)!important}
+html[data-ui="miuix"] span.hp-htk{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-ha{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-hu{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-harr svg{border-radius:12px!important}
+html[data-ui="miuix"] .hp-cmp .hp-l{font-family:var(--u-font)!important}
+html[data-ui="miuix"] .hp-cmp .hp-v{font-family:var(--u-font)!important}
 html[data-ui="miuix"] .snd-form .snd-tok{border-radius:16px!important}
 html[data-ui="miuix"] .snd-sheet .hp-foot .snd-go{border-radius:16px!important}
 html[data-ui="miuix"] .snd-j .snd-ai{font-family:var(--u-font)!important}
@@ -1907,7 +1969,7 @@ html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .al2{font: 400 13px/17px var(--u-f
 html[data-ui="m3"]:not(#u-a):not(#u-b).hwa .btn,html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .btn,html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-btn,html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-btn,html[data-ui="m3"]:not(#u-a):not(#u-b) .sw-go,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sw-go,html[data-ui="m3"]:not(#u-a):not(#u-b) .snd-go,html[data-ui="miuix"]:not(#u-a):not(#u-b) .snd-go{height: var(--u-btn-h) !important; min-height: 0 !important; padding: 0 var(--u-btn-px) !important; border-radius: var(--u-btn-r) !important;
   font: var(--u-btn-fw) var(--u-btn-fs)/var(--u-btn-lh) var(--u-font) !important; letter-spacing: var(--u-btn-ls) !important; min-width: 0; box-sizing: border-box;}
 html[data-ui="m3"]:not(#u-a):not(#u-b).hwa .btn.big,html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .btn.big,html[data-ui="m3"]:not(#u-a):not(#u-b).hwa .btn.wide,html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .btn.wide,html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-btn,html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-btn,html[data-ui="m3"]:not(#u-a):not(#u-b) .sw-go,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sw-go,html[data-ui="m3"]:not(#u-a):not(#u-b) .snd-go,html[data-ui="miuix"]:not(#u-a):not(#u-b) .snd-go{height: var(--u-cta-h) !important; border-radius: var(--u-cta-r) !important; font-size: var(--u-cta-fs) !important; line-height: var(--u-cta-lh) !important; letter-spacing: var(--u-cta-ls) !important;}
-html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .btn:not(.pri):not(.dng),html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-btn:not(.hp-go){background: var(--card2, var(--hp-card2, var(--bg-input))) !important;}
+html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .btn:not(.pri):not(.dng),html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-btn:not(.hp-go):not(.hp-ok):not(.hp-pcok){background: var(--card2, var(--hp-card2, var(--bg-input))) !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b).hwa .btn:active:not(:disabled),html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .btn:active:not(:disabled){transform: none !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b).hwa .pb,html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .pb,html[data-ui="m3"]:not(#u-a):not(#u-b).hwa .mx,html[data-ui="miuix"]:not(#u-a):not(#u-b).hwa .mx{border-radius: var(--u-chip-r) !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b) .seg,html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-seg{background: transparent !important; border: 1px solid var(--border, var(--hp-border)) !important; border-radius: 20px !important; padding: 0 !important; gap: 0 !important; overflow: hidden; box-sizing: border-box;}
@@ -1946,13 +2008,12 @@ html[data-ui="miuix"]:not(#u-a):not(#u-b) .sw,html[data-ui="miuix"]:not(#u-a):no
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .sw::after,html[data-ui="miuix"]:not(#u-a):not(#u-b) .kws-sw::after{top: 4px !important; left: 4px !important; width: 20px !important; height: 20px !important; box-shadow: none !important; background: #fff !important; transform: none !important; transition: transform .4s cubic-bezier(.34,1.3,.64,1) !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .on > .sw,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sw.on,html[data-ui="miuix"]:not(#u-a):not(#u-b) .on .kws-sw{background: var(--acc, var(--accent)) !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .on > .sw::after,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sw.on::after,html[data-ui="miuix"]:not(#u-a):not(#u-b) .on .kws-sw::after{transform: translateX(21px) !important; left: 4px !important; top: 4px !important; width: 20px !important; height: 20px !important; background: var(--accI, #fff) !important;}
-html[data-ui="m3"]:not(#u-a):not(#u-b) .wc-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .snd-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .tp-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .wc-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .snd-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .tp-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sheet{border-radius: var(--u-sheet-r) var(--u-sheet-r) 0 0 !important; max-width: 640px !important; margin-left: auto; margin-right: auto; box-sizing: border-box;}
+html[data-ui="m3"]:not(#u-a):not(#u-b) .wc-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .snd-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .tp-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-sheet,html[data-ui="m3"]:not(#u-a):not(#u-b) .sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .wc-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .snd-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .tp-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sheet{border-radius: var(--u-sheet-r) var(--u-sheet-r) 0 0 !important; max-width: 600px !important; margin-left: auto; margin-right: auto; box-sizing: border-box;}
 html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-grab,html[data-ui="m3"]:not(#u-a):not(#u-b) .grab{width: 32px !important; height: 4px !important; border-radius: 2px !important; margin: 22px auto !important; background: var(--muted, var(--hp-muted)) !important; opacity: .4 !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-grab,html[data-ui="miuix"]:not(#u-a):not(#u-b) .grab{width: 45px !important; height: 4px !important; border-radius: 2px !important; margin: 10px auto !important; background: var(--muted, var(--hp-muted)) !important; opacity: .35 !important; transition: width .15s linear !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-grab:active,html[data-ui="miuix"]:not(#u-a):not(#u-b) .grab:active{width: 55px !important;}
-html[data-ui="miuix"]:not(#u-a):not(#u-b) .wc-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .snd-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .tp-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sheet{padding-left: 24px !important; padding-right: 24px !important; box-shadow: none !important;}
+html[data-ui="miuix"]:not(#u-a):not(#u-b) .wc-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .snd-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .tp-sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sheet{box-shadow: none !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-sheet{box-shadow: none !important;}
-html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-sheet .hp-scroll,html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-sheet .hp-foot{padding-left: 24px !important; padding-right: 24px !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b) .sheet h3,html[data-ui="m3"]:not(#u-a):not(#u-b) .hp-title,html[data-ui="m3"]:not(#u-a):not(#u-b) .tp-h,html[data-ui="m3"]:not(#u-a):not(#u-b) .sh-h{font: 400 24px/32px var(--u-font) !important; letter-spacing: 0 !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .sheet h3,html[data-ui="miuix"]:not(#u-a):not(#u-b) .hp-title,html[data-ui="miuix"]:not(#u-a):not(#u-b) .tp-h,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sh-h{font: 500 18px/24px var(--u-font) !important; letter-spacing: 0 !important; text-align: center !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b) .sheet,html[data-ui="miuix"]:not(#u-a):not(#u-b) .sheet{transition: transform .4s var(--u-dec) !important;}
@@ -1986,7 +2047,7 @@ html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-opt{height: auto !important; min-
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-act{gap: 12px !important; padding: 12px 24px 0 !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-act > span{display: none !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-act button{flex: 1 1 0 !important; min-width: 0 !important; height: 50px !important; padding: 0 16px !important; border-radius: 16px !important; background: var(--card2, var(--bg-input)) !important; color: var(--text) !important; font: 500 17px/24px var(--u-font) !important;}
-html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-act button:last-child{background: var(--acc, var(--accent)) !important; color: var(--accI, #fff) !important;}
+html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-act button:last-child{background: var(--u-pri, var(--acc, var(--accent))) !important; color: var(--u-onpri, var(--accI, #fff)) !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b) .kwd-ov .kwd,html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-ov .kwd{transition: transform .3s var(--u-dec), opacity .2s linear !important;}
 html[data-ui="miuix"]:not(#u-a):not(#u-b) .kwd-ov:not(.show) .kwd{transform: translateY(40px) !important;}
 html[data-ui="m3"]:not(#u-a):not(#u-b) .toast{left: 12px !important; right: 12px !important; border-radius: 4px !important; min-height: 48px !important; padding: 14px 16px !important; font: 400 14px/20px var(--u-font) !important; letter-spacing: .25px !important; text-align: left !important; box-shadow: 0 3px 6px rgba(0,0,0,.15) !important; max-width: none !important; width: auto !important; box-sizing: border-box;}
@@ -2027,10 +2088,57 @@ html[data-ui="m3"]:not(#u-a):not(#u-b).kwa .btn:active:not(:disabled),html[data-
 .ptrMx canvas{width: 20px; flex: 0 0 auto;}
 .ptrMx span{color: inherit; margin-top: 6px; font: 700 14px/1.2 system-ui,'MiSans','RobotoE',sans-serif; white-space: nowrap;}
 @media (prefers-reduced-motion: reduce){.ptrM3 .m3sp,.ptrM3 .m3sp circle{animation-duration: 3s;}}
+
+
+
+html.kwa body { --u-pri: #DDF869; --u-onpri: #223348; }
+html.hwa body { --u-pri: #223348; --u-onpri: #ffffff; }
+html[data-ui="m3"].kwa body { --u-pri: var(--u-dyn-l, #DDF869); --u-onpri: var(--u-dyn-lo, #223348); }
+html[data-ui="m3"].kwa body[data-theme="dark"] { --u-pri: var(--u-dyn-d, #DDF869); --u-onpri: var(--u-dyn-do, #223348); }
+html[data-ui="m3"].hwa body { --u-pri: var(--u-dyn-l, #223348); --u-onpri: var(--u-dyn-lo, #ffffff); }
+html[data-ui="m3"].hwa body[data-theme="dark"] { --u-pri: var(--u-dyn-d, #223348); --u-onpri: var(--u-dyn-do, #ffffff); }
+html[data-ui="miuix"] body { --u-pri: #3482FF; --u-onpri: #ffffff; }
+html[data-ui="miuix"] body[data-theme="dark"] { --u-pri: #277AF7; --u-onpri: #ffffff; }
+
+
+html:not(#p7a):not(#p7b):not(#p7c) .hp-ok, html:not(#p7a):not(#p7b):not(#p7c) .hp-pcok, html:not(#p7a):not(#p7b):not(#p7c) .kss-pok, html:not(#p7a):not(#p7b):not(#p7c) .snd-sheet .snd-go, html.hwa:not(#p7a):not(#p7b):not(#p7c) .btn.pri, html:not(#p7a):not(#p7b):not(#p7c) .sw-go {
+  background: var(--u-pri) !important; color: var(--u-onpri) !important; border-color: transparent !important; opacity: 1; filter: none !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-ok:disabled, html:not(#p7a):not(#p7b):not(#p7c) .hp-pcok:disabled, html:not(#p7a):not(#p7b):not(#p7c) .kss-pok:disabled, html:not(#p7a):not(#p7b):not(#p7c) .snd-sheet .snd-go:disabled, html.hwa:not(#p7a):not(#p7b):not(#p7c) .btn.pri:disabled, html:not(#p7a):not(#p7b):not(#p7c) .sw-go:disabled {
+  background: var(--u-pri) !important; color: var(--u-onpri) !important; opacity: .38 !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-ok .kss-fill, html:not(#p7a):not(#p7b):not(#p7c) .hp-ok .hp-fill { background: var(--u-onpri) !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-seg button.on, html:not(#p7a):not(#p7b):not(#p7c) .hp-mnseg button.on { background: var(--u-pri) !important; color: var(--u-onpri) !important; }
+
+
+html:not(#p7a):not(#p7b):not(#p7c) .hp-act.hp-col { display: block !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-act.hp-col .hp-btn { width: 100% !important; margin: 0 !important; display: flex !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-act.hp-col .hp-no { height: 44px !important; min-height: 0 !important; margin-top: 6px !important; background: transparent !important; color: var(--hp-muted) !important;
+  font-weight: 600 !important; font-size: 15px !important; box-shadow: none !important; border: 0 !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-act.hp-col .hp-no:active { background: rgba(127,127,127,.12) !important; transform: none !important; }
+
+
+html:not(#p7a):not(#p7b):not(#p7c) .hp-sheet .hp-scroll, html:not(#p7a):not(#p7b):not(#p7c) .hp-sheet .hp-foot { padding-left: 16px !important; padding-right: 16px !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-sheet { max-width: 600px !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-r > .hp-l { flex: 0 0 auto !important; max-width: 64%; overflow: visible !important; text-overflow: clip !important; white-space: normal !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-r > .hp-l small { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-r > .hp-v { flex: 1 1 0 !important; min-width: 0 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; word-break: normal !important; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-r > .hp-v > * { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-r > .hp-v > small { display: block; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-r.hp-wr > .hp-l { max-width: none; }
+html:not(#p7a):not(#p7b):not(#p7c) .hp-chg .hp-r > .hp-v { flex: 0 1 auto !important; max-width: 62%; }
+
+html:not(#p7a):not(#p7b):not(#p7c) .hp-det .hp-r > .hp-v, html:not(#p7a):not(#p7b):not(#p7c) .hp-det .hp-r > .hp-v > * { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; word-break: break-word !important; }
+
+
+html.kwa:not(#p7a):not(#p7b):not(#p7c) .top .net { border-radius: var(--r-ctl, 10px) !important; }
+html.kwa:not(#p7a):not(#p7b):not(#p7c) .top .net button { border-radius: 8px !important; font-family: 'RobotoE', 'Roboto', system-ui, sans-serif !important; font-weight: 600 !important; box-shadow: none !important; }
+html.kwa:not(#p7a):not(#p7b):not(#p7c) .top .net .net-pill { border-radius: 8px !important; }
+html[data-ui="m3"].kwa:not(#p7a):not(#p7b):not(#p7c) .top .net .net-pill, html[data-ui="miuix"].kwa:not(#p7a):not(#p7b):not(#p7c) .top .net .net-pill { background: var(--u-pri) !important; }
+html[data-ui="m3"].kwa:not(#p7a):not(#p7b):not(#p7c) .top .net button.on, html[data-ui="miuix"].kwa:not(#p7a):not(#p7b):not(#p7c) .top .net button.on { color: var(--u-onpri) !important; }
+
 </style>
 </head>
 <body data-theme="light">
-<script>try{document.body.setAttribute("data-theme",localStorage.getItem("wallet-theme")||"light")}catch(e){}try{var __u=localStorage.getItem("hw-ui");document.documentElement.setAttribute("data-ui",__u==="m3"||__u==="miuix"?__u:"og")}catch(e){document.documentElement.setAttribute("data-ui","og")}document.documentElement.className+=" hwa"</script>
+<script>try{document.body.setAttribute("data-theme",localStorage.getItem("wallet-theme")||"light")}catch(e){}try{var __u=localStorage.getItem("hw-ui");document.documentElement.setAttribute("data-ui",__u==="m3"||__u==="miuix"?__u:"og")}catch(e){document.documentElement.setAttribute("data-ui","og")}document.documentElement.className+=" hwa";try{var __a=window.HarkNative&&HarkNative.dynamicColors?JSON.parse(String(HarkNative.dynamicColors())||'{}').a1:null;if(__a&&__a['600']&&__a['200']){var __st=document.documentElement.style;__st.setProperty('--u-dyn-l',__a['600']);__st.setProperty('--u-dyn-lo',__a['0']||'#FFFFFF');__st.setProperty('--u-dyn-d',__a['200']);__st.setProperty('--u-dyn-do',__a['800']||'#000000')}}catch(e){}</script>
 <noscript><div style="padding:40px;text-align:center">Hwallet requires JavaScript.</div></noscript>
 <script>
 /* v1.4 (#52): the system bar sizes first, exactly like Kwallet's head script, so the opening is laid out in the same box */
@@ -5156,6 +5264,7 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
     ok: 'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
     no: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
     chev: 'M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z',
+    down: 'M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z',
     info: 'M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
     warn: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
     shield: 'M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z',
@@ -5220,13 +5329,64 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
     return '<div class="hp-perm">' + rows.map(function (r) { return '<div class="hp-pr ' + r[0] + '">' + sv(r[0] === 'ok' ? P.ok : P.no) + '<span>' + esc(r[1]) + '</span></div>'; }).join('') + '</div>';
   }
   function details(inner, open, id) { return inner ? '<details class="hp-det"' + (id ? ' id="' + id + '"' : '') + (open ? ' open' : '') + '><summary>Details' + sv(P.chev) + '</summary>' + card(inner) + '</details>' : ''; }
+  /* v3.98.1 (#5): no "Request expires in" bar any more (an expired request closes on its own with a toast).
+     o.col (#6): one full-width Confirm with Cancel as a text button under it (dApp approvals and the Send review). */
   function foot(o) {
     o = o || {};
-    return (o.exp ? '<div class="hp-exp" id="kss-exp"><span id="kss-exp-t"></span><span class="hp-eb"><i id="kss-exp-b"></i></span></div>' : '') +
-      '<div class="hp-act"><button type="button" class="hp-btn hp-no" id="' + (o.noId || 'hp-no') + '">' + esc(o.no || 'Cancel') + '</button>' +
-      '<button type="button" class="hp-btn hp-ok" id="' + (o.okId || 'hp-ok') + '"' + (o.disabled ? ' disabled' : '') + '>' + (o.hold ? '<i class="kss-fill"></i>' : '') + '<span>' + esc(o.ok || 'Confirm') + '</span></button></div>' +
+    var okB = '<button type="button" class="hp-btn hp-ok" id="' + (o.okId || 'hp-ok') + '"' + (o.disabled ? ' disabled' : '') + '>' + (o.hold ? '<i class="kss-fill"></i>' : '') + '<span>' + esc(o.ok || 'Confirm') + '</span></button>',
+      noB = '<button type="button" class="hp-btn hp-no' + (o.col ? ' hp-txt' : '') + '" id="' + (o.noId || 'hp-no') + '">' + esc(o.no || 'Cancel') + '</button>';
+    return '<div class="hp-act' + (o.col ? ' hp-col' : '') + '">' + (o.col ? okB + noB : noB + okB) + '</div>' +
       (o.hint != null ? '<div class="hp-hint" id="hp-hint">' + esc(o.hint) + '</div>' : '');
   }
+  /* v3.98.1 (#60 header rule): the Kwallet chip top-left and the chain chip top-right of every Kwallet sign sheet */
+  function topBar(chain, chainIcon) {
+    return '<div class="hp-top"><span class="hp-kc" aria-label="Kwallet"><span class="kb-k">K</span><span class="kb-w">wallet</span></span>' +
+      (chain ? '<span class="hp-cc">' + (chainIcon ? icon(chainIcon, chain, 'hp-cci', 'hp-tkl') : '') + '<span>' + esc(chain) + '</span></span>' : '') + '</div>';
+  }
+  /* v3.98.1 (#6): Jupiter-style recap. A hero card "You send" (icon, big amount, $), an arrow, a hero card "You receive";
+     rows = { icon, sym, amt, usd, pre }. o = { sendL, recvL, after (html under the receive card, e.g. the rent line) } */
+  function hero(send, recv, o) {
+    o = o || {}; send = send || []; recv = recv || [];
+    function side(lbl, rows, cls) {
+      return '<div class="hp-hc ' + cls + '"><div class="hp-hl">' + esc(lbl) + '</div>' + rows.map(function (r) {
+        return '<div class="hp-hrow">' + icon(r.icon, r.sym, 'hp-htk', 'hp-tkl') + '<span class="hp-hm2"><span class="hp-ha">' + (r.pre ? esc(r.pre) + ' ' : '') + esc(r.amt) + ' <em>' + esc(r.sym) + '</em></span>' +
+          (r.usd || r.note ? '<span class="hp-hu">' + esc([r.usd, r.note].filter(Boolean).join(' \u00b7 ')) + '</span>' : '') + '</span></div>';
+      }).join('') + '</div>';
+    }
+    var h = '';
+    if (send.length) h += side(o.sendL || 'You send', send, 'hp-hs');
+    if (send.length && recv.length) h += '<div class="hp-harr"><span>' + sv(P.down) + '</span></div>';
+    if (recv.length) h += side(o.recvL || 'You receive', recv, 'hp-hr');
+    return h ? '<div class="hp-hero">' + h + (o.after || '') + '</div>' : (o.after || '');
+  }
+  /* compact recap rows: [label, value html, sub, kv options] */
+  function rows(list) { list = (list || []).filter(Boolean); return list.length ? card(list.map(function (r) { var op = r[3] || {}; op.sm = true; return kv(r[0], r[1], r[2] || '', op); }).join(''), 'hp-cmp') : ''; }
+  /* v3.98.1 (#4): account rent as one small grey line with an info icon (tap = what rent is). txt is plain text */
+  function rent(txt, k) { return '<button type="button" class="hp-rentl" data-hp-rent="' + esc(k || 'own') + '">' + '<span>' + esc(txt) + '</span>' + sv(P.info) + '</button>'; }
+  var RENT_B = {
+    own: ['Solana keeps a small deposit, called rent, in every account that holds a token, so the account can exist on chain. This transaction opens such an account in your wallet (for a token you do not hold yet).',
+      'Rent is not a fee. It stays yours: you get it back when the empty token account is closed.'],
+    one: ['Solana keeps a small deposit, called rent, in every account the app opens for this transaction.', 'This deposit goes to an account the app keeps (not to your wallet), so it does not come back to you.'],
+    back: ['An empty token account in your wallet is closed by this transaction, so its rent deposit comes back to your SOL balance.'],
+    to: ['Solana keeps a small deposit, called rent, in every account that holds a token. The recipient has no account for this token yet, so this transfer opens one for them and you pay its rent.',
+      'The deposit belongs to the new account: whoever owns it gets it back if the account is closed later.'] };
+  function rentInfo(host, k) { return info({ title: k === 'back' ? 'Rent back' : 'Account rent', body: RENT_B[k] || RENT_B.own, host: host }); }
+  /* a small sheet with a title, a few paragraphs and one button (same frame as the fee picker) */
+  function info(o) {
+    if (PK) PK.close();
+    var ov = document.createElement('div'); ov.className = 'hp-ov hp-pk hp-inf';
+    ov.innerHTML = '<div class="hp-dim"></div><div class="hp-sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.title || '') + '"><div class="hp-grab"></div><div class="hp-scroll">' +
+      '<div class="hp-pkt"><h3>' + esc(o.title || '') + '</h3><button type="button" class="hp-x" data-pkx aria-label="Close">' + sv(P.x) + '</button></div>' +
+      (o.body || []).map(function (t) { return '<p class="hp-infp">' + esc(t) + '</p>'; }).join('') + '<button type="button" class="hp-btn hp-ok hp-pcok" data-pkok>' + esc(o.ok || 'Got it') + '</button></div></div>';
+    (o.host || document.body).appendChild(ov);
+    void ov.offsetWidth; requestAnimationFrame(function () { ov.classList.add('in'); });
+    var closed = false, me = { el: ov, close: function () { if (closed) return; closed = true; if (PK === me) PK = null; ov.classList.remove('in'); ov.classList.add('out'); setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 210); } };
+    PK = me;
+    ov.querySelector('.hp-dim').onclick = me.close; ov.querySelector('[data-pkx]').onclick = me.close; ov.querySelector('[data-pkok]').onclick = me.close;
+    return me;
+  }
+  /* wires every rent line inside root to its info sheet */
+  function bindRent(root, host) { if (!root) return; var b = root.querySelectorAll('[data-hp-rent]'); for (var i = 0; i < b.length; i++) b[i].onclick = function (e) { if (e && e.stopPropagation) e.stopPropagation(); rentInfo(host, this.getAttribute('data-hp-rent')); }; }
   function sheet(inner, footHtml) { return '<div class="hp-grab"></div><div class="hp-scroll" id="kss-sc">' + inner + '</div>' + (footHtml != null ? '<div class="hp-foot" id="kss-foot">' + footHtml + '</div>' : ''); }
   /* ---------- messages ---------- */
   /* EIP-4361 (and the Solana form of it): every field, or null when the text is not a sign-in message */
@@ -5445,7 +5605,7 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
   /* Back: closes an open picker first (true = handled) */
   function pickerBack() { if (PK) { PK.close(); return true; } return false; }
   window.HWP = { manFee: manFee, picker: picker, pickerBack: pickerBack, siteName: siteName, walletRow: walletRow, esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
-    trust: trust, warns: warns, perms: perms, details: details, foot: foot, sheet: sheet, siwe: siwe, siweRows: siweRows, msgBlock: msgBlock, tree: tree, overlay: overlay };
+    trust: trust, warns: warns, perms: perms, details: details, foot: foot, sheet: sheet, topBar: topBar, hero: hero, rows: rows, rent: rent, rentInfo: rentInfo, info: info, bindRent: bindRent, siwe: siwe, siweRows: siweRows, msgBlock: msgBlock, tree: tree, overlay: overlay };
 })();
 
 /* ===== Hwallet v1.3: watch-only, simple and quick =====
@@ -5454,7 +5614,7 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8';
+var APP_VERSION = '1.8.1';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -6650,7 +6810,7 @@ var APP_VERSION = '1.8';
     req.theme = req.theme || hwTheme();
     if (SIGN) { var old = SIGN; SIGN = null; try { old({ status: 'rejected' }); } catch (e) {} }
     return new Promise(function (res) {
-      var done = false, fin = function (o) { if (done) return; done = true; clearTimeout(SIGNT); res(o); };
+      var done = false, fin = function (o) { if (done) return; done = true; clearTimeout(SIGNT); try { if (o && o.feePick) fpFromK(req, o.feePick); } catch (e) {} res(o); };
       SIGN = fin; clearTimeout(SIGNT); SIGNT = setTimeout(function () { if (SIGN === fin) SIGN = null; fin({ status: 'expired' }); }, 300000);
       var body; try { body = JSON.stringify(req, function (k, v) { return typeof v === 'bigint' ? v.toString() : v; }); } catch (e) { SIGN = null; fin({ status: 'error', message: 'Could not prepare the request' }); return; }
       try { HwNative.sign(body); } catch (e) { SIGN = null; fin({ status: 'missing' }); }
@@ -6708,7 +6868,7 @@ var APP_VERSION = '1.8';
       '<div class="snd-bkrow" id="bkrow" hidden><span id="bkname"></span><button type="button" class="snd-bks" id="bksave">Save to address book</button></div>' +
       '<div class="note warn" id="poison" hidden></div><div class="note" id="newad" hidden>First time sending to this address. Check it carefully.</div>' +
       '<div class="hp-card"><div class="hp-r sm"><span class="hp-l">Network</span><span class="hp-v snd-nv">' + logo(n ? n.logo : c.logo, name, '', 'xs') + esc(name) + '</span></div>' +
-      '<button type="button" class="hp-r sm hp-tap snd-fee" id="feechip" aria-expanded="false"><span class="hp-l">Network fee<small id="lvt">Normal</small></span><span class="hp-v"><span id="fee">Checking\u2026</span></span>' + sv('chev', 'ic snd-chev') + '</button></div>' +
+      '<button type="button" class="hp-r sm hp-tap snd-fee" id="feechip" aria-expanded="false"><span class="hp-l">Network fee<small id="lvt">Normal</small></span><span class="hp-v"><span id="fee">Checking\u2026</span><small id="feeu"></small></span>' + sv('chev', 'ic snd-chev') + '</button></div>' +
       '<div class="note warn" id="err" hidden></div><div class="note" id="sim" hidden></div></section></div>' +
       '<div class="hp-foot"><button class="btn pri wide big snd-go" id="go" disabled>Continue</button></div>';
   }
@@ -6723,6 +6883,7 @@ var APP_VERSION = '1.8';
   function sendAfter() {
     var r = curAsset();
     SND = { ch: V.ch, net: V.net, r: r, lv: 'medium', d: null, max: false, to: '', busy: false, usd: false };
+    try { var fp0 = fpToSend(SND.ch, fpGet(SND.ch, SND.net)); if (fp0) { SND.lv = fp0.lv; SND.tier = fp0.tier || null; SND.man = fp0.man || null; } } catch (e) {}
     try { if (window.HwNative && HwNative.warmK) HwNative.warmK(); } catch (e) {}  /* wave A: Kwallet pre-loads its sign sheet while the user types */
     var to = $('to'), am = $('amt');
     to.oninput = function () { SND.to = to.value.trim(); checkTo(); validate(); if (SND.ch === 'sol' && SND.r.a) prep(true); };
@@ -6754,9 +6915,9 @@ var APP_VERSION = '1.8';
         manual: spec,
         onManual: function (st) {
           var r = HWP.manFee.toT(man, st); if (r.err) return r.err;
-          SND.man = st; SND.manFee = r.fee; SND.tier = null; SND.lv = 'custom'; $('lvt').textContent = 'Custom'; buzz(6); if (SND.max) fillMax(); validate(); return '';
+          SND.man = st; SND.manFee = r.fee; SND.tier = null; SND.lv = 'custom'; $('lvt').textContent = 'Custom'; fpSet(SND.ch, SND.net, 'custom', st); buzz(6); if (SND.max) fillMax(); validate(); return '';
         },
-        onPick: function (k) { if (k === 'x4' || k === 'x2') { SND.lv = 'custom'; SND.tier = k; SND.man = null; } else { SND.lv = k; SND.tier = null; SND.man = null; } $('lvt').textContent = sndLab(k); buzz(6); if (SND.max) fillMax(); validate(); } });
+        onPick: function (k) { if (k === 'x4' || k === 'x2') { SND.lv = 'custom'; SND.tier = k; SND.man = null; } else { SND.lv = k; SND.tier = null; SND.man = null; } fpSet(SND.ch, SND.net, fpFromSend(SND.ch, SND.lv, SND.tier)); $('lvt').textContent = sndLab(k); buzz(6); if (SND.max) fillMax(); validate(); } });
     };
     $('go').onclick = review;
     var sc0 = takeScanned(), sa0 = takeScanAmt(); if (sc0) { to.value = sc0; SND.to = sc0; checkTo(); if (sa0) { am.value = sa0; } } else setTimeout(clipChip, 60);
@@ -6779,6 +6940,50 @@ var APP_VERSION = '1.8';
     if (tl === mine.toLowerCase()) { pw.hidden = false; pw.textContent = 'This is your own address.'; }
     nw.hidden = RCP.indexOf(tl) >= 0 || !!look;
   }
+
+  /* ---------- v1.8.1 (#3): one saved network-fee speed per chain ----------
+     Kept as a plain speed (slow | normal | fast | fastest | site | custom with the Manual fields) under 'hw-feepref',
+     keyed by chain (EVM: per network). Send, Swap and every dApp / WalletConnect request start on it until it is changed
+     (in Send, in Swap, or in Kwallet's sheet, which reports the pick back). "Site suggested" stays a choice on dApp sheets. */
+  var FPK = 'hw-feepref';
+  function fpKey(ch, net) { ch = ch === 'evm' ? 'eth' : ch; return ch === 'eth' ? 'eth:' + String(net || 'ethereum') : String(ch); }
+  function fpGet(ch, net) { var a = jget(FPK, {}); var p = a && typeof a === 'object' ? a[fpKey(ch, net)] : null; return p && typeof p === 'object' && typeof p.sp === 'string' ? p : null; }
+  function fpSet(ch, net, sp, man, jito) {
+    if (!sp) return; ch = ch === 'evm' ? 'eth' : ch;
+    var a = jget(FPK, {}); if (!a || typeof a !== 'object' || Array.isArray(a)) a = {};
+    var m = null; if (sp === 'custom' && man && typeof man === 'object') { try { m = JSON.parse(JSON.stringify(man)); } catch (e) { m = null; } if (m && m.v && ch === 'eth') delete m.v.gas; }
+    if (sp === 'custom' && !m) return;
+    a[fpKey(ch, net)] = { sp: sp, man: m, jito: sp === 'custom' && jito ? String(jito) : '' }; jset(FPK, a);
+  }
+  /* Send: lv slow | medium | fast | custom (+ tier x2 | x4) */
+  function fpFromSend(ch, lv, tier) { if (lv === 'custom') return tier === 'x4' ? 'fastest' : tier === 'x2' ? 'fast' : 'custom'; return lv === 'slow' ? 'slow' : lv === 'fast' ? 'fast' : 'normal'; }
+  function fpToSend(ch, p) {
+    if (!p) return null; var sp = p.sp;
+    if (sp === 'custom' && p.man && (ch === 'eth' || ch === 'sol' || ch === 'trx')) return { lv: 'custom', tier: null, man: JSON.parse(JSON.stringify(p.man)) };
+    if (ch === 'sol') return sp === 'fast' ? { lv: 'fast' } : sp === 'fastest' ? { lv: 'custom', tier: 'x4' } : { lv: 'medium' };
+    if (ch === 'trx') return sp === 'fast' || sp === 'fastest' ? { lv: 'custom', tier: 'x2' } : { lv: 'medium' };
+    return { lv: sp === 'slow' ? 'slow' : sp === 'fast' || sp === 'fastest' ? 'fast' : 'medium' };
+  }
+  /* dApp sheet / Swap: EVM lv; Solana auto (Site suggested) | tier x2 (Faster) | x4 (Fastest); Tron auto | x2. null = the default */
+  function fpToDapp(ch, net) {
+    ch = ch === 'evm' ? 'eth' : ch; var p = fpGet(ch, net); if (!p) return null; var sp = p.sp;
+    if (sp === 'custom' && p.man && (ch === 'eth' || ch === 'sol' || ch === 'trx')) { var m = JSON.parse(JSON.stringify(p.man)); if (ch === 'eth' && m.v) delete m.v.gas; return { lv: 'custom', man: m, t: null, jito: ch === 'sol' ? p.jito || '' : '' }; }
+    if (ch === 'eth') return { lv: sp === 'slow' ? 'slow' : sp === 'fast' || sp === 'fastest' ? 'fast' : 'medium', t: null };
+    if (ch === 'sol') return sp === 'fast' ? { lv: 'medium', tier: 'x2', t: null } : sp === 'fastest' ? { lv: 'medium', tier: 'x4', t: null } : null;
+    if (ch === 'trx') return sp === 'fast' || sp === 'fastest' ? { lv: 'medium', tier: 'x2', t: null } : null;
+    return null;
+  }
+  function fpFromDapp(ch, f) { if (!f) return 'site'; if (f.lv === 'custom' && !f.tier) return 'custom'; if (f.tier) return f.tier === 'x4' ? 'fastest' : 'fast'; return ch === 'eth' || ch === 'evm' ? (f.lv === 'slow' ? 'slow' : f.lv === 'fast' ? 'fast' : 'normal') : 'site'; }
+  function fpSaveDapp(ch, net, f) { fpSet(ch, net, fpFromDapp(ch, f), f && f.man, f && f.jito); }
+  /* Kwallet's sheet reports the speed picked there ({ dapp, c, level, tier, man }) */
+  function fpFromK(req, fp) {
+    if (!fp || typeof fp !== 'object' || !req) return;
+    var ch = req.chain === 'evm' ? 'eth' : req.chain; if (!ch || ch === 'xmr' || req.kind === 'xmr-ki') return;
+    var net = ch === 'eth' ? (req.network || (SND && SND.net) || '') : null;
+    var sp = fp.dapp ? fpFromDapp(ch, { lv: fp.level === 'auto' ? 'medium' : fp.level, tier: fp.tier, man: fp.man }) : fpFromSend(ch, fp.level, fp.tier);
+    fpSet(ch, net, sp, fp.man);
+    if (SND && SND.ch === ch && (ch !== 'eth' || SND.net === net) && $('sndov') && !SND.busy) { var t = fpToSend(ch, fpGet(ch, net)); if (t) { SND.lv = t.lv; SND.tier = t.tier || null; SND.man = t.man || null; try { validate(); } catch (e) {} } }
+  }
   function sndLab(k) { return (SND.ch === 'eth' ? { slow: 'Low', medium: 'Normal', fast: 'High' } : SND.ch === 'sol' ? { slow: 'Slow', medium: 'Normal', fast: 'Faster', x4: 'Fastest' } : SND.ch === 'trx' ? { medium: 'Normal', x2: 'Fast' } : { slow: 'Slow', medium: 'Normal', fast: 'Fast' })[k] || 'Custom'; }
   /* the Manual custom fee context (null where Kwallet can't change the fee: Tron coin transfers, other chains) */
   function sndManCtx() {
@@ -6794,7 +6999,7 @@ var APP_VERSION = '1.8';
     if (lv === 'custom' && SND.tier) lv = SND.tier;
     if (lv === 'x4' && SND.ch === 'sol') { var fb = d.levels.fast || d.levels.medium || {}; return 5000n + ((U(fb.cuPrice) || 10000n) * 2n * BI(d.cu || 200000) + 999999n) / 1000000n; }
     if (lv === 'x2') return d.feeFor('medium');
-    if (lv === 'custom') { var m = sndManCtx(), r = m && SND.man ? HWP.manFee.toT(m, SND.man) : null; return r && !r.err ? r.fee : d.feeFor('medium'); }
+    if (lv === 'custom') { if (SND.man && SND.ch === 'eth' && SND.man.v && !SND.man.v.gas && d.gas != null) SND.man.v.gas = String(d.gas); var m = sndManCtx(), r = m && SND.man ? HWP.manFee.toT(m, SND.man) : null; return r && !r.err ? r.fee : d.feeFor('medium'); }
     return d.feeFor(lv);
   }
   function fillMax() {
@@ -6824,7 +7029,12 @@ var APP_VERSION = '1.8';
     er.hidden = !msg; er.textContent = msg;
     SND.amt = amt; go.disabled = !!msg || !validAddr(SND.ch, SND.to) || !SND.d || (!SND.max && !(amt > 0n)) || SND.busy;
     var sk = SND.to + '|' + (SND.max ? 'max' : String(amt)); if (sk !== SND.simK) { SND.simK = sk; clearTimeout(SND.simT); SND.simT = setTimeout(simPrep, 450); }
-    if (SND.d) { var f = feeOf(SND.lv); $('fee').innerHTML = SND.ch === 'trx' && f === 0n ? 'Free · covered by your bandwidth' : (SND.d.approx ? '≈ ' : '') + fmtA(f, gas.d) + ' ' + esc(gas.s) + (px(gas.cg) ? ' · ' + fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '') + (SND.d.extra ? (SND.ch === 'ada' ? ' + ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : ' + account rent') : '') + (SND.ch === 'trx' && SND.d.burnE ? ' · energy burn' : ''); }
+    if (SND.d) {
+      /* v1.8.1 (#2): the fee on one line, its $ value (and what comes with it) on the line under it */
+      var f = feeOf(SND.lv), fu = $('feeu');
+      $('fee').textContent = SND.ch === 'trx' && f === 0n ? 'Free' : (SND.d.approx ? '≈ ' : '') + fmtA(f, gas.d) + ' ' + gas.s;
+      if (fu) fu.textContent = [SND.ch === 'trx' && f === 0n ? 'Covered by your bandwidth' : px(gas.cg) ? fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '', SND.d.extra ? (SND.ch === 'ada' ? '+ ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : '+ account rent') : '', SND.ch === 'trx' && SND.d.burnE ? 'energy burn' : ''].filter(Boolean).join(' \u00b7 ');
+    }
     if (SND.d) { var lv = SND.d.levels; if (SND.lv !== 'custom' && !lv[SND.lv]) SND.lv = lv.medium ? 'medium' : Object.keys(lv)[0]; var fc = $('feechip'); if (fc) fc.classList.toggle('snd-one', Object.keys(lv).length < 2 && !sndManCtx()); if ($('lvt')) $('lvt').textContent = SND.lv === 'custom' ? (SND.tier ? sndLab(SND.tier) : 'Custom') : (Object.keys(lv).length < 2 && !sndManCtx()) ? '' : sndLab(SND.lv); }
   }
   /* chain data for the request (and the live feed): one module per chain */
@@ -8537,7 +8747,8 @@ window.hwCrashPrompt = crashPrompt;
   }
   /* wave C (#82): a network fee chosen on Hwallet's swap screen travels as a preset (level, or Custom text fields Kwallet parses) */
   function feeApply(req, q) {
-    var f = q && q.feePreset; if (!f) return req;
+    /* v1.8.1 (#3): without a preset from the screen, the speed saved for this chain (null = the app's own: Site suggested) */
+    var f = q && q.feePreset; if (!f) { try { f = fpToDapp(req.chain === 'evm' ? 'eth' : req.chain, req.network); } catch (e) { f = null; } } if (!f) return req;
     if (f.lv === 'custom' && f.man) { req.feeManual = JSON.parse(JSON.stringify(f.man)); if (req.feeManual.v && !req.feeManual.v.gas) delete req.feeManual.v.gas; }
     else if (f.tier) req.feeTier = f.tier;
     else if (f.lv === 'custom' && f.t) { req.feePreset = 'custom'; req.cfTxt = Object.assign({}, f.t); }
@@ -9853,7 +10064,7 @@ window.hwCrashPrompt = crashPrompt;
   }
   function jupBuild(pay, recv, amt, fa) {
     var inM = pay.gas ? WSOL : pay.a, outM = recv.gas ? WSOL : recv.a;
-    var jt = SW && SW.fee && SW.fee.lv === 'custom' && SW.fee.jito ? String(SW.fee.jito) : '';
+    var swf = SW && SW.pay ? swFee() : null, jt = swf && swf.lv === 'custom' && swf.jito ? String(swf.jito) : '';
     var qs = 'inputMint=' + inM + '&outputMint=' + outM + '&amount=' + amt + '&taker=' + A.sol + '&slippageBps=' + slipBps() + (fa ? '&platformFeeBps=' + SWBPS + '&feeAccount=' + fa.acct : '') + (jt ? '&tipAmount=' + jt : '');
     return keyed('jupiter', function () {
       return http('https://api.jup.ag/swap/v2/build?' + qs, { headers: { 'x-api-key': '{{K:jupiter}}' }, timeout: 12000 }).then(function (j) { j.v = 2; return j; });
@@ -10036,7 +10247,9 @@ window.hwCrashPrompt = crashPrompt;
       pay: { s: p.s, d: p.d, v: String(q.amt), a: p.gas ? '' : String(p.a || ''), nat: p.gas ? 1 : 0, px: +tokPx(p) || 0 },
       recv: { s: r.s, d: r.d, v: String(q.out), min: String(q.min), a: r.gas ? '' : String(r.a || ''), nat: r.gas ? 1 : 0, px: +tokPx(r) || 0 } }, extra || {});
   }
-  function run(o) { return dappRun(Object.assign({ site: SITE, via: 'swap', skipAsk: true, feePreset: SW && SW.fee }, o)); }
+  function run(o) { return dappRun(Object.assign({ site: SITE, via: 'swap', skipAsk: true, feePreset: SW && SW.pay ? swFee() : null }, o)); }
+  /* v1.8.1 (#3): the network fee speed saved for the pay chain (shared with Send, dApps and Kwallet's sheet) */
+  function swFee() { var p = SW && SW.pay, f = null; try { f = p ? fpToDapp(p.ch, p.net) : null; } catch (e) {} return f || { lv: 'medium', t: null }; }
   function evmTx(n, tx, extra) { return run(Object.assign({ ns: 'eip155', cid: n.chainId, method: 'eth_sendTransaction', params: { tx: tx } }, extra || {})); }
   function solTx(b64, extra) { return run(Object.assign({ ns: 'solana', method: 'solana_signTransaction', params: { tx: b64 }, send: true }, extra || {})).then(function (r) { return r.signature; }); }
   function trxTx(t, extra) { return run(Object.assign({ ns: 'tron', method: 'tron_signTransaction', params: { tx: t }, send: true }, extra || {})).then(function (r) { return r.txID; }); }
@@ -10382,7 +10595,7 @@ window.hwCrashPrompt = crashPrompt;
       '<span class="dp-n">' + esc(q.name) + (best ? '<i class="dp-best">Best</i>' : '') + '</span><span class="dp-v">' + (q.ok ? '<b>' + esc(fmtU(q.out, r.d, 6)) + ' ' + esc(r.s) + '</b><span>' + money(fmtUsd(outUsd(q))) + '</span>' : '<span class="dp-x">' + esc(q.err && q.err.length < 48 ? q.err : 'No quote') + '</span>') + '</span></button>';
   }
   function netFeeTxt(q) {
-    var f = SW.fee, lab = f.tier ? { x2: SW.pay && SW.pay.ch === 'trx' ? 'Fast' : 'Faster', x4: 'Fastest' }[f.tier] : { slow: 'Low', medium: 'Normal', fast: 'High', custom: 'Custom' }[f.lv] || 'Normal';
+    var f = swFee(), lab = f.tier ? { x2: SW.pay && SW.pay.ch === 'trx' ? 'Fast' : 'Faster', x4: 'Fastest' }[f.tier] : { slow: 'Low', medium: 'Normal', fast: 'High', custom: 'Custom' }[f.lv] || 'Normal';
     var est = q && q.gasUsd ? ' \u00b7 \u2248 ' + fmtUsd(q.gasUsd) : '';
     if (SW.pay && SW.pay.ch !== 'eth' && f.lv !== 'custom' && !f.tier) lab = SW.pay.ch === 'sol' ? 'Site suggested' : SW.pay.ch === 'trx' ? 'Normal' : 'Set in Kwallet';
     return lab + est;
@@ -10399,7 +10612,7 @@ window.hwCrashPrompt = crashPrompt;
     var p = SW.pay, r = SW.recv; if (!q.svcBps) return '<span class="dv-1">None</span>' + (q.svcNote ? '<small class="dv-n">' + esc(q.svcNote) + '</small>' : '');
     var t = q.svcIn ? p : r, rent = U(q.rent) || 0n;
     return '<span class="dv-1">' + bpsTxt(q.svcBps) + ' \u00b7 ' + esc(sigAmt(svcRawOf(q), t.d, 4)) + ' ' + esc(t.s) + '</span>' +
-      (rent > 0n ? '<small class="dv-n dv-red">+' + esc(sigAmt(rent, 9, 3)) + ' SOL one-time fee-account rent</small>' : '');
+      (rent > 0n ? '<small class="dv-n">+' + esc(sigAmt(rent, 9, 3)) + ' SOL rent \u00b7 one-time (fee account)</small>' : '');
   }
   function detBody() {
     var q = curQ(), r = SW.recv, ok = SW.quotes.filter(function (x) { return x.ok; }), bad = SW.quotes.filter(function (x) { return !x.ok; });
@@ -10464,9 +10677,9 @@ window.hwCrashPrompt = crashPrompt;
      priority fee and gas limit in Gwei; Tron fee limit in TRX). Kwallet shows the final fee and checks it again. */
   function swFeeCtx(ch, net, MIN) {
     var p = SW.pay, gp = 0; try { var ga = assets(ch, net)[0]; gp = ga ? +px(ga.cg) || 0 : 0; } catch (e) {}
-    if (ch === 'eth') { var base = MIN && MIN.base != null ? MIN.base : 0n, tip = MIN && MIN.tip != null ? MIN.tip : 1000000000n; return { chain: 'eth', sym: (EVMBY[net] && EVMBY[net].sym) || 'ETH', dec: 18, px: gp, gas: 250000, gasAuto: true, legacy: false, mf: base * 2n + tip, tip: tip, min: null, prev: SW.fee.man || null }; }
-    if (ch === 'sol') return { chain: 'sol', sym: 'SOL', dec: 9, px: gp, cu: 400000, cup: MIN && MIN.cup != null ? BI(String(MIN.cup)) : 0n, jito: true, prev: SW.fee.man || null };
-    if (ch === 'trx') return { chain: 'trx', sym: 'TRX', dec: 6, px: gp, fl: 100000000n, flMax: 1000000000n, prev: SW.fee.man || null };
+    if (ch === 'eth') { var base = MIN && MIN.base != null ? MIN.base : 0n, tip = MIN && MIN.tip != null ? MIN.tip : 1000000000n; return { chain: 'eth', sym: (EVMBY[net] && EVMBY[net].sym) || 'ETH', dec: 18, px: gp, gas: 250000, gasAuto: true, legacy: false, mf: base * 2n + tip, tip: tip, min: null, prev: swFee().man || null }; }
+    if (ch === 'sol') return { chain: 'sol', sym: 'SOL', dec: 9, px: gp, cu: 400000, cup: MIN && MIN.cup != null ? BI(String(MIN.cup)) : 0n, jito: true, prev: swFee().man || null };
+    if (ch === 'trx') return { chain: 'trx', sym: 'TRX', dec: 6, px: gp, fl: 100000000n, flMax: 1000000000n, prev: swFee().man || null };
     return null;
   }
   function openFee() {
@@ -10474,7 +10687,7 @@ window.hwCrashPrompt = crashPrompt;
     var ch = p.ch;
     if (['eth', 'sol', 'trx'].indexOf(ch) < 0) { toast('For ' + CHBY[ch].name + ' the network fee is set on Kwallet\u2019s send page'); return; }
     function show(MIN) {
-      var f = SW.fee, x = swFeeCtx(ch, p.net, MIN), cur = f.lv === 'custom' ? 'custom' : f.tier || (ch === 'eth' ? f.lv : 'auto'), rows = [];
+      var f = swFee(), x = swFeeCtx(ch, p.net, MIN), cur = f.lv === 'custom' ? 'custom' : f.tier || (ch === 'eth' ? f.lv : 'auto'), rows = [];
       var LAB = ch === 'eth' ? { slow: 'Low', medium: 'Normal', fast: 'High' } : ch === 'sol' ? { auto: 'Site suggested', x2: 'Faster', x4: 'Fastest' } : { auto: 'Normal', x2: 'Fast' };
       var ks = ch === 'eth' ? ['slow', 'medium', 'fast'] : ch === 'sol' ? ['auto', 'x2', 'x4'] : ['auto', 'x2'];
       ks.forEach(function (k) {
@@ -10486,11 +10699,11 @@ window.hwCrashPrompt = crashPrompt;
       });
       var spec = HWP.manFee.spec(x); if (spec) { spec.on = cur === 'custom'; spec.sub = spec.on ? HWP.manFee.sub(x, f.man) : ''; if (ch === 'eth') { spec.fields.forEach(function (fd) { if (fd.k === 'gas') { fd.ph = 'Auto'; if (!(f.man && f.man.v && f.man.v.gas)) fd.value = ''; fd.info = 'Leave empty to use the swap\u2019s own estimate. Unused gas is never charged.'; } }); } }
       HWP.picker({ title: 'Network fee', rows: rows, manual: spec,
-        onPick: function (k) { SW.fee = ch === 'eth' ? { lv: k, t: null } : k === 'auto' ? { lv: 'medium', t: null } : { lv: 'medium', tier: k, t: null }; buzz(6); detPaint(); },
+        onPick: function (k) { SW.fee = ch === 'eth' ? { lv: k, t: null } : k === 'auto' ? { lv: 'medium', t: null } : { lv: 'medium', tier: k, t: null }; fpSaveDapp(ch, p.net, ch === 'eth' || k !== 'auto' ? SW.fee : null); buzz(6); detPaint(); },
         onManual: function (st) {
           var r = HWP.manFee.toT(x, st); if (r.err) return r.err;
           var T = Object.assign({}, r.T); if (ch === 'eth' && r.gasAuto) delete T.gas;
-          SW.fee = { lv: 'custom', man: st, t: ch === 'sol' ? null : T, jito: ch === 'sol' && r.jito > 0n ? String(r.jito) : '' };
+          SW.fee = { lv: 'custom', man: st, t: ch === 'sol' ? null : T, jito: ch === 'sol' && r.jito > 0n ? String(r.jito) : '' }; fpSaveDapp(ch, p.net, SW.fee);
           buzz(6); detPaint(); if (ch === 'sol' && SW.amt) { clearTimeout(openFee.t); openFee.t = setTimeout(function () { swQuote(); }, 300); } return '';
         } });
     }

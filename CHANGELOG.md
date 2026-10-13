@@ -1,5 +1,18 @@
 # Changelog
 
+## Kwallet v3.98.1 + Hwallet v1.8.1
+
+Sheets, buttons and fees from the phone test of v3.98.
+
+### Changed
+- **Primary buttons in the style's own colour.** Confirm, Continue, Send, Approve, Use this fee and Unlock are filled with the selected style's primary: OG = Kwallet lime / Hwallet navy, Material UI = Material You (the wallpaper's primary on Android 12+, the brand colour before that), Miuix = Miuix primary (#3482FF light, #277AF7 dark). Disabled is the same colour at 38%, never grey.
+- **One sheet width in every style.** Every bottom sheet (Send, fee picker, dApp, connect, Kwallet's sign sheet, Hwallet's own sheets) uses the same 16dp side inset and 600dp maximum in OG, Material UI and Miuix (Miuix no longer adds 24dp on top, which squeezed Send). Row labels are never cut ("Network fee" stays whole) and values stay on one line, with the $ value on the line under it.
+- **Fee speed remembered per chain.** The speed you pick (Slow / Normal / Fast / Fastest / Custom, EVM per network) is kept and used in Send, Swap and every dApp and WalletConnect approval until you change it, in Hwallet or in Kwallet's sheet (Kwallet reports the pick back). dApp sheets start on it; "Site suggested" (the app's own fee) stays a choice and is used when nothing faster was saved.
+- **Account rent as one small grey line** under the amounts ("+0.0015 SOL rent · refundable", "one-time", "rent back"), with an info icon that opens a short sheet on what rent is. No red, no full-width banner. Sending a token to an address without its token account shows "+… SOL rent · opens the recipient's token account" the same way.
+- **No expiry countdown bar.** A request still expires at the same fixed deadline; Confirm turns off and the sheet closes on its own with a short "Request expired" toast.
+- **Jupiter-style recap** on Kwallet's dApp approvals and on the Send review: Kwallet chip top-left and chain chip top-right (#60), the app header, a hero You send card, an arrow and a You receive card, compact rows (rate, route, minimum received, network fee with its speed), the wallet row, then one full-width Confirm (hold to sign, as before) with Cancel as a text button under it.
+- **Kwallet's chain switcher is the pre-3.97.4 one again** in OG, Material UI and Miuix, light and dark: a rounded rectangle track with its 1px border and the selected chain as a filled rectangle behind a bold label (never a pill or circle), in the style's colour. The style skin no longer rewrites its corners or font. The Gen / Undo / Redo / Copy / Clear row is unchanged.
+
 ## Kwallet v3.98 + Hwallet v1.8
 
 Full Monero.
