@@ -1,5 +1,19 @@
 # Changelog
 
+## Kwallet v3.98.2 + Hwallet v1.8.2
+
+A calmer, denser look across both apps, after the phone test of v3.98.1.
+
+### Changed
+- **Jupiter buttons everywhere.** Every Confirm / Cancel pair (dApp approvals, connect, the Send review, Pair, Monero, Kwallet's PIN sheet, Hwallet's own sheets and dialogs) is two equal full-round 48dp pills side by side, Cancel left and Confirm right, in every style (OG, Material UI, Miuix) and theme: Confirm solid #ACF47D, Cancel solid red, both with the dark button text #07090E. Single primary buttons (Continue, Swap, Use this fee) take the same green pill. Hold to sign is unchanged.
+- **Compact dApp and Send sheets like Jupiter's confirm sheet:** a small header (app icon, name, link on one line), a one-line grey disclaimer, one grouped balance-change card (token rows about 56dp, red out / green in, $ under the amount), the network fee and wallet cards (short address in grey on the right), a small grey "Only confirm if you trust this website", then the buttons. The big You send / You receive hero cards are gone. The #60 header (Kwallet chip top-left, chain chip top-right) stays.
+- **Inter, bundled offline** (SIL Open Font License 1.1, credited in NOTICE and in Hwallet's licenses): the whole of Hwallet, and Kwallet's sign sheets, Settings and dialogs. Tabular numbers for amounts; titles 17-18sp semibold, body 15sp, secondary 13sp grey. Tiny amounts use subscript zeros like Jupiter (0.0₅6 SOL, $0.0₃647) instead of "< $0.01".
+- **Settings, single-line.** Rows are about 52dp with the value on the right; subtitles only where they carry state (rows with a switch or a picker show none). Hwallet is regrouped into Wallets (wallets, pair, WalletConnect) · Appearance · Sending & fees (saved fee speeds, simulate) · Network (data limit, API keys, Monero node / scan start / sync spent / rescan) · Security · Background & alerts · About; no header repeats its only row (Kwallet's UI style moved into Appearance). New **Saved fee speeds** row: see the speed kept for each chain, reset one or all. The Support card is slimmer.
+- **Same density in both apps:** 16dp cards, 16dp sides, 52-56dp rows, solid cards with no gradients.
+- **Chain selector follows the app's accent** in every style and theme: Kwallet lime (dark text) in OG and Miuix, the Material You wallpaper colour in Material UI (and with Kwallet's own Material You switch); Hwallet's chain chips navy. The restored rectangle shape is kept.
+- **Hwallet Browser, compact:** slimmer address bar, a tighter Most visited grid (smaller tiles, one-line labels), History and Connected sites as compact rows right under it, then Popular apps and a short grey note.
+- **Most visited is yours to arrange:** long-press a tile, drag to reorder (the order is saved), tap the small red x to remove a site (it stays removed); tap outside or Done to finish.
+
 ## Kwallet v3.98.1 + Hwallet v1.8.1
 
 Sheets, buttons and fees from the phone test of v3.98.
