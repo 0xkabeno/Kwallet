@@ -3,6 +3,7 @@
 <head>
 <script>(function(){var P={touchstart:1,touchmove:1,wheel:1,mousewheel:1},o=EventTarget.prototype.addEventListener;try{EventTarget.prototype.addEventListener=function(t,f,x){if(P[t]&&(x===undefined||typeof x==='boolean'))x={capture:!!x,passive:true};return o.call(this,t,f,x);};}catch(e){}})();</script>
 <meta charset="UTF-8">
+<script>try{var __u=localStorage.getItem("kw-ui");document.documentElement.setAttribute("data-ui",__u==="m3"||__u==="miuix"?__u:"og")}catch(e){document.documentElement.setAttribute("data-ui","og")}</script>
 <script>/* v3.90: SignActivity opens index.html#sign with the KwSign bridge. v3.92: the main UI is hidden from the very first paint. v3.97 wave A: every request is a transparent sheet */window.__kwSign=/(^|#)sign\b/.test(location.hash)&&!!window.KwSign;if(window.__kwSign){document.documentElement.classList.add("kw-sign");var __sh=true;document.documentElement.classList.add("kw-sheet");var __d=false;try{__d=localStorage.getItem("wallet-theme")==="dark"}catch(e){}document.write("<style>html.kw-sign,html.kw-sign body{background:"+(__sh?"transparent":__d?"#0e1117":"#f8f9fa")+"!important}html.kw-sign body>*:not(#kss):not(.kwd-ov):not(.toast):not(script):not(style){display:none!important}</style>")}</script>
 <script>
 /* v3.50: Android app draws edge-to-edge; the native shell tells us the system bar sizes */
@@ -2876,6 +2877,195 @@ body[data-theme="dark"] .hp-ov{--hp-acc:#5b8def;--hp-accI:#ffffff}
 .hp-rent.back{color:#1f9d55}
 body[data-theme=dark] .hp-rent{color:#ff7a7a}body[data-theme=dark] .hp-rent.back{color:#4cd38a}
 .hp-nw{white-space:nowrap}
+</style>
+<style id="ui-skin">/* v3.97.4 / H 1.7.4 (#109): UI style skins. html[data-ui="og"] = the current look (no rules here).
+   html[data-ui="m3"]    = Material 3 (m3.material.io + androidx.compose.material3 tokens: shape scale 4/8/12/16/28, button 40dp
+                           full-round, list item 56/72dp, bottom sheet 28dp + 32x4 handle, dialog 28dp/24dp padding, snackbar 4dp
+                           inverse surface, switch 52x32 with 16->24dp thumb, outlined field 56dp/4dp, nav bar 80dp + 64x32 indicator,
+                           state layer 10% pressed, motion emphasized (.2,0,0,1) / decelerate (.05,.7,.1,1) / accelerate (.3,0,.8,.15)).
+   html[data-ui="miuix"] = Miuix / HyperOS (github.com/compose-miuix-ui/miuix, Apache-2.0: Card 16dp, BasicComponent 56dp min + 16dp
+                           margin, title 17sp Medium, summary 14sp, SmallTitle 14sp Bold 28/8dp, Button 16dp radius 40dp min 16x13 margin
+                           17sp, TextField 16dp radius 16x16 + 2dp focus border, Switch 49x28 thumb 20 (x 4->25), Dialog 32dp radius,
+                           12dp outside margin, 24dp inside, title 18sp Medium centered, BottomSheet 28dp + 24dp inside, handle 4dp,
+                           NavigationBar 64dp icon 26 label 12sp no indicator, Snackbar 16dp, TabRow 42dp 12dp radius, ListPopup 16dp,
+                           press overlay alpha .10, dim black .3).
+   Only colours are ours: every rule reads the app's own theme tokens (Hwallet navy / Kwallet lime, light + dark). */
+
+/* ---------- shared role tokens ---------- */
+html[data-ui="m3"] { --u-font: 'RobotoE','Roboto',system-ui,sans-serif; --u-ease: cubic-bezier(.2,0,0,1); --u-dec: cubic-bezier(.05,.7,.1,1); --u-acc: cubic-bezier(.3,0,.8,.15);
+  --u-r-card: 12px; --u-r-btn: 20px; --u-r-cta: 28px; --u-r-sheet: 28px; --u-r-dlg: 28px; --u-r-field: 4px; --u-r-chip: 8px; --u-r-toast: 4px; --u-r-menu: 4px;
+  --u-btn-h: 40px; --u-cta-h: 56px; --u-row-h: 56px; --u-press: rgba(0,0,0,.10); --u-scrim: .32; }
+html[data-ui="miuix"] { --u-font: system-ui,'MiSans','RobotoE','Roboto',sans-serif; --u-ease: cubic-bezier(.25,.8,.25,1); --u-dec: cubic-bezier(.17,.89,.32,1); --u-acc: cubic-bezier(.4,0,1,1);
+  --u-r-card: 16px; --u-r-btn: 16px; --u-r-cta: 16px; --u-r-sheet: 28px; --u-r-dlg: 32px; --u-r-field: 16px; --u-r-chip: 12px; --u-r-toast: 16px; --u-r-menu: 16px;
+  --u-btn-h: 50px; --u-cta-h: 50px; --u-row-h: 56px; --u-press: rgba(0,0,0,.10); --u-scrim: .30; }
+html[data-ui="m3"] body[data-theme="dark"], html[data-ui="miuix"] body[data-theme="dark"],
+html[data-ui="m3"][data-theme="dark"], html[data-ui="miuix"][data-theme="dark"] { --u-press: rgba(255,255,255,.10); }
+html[data-ui="m3"] body, html[data-ui="miuix"] body { font-family: var(--u-font) !important; }
+html[data-ui="miuix"] body { letter-spacing: 0; }
+html[data-ui="m3"] body { letter-spacing: .5px; }
+html[data-ui="m3"] h1, html[data-ui="m3"] h2, html[data-ui="m3"] h3, html[data-ui="m3"] b, html[data-ui="m3"] button { letter-spacing: 0; }
+
+/* ---------- pressed state layers (both systems draw an overlay, no colour change) ---------- */
+html[data-ui="m3"] .btn:active, html[data-ui="m3"] .kws-row:active, html[data-ui="m3"] .kwd-opt:active, html[data-ui="m3"] .hp-pr:active, html[data-ui="m3"] .hp-btn:active, html[data-ui="m3"] .br-row:active, html[data-ui="m3"] .tp-r:active, html[data-ui="m3"] .sw-tok:active, html[data-ui="m3"] .modal button:active, html[data-ui="m3"] .btn-p:active, html[data-ui="m3"] .btn-s:active, html[data-ui="m3"] .btn-a:active, html[data-ui="m3"] .btn-k:active, html[data-ui="m3"] .btn-v:active, html[data-ui="m3"] .btn-d:active, html[data-ui="m3"] .icon-btn:active, html[data-ui="m3"] .ib:active, html[data-ui="m3"] .hp-tap:active, html[data-ui="m3"] .kwd-act button:active,
+html[data-ui="miuix"] .btn:active , html[data-ui="miuix"] .kws-row:active , html[data-ui="miuix"] .kwd-opt:active , html[data-ui="miuix"] .hp-pr:active , html[data-ui="miuix"] .hp-btn:active , html[data-ui="miuix"] .br-row:active , html[data-ui="miuix"] .tp-r:active , html[data-ui="miuix"] .sw-tok:active , html[data-ui="miuix"] .modal button:active , html[data-ui="miuix"] .btn-p:active , html[data-ui="miuix"] .btn-s:active , html[data-ui="miuix"] .btn-a:active , html[data-ui="miuix"] .btn-k:active , html[data-ui="miuix"] .btn-v:active , html[data-ui="miuix"] .btn-d:active , html[data-ui="miuix"] .icon-btn:active , html[data-ui="miuix"] .ib:active , html[data-ui="miuix"] .hp-tap:active , html[data-ui="miuix"] .kwd-act button:active {
+  box-shadow: inset 0 0 0 999px var(--u-press) !important; transform: none !important; }
+
+/* ---------- cards / grouped lists ---------- */
+html[data-ui="m3"] .box, html[data-ui="miuix"] .box { border-radius: var(--u-r-card) !important; }
+html[data-ui="m3"] .lst>*:first-child, html[data-ui="miuix"] .lst>*:first-child { border-top-left-radius: var(--u-r-card) !important; border-top-right-radius: var(--u-r-card) !important; }
+html[data-ui="m3"] .lst>*:last-child, html[data-ui="miuix"] .lst>*:last-child { border-bottom-left-radius: var(--u-r-card) !important; border-bottom-right-radius: var(--u-r-card) !important; }
+html[data-ui="m3"] .lst>*, html[data-ui="miuix"] .lst>* { border-radius: 0; }
+html[data-ui="m3"] .lst>*:only-child, html[data-ui="miuix"] .lst>*:only-child { border-radius: var(--u-r-card) !important; }
+html[data-ui="m3"] .kws-grp, html[data-ui="miuix"] .kws-grp, html[data-ui="m3"] .panel, html[data-ui="miuix"] .panel,
+html[data-ui="m3"] .br-card, html[data-ui="miuix"] .br-card { border-radius: var(--u-r-card) !important; box-shadow: none !important; }
+html[data-ui="miuix"] .kws-grp { margin: 0 12px !important; gap: 0 !important; padding: 0 !important; }
+html[data-ui="miuix"] .panel { border: 0 !important; }
+html[data-ui="m3"] .panel { border: 0 !important; }
+html[data-ui="m3"] .sw-card, html[data-ui="miuix"] .sw-card, html[data-ui="m3"] .hp-card, html[data-ui="miuix"] .hp-card { border-radius: var(--u-r-card) !important; }
+
+/* list items: M3 ListItem 56dp one-line (72 two-line), 16dp sides, 16dp gap, headline bodyLarge 16/24, supporting bodyMedium 14/20 */
+html[data-ui="m3"] .kws-row { min-height: 56px !important; padding: 8px 24px 8px 16px !important; gap: 16px !important; font: 400 16px/24px var(--u-font) !important; letter-spacing: .5px; border-radius: 0 !important; }
+html[data-ui="m3"] .kws-row small, html[data-ui="m3"] .kws-s { font: 400 14px/20px var(--u-font) !important; letter-spacing: .25px; }
+html[data-ui="m3"] .kws-sec { padding: 16px 32px 8px !important; font: 500 14px/20px var(--u-font) !important; letter-spacing: .1px; }
+/* Miuix BasicComponent: min 56dp, 16dp inside margin, title 17sp Medium, summary 14sp (onSurfaceVariantSummary), SmallTitle 14sp Bold 28/8dp */
+html[data-ui="miuix"] .kws-row { min-height: 56px !important; padding: 16px !important; gap: 16px !important; font: 500 17px/1.2 var(--u-font) !important; border-radius: 0 !important; border-top: 0 !important; }
+html[data-ui="miuix"] .kws-row small, html[data-ui="miuix"] .kws-s { font: 400 14px/1.3 var(--u-font) !important; opacity: .6; color: var(--text) !important; }
+html[data-ui="miuix"] .kws-sec { padding: 8px 28px !important; font: 700 14px/1.3 var(--u-font) !important; letter-spacing: 0 !important; color: var(--muted, var(--text-muted)) !important; }
+html[data-ui="miuix"] .kws-row .kws-ic { background: transparent !important; border-radius: 0 !important; }
+
+/* ---------- buttons ---------- */
+html[data-ui="m3"] .btn { height: var(--u-btn-h) !important; border-radius: var(--u-r-btn) !important; font: 500 14px/20px var(--u-font) !important; letter-spacing: .1px; padding: 0 24px !important; }
+html[data-ui="m3"] .btn.big, html[data-ui="m3"] .btn.wide.pri, html[data-ui="m3"] .sw-go, html[data-ui="m3"] .snd-go, html[data-ui="m3"] .hp-btn { height: var(--u-cta-h) !important; border-radius: var(--u-r-cta) !important; font: 500 16px/24px var(--u-font) !important; letter-spacing: .15px; }
+html[data-ui="miuix"] .btn, html[data-ui="miuix"] .btn.big, html[data-ui="miuix"] .sw-go, html[data-ui="miuix"] .snd-go, html[data-ui="miuix"] .hp-btn {
+  min-height: 40px; height: auto !important; padding: 13px 16px !important; border-radius: 16px !important; font: 500 17px/1.4 var(--u-font) !important; letter-spacing: 0 !important; }
+html[data-ui="miuix"] .hp-btn+.hp-btn { margin-left: 12px; }
+html[data-ui="miuix"] .btn:not(.pri), html[data-ui="miuix"] .hp-btn:not(.hp-go) { background: var(--card2, var(--bg-input)); }
+html[data-ui="m3"] .modal button, html[data-ui="m3"] .btn-p, html[data-ui="m3"] .btn-s { border-radius: 20px !important; min-height: 40px; font-weight: 500 !important; letter-spacing: .1px; }
+html[data-ui="miuix"] .modal button, html[data-ui="miuix"] .btn-p, html[data-ui="miuix"] .btn-s { border-radius: 16px !important; min-height: 40px; font-weight: 500 !important; }
+html[data-ui="m3"] .ac { border-radius: 16px !important; }   /* M3 FAB-family container: 16dp */
+html[data-ui="miuix"] .ac { border-radius: 50% !important; }
+
+/* ---------- segmented controls / tabs ---------- */
+html[data-ui="m3"] .seg, html[data-ui="m3"] .kws-seg, html[data-ui="m3"] .hp-seg { background: transparent !important; border: 1px solid var(--border, var(--hp-border)) !important; border-radius: 20px !important; padding: 0 !important; gap: 0 !important; overflow: hidden; }
+html[data-ui="m3"] .seg button { height: 40px !important; border-radius: 0 !important; font: 500 14px/20px var(--u-font) !important; letter-spacing: .1px; box-shadow: none !important; }
+html[data-ui="m3"] .seg button+button { border-left: 1px solid var(--border) !important; }
+html[data-ui="m3"] .seg button.on { background: var(--sel, var(--pill)) !important; color: var(--text) !important; }
+html[data-ui="miuix"] .seg, html[data-ui="miuix"] .hp-seg { border-radius: 12px !important; padding: 5px !important; gap: 0 !important; }
+html[data-ui="miuix"] .seg button { height: 35px !important; border-radius: 8px !important; font: 400 16px/1 var(--u-font) !important; box-shadow: none !important; }
+html[data-ui="miuix"] .seg button.on { font-weight: 700 !important; }
+
+/* ---------- text fields ---------- */
+html[data-ui="m3"] .inp, html[data-ui="m3"] .srch { border-radius: 4px !important; border: 1px solid var(--border) !important; background: transparent !important; min-height: 56px; }
+html[data-ui="m3"] .inp:focus-within, html[data-ui="m3"] .srch:focus-within { border: 2px solid var(--acc) !important; }
+html[data-ui="m3"] .srch { border-radius: 28px !important; border: 0 !important; background: var(--card2) !important; }   /* M3 SearchBar: 56dp full-round */
+html[data-ui="miuix"] .inp, html[data-ui="miuix"] .srch { border-radius: 16px !important; border: 2px solid transparent !important; background: var(--card2) !important; }
+html[data-ui="miuix"] .inp:focus-within { border-color: var(--acc) !important; }
+html[data-ui="miuix"] .srch { min-height: 45px; border-radius: 50px !important; }
+html[data-ui="m3"] .kwd-in, html[data-ui="m3"] .modal input { border-radius: 4px !important; min-height: 56px; }
+html[data-ui="miuix"] .kwd-in, html[data-ui="miuix"] .modal input { border-radius: 16px !important; border: 2px solid transparent !important; padding: 16px !important; font-size: 17px !important; background: var(--bg-input, var(--card2)) !important; }
+
+/* ---------- switches ---------- */
+html[data-ui="m3"] .sw, html[data-ui="m3"] .kws-sw { flex: 0 0 52px !important; width: 52px !important; height: 32px !important; border-radius: 16px !important; border: 2px solid var(--muted, var(--text-muted)) !important; background: var(--card2, var(--bg-input)) !important; box-sizing: border-box; }
+html[data-ui="m3"] .sw::after, html[data-ui="m3"] .kws-sw::after { top: 6px !important; left: 6px !important; width: 16px !important; height: 16px !important; box-shadow: none !important; background: var(--muted, var(--text-muted)) !important; transition: transform .25s cubic-bezier(.2,0,0,1), width .25s cubic-bezier(.2,0,0,1), height .25s cubic-bezier(.2,0,0,1), top .25s, left .25s !important; }
+html[data-ui="m3"] .on>.sw, html[data-ui="m3"] .sw.on, html[data-ui="m3"] .on .kws-sw { background: var(--acc, var(--accent)) !important; border-color: var(--acc, var(--accent)) !important; }
+html[data-ui="m3"] .on>.sw::after, html[data-ui="m3"] .sw.on::after, html[data-ui="m3"] .on .kws-sw::after { top: 2px !important; left: 22px !important; width: 24px !important; height: 24px !important; transform: none !important; background: var(--accI, #fff) !important; }
+html[data-ui="miuix"] .sw, html[data-ui="miuix"] .kws-sw { flex: 0 0 49px !important; width: 49px !important; height: 28px !important; border-radius: 14px !important; border: 0 !important; background: var(--border) !important; }
+html[data-ui="miuix"] .sw::after, html[data-ui="miuix"] .kws-sw::after { top: 4px !important; left: 4px !important; width: 20px !important; height: 20px !important; box-shadow: none !important; background: #fff !important; transition: transform .35s cubic-bezier(.25,.8,.25,1) !important; }
+html[data-ui="miuix"] .on>.sw, html[data-ui="miuix"] .sw.on, html[data-ui="miuix"] .on .kws-sw { background: var(--acc, var(--accent)) !important; }
+html[data-ui="miuix"] .on>.sw::after, html[data-ui="miuix"] .sw.on::after, html[data-ui="miuix"] .on .kws-sw::after { transform: translateX(21px) !important; left: 4px !important; background: var(--accI, #fff) !important; }
+
+/* ---------- bottom sheets (Hwallet sheets, popups, Kwallet sign sheet, connect, pickers, send, fee) ---------- */
+html[data-ui="m3"] .sheet , html[data-ui="m3"] .hp-sheet , html[data-ui="m3"] .tp-sheet , html[data-ui="m3"] .snd-sheet { border-radius: 28px 28px 0 0 !important; }
+html[data-ui="m3"] .grab , html[data-ui="m3"] .hp-grab { width: 32px !important; height: 4px !important; border-radius: 2px !important; margin: 22px auto 22px !important; background: var(--muted, var(--hp-muted)) !important; opacity: .4 !important; }
+html[data-ui="m3"] .sheet { transition: transform .4s var(--u-dec) !important; }
+html[data-ui="m3"] .hp-ov.in .hp-sheet { transition: transform .4s cubic-bezier(.05,.7,.1,1) !important; }
+html[data-ui="m3"] .hp-ov.out .hp-sheet { transition: transform .2s cubic-bezier(.3,0,.8,.15) !important; }
+html[data-ui="m3"] .hp-ov.in .hp-dim { opacity: .32 !important; }
+html[data-ui="m3"] .sheet-ov.show { background: rgba(0,0,0,.32) !important; }
+html[data-ui="m3"] .sheet h3, html[data-ui="m3"] .hp-title { font: 400 24px/32px var(--u-font) !important; letter-spacing: 0 !important; }
+html[data-ui="miuix"] .sheet , html[data-ui="miuix"] .hp-sheet , html[data-ui="miuix"] .tp-sheet , html[data-ui="miuix"] .snd-sheet { border-radius: 28px 28px 0 0 !important; max-width: 640px !important; padding-left: 24px !important; padding-right: 24px !important; box-shadow: none !important; }
+html[data-ui="miuix"] .hp-sheet { padding-left: 0 !important; padding-right: 0 !important; }
+html[data-ui="miuix"] .hp-sheet .hp-scroll, html[data-ui="miuix"] .hp-sheet .hp-foot { padding-left: 24px !important; padding-right: 24px !important; }
+html[data-ui="miuix"] .grab , html[data-ui="miuix"] .hp-grab { width: 45px !important; height: 4px !important; border-radius: 2px !important; margin: 10px auto 12px !important; background: var(--muted, var(--hp-muted)) !important; opacity: .35 !important; }
+html[data-ui="miuix"] .sheet h3, html[data-ui="miuix"] .hp-title { font: 500 18px/1.3 var(--u-font) !important; text-align: center !important; letter-spacing: 0 !important; }
+html[data-ui="miuix"] .sheet { transition: transform .45s cubic-bezier(.17,.89,.32,1) !important; }
+html[data-ui="miuix"] .hp-ov.in .hp-sheet { transition: transform .45s cubic-bezier(.17,.89,.32,1) !important; }
+html[data-ui="miuix"] .hp-ov.out .hp-sheet { transition: transform .25s cubic-bezier(.4,0,1,1) !important; }
+html[data-ui="miuix"] .hp-ov.in .hp-dim { opacity: .3 !important; }
+html[data-ui="miuix"] .sheet-ov.show { background: rgba(0,0,0,.3) !important; }
+/* sign sheet in Kwallet: the same rules apply because the sheet is .hp-sheet; its picker rows */
+html[data-ui="m3"] .hp-pr { min-height: 56px !important; padding: 8px 24px 8px 16px !important; }
+html[data-ui="miuix"] .hp-pr { min-height: 56px !important; padding: 16px !important; border-top: 0 !important; }
+html[data-ui="miuix"] .hp-prl b, html[data-ui="miuix"] .hp-prv b { font-weight: 500 !important; font-size: 17px !important; }
+html[data-ui="miuix"] .hp-prl small, html[data-ui="miuix"] .hp-prv small { font-size: 14px !important; }
+html[data-ui="m3"] .hp-chip, html[data-ui="m3"] .tp-chips button { border-radius: 8px !important; height: 32px !important; }
+html[data-ui="miuix"] .hp-chip, html[data-ui="miuix"] .tp-chips button { border-radius: 12px !important; }
+
+/* ---------- dialogs (Hwallet .kwd, Kwallet .kwd and .modal) ---------- */
+html[data-ui="m3"] .kwd, html[data-ui="m3"] .modal { border-radius: 28px !important; border: 0 !important; min-width: 280px; box-shadow: 0 3px 6px rgba(0,0,0,.15), 0 2px 4px rgba(0,0,0,.12) !important; }
+html[data-ui="m3"] .modal { padding: 24px !important; }
+html[data-ui="m3"] .kwd h3 { font: 400 24px/32px var(--u-font) !important; }
+html[data-ui="m3"] .kwd-ov.show, html[data-ui="m3"] .modal-overlay { background: rgba(0,0,0,.32) !important; }
+html[data-ui="miuix"] .kwd-ov, html[data-ui="miuix"] .modal-overlay { align-items: flex-end !important; padding: 12px !important; }
+html[data-ui="miuix"] .kwd-ov.show, html[data-ui="miuix"] .modal-overlay { background: rgba(0,0,0,.3) !important; }
+html[data-ui="miuix"] .kwd, html[data-ui="miuix"] .modal { width: 100% !important; max-width: 420px !important; border-radius: 32px !important; border: 0 !important; box-shadow: none !important; padding: 24px 0 !important; margin: 0 auto calc(var(--sab, 0px) + 0px) !important; }
+html[data-ui="miuix"] .modal { padding: 24px !important; }
+html[data-ui="miuix"] .kwd h3 { font: 500 18px/1.3 var(--u-font) !important; text-align: center; margin: 0 24px 12px !important; }
+html[data-ui="miuix"] .kwd-p { text-align: center; font: 400 16px/1.4 var(--u-font) !important; }
+html[data-ui="miuix"] .kwd-opt { height: auto !important; min-height: 56px; padding: 16px 24px !important; font: 500 17px/1.2 var(--u-font) !important; }
+html[data-ui="miuix"] .kwd-act { gap: 12px; padding: 12px 24px 0 !important; }
+html[data-ui="miuix"] .kwd-act > span { display: none; }
+html[data-ui="miuix"] .kwd-act button { flex: 1 1 0; height: auto !important; min-height: 40px; padding: 13px 16px !important; border-radius: 16px !important; background: var(--card2, var(--bg-input)) !important; color: var(--text) !important; font: 500 17px/1.4 var(--u-font) !important; }
+html[data-ui="miuix"] .kwd-act button:last-child { background: var(--acc, var(--accent)) !important; color: var(--accI, #fff) !important; }
+html[data-ui="m3"] .kwd-ov .kwd, html[data-ui="miuix"] .kwd-ov .kwd { transition: transform .3s var(--u-dec), opacity .2s linear; }
+html[data-ui="miuix"] .kwd-ov:not(.show) .kwd { transform: translateY(40px); }
+
+/* ---------- snackbar / toast ---------- */
+html[data-ui="m3"] .toast { left: 12px !important; right: 12px !important; transform: translate3d(0,20px,0) !important; border-radius: 4px !important; min-height: 48px; padding: 14px 16px !important; font: 400 14px/20px var(--u-font) !important; letter-spacing: .25px; text-align: left; box-shadow: 0 3px 6px rgba(0,0,0,.15) !important; max-width: none !important; }
+html[data-ui="m3"] .toast.show { transform: none !important; }
+html[data-ui="miuix"] .toast { left: 12px !important; right: 12px !important; transform: translate3d(0,20px,0) !important; border-radius: 16px !important; min-height: 48px; padding: 14px 16px !important; font: 400 16px/20px var(--u-font) !important; text-align: left; box-shadow: 0 2px 10px rgba(0,0,0,.12) !important; max-width: none !important; }
+html[data-ui="miuix"] .toast.show { transform: none !important; }
+
+/* ---------- top bars ---------- */
+html[data-ui="m3"] .bar .bt, html[data-ui="m3"] .kws-top h2 { font: 400 22px/28px var(--u-font) !important; letter-spacing: 0 !important; }
+html[data-ui="m3"] .bar { min-height: 64px; }
+html[data-ui="miuix"] .bar .bt.l, html[data-ui="miuix"] .kws-page .bar .bt { font: 400 32px/1.2 var(--u-font) !important; letter-spacing: 0 !important; }   /* Miuix large title (title1 32sp) */
+html[data-ui="miuix"] .bar .bt:not(.l) { font: 500 20px/1.2 var(--u-font) !important; }   /* collapsed title3 20sp Medium */
+html[data-ui="miuix"] .kws-top h2 { font: 500 20px/1.2 var(--u-font) !important; }
+
+/* ---------- navigation bar ---------- */
+html[data-ui="m3"] .nav button { font: 500 12px/16px var(--u-font) !important; letter-spacing: .5px; gap: 4px !important; }
+html[data-ui="m3"] .nav .ni { width: 64px !important; height: 32px !important; border-radius: 16px !important; }
+html[data-ui="m3"] .nav button.on .ni { background: var(--sel, var(--pill)) !important; }
+html[data-ui="miuix"] .nav button { font: 400 12px/1.2 var(--u-font) !important; gap: 2px !important; color: var(--soft, var(--muted)) !important; }
+html[data-ui="miuix"] .nav button.on { font-weight: 700 !important; color: var(--text) !important; }
+html[data-ui="miuix"] .nav .ni { width: 26px !important; height: 26px !important; background: transparent !important; border-radius: 0 !important; }
+html[data-ui="miuix"] .nav .ni .ic { width: 26px !important; height: 26px !important; }
+html[data-ui="miuix"] .nav button.on .ni { color: var(--text) !important; background: transparent !important; }
+html[data-ui="miuix"] .nav .ind, html[data-ui="miuix"] .nav .pill, html[data-ui="miuix"] .nav::before { display: none !important; }
+
+/* ---------- menus ---------- */
+html[data-ui="m3"] .wc-menu, html[data-ui="m3"] .br-mn, html[data-ui="m3"] .menu { border-radius: 4px !important; }
+html[data-ui="miuix"] .wc-menu, html[data-ui="miuix"] .br-mn, html[data-ui="miuix"] .menu { border-radius: 16px !important; min-width: 200px; }
+
+/* ---------- progress / spinners keep their colour; M3 indicator 4dp stroke, Miuix ring ---------- */
+html[data-ui="m3"] .spin { border-width: 4px !important; }
+
+/* ---------- pull to refresh (#108): style-specific indicators (built by segD ptr*) ---------- */
+.ptrM3, .ptrMx { position: fixed; left: 0; right: 0; z-index: 40; pointer-events: none; display: flex; justify-content: center; }
+.ptrM3 { height: 220px; overflow: hidden; }
+.ptrM3 .m3c { width: 40px; height: 40px; border-radius: 50%; background: var(--card2, var(--bg-input)); box-shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 8px 3px rgba(0,0,0,.15); display: grid; place-items: center; will-change: transform; }
+.ptrM3 svg { width: 24px; height: 24px; overflow: visible; }
+.ptrM3 .m3sp { display: none; width: 24px; height: 24px; animation: m3rot 1568ms linear infinite; }
+.ptrM3.ref .m3ar { display: none; }
+.ptrM3.ref .m3sp { display: block; }
+.ptrM3 .m3sp circle { stroke-dasharray: 1 100; animation: m3dash 1333ms cubic-bezier(.4,0,.2,1) infinite; }
+@keyframes m3rot { to { transform: rotate(360deg); } }
+@keyframes m3dash { 0% { stroke-dasharray: 1 100; stroke-dashoffset: 0; } 50% { stroke-dasharray: 26 100; stroke-dashoffset: -6; } 100% { stroke-dasharray: 1 100; stroke-dashoffset: -34; } }
+.ptrMx { flex-direction: column; align-items: center; justify-content: flex-start; height: 0; color: var(--muted, var(--text-muted)); }
+.ptrMx canvas { width: 20px; flex: 0 0 auto; }
+.ptrMx span { color: inherit; margin-top: 6px; font: 700 14px/1.2 system-ui,'MiSans','RobotoE',sans-serif; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .ptrM3 .m3sp, .ptrM3 .m3sp circle { animation-duration: 3s; } }
 </style>
 </head>
 <body data-theme="light">
@@ -11043,8 +11233,8 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.97.3';
-const APP_BUILD = '2026-10-12';
+const APP_VERSION = '3.97.4';
+const APP_BUILD = '2026-10-13';
 let derivedRows = [];
 let copiedState = {};
 let clickOrder = {}; // key -> order number (1,2,3...)
@@ -15032,6 +15222,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       (window.HarkNative && HarkNative.setAppIcon ? row('kws-icon', 'M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z', 'App icon', null, '<span class="kws-ico" role="radiogroup"><span data-i="lime" role="radio" aria-label="Lime"><b>K</b></span><span data-i="navy" role="radio" aria-label="Navy"><b>K</b></span></span>') : '') +
       row('kws-replay', I.play, 'Play opening screen', null) +
       '</div><div class="kws-sec">Hwallet</div><div class="kws-grp">' + row('kws-hw', 'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z', 'Hwallet signer', '') + row('kws-hwpin', 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z', 'Require PIN to sign', '', '<span class="kws-sw" aria-hidden="true"></span>') +
+      '</div><div class="kws-sec">Look</div><div class="kws-grp">' + row('kws-ui', 'M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z', 'UI style', '') +
       '</div><div class="kws-sec">Security</div><div class="kws-grp">' +
       row('kws-lock', I.lock, 'App lock', '', '<span class="kws-sw" aria-hidden="true"></span>') +
       (window.HarkNative && HarkNative.bioStatus ? row('kws-bio', I.fp, 'Biometric unlock', '', '<span class="kws-sw" aria-hidden="true"></span>') : '') +
@@ -15084,6 +15275,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
     };
     $('kws-replay').onclick = function () { closeSettings(); if (window.KwLock && KwLock.replay) KwLock.replay(); };
     $('kws-hw').onclick = function () { tick(); if (window.KwHw) KwHw.open(); };
+    $('kws-ui').onclick = function () { tick(); if (window.KwUi) KwUi.choose(function () { sync(); }); };
     $('kws-hwpin').onclick = function () { tick(); if (window.KwHw) { KwHw.setReqPin(!KwHw.reqPin()); try { FX.buzz(10); } catch (x) {} } sync(); };
     document.addEventListener('kwallet-pinmode', sync);
   }
@@ -15104,6 +15296,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
     }
     if ($('kws-icon')) { var ic = 'lime'; try { ic = HarkNative.appIcon(); } catch (x) {} ov.querySelectorAll('.kws-ico [data-i]').forEach(function (x) { var o = x.getAttribute('data-i') === ic; x.classList.toggle('on', o); x.setAttribute('aria-checked', o ? 'true' : 'false'); }); }
     if ($('kws-hw-s') && window.KwHw) $('kws-hw-s').textContent = KwHw.summary();
+    if ($('kws-ui-s') && window.KwUi) $('kws-ui-s').textContent = KwUi.label();
     if ($('kws-hwpin') && window.KwHw) { var hp = KwHw.reqPin(); $('kws-hwpin').classList.toggle('on', hp); $('kws-hwpin').setAttribute('aria-pressed', hp ? 'true' : 'false'); $('kws-hwpin-s').textContent = hp ? 'One PIN or biometric check after the hold' : 'Off. Hold to sign is the confirmation'; }
     if ($('kws-snd-s')) $('kws-snd-s').textContent = FX.SETS[FX.soundSet()] + (FX.soundOn() ? '' : ' \u00b7 sound is off');
     var th = document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
@@ -20112,6 +20305,26 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     });
   }
 
+  /* v3.97.4 (#109): app-wide UI style for Kwallet (Settings > UI style): OG (default) / Material UI (Material 3) / Miuix (HyperOS).
+     html[data-ui] switches the skin (ui_skin.css). The sign sheet over Hwallet follows Hwallet's style (theme.ui in the request). */
+  var KUIS = [['og', 'OG (default)', 'OG \u00b7 the classic Kwallet look'], ['m3', 'Material UI', 'Material 3'], ['miuix', 'Miuix', 'Xiaomi HyperOS style']];
+  function kuiOk(v) { return v === 'm3' || v === 'miuix' || v === 'og'; }
+  function kuiGet() { var v = 'og'; try { v = localStorage.getItem('kw-ui') || 'og'; } catch (e) {} return kuiOk(v) ? v : 'og'; }
+  function kuiSet(v) { v = kuiOk(v) ? v : 'og'; try { localStorage.setItem('kw-ui', v); } catch (e) {} document.documentElement.setAttribute('data-ui', v); }
+  function kuiChoose(after) {
+    var val = kuiGet(), d = document.createElement('div'); d.className = 'kwd-ov';
+    d.innerHTML = '<div class="kwd" role="dialog" aria-modal="true"><h3>UI style</h3><div role="radiogroup">' +
+      KUIS.map(function (o) { return '<button type="button" class="kwd-opt' + (o[0] === val ? ' on' : '') + '" role="radio" aria-checked="' + (o[0] === val) + '" data-v="' + o[0] + '"><span class="kwd-r"></span>' + o[1] + '</button>'; }).join('') +
+      '</div><div class="kwd-act"><button type="button">Cancel</button></div></div>';
+    document.body.appendChild(d); void d.offsetWidth; d.classList.add('show');
+    var close = function () { d.classList.remove('show'); setTimeout(function () { d.remove(); }, 160); };
+    d.addEventListener('click', function (e) {
+      var o = e.target.closest('.kwd-opt');
+      if (o) { var v = o.getAttribute('data-v'); close(); if (v !== val) setTimeout(function () { kuiSet(v); if (after) after(v); }, 120); return; }
+      if (e.target === d || e.target.closest('.kwd-act')) close();
+    });
+  }
+  window.KwUi = { get: kuiGet, set: kuiSet, choose: kuiChoose, label: function () { var v = kuiGet(); return (KUIS.filter(function (x) { return x[0] === v; })[0] || KUIS[0])[2]; } };
   window.KwHw = {
     open: openSheet, close: closeSheet, load: load, isOpen: function () { return !!(sheet && sheet.classList.contains('show')); },
     reqPin: reqPin, setReqPin: setReqPin, sync: syncStore,
@@ -20175,6 +20388,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   function applyTheme(t) {
     if (!t || typeof t !== 'object') return;
     if (t.dark === true || t.dark === false) document.body.setAttribute('data-theme', t.dark ? 'dark' : 'light');
+    if (t.ui === 'og' || t.ui === 'm3' || t.ui === 'miuix') document.documentElement.setAttribute('data-ui', t.ui);   /* v3.97.4: the sheet over Hwallet wears Hwallet's UI style */
     var v = t.v && typeof t.v === 'object' ? t.v : {};
     THK.forEach(function (k) { if (k === 'acc' || k === 'accI') return; var c = String(v[k] == null ? '' : v[k]).trim(); if (/^#[0-9a-f]{3,8}$/i.test(c) || /^rgba?\([\d.,\s%]+\)$/i.test(c)) page.style.setProperty('--hp-' + k, c); });
   }

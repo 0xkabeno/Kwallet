@@ -17,6 +17,7 @@ import android.os.Message
 import android.os.Parcel
 import android.util.Base64
 import android.util.Log
+import android.view.MotionEvent
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
@@ -85,6 +86,72 @@ class HwBrowser(
     private var top = 0
     private var bottom = 0
 
+    // ---------------------------------------------------------------- v1.7.4 (#108): native pull to refresh (https and http)
+    private var pull: HwPull? = null
+    private var pTab: Tab? = null
+    private var py0 = 0f
+    private var px0 = 0f
+    private var pCand = false
+    private var pOn = false
+    private val pCap = Runnable { try { pull?.finish() } catch (_: Throwable) {} }
+
+    fun ptrUi(v: String) { ptrUiPref = v.take(24); post { pull?.let { if (!it.busy) { it.reset(); applyPullStyle(it) } } } }
+    private fun applyPullStyle(p: HwPull) {
+        val v = ptrUiPref; val st = v.substringBefore(':')
+        p.style = if (st == "m3" || st == "miuix") st else "og"; p.dark = v.endsWith(":dark")
+    }
+    private fun pv(w: WebView): HwPull {
+        val p = pull ?: HwPull(act).also { pull = it }
+        if (!p.busy) applyPullStyle(p)
+        val lp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+        lp.topMargin = top; lp.bottomMargin = bottom
+        if (p.parent == null) root.addView(p, lp) else p.layoutParams = lp
+        p.visibility = View.VISIBLE; p.bringToFront()
+        p.onOffset = { o -> try { w.translationY = o } catch (_: Throwable) {} }
+        return p
+    }
+    private fun pullOff() {
+        pull?.let { it.reset(); it.visibility = View.GONE }
+        ui.removeCallbacks(pCap); pTab = null; pOn = false; pCand = false
+        tabs.values.forEach { t -> t.web?.translationY = 0f }
+    }
+    private fun pullTouch(t: Tab, w: WebView, e: MotionEvent) {
+        try {
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    pOn = false; py0 = e.rawY; px0 = e.rawX
+                    pCand = visible == t.id && !w.canScrollVertically(-1) && pull?.busy != true
+                }
+                MotionEvent.ACTION_POINTER_DOWN -> { if (pOn) pull?.cancel(); pOn = false; pCand = false }
+                MotionEvent.ACTION_MOVE -> {
+                    if (!pCand) return
+                    val d = act.resources.displayMetrics.density
+                    val dy = e.rawY - py0; val dx = Math.abs(e.rawX - px0); val slop = 8f * d
+                    if (!pOn) {
+                        if (dy < -slop || (dx > slop * 2f && dx > dy)) { pCand = false; return }
+                        if (dy > slop && dy > dx * 1.5f && !w.canScrollVertically(-1)) { pOn = true; py0 = e.rawY; pv(w) } else return
+                    }
+                    if (w.canScrollVertically(-1)) { pOn = false; pCand = false; pull?.cancel(); return }
+                    pull?.drag(Math.max(0f, e.rawY - py0))
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (pOn) {
+                        pOn = false
+                        val p = pull
+                        if (p != null && p.release()) {
+                            live(t, w)
+                            if (t.offline) { leaveSnapshot(t, w); if (isWeb(t.url)) w.loadUrl(t.url) } else w.reload()
+                            pTab = t; ui.removeCallbacks(pCap); ui.postDelayed(pCap, 9000)
+                        }
+                    }
+                    pCand = false
+                }
+                MotionEvent.ACTION_CANCEL -> { if (pOn) pull?.cancel(); pOn = false; pCand = false }
+            }
+        } catch (x: Throwable) { Log.w(TAG, "pull to refresh", x) }
+    }
+    private fun pullDone(t: Tab) { if (pTab === t) { ui.removeCallbacks(pCap); pTab = null; try { pull?.finish() } catch (_: Throwable) {} } }
+
     private fun q(s: String) = JSONObject.quote(s)
     private fun okId(id: String) = id.length in 2..24 && id.matches(Regex("^t[0-9a-z]+$"))
     private fun dir(id: String) = File(base, id)
@@ -119,6 +186,7 @@ class HwBrowser(
             top = (topCss * d).toInt(); bottom = (botCss * d).toInt()
             val t = tabs[id] ?: return@post
             val w = t.web ?: return@post
+            if (visible != id) pullOff()
             tabs.values.forEach { o -> if (o !== t) o.web?.let { if (it.visibility != View.GONE) { save(o); it.visibility = View.GONE; it.onPause(); prio(it, false) } } }
             val lp = (w.layoutParams as? FrameLayout.LayoutParams) ?: FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             lp.topMargin = top; lp.bottomMargin = bottom
@@ -134,6 +202,7 @@ class HwBrowser(
         post {
             // v1.7 (P1): out of the way first (a sheet in Hwallet is waiting to be seen), then save; the switcher's thumbnail
             // comes from snap(), so the slow software draw of a thumbnail no longer delays the hide
+            pullOff()
             tabs.values.forEach { t -> t.web?.let { if (it.visibility == View.VISIBLE) { it.visibility = View.GONE; it.onPause(); prio(it, false); ui.post { save(t) } } } }
             visible = null
         }
@@ -328,7 +397,7 @@ class HwBrowser(
             val s = script
             if (s != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(w, s, ORIGINS)
         } catch (e: Throwable) { Log.e(TAG, "wallet provider injection failed; the page loads without it", e) }
-        w.setOnTouchListener { _, _ -> if (!t.touched) live(t, w); false }
+        w.setOnTouchListener { _, e -> if (!t.touched) live(t, w); pullTouch(t, w, e); false }
         w.setOnScrollChangeListener { _, _, y, _, _ -> t.scroll = y; scrollEv(t) }
         w.setDownloadListener { url, _, _, _, _ -> try { act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE)) } catch (_: Throwable) {} }
 
@@ -347,6 +416,7 @@ class HwBrowser(
             override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { navEv(t, view, true, 10); lateInject(view) }
             override fun onPageCommitVisible(view: WebView, url: String?) { lateInject(view) }
             override fun onPageFinished(view: WebView, url: String?) {
+                pullDone(t)
                 lateInject(view)
                 navEv(t, view, false, 100)
                 if (t.pendingScroll > 0) { val y = t.pendingScroll; t.pendingScroll = 0; ui.postDelayed({ try { view.evaluateJavascript("window.scrollTo(0,$y)", null) } catch (_: Throwable) {} }, 350) }
@@ -609,6 +679,8 @@ class HwBrowser(
     } catch (_: Throwable) { null }
 
     companion object {
+        /** v1.7.4 (#108): "og" | "m3" | "miuix", optionally ":dark"; set by the page (HwNative.brPtrUi) */
+        @Volatile var ptrUiPref: String = "og"
         const val MAX_LIVE = 4
         private const val TAG = "HwBrowser"
         // every origin: Chromium accepts only a bare star or scheme://host rules whose host wildcard is a "*." prefix (an https-star rule is invalid)

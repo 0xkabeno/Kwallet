@@ -12,6 +12,18 @@ PURPOSE. See the GNU General Public License for more details.
 
 Third-party work
 ----------------
+
+Miuix - https://github.com/compose-miuix-ui/miuix
+  Copyright 2024-2026 compose-miuix-ui contributors. Licensed under the Apache License 2.0.
+  Since Hwallet 1.7.4 / Kwallet 3.97.4 the "Miuix" UI style (Settings > UI style) recreates
+  Miuix component metrics (cards, list rows, buttons, text fields, switches, dialogs, bottom
+  sheets, navigation bar, snackbars) in CSS, and the pull-to-refresh indicator ports the math of
+  PullToRefresh.kt and SpringUtils.kt (damping curve, thresholds, spring, capsule drawing) to
+  JavaScript (hwallet/web) and Kotlin (HwPull.kt). No Miuix binaries or fonts are bundled.
+
+Material Design 3 - https://m3.material.io
+  The "Material UI" style follows the public Material 3 specification and the token values of
+  androidx.compose.material3 (Apache License 2.0, The Android Open Source Project).
 Gem Wallet - https://github.com/gemwalletcom/wallet
   Copyright (C) Gem Wallet contributors. Licensed under GPL-3.0.
   Hwallet's layout and components (asset lists and rows, chain badges, bottom

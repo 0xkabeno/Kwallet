@@ -1,5 +1,18 @@
 # Changelog
 
+## Kwallet v3.97.4 + Hwallet v1.7.4
+
+### New
+- **UI style** (Settings > UI style, Hwallet and Kwallet): **OG** (default, unchanged look), **Material UI** (Material 3) or **Miuix** (Xiaomi HyperOS style, as in LSPosed / InstallerX Revived). Same structure everywhere; the styles change shapes, sizes, type scale, controls (buttons, list rows, section titles, switches, segmented controls, text fields, chips), bottom sheets, dialogs, snackbars, top bars, the bottom bar, pressed states and motion, while keeping Hwallet's navy and Kwallet's lime colours (light and dark). Covers Hwallet's screens and every popup (sheets, pickers, fee sheet, Send, WalletConnect and dApp prompts, the dApp "Connect wallet" sheet, confirmations) and Kwallet's Settings, dialogs and sign sheet. Kwallet's sign sheet over Hwallet wears Hwallet's style (sent with every request). Miuix metrics come from compose-miuix-ui/miuix (Apache-2.0); Material values from the Material 3 spec / androidx.compose.material3 tokens.
+- **Pull to refresh in each style**: OG = the classic detach, now updated once per frame and always released (refresh done, 9 s cap, cancelled touch, app hidden, style change); Material UI = the M3 indicator (40dp circle with the arrow arc, 80dp threshold with tension, spinner while refreshing); Miuix = the HyperOS capsule (ring fades in, stretches into a capsule past the threshold with a haptic tick, "Pull down to refresh / Release to refresh / Refreshing... / Refreshed successfully", orbiting dot, ring shrinks when done; thresholds and spring from Miuix's PullToRefresh.kt / SpringUtils.kt). Home, networks, coin and token pages, Activity, and the top-bar refresh button.
+- **Browser pull to refresh is native** and works on every page, http included (it used to be an injected https-only script), in the selected style.
+- Unknown Solana programs in a preview are named from their on-chain **Anchor IDL** when the program publishes one (program name in the App row and the matched instruction as a plain line).
+- **Jupiter 0.3% service fee on Token-2022 pairs** too (Jupiter accepts Token-2022 fee accounts since Oct 2025; Metis quotes ask `instructionVersion=V2`). If a route refuses the Token-2022 fee account (e.g. transfer-hook mints) the swap is quoted again without the service fee.
+- **Tron Activity goes back past 200 transactions**: TronGrid's fingerprint paging is followed while it lasts, then the history continues by time window (`max_timestamp`), for TRX and TRC-20.
+
+### Notes
+- Fees accounts already read the fee addresses' balances directly (#101 option A, since v3.97); no wallet switch is needed to see them.
+
 ## Kwallet v3.97.3 + Hwallet v1.7.3 (hotfix)
 
 ### Fixed
