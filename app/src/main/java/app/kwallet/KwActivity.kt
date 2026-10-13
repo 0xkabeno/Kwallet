@@ -115,7 +115,7 @@ open class KwActivity : FragmentActivity() {
 
         web.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
-                assets.shouldInterceptRequest(request.url)
+                assets.shouldInterceptRequest(request.url)?.also { if (request.url.path?.endsWith(".js") == true) it.mimeType = "text/javascript" }  /* v3.98: the Monero engine worker script */
                     ?: if (request.url.scheme == "blob" || request.url.scheme == "data") null
                     else WebResourceResponse("text/plain", "utf-8", 403, "Offline", null, null)
 

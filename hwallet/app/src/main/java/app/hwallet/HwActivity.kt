@@ -119,7 +119,7 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun sign(json: String) {
             runOnUiThread {
-                val i = Intent().setClassName(KWALLET, "$KWALLET.SignActivity").putExtra("req", json.take(65536)).putExtra("t0", android.os.SystemClock.uptimeMillis())
+                val i = Intent().setClassName(KWALLET, "$KWALLET.SignActivity").putExtra("req", json.take(400000)).putExtra("t0", android.os.SystemClock.uptimeMillis())
                 val ok = try { packageManager.getPackageInfo(KWALLET, 0); true } catch (_: Exception) { false }
                 if (!ok) { web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote("{\"status\":\"missing\"}")})", null); return@runOnUiThread }
                 /* P2a (#97a): no window animation (Kwallet's page slides its own sheet up over this screen, which stays as it is) */
@@ -218,6 +218,21 @@ class HwActivity : FragmentActivity() {
                 runOnUiThread { if (::web.isInitialized) web.evaluateJavascript(js, null) }
             }
         }
+
+        /** v1.8 (Monero): the Monero engine (a worker running wallet2) talks to the node in .bin and JSON. The page registers
+         *  each request here (method, https URL, base64 body), then fetches /xmrnet/<id> on the app's own origin; that fetch
+         *  is answered by xmrServe() below, which streams the node's raw reply. No base64 on the way back, no CORS. */
+        @android.webkit.JavascriptInterface
+        fun xmrPrep(id: String, method: String, url: String, bodyB64: String, contentType: String): Boolean {
+            if (!url.startsWith("https://") || id.length !in 4..48 || bodyB64.length > 4_000_000) return false
+            if (xmrPend.size > 128) xmrPend.clear()
+            xmrPend[id] = arrayOf(if (method == "GET") "GET" else "POST", url, bodyB64, contentType)
+            return true
+        }
+
+        /** v1.8: "Received" notification for Monero, found on this phone by the view-key scan (nothing is uploaded). */
+        @android.webkit.JavascriptInterface
+        fun inNotify(id: String, title: String, body: String) { runOnUiThread { inPost(id.take(80), title.take(80), body.take(160)) } }
 
         /** v1.6: which providers have a key right now: {"alchemy":"app"|"user"|"",...}. Never the keys themselves. */
         @android.webkit.JavascriptInterface
@@ -603,7 +618,8 @@ class HwActivity : FragmentActivity() {
 
         web.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
-                if (request.url.host == "appassets.androidplatform.net") assets.shouldInterceptRequest(request.url) else limited(request)
+                if (request.url.host == "appassets.androidplatform.net" && (request.url.path ?: "").startsWith("/xmrnet/")) xmrServe((request.url.path ?: "").removePrefix("/xmrnet/"))
+                else if (request.url.host == "appassets.androidplatform.net") assets.shouldInterceptRequest(request.url)?.also { if (request.url.path?.endsWith(".js") == true) it.mimeType = "text/javascript" } else limited(request)
 
             override fun onPageFinished(view: WebView, url: String) { pushInsets(); pageReady = true; root.invalidate() }
             override fun onPageCommitVisible(view: WebView, url: String) { pageReady = true; root.invalidate() }
@@ -885,6 +901,42 @@ class HwActivity : FragmentActivity() {
             if (state == "pending") b.setProgress(0, 0, true).setTimeoutAfter(900000L)
             nm.notify(nid, b.build())
         } catch (e: Throwable) { android.util.Log.w("HwTx", "notify failed: $e") }
+    }
+    private val xmrPend = java.util.concurrent.ConcurrentHashMap<String, Array<String>>()
+    /** v1.8 (Monero): answers the page's GET /xmrnet/<id> with the node's reply to the request registered by xmrPrep (runs off the UI thread) */
+    private fun xmrServe(id: String): WebResourceResponse {
+        val none = { code: Int, why: String -> WebResourceResponse("text/plain", "utf-8", code, why, mapOf("Cache-Control" to "no-store"), java.io.ByteArrayInputStream(ByteArray(0))) }
+        val p = xmrPend.remove(id) ?: return none(404, "Not Found")
+        return try {
+            val rb = okhttp3.Request.Builder().url(p[1]).header("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME)
+            if (p[0] == "POST") {
+                val bytes = if (p[2].isEmpty()) ByteArray(0) else android.util.Base64.decode(p[2], android.util.Base64.NO_WRAP)
+                rb.post(bytes.toRequestBody((p[3].ifEmpty { "application/octet-stream" }).toMediaTypeOrNull()))
+            }
+            val r = HwNet.withTimeout(60000).newCall(rb.build()).execute()
+            val code = r.code
+            if (code < 200 || code > 599 || code in 300..399) { r.close(); return none(502, "Bad Gateway") }
+            val body = r.body ?: run { r.close(); return none(502, "Bad Gateway") }
+            WebResourceResponse((r.header("Content-Type") ?: "application/octet-stream").substringBefore(';').trim().ifEmpty { "application/octet-stream" }, null, code,
+                r.message.ifBlank { if (code == 200) "OK" else "Error" }, mapOf("Cache-Control" to "no-store"), body.byteStream())
+        } catch (_: Throwable) { none(502, "Bad Gateway") }
+    }
+    /** v1.8: an incoming-payment notification on the same channel the live service uses for other chains */
+    private fun inPost(id: String, title: String, body: String) {
+        try {
+            val nm = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
+            if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(HwLiveService.CH_IN) == null) {
+                nm.createNotificationChannel(android.app.NotificationChannel(HwLiveService.CH_IN, "Incoming payments", android.app.NotificationManager.IMPORTANCE_HIGH))
+            }
+            if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) return
+            val nid = 7300 + (id.hashCode() and 0x3ff)
+            val i = Intent(this, HwActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            val pi = android.app.PendingIntent.getActivity(this, nid, i, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
+            val n = androidx.core.app.NotificationCompat.Builder(this, HwLiveService.CH_IN).setSmallIcon(R.drawable.hw_stat).setColor(0xFFDDF869.toInt())
+                .setContentTitle(title).setContentText(body).setAutoCancel(true).setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+                .setCategory(androidx.core.app.NotificationCompat.CATEGORY_STATUS).setContentIntent(pi).build()
+            nm.notify(nid, n)
+        } catch (e: Throwable) { android.util.Log.w("HwIn", "notify failed: $e") }
     }
     /* P2a (#95): while Kwallet's sheet is over Hwallet the dApp tab stays live and visible behind it (no pause, no save) */
     override fun onPause() { super.onPause(); fgNow = false; if (!signing) { web.onPause(); br?.pause() } }

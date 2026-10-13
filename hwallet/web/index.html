@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob: https:; font-src data:; connect-src https: wss:; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; img-src 'self' data: blob: https:; font-src data:; connect-src https: wss:; worker-src 'self' blob:; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none';">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>Hwallet</title>
@@ -1433,6 +1433,36 @@ body[data-theme=dark] .snd-bks{color:#8fb0ff}
 .bk-f{padding:8px 16px 20px;display:flex;flex-direction:column;gap:12px}
 .bk-a{display:flex;align-items:center;gap:10px}
 .bk-f input{height:48px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);padding:0 14px;font:inherit;font-size:16px}
+
+/* v1.8: Monero scan card, receive addresses, scan start and node sheets */
+.xs{margin:-6px 16px 14px}
+.xs:empty{display:none}
+.xs-l{display:flex;align-items:center;gap:10px;justify-content:center;color:var(--muted);font-size:13px;line-height:1.4;text-align:center;padding:2px 4px}
+.xs-l+.xs-l{margin-top:6px}
+.xs-l.err{color:var(--dn)}
+.xs-l .spin{width:14px;height:14px;flex:0 0 auto}
+.xs-b{padding:6px 14px;border-radius:999px;background:var(--card);color:var(--text);font-weight:600;font-size:13px;flex:0 0 auto}
+.xs-bar{height:6px;border-radius:999px;background:var(--card2);overflow:hidden;margin:8px 8px 0}
+.xs-bar i{display:block;height:100%;background:var(--acc);border-radius:999px;transition:width .4s cubic-bezier(.2,0,0,1)}
+.xs-card{display:flex;flex-direction:column;gap:8px;padding:16px;border-radius:var(--r);background:var(--card);text-align:left}
+.xs-card b{font-size:15px;color:var(--text)}
+.xs-card span{color:var(--muted);font-size:13px;line-height:1.45}
+.xs-card .btn{align-self:flex-start;margin-top:4px}
+.xh-o{display:flex;flex-direction:column;gap:0;margin-top:6px}
+.xh-o .opt b,.xn-l .opt b{display:block;font-size:15px}
+.xh-o .opt small,.xn-l .opt small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.35}
+.xh-f{display:flex;flex-direction:column;gap:6px;padding:14px 16px;background:var(--card);border-radius:var(--r);margin-bottom:10px}
+.xh-f b{font-size:15px}
+.xh-f small{color:var(--muted);font-size:12.5px;line-height:1.35}
+.xh-f input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-size:15px}
+.xh-f .btn{align-self:flex-start}
+.xn-l .opt.on,.xh-o .opt.on{box-shadow:inset 0 0 0 2px var(--acc)}
+.xr-l{max-height:34vh;overflow-y:auto;margin-bottom:8px}
+.xr-r{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;text-align:left;border-radius:12px}
+.xr-r.on{background:var(--sel)}
+.xr-r .am{flex:1;min-width:0}
+.xr-u{font-size:11px;color:var(--muted);font-weight:500;margin-left:4px}
+.xr-b{color:var(--text);font-size:13px;font-weight:600}
 
 /* ---- auto layer (generated from the app CSS by uiskin.py) ---- */
 html[data-ui="m3"],html[data-ui="m3"] body{font-family:var(--u-font)!important}
@@ -5424,7 +5454,7 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.7.5';
+var APP_VERSION = '1.8';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -5536,7 +5566,7 @@ var APP_VERSION = '1.7.5';
   ];
   var EVMBY = {}; EVM.forEach(function (n) { EVMBY[n.id] = n; });
   var CH = [
-    { id: 'xmr', name: 'Monero', sym: 'XMR', dec: 12, cg: 'monero', logo: 'monero', exp: '', tokens: [] },
+    { id: 'xmr', name: 'Monero', sym: 'XMR', dec: 12, cg: 'monero', logo: 'monero', exp: '', tx: 'https://xmrchain.net/tx/', acct: '', tokens: [] },
     { id: 'eth', name: 'Ethereum', sym: 'ETH', dec: 18, cg: 'ethereum', logo: 'ethereum' },
     { id: 'sol', name: 'Solana', sym: 'SOL', dec: 9, cg: 'solana', logo: 'solana', cgp: 'solana', gem: 'solana', ws: 'wss://solana-rpc.publicnode.com', rpc: ['https://solana-rpc.publicnode.com', 'https://api.mainnet-beta.solana.com'], exp: 'https://solscan.io', tx: 'https://solscan.io/tx/', acct: 'https://solscan.io/account/',
       tokens: [['USDC', 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', 6, 'usd-coin', 'USD Coin'], ['USDT', 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', 6, 'tether', 'Tether USD']] },
@@ -5570,6 +5600,7 @@ var APP_VERSION = '1.7.5';
   function useWallet(id) {
     WID = id; var w = curW(); A = w ? w.A : {}; if (w) A.label = w.label;
     C.b = jget('hw-bal:' + id, {}) || {}; C.res = {}; ACT = jget('hw-acts:' + id, []) || []; HIST = {}; jset('hw-wid', id);
+    try { if (window.hwXmrWalletChanged) hwXmrWalletChanged(); } catch (e) {}
   }
   function saveWallets() { jset('hw-wallets', W); }
   function saveActs() { jset('hw-acts:' + WID, ACT); try { actNative(); } catch (e) {} }
@@ -5833,7 +5864,7 @@ var APP_VERSION = '1.7.5';
     var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
     var again = function (f) { return f().catch(function () { return wait(1500).then(f); }).catch(function () { return wait(4000).then(f); }); };
     if (id === 'eth') return Promise.all(EVM.map(function (n) { return again(function () { return balEvm(n); }).then(function (o) { if (o) C.b['evm:' + n.id] = o; return o; }, function () { return null; }); }));
-    var f = { sol: balSol, btc: balBtc, trx: balTrx, sui: balSui, xrp: balXrp, ada: balAda }[id];
+    var f = { sol: balSol, btc: balBtc, trx: balTrx, sui: balSui, xrp: balXrp, ada: balAda, xmr: function () { return xmrKick(); } }[id];  /* v1.8: Monero = the on-phone view-key scan */
     if (!f) return Promise.resolve(null);
     return again(function () { return f(CHBY[id]); }).then(function (o) { if (o) C.b[id] = o; return o; });
   }
@@ -5850,7 +5881,7 @@ var APP_VERSION = '1.7.5';
       return out;
     }
     var c = CHBY[ch], bb = C.b[ch] || {};
-    out.push({ key: 'native', s: c.sym, n: c.name, d: c.dec, raw: ch === 'xmr' ? null : bb.n, cg: c.cg, gas: 1, logo: c.logo });
+    out.push({ key: 'native', s: c.sym, n: c.name, d: c.dec, raw: bb.n == null ? null : bb.n, cg: c.cg, gas: 1, logo: c.logo });
     tokList(ch).forEach(function (t) { out.push({ key: t.a, s: t.s, n: t.n, d: t.d, raw: bb.t ? (bb.t[balKey(ch, t.a)] || (bb.at ? '0' : null)) : null, cg: t.cg, a: t.a, pin: t.pin, icon: t.icon, logo: t.pin ? TOKLOGO[t.s] : '', px: t.px, held: t.held }); });
     return out;
   }
@@ -5866,7 +5897,7 @@ var APP_VERSION = '1.7.5';
   function ethTotal() { var s = 0n, k = false; EVM.forEach(function (n) { var b = C.b['evm:' + n.id]; if (n.sym === 'ETH' && b) { s += U(b.n) || 0n; k = true; } }); return k ? s : null; }
   function homeBal(id) {
     if (!A[id]) return 'Add address';
-    if (id === 'xmr') return 'Watch only';
+    if (id === 'xmr' && !C.b.xmr) return xmrReady() ? (xmrRowSub() || 'Scanning\u2026') : 'Watch only';
     if (id === 'eth') { var t = ethTotal(); return t == null ? '—' : fmtU(t, 18) + ' ETH'; }
     var b = C.b[id]; return b ? fmtU(b.n, CHBY[id].dec) + ' ' + CHBY[id].sym : '—';
   }
@@ -6050,7 +6081,7 @@ var APP_VERSION = '1.7.5';
   function rowVals(o, x) {
     var r = x.r, p = rpx(r);
     o['p:' + x.id] = (p ? fmtPx(p) : (x.ch === 'xmr' ? '' : '')) + pctHtml(r.cg ? pct(r.cg) : null);
-    o['a:' + x.id] = money(x.ch === 'xmr' && r.gas ? 'Watch only' : r.raw == null ? '—' : esc(fmtA(r.raw, r.d) + ' ' + r.s));
+    o['a:' + x.id] = money(x.ch === 'xmr' && r.gas && r.raw == null ? (xmrReady() ? (xmrRowSub() || 'Scanning\u2026') : 'Watch only') : r.raw == null ? '—' : esc(fmtA(r.raw, r.d) + ' ' + r.s));
     o['u:' + x.id] = money(r.raw != null && p ? fmtUsd(usdOf(r)) : '');
   }
   function ethCombined() {
@@ -6123,7 +6154,7 @@ var APP_VERSION = '1.7.5';
     /* fresh balances for the rows on screen (LIST keeps only their ids and order) */
     if (LIST && LIST.length) { var fresh = {}; (V.v === 'home' ? homeAssets() : V.v === 'pick' || V.v === 'search' ? pickAssets() : V.v === 'nets' ? netsAssets() : V.v === 'coin' ? coinTokens() : []).forEach(function (x) { fresh[x.id] = x; }); LIST.forEach(function (x) { rowVals(o, fresh[x.id] || x); }); }
     if (V.v === 'coin') {
-      var r = curAsset(); o.big = money(r.raw == null ? (V.ch === 'xmr' ? 'Watch only' : '—') : esc(fmtA(r.raw, r.d) + ' ' + r.s));
+      var r = curAsset(); o.big = money(r.raw == null ? (V.ch === 'xmr' ? (xmrReady() ? (xmrRowSub() || 'Scanning\u2026') : 'Watch only') : '—') : esc(fmtA(r.raw, r.d) + ' ' + r.s));
       o.bigusd = money(r.raw != null && rpx(r) ? fmtUsd(usdOf(r)) : '');
       o.price = (rpx(r) ? fmtPx(rpx(r)) : '—') + pctHtml(r.cg ? pct(r.cg) : null);
     }
@@ -6146,7 +6177,7 @@ var APP_VERSION = '1.7.5';
   function curNet() { if (V.ch !== 'eth') return null; return EVMBY[V.net] || EVM[0]; }
   function curAsset() { var a = assets(V.ch, V.ch === 'eth' ? (V.net || 'ethereum') : null); for (var i = 0; i < a.length; i++) if (a[i].key === (V.tk || 'native')) return a[i]; return a[0]; }
   function curAddr() { return V.ch === 'eth' ? A.eth : A[V.ch]; }
-  function canSend() { return V.ch !== 'xmr' && !!(A.paired && A.paired[V.ch]); }
+  function canSend() { return V.ch === 'xmr' ? xmrCanSend() : !!(A.paired && A.paired[V.ch]); }
   function canAddTok() { return V.v === 'coin' && ['eth', 'sol', 'trx', 'sui', 'xrp', 'ada'].indexOf(V.ch) >= 0 && curAsset().gas; }
   function addTokHint() { return { eth: 'Paste a contract, details fill in', sol: 'Paste a mint, details fill in', trx: 'Paste a TRC-20 contract', sui: 'Paste a coin type', xrp: 'Issuer + currency code', ada: 'Policy ID + asset name' }[V.ch] || ''; }
   function coinTokens() {
@@ -6158,12 +6189,12 @@ var APP_VERSION = '1.7.5';
     var netName = n ? n.name : c.name, netLogo = n ? n.logo : c.logo;
     var title = isTok ? r.s : (V.ch === 'eth' ? (n.sym === 'ETH' ? 'Ethereum' : r.n) : c.name);
     var trust = V.ch === 'xrp' && isTok && !(C.b.xrp && C.b.xrp.held && C.b.xrp.held[r.a]);
-    var why = V.ch === 'xmr' ? 'Monero sending is coming soon. The balance needs a Monero node scan, also coming soon.' : !(A.paired && A.paired[V.ch]) ? 'This address was added by hand, so it is watch only. To send, pair it from Kwallet: Settings > Pair with Kwallet.' : trust ? 'Add a trust line first so this account can hold ' + r.s + ' (locks 0.2 XRP of reserve).' : '';
+    var why = V.ch === 'xmr' ? (!xmrReady() ? 'Add the private view key (or pair Monero from Kwallet) to see the balance.' : !(A.paired && A.paired.xmr) ? 'Watch only. Pair Monero from Kwallet to send.' : '') : !(A.paired && A.paired[V.ch]) ? 'This address was added by hand, so it is watch only. To send, pair it from Kwallet: Settings > Pair with Kwallet.' : trust ? 'Add a trust line first so this account can hold ' + r.s + ' (locks 0.2 XRP of reserve).' : '';
     var extra = V.ch === 'trx' && !isTok ? '<button class="act" data-act="stake"><span class="ac">' + sv('lock') + '</span><span class="al2">Stake</span></button>' : trust ? '<button class="act" data-act="trust"><span class="ac">' + sv('link') + '</span><span class="al2">Trust line</span></button>' : '';
     var h = topbar(esc(title), { right: (curAddr() && expUrl() ? '<button class="ib" data-act="exp" aria-label="Open explorer">' + sv('ext') + '</button>' : '<span class="ib0"></span>') }) +
       '<section class="chero">' + alogo(V.ch, V.ch === 'eth' ? V.net : null, r, 'big').replace(/class="lg /g, 'class="lg big ') + '<div class="cam" data-money data-v="big"></div><div class="cus" data-money data-v="bigusd"></div></section>' +
       actions(canSend() && !trust, extra) + (why ? '<p class="why">' + esc(why) + '</p>' : '') + (isTok && typeof swUnver === 'function' && swUnver(r) ? '<div class="sw-rk cr-rk"><span class="sw-risk unk">Unverified token \u00b7 not in any price list. Check the contract before you buy or receive more</span></div>' : '') +
-      (V.ch === 'trx' && !isTok ? '<div class="res" id="res"></div>' : '') +
+      (V.ch === 'trx' && !isTok ? '<div class="res" id="res"></div>' : '') + (V.ch === 'xmr' ? '<div class="xs" id="xmrsync">' + xmrSyncInner() + '</div>' : '') +
       '<div class="lst"><div class="kv"><span>Price</span><span data-v="price"></span></div>' +
       '<button class="kv" ' + (V.ch === 'eth' ? 'data-act="nets"' : 'disabled') + '><span>Network</span><span><span class="tx">' + esc(netName) + '</span>' + logo(netLogo, netName, '', 'xs') + (V.ch === 'eth' ? sv('chev', 'ic chev') : '') + '</span></button>' +
       (isTok ? '<button class="kv" data-act="copytok"><span>' + (V.ch === 'xrp' ? 'Issuer' : V.ch === 'ada' ? 'Policy ID' : V.ch === 'sui' ? 'Coin type' : V.ch === 'sol' ? 'Mint' : 'Contract') + '</span><span><span class="tx mono">' + esc(short(V.ch === 'xrp' ? r.a.split('.')[1] : V.ch === 'ada' ? r.a.split('.')[0] : r.a, 6)) + '</span>' + sv('copy', 'ic chev') + '</span></button>' : '') +
@@ -6184,7 +6215,7 @@ var APP_VERSION = '1.7.5';
   }
   function expUrl(hash) {
     if (V.ch === 'eth') { var n = curNet(); return hash ? n.exp + '/tx/' + hash : n.exp + '/address/' + A.eth; }
-    var c = CHBY[V.ch]; if (!c || !c.acct) return '';
+    var c = CHBY[V.ch]; if (!c || (!c.acct && !(hash && c.tx))) return '';
     return hash ? c.tx + hash : c.acct + curAddr();
   }
   function expFor(ch, net, hash) { var sv0 = V; V = { v: 'coin', ch: ch, net: net }; var u = expUrl(hash); V = sv0; return u; }
@@ -6194,7 +6225,7 @@ var APP_VERSION = '1.7.5';
     var out = [];
     CH.forEach(function (c) {
       if (!A[c.id]) return;
-      if (V.mode === 'send' && (c.id === 'xmr' || !(A.paired && A.paired[c.id]))) return;
+      if (V.mode === 'send' && (c.id === 'xmr' ? !xmrCanSend() : !(A.paired && A.paired[c.id]))) return;
       if (c.id === 'eth') {
         out.push({ id: 'p:eth', ch: 'eth', net: null, r: ethCombined(), coin: 1, ethPick: 1 });
         EVM.forEach(function (n) { assets('eth', n.id).forEach(function (r) { if (r.gas && n.sym === 'ETH') return; out.push({ id: 'p:eth:' + n.id + ':' + r.key, ch: 'eth', net: n.id, r: r }); }); });
@@ -6299,7 +6330,7 @@ var APP_VERSION = '1.7.5';
     if (a === 'send') {
       if (V.v === 'home') { go({ v: 'pick', mode: 'send' }); return; }
       if (V.v === 'nets') { pickNet(function (net) { go({ v: 'send', ch: 'eth', net: net, tk: 'native' }); }, 'Send ETH on'); return; }
-      if (el.getAttribute('data-off')) { toast(V.ch === 'xmr' ? 'Monero sending is coming soon' : !(A.paired && A.paired[V.ch]) ? 'Watch only. Pair with Kwallet to send' : 'Add the trust line first'); buzz([30, 40, 30]); return; }
+      if (el.getAttribute('data-off')) { toast(V.ch === 'xmr' ? (!(A.paired && A.paired.xmr) ? 'Watch only. Pair Monero from Kwallet to send' : 'Wait for the first Monero scan to finish') : !(A.paired && A.paired[V.ch]) ? 'Watch only. Pair with Kwallet to send' : 'Add the trust line first'); buzz([30, 40, 30]); return; }
       go({ v: 'send', ch: V.ch, net: V.net, tk: V.tk || 'native' }); return;
     }
     if (a === 'recv') {
@@ -6328,9 +6359,9 @@ var APP_VERSION = '1.7.5';
     t = t.trim(); if (!t) return; if (t.indexOf('error:') === 0) { toast(t.slice(6) || 'Scanner not available on this phone'); return; }
     if (/kwallet-pair:/.test(t)) { var p = parsePairText(t); if (p) { V = { v: 'setup', add: 1 }; applyPair(p); } else toast('That pairing code is not valid'); return; }
     var a = t.replace(/^(ethereum|bitcoin|solana|tron|sui|xrp|ripple|cardano|monero):(\/\/)?/i, '').split(/[?@\/]/)[0];
-    var ch = null; ['btc', 'trx', 'xrp', 'ada', 'sui', 'eth', 'sol'].some(function (k) { if (validAddr(k, a)) { ch = k; return true; } return false; });
+    var ch = null; ['btc', 'trx', 'xrp', 'ada', 'sui', 'eth', 'sol', 'xmr'].some(function (k) { if (validAddr(k, a)) { ch = k; return true; } return false; });
     if (!ch) { copy(t).then(function () {}); toast('Not an address Hwallet knows. Copied the text'); return; }
-    if (!A[ch] || ch === 'xmr') { toast(CHBY[ch].name + ' address scanned. Add a ' + CHBY[ch].name + ' address to send'); return; }
+    if (!A[ch] || (ch === 'xmr' && !xmrCanSend())) { toast(CHBY[ch].name + ' address scanned. Add a ' + CHBY[ch].name + ' address to send'); return; }
     SCANNED = a; snd('addr'); buzz(8);
     if (ch === 'eth') { pickNet(function (net) { go({ v: 'send', ch: 'eth', net: net, tk: 'native' }); }, 'Send to ' + short(a, 4) + ' on'); return; }
     go({ v: 'send', ch: ch, net: null, tk: 'native' });
@@ -6354,6 +6385,7 @@ var APP_VERSION = '1.7.5';
     ov._close = close; if (onBind) onBind(ov, close); return ov;
   }
   function openRecv(evmAll) {
+    if (V.ch === 'xmr' && !evmAll) { xmrRecv(); return; }
     var a = curAddr(), r = curAsset(), n = curNet(), name = evmAll ? 'Ethereum and every EVM network listed in Hwallet' : n ? n.name : CHBY[V.ch].name, qr = '';
     try { var q = qrcode(0, 'M'); q.addData(a); q.make(); qr = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); } catch (e) {}
     sheet('<h3>Receive ' + esc(evmAll ? 'ETH' : r.s) + '</h3><p class="sp">Send only ' + esc(evmAll ? 'EVM assets' : r.s) + ' on <b>' + esc(name) + '</b> to this address.' + (V.ch === 'xrp' && !r.gas ? ' The trust line must be set first.' : '') + '</p><div class="qr">' + qr + '<span class="qrl">' + (evmAll ? logo('ethereum', 'ETH') : assetLogo(r)) + '</span></div>' +
@@ -6410,7 +6442,7 @@ var APP_VERSION = '1.7.5';
 
   /* ---------- setup / pair (#18) ---------- */
   var MAN = [['eth', 'Ethereum and EVM', '0x…'], ['sol', 'Solana', ''], ['btc', 'Bitcoin', 'bc1q…'], ['trx', 'TRON', 'T…'], ['sui', 'Sui', '0x…'], ['xrp', 'XRP', 'r…'], ['ada', 'Cardano', 'addr1…'], ['xmr', 'Monero', '4…']];
-  var OKRE = { eth: /^0x[0-9a-fA-F]{40}$/, sol: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/, btc: /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/, trx: /^T[1-9A-HJ-NP-Za-km-z]{33}$/, sui: /^0x[0-9a-fA-F]{64}$/, xrp: /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/, ada: /^addr1[0-9a-z]{50,120}$/, xmr: /^[48][1-9A-HJ-NP-Za-km-z]{94}$/, xmrView: /^[0-9a-f]{64}$/ };
+  var OKRE = { eth: /^0x[0-9a-fA-F]{40}$/, sol: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/, btc: /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/, trx: /^T[1-9A-HJ-NP-Za-km-z]{33}$/, sui: /^0x[0-9a-fA-F]{64}$/, xrp: /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/, ada: /^addr1[0-9a-z]{50,120}$/, xmr: /^(?:[48][1-9A-HJ-NP-Za-km-z]{94}|4[1-9A-HJ-NP-Za-km-z]{105})$/, xmrView: /^[0-9a-f]{64}$/ };
   /* v1.6 (#79): pairing page. Short copy, one clear action, Kwallet presence checked on the phone (HwNative.kwInfo),
      an Install Kwallet action when it is missing, and inline errors that say what to do next. */
   function kwInfo() { try { if (window.HwNative && HwNative.kwInfo) return JSON.parse(HwNative.kwInfo()) || {}; } catch (e) {} return null; }
@@ -6481,7 +6513,7 @@ var APP_VERSION = '1.7.5';
     if (!p || p.src !== 'kwallet' || !p.addrs) { pairErr('That isn\u2019t a Kwallet pairing.'); return false; }
     var na = { paired: {}, index: p.index | 0 };
     Object.keys(OKRE).forEach(function (k) { if (k === 'xmrView') return; var v = String(p.addrs[k] || ''); if (v && OKRE[k].test(v)) { na[k] = v; na.paired[k] = true; } });
-    if (p.xmr && /^[0-9a-f]{64}$/.test(p.xmr.view || '')) { na.xmrView = p.xmr.view; na.xmrHeight = p.xmr.height | 0; }
+    if (p.xmr && /^[0-9a-f]{64}$/.test(p.xmr.view || '')) { na.xmrView = p.xmr.view; na.xmrHeight = p.xmr.height | 0; if (/^4[1-9A-HJ-NP-Za-km-z]{94}$/.test(p.xmr.primary || '')) na.xmrPrimary = p.xmr.primary; }
     if (!na.eth && !na.xmr) { pairErr('No valid addresses in that pairing. Pair again from Kwallet.'); return false; }
     var w = putWallet(na, wname() || (W.length ? '' : String(p.label || '').slice(0, 24)));
     buzz([15, 40, 15]); snd('seed'); toast(w.label + ' paired');
@@ -6662,7 +6694,7 @@ var APP_VERSION = '1.7.5';
   function sendIsBg(v) { return !!SNDBG && v === SNDBG; }
   function sendHtml() {
     var r = curAsset(), n = curNet(), c = CHBY[V.ch], name = n ? n.name : c.name;
-    var ph = { eth: '0x…', sol: 'Solana address', btc: 'bc1…, 1… or 3…', trx: 'T…', sui: '0x…', xrp: 'r…', ada: 'addr1…' }[V.ch];
+    var ph = { eth: '0x…', sol: 'Solana address', btc: 'bc1…, 1… or 3…', trx: 'T…', sui: '0x…', xrp: 'r…', ada: 'addr1…', xmr: '4… or 8… Monero address' }[V.ch];
     /* wave B (d): the same sheet family as every signature (Jupiter-style layout): title + close, an amount card with the
        token, a recipient card, then plain label/value rows (network, network fee) and one big button. Ids are unchanged. */
     var tk = alogo(V.ch, V.ch === 'eth' ? V.net : null, r, 'md').replace(/class="lg /g, 'class="lg md ');
@@ -6770,7 +6802,7 @@ var APP_VERSION = '1.7.5';
     if (r.gas) {
       var g = U(r.raw), f = feeOf(SND.lv); if (g == null || f == null) { am.value = ''; return; }
       var v = g - f - (SND.d.reserve || 0n), t = v > 0n ? fmtU(v, r.d, r.d).replace(/,/g, '') : '0';
-      if (SND.ch === 'btc' || SND.ch === 'ada') t = (SND.d.maxAmt ? fmtU(SND.d.maxAmt(SND.lv), r.d, r.d) : t).replace(/,/g, '');
+      if (SND.ch === 'btc' || SND.ch === 'ada' || SND.ch === 'xmr') t = (SND.d.maxAmt ? fmtU(SND.d.maxAmt(SND.lv), r.d, r.d) : t).replace(/,/g, '');
       showAmt(t);
     } else showAmt(fmtU(r.raw, r.d, r.d).replace(/,/g, ''));
   }
@@ -7016,6 +7048,7 @@ var APP_VERSION = '1.7.5';
     if (kindReq && kindReq.target) kindReq = null;
     var r = SND.r, d = SND.d, gas = gasAsset(), to = SND.to;
     if (!(window.HwNative && HwNative.sign)) { toast('Signing works in the Hwallet app with Kwallet on the same phone'); return; }
+    if (SND.ch === 'xmr') return xmrReview();   /* v1.8: Monero = unsigned set built here, cold-signed by Kwallet */
     var now = Date.now(), ch = SND.ch;
     var req = Object.assign({ v: 2, id: rid(16), action: 'sign', chain: ch === 'eth' ? 'evm' : ch, from: curAddr(), to: to,
       token: r.gas ? 'native' : r.a, tokenSym: r.s, tokenDec: r.d, amount: SND.max ? 'max' : SND.amt.toString(),
@@ -7558,6 +7591,7 @@ var APP_VERSION = '1.7.5';
     if (want('sui')) ss = ss.concat(suiStreams());
     if (want('xrp')) ss.push(xrpStream());
     if (want('ada')) ss.push(adaStream());
+    if (want('xmr') && xmrReady()) ss.push(xmrStream());
     /* token page: only the stream that carries it */
     if (sc && sc.key && sc.key !== 'native') ss = ss.filter(function (s) { return !/:n$/.test(s.id); });
     if (sc && sc.key === 'native') ss = ss.filter(function (s) { return !/:t$/.test(s.id); });
@@ -7674,7 +7708,7 @@ var APP_VERSION = '1.7.5';
   function histMount(force) {
     var el = $(V.v === 'activity' ? 'feed' : 'hist'); if (!el) return;
     var sc = V.v === 'activity' ? null : { ch: V.ch, net: V.ch === 'eth' ? V.net : null, key: V.tk || 'native' };
-    if (V.ch === 'xmr' && sc) { el.innerHTML = emptyHtml('Monero history needs a view-key scan', 'Coming soon. Received XMR is safe; it just is not listed here yet.'); return; }
+    if (V.ch === 'xmr' && sc && !xmrReady()) { el.innerHTML = emptyHtml('Monero history needs the view key', 'Pair Monero from Kwallet (or add the private view key) to scan for payments on this phone.'); return; }
     if (HB && HB.unmount) HB.unmount();
     var F = HB = { scope: sc, streams: streamsFor(sc), items: [], seen: {}, el: el, live: {}, pool: [], t0p: performance.now(), dirty: true };
     el.innerHTML = '<div class="vlist" id="hrows"></div><div class="ldr" id="hmore"><span class="spin"></span></div>';
@@ -7731,6 +7765,7 @@ var APP_VERSION = '1.7.5';
   function dtUsd(raw, d, p) { if (!(p > 0) || raw == null) return ''; var v = Math.abs(toNum(raw, d)) * p; return v > 0 && v < 0.01 ? '< $0.01' : fmtUsd(v); }
   function dtNat(x) { return x.ch === 'eth' ? { s: (EVMBY[x.net] || EVM[0]).sym, d: 18, cg: (EVMBY[x.net] || EVM[0]).cg || 'ethereum' } : { s: CHBY[x.ch].sym || x.s, d: CHBY[x.ch].dec != null ? CHBY[x.ch].dec : x.d, cg: CHBY[x.ch].cg || x.cg }; }
   function dtFetch(x) {
+    if (x.ch === 'xmr') return Promise.resolve({ ok: x.st !== 'fail', fee: x.fee != null && x.dir === 'out' ? BI(x.fee) : x.dir === 'in' ? 0n : null, time: x.t });
     var me = String(curAddrFor(x) || '').toLowerCase();
     if (x.ch === 'sol') return rpc(CHBY.sol.rpc, 'getTransaction', [x.hash, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0, commitment: 'confirmed' }], 9000).then(function (tx) {
       if (!tx || !tx.meta) return null;
@@ -7839,6 +7874,7 @@ var APP_VERSION = '1.7.5';
     if (x.ap && x.ch === 'eth') r = { s: x.ap.s, gas: false, logo: x.pin ? TOKLOGO[x.ap.s] : '', a: x.ap.tok, icon: x.icon };  /* #71: approvals wear the token's logo */
     var lg = alogo(x.ch, x.ch === 'eth' ? x.net : null, r, 'md').replace(/class="lg /g, 'class="lg md ');
     var sub = x.ap ? 'Spender ' + short(x.ap.sp, 4) : x.sw && dir !== 'call' ? 'Swap \u00b7 ' + (EVMBY[x.net] || {}).name : dir === 'call' && x.ch === 'eth' && x.m && !x.sw ? (EVMBY[x.net] || {}).name + ' \u00b7 ' + short(x.cp, 4) : dir === 'in' ? 'From ' + short(x.cp, 4) : dir === 'out' ? 'To ' + short(x.cp, 4) : dir === 'stake' || dir === 'unstake' ? (x.res === 'ENERGY' ? 'Energy' : 'Bandwidth') : x.ch === 'eth' ? (EVMBY[x.net] || {}).name : CHBY[x.ch].name;
+    if (x.ch === 'xmr') sub = x.st === 'pending' ? 'Monero \u00b7 waiting for a block' : x.conf != null && x.conf < 10 ? 'Monero \u00b7 ' + x.conf + '/10 confirmations' : x.dir === 'out' && x.cp ? 'To ' + short(x.cp, 4) : 'Monero';
     var when = new Date(x.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     var right2 = x.st === 'pending' ? '<span class="st-pending pend">' + sv('clock', 'ic xs') + 'Pending</span>' : x.st === 'fail' ? '<span class="st-fail">Failed</span>' : when;
     return '<button class="ar sm tap" data-hx="' + (i < 0 ? '' : i) + '">' + lg + '<span class="am"><span class="an">' + esc(title) + '</span><span class="ap">' + esc(sub || '') + '</span></span>' +
@@ -8037,7 +8073,7 @@ var APP_VERSION = '1.7.5';
       krow('kws-rf', KI.timer, 'Refresh on screen', '') +
       (nat('setLive') ? krow('kws-batt', KI.batt, 'Battery optimization', '') + krow('kws-oem', KI.shield, 'Keep Hwallet running', 'Autostart and app-killer settings for your phone') : '') +
       '</div><div class="kws-sec">Network</div><div class="kws-grp">' + capHtml() + keysHtml() + '</div><div class="kws-sec">Security</div><div class="kws-grp">' + krow('kws-appr', 'M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z', 'Token approvals', 'See and revoke what apps may spend') + krow('kws-book', 'M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm-6 4a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm5 10H7v-.75C7 13.6 10.33 13 12 13s5 .6 5 2.25V16z', 'Address book', 'Saved names for addresses you send to') + '</div>' +
-      '<div class="kws-sec">Sending</div><div class="kws-grp">' + krow('kws-sim', KI.flask, 'Simulate before sending', 'Free check that the transaction would succeed (EVM, Solana, Sui, TRC-20)', KSW) + '</div>' +
+      xmrSettingsHtml() + '<div class="kws-sec">Sending</div><div class="kws-grp">' + krow('kws-sim', KI.flask, 'Simulate before sending', 'Free check that the transaction would succeed (EVM, Solana, Sui, TRC-20)', KSW) + '</div>' +
       '<div class="kws-sec">About</div><div class="kws-grp">' +
       (nat('crashLog') ? krow('kws-crash', KI.warn, 'Crash log', '') : '') +
       krow('kws-lic', KI.code, 'Open-source licenses', 'Hwallet is GPL-3.0 \u00b7 design and tools from Gem Wallet') +
@@ -8055,6 +8091,7 @@ var APP_VERSION = '1.7.5';
     });
     function $k(id) { return kov.querySelector('#' + id); }
     function on(id, f) { var b = $k(id); if (b) b.onclick = f; }
+    try { xmrSettingsBind(on, $k); } catch (e) {}
     on('kws-wallets', function () { ktick(); kclose(); go({ v: 'wallets' }); });
     on('kws-pair', function () { ktick(); kclose(); pairNative(); });
     $k('kws-theme').onclick = function (e) {
@@ -8230,6 +8267,7 @@ var APP_VERSION = '1.7.5';
       '<div class="scn-h">All networks</div><div class="scn-list" id="scn-list">' + recvRows('') + '</div>';
   }
   function recvQr(k) {
+    if (k === 'xmr') { recvMark(k); xmrRecv(); return; }
     var c = CHBY[k], a = A[k], qr = ''; recvMark(k);
     try { var q = qrcode(0, 'M'); q.addData(a); q.make(); qr = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); } catch (e) {}
     sheet('<h3>Receive ' + esc(c.sym) + '</h3><p class="sp">Send only ' + (k === 'eth' ? 'EVM assets' : esc(c.sym) + ' and ' + esc(c.name) + ' tokens') + ' to this address.</p><div class="qr">' + qr + '<span class="qrl">' + logo(c.logo, c.sym) + '</span></div>' +
@@ -11584,6 +11622,376 @@ window.hwCrashPrompt = crashPrompt;
   }
   window.hwPv = { sol: pvSol, evm: pvEvm, trx: pvTrx, err: pvErr };
 
+  /* ---------- v1.8: Monero, end to end ----------
+     Balance and history come from a view-key scan on this phone: the Monero engine (wallet2 in WebAssembly, monero-ts,
+     MIT) runs in a Web Worker (xmr/hwxmr.js, no UI blocking). It starts at the wallet's restore height, keeps its block /
+     output cache in IndexedDB on the phone and continues where it stopped, in the foreground and while the live service
+     keeps Hwallet running in the background. Requests go to the node through Hwallet's native client (xmrPrep + the
+     app-origin /xmrnet/<id> fetch), never with the view key: the node only serves blocks, the scan happens here.
+     Send: Hwallet builds the UNSIGNED transaction (outputs + decoys from the node, live fee levels), Kwallet (offline,
+     spend key) checks and signs it in the one sign sheet (CLSAG + Bulletproofs+), Hwallet broadcasts it and takes the
+     key images back so the balance is right after spends. */
+  var XMRN = [
+    { u: 'https://xmr.cryptostorm.is', n: 'cryptostorm' },
+    { u: 'https://xmr.0xrpc.io', n: '0xrpc' },
+    { u: 'https://xmr.surveillance.monster', n: 'surveillance.monster' },
+    { u: 'https://monero-rpc.cheems.de.box.skhron.com.ua', n: 'cheems (skhron)' }
+  ];
+  /* block-height estimate for a date (offline): 60 s blocks until the v2 fork (1009827, 2016-03-23), 120 s after it.
+     Anchored on block 3,783,000 = 1791875075 (read from the chain 2026-10-13). Used only to pick a scan start. */
+  function xmrHeightAt(ms) {
+    var t = Math.floor((+ms || Date.now()) / 1000);
+    if (t <= 1397818193) return 0;
+    if (t < 1458748658) return Math.max(0, Math.floor((t - 1397818193) / 60));
+    return Math.max(1009827, Math.floor(3783000 + (t - 1791875075) / 120.13));
+  }
+  var XS = { w: null, ready: null, q: {}, n: 0, hq: 0, key: '', st: null, prog: null, busy: false, err: '', t: 0, ni: 0, opened: '', fails: 0, last: 0 };
+  function xmrPrimary(a) { a = a || A; var p = String(a.xmrPrimary || ''); if (/^4[1-9A-HJ-NP-Za-km-z]{94}$/.test(p)) return p; var x = String(a.xmr || ''); return /^4[1-9A-HJ-NP-Za-km-z]{94}$/.test(x) ? x : ''; }
+  function xmrSet(k, v) { var p = xmrPrimary(); if (!p) return; var o = jget('hw-xmr:' + p, {}) || {}; if (v === undefined) delete o[k]; else o[k] = v; jset('hw-xmr:' + p, o); }
+  function xmrGet(k) { var p = xmrPrimary(); if (!p) return undefined; var o = jget('hw-xmr:' + p, {}) || {}; return o[k]; }
+  /* restore height: the user's own setting, else the one Kwallet sent at pairing (from the seed's birthday), else unknown */
+  function xmrHeight() { var h = xmrGet('h'); if (h != null && h >= 0) return h | 0; var p = A.xmrHeight; return p > 0 ? p | 0 : -1; }
+  function xmrNode() { var c = jget('hw-xmr-node', ''); if (c) return c; return XMRN[XS.ni % XMRN.length].u; }
+  function xmrNodeName(u) { u = u || xmrNode(); var k = XMRN.filter(function (x) { return x.u === u; })[0]; return k ? k.n : String(u).replace(/^https:\/\//, ''); }
+  function xmrPw() { var p = jget('hw-xmr-pw', ''); if (!p) { p = rid(24); jset('hw-xmr-pw', p); } return p; }
+  function xmrReady() { return !!(xmrPrimary() && /^[0-9a-f]{64}$/.test(A.xmrView || '')); }
+  function xmrCanSend() { return xmrReady() && !!(A.paired && A.paired.xmr) && !!XS.st; }
+  window.hwXmrHeightAt = xmrHeightAt;
+
+  /* ---------- the engine (one worker for the active wallet) ---------- */
+  function u8b64(u) { var s = '', CH = 0x8000; for (var i = 0; i < u.length; i += CH) s += String.fromCharCode.apply(null, u.subarray(i, i + CH)); return btoa(s); }
+  function xeNet(m) {
+    var w = XS.w; if (!w) return;
+    var reply = function (st, b, err) { try { if (b instanceof ArrayBuffer) w.postMessage({ hid: m.hid, st: st, b: new Uint8Array(b) }, [b]); else w.postMessage({ hid: m.hid, st: st, b: b, err: err }); } catch (e) {} };
+    var body = m.bin ? u8b64(m.body || new Uint8Array(0)) : btoa(unescape(encodeURIComponent(m.body || '')));
+    if (!(window.HwNative && HwNative.xmrPrep)) {
+      /* outside the app (desktop preview): a plain fetch; most nodes do not allow it (CORS) */
+      fetch(m.uri, { method: m.method, body: m.bin ? m.body : m.body || undefined, headers: { 'Content-Type': m.bin ? 'application/octet-stream' : 'application/json' } })
+        .then(function (r) { return r.arrayBuffer().then(function (b) { reply(r.status, m.bin ? b : new TextDecoder().decode(b)); }); }, function (e) { reply(0, null, String(e && e.message || e)); });
+      return;
+    }
+    var id = 'x' + (++XS.hq) + rid(4);
+    var ok = false; try { ok = HwNative.xmrPrep(id, m.method, m.uri, body, m.bin ? 'application/octet-stream' : 'application/json'); } catch (e) {}
+    if (!ok) { reply(0, null, 'Only https Monero nodes'); return; }
+    fetch('/xmrnet/' + id, { cache: 'no-store' }).then(function (r) {
+      return r.arrayBuffer().then(function (b) { if (r.status === 502 || r.status === 404) reply(0, null, 'Node unreachable'); else reply(r.status, m.bin ? b : new TextDecoder().decode(b)); });
+    }, function (e) { reply(0, null, String(e && e.message || e)); });
+  }
+  function xeStart() {
+    if (XS.ready) return XS.ready;
+    XS.ready = new Promise(function (res, rej) {
+      var settled = false, tm = null;
+      function wire(w, viaBlob) {
+        XS.w = w;
+        w.onmessage = function (e) {
+          var m = e.data || {};
+          if (m.ev === 'ready') { if (!settled) { settled = true; clearTimeout(tm); res(true); } return; }
+          if (m.ev === 'http') { xeNet(m); return; }
+          if (m.ev === 'prog') { xmrProg(m.p); return; }
+          var q = XS.q[m.id]; if (!q) return; delete XS.q[m.id]; clearTimeout(q.t);
+          if (m.ok) q.res(m.r); else q.rej(new Error(m.e || 'Monero engine error'));
+        };
+        w.onerror = function (ev) {
+          try { ev.preventDefault(); } catch (x) {}
+          if (!settled && !viaBlob) { try { w.terminate(); } catch (x) {} blob(); return; }
+          if (!settled) { settled = true; clearTimeout(tm); rej(new Error('The Monero engine could not start')); }
+        };
+      }
+      /* the app serves xmr/hwxmr.js itself; if a WebView will not start a worker from it, the same file runs from a blob */
+      function blob() {
+        fetch('xmr/hwxmr.js', { cache: 'force-cache' }).then(function (r) { if (!r.ok) throw new Error('missing'); return r.text(); }).then(function (t) {
+          var u = URL.createObjectURL(new Blob([t], { type: 'text/javascript' })); wire(new Worker(u), true);
+        }).catch(function () { if (!settled) { settled = true; rej(new Error('The Monero engine is missing from this build')); } });
+      }
+      try { wire(new Worker('xmr/hwxmr.js'), false); } catch (e) { blob(); }
+      tm = setTimeout(function () { if (!settled && XS.w) { try { XS.w.terminate(); } catch (x) {} XS.w = null; blob(); tm = setTimeout(function () { if (!settled) { settled = true; rej(new Error('The Monero engine did not start')); } }, 20000); } }, 12000);
+    }).catch(function (e) { XS.ready = null; XS.w = null; throw e; });
+    return XS.ready;
+  }
+  function xe(op, a, ms) {
+    return xeStart().then(function () {
+      return new Promise(function (res, rej) {
+        var id = ++XS.n, q = { res: res, rej: rej };
+        q.t = setTimeout(function () { if (XS.q[id]) { delete XS.q[id]; rej(new Error('Monero engine timed out')); } }, ms || 600000);
+        XS.q[id] = q; XS.w.postMessage({ id: id, op: op, a: a || {} });
+      });
+    });
+  }
+  function xeStop() { if (XS.w) { try { XS.w.terminate(); } catch (e) {} } Object.keys(XS.q).forEach(function (k) { try { XS.q[k].rej(new Error('stopped')); } catch (e) {} }); XS.q = {}; XS.w = null; XS.ready = null; XS.opened = ''; XS.busy = false; }
+
+  /* ---------- state on screen ---------- */
+  function xmrStKey() { return 'hw-xmr-st:' + xmrPrimary(); }
+  function xmrLoadSt() {
+    var k = xmrPrimary(); if (XS.key === k) return; XS.key = k; XS.st = null; XS.prog = null; XS.err = ''; XS.fails = 0;
+    if (!k) return; var s = jget(xmrStKey(), null); if (s && s.bal != null) { XS.st = s; C.b.xmr = { n: s.bal, unl: s.unl, at: s.at }; }
+  }
+  function xmrProg(p) {
+    XS.prog = p; var el = $('xmrsync'); if (el) el.innerHTML = xmrSyncInner();
+    var r = document.querySelector('[data-v="a:c:xmr"]'); if (r && !XS.st) { r._v = null; update(); }
+  }
+  function xmrSyncInner() {
+    if (!xmrReady()) return '';
+    if (xmrHeight() < 0 && !XS.st) return '<div class="xs-card"><b>Choose where the Monero scan starts</b><span>Monero balances are found by scanning blocks with your view key on this phone. Tell Hwallet when this wallet was made so the scan is quick.</span><button class="btn pri" data-xh>Set start</button></div>';
+    var p = XS.prog, err = XS.err;
+    if (err && !XS.busy) return '<div class="xs-l err"><span>' + esc(err) + '</span><button class="xs-b" data-xr>Retry</button></div>';
+    if (!p || p.done || (p.pct >= 1 && !XS.busy)) {
+      var st = XS.st; if (!st) return XS.busy ? '<div class="xs-l"><span class="spin"></span><span>Starting the Monero scan\u2026</span></div>' : '';
+      var ago = Math.max(0, Math.round((Date.now() - (st.at || 0)) / 60000));
+      return '<div class="xs-l ok"><span>Synced to block ' + (st.height || 0).toLocaleString('en-US') + (ago ? ' \u00b7 ' + ago + ' min ago' : ' \u00b7 just now') + ' \u00b7 ' + esc(xmrNodeName()) + '</span>' + (XS.busy ? '<span class="spin"></span>' : '') + '</div>' +
+        (st.kiMissing ? '<div class="xs-l"><span>' + st.kiMissing + ' received output' + (st.kiMissing > 1 ? 's are' : ' is') + ' not checked for spends yet. The next send (or Settings \u203a Monero \u203a Sync spent status) fixes it.</span></div>' : '');
+    }
+    var pct = Math.max(0, Math.min(100, Math.floor((p.pct || 0) * 100)));
+    return '<div class="xs-l"><span>Scanning \u00b7 ' + pct + '% \u00b7 ' + (p.left || 0).toLocaleString('en-US') + ' blocks left</span></div><div class="xs-bar"><i style="width:' + pct + '%"></i></div>';
+  }
+  function xmrRowSub() { if (!xmrReady()) return ''; var p = XS.prog; if (XS.busy && p && !p.done && p.pct < 1) return 'Scanning ' + Math.floor((p.pct || 0) * 100) + '%'; return ''; }
+  function xmrApply(st, fresh) {
+    if (!st) return;
+    var prev = XS.st; XS.st = st; XS.err = ''; XS.fails = 0;
+    C.b.xmr = { n: st.bal, unl: st.unl, at: st.at || Date.now() };
+    var keep = Object.assign({}, st, { txs: (st.txs || []).slice(0, 120) }); jset(xmrStKey(), keep); saveCache();
+    /* activity rows (native cache) + incoming notifications */
+    var items = xmrItems(st); try { actStore(items); } catch (e) {}
+    var seenK = 'hw-xmr-seen:' + xmrPrimary(), seen = jget(seenK, null), first = !seen; seen = seen || {};
+    var news = (st.txs || []).filter(function (t) { return t.dir === 'in' && !t.failed && !seen[t.hash]; });
+    (st.txs || []).forEach(function (t) { seen[t.hash] = 1; }); jset(seenK, seen);
+    if (fresh && !first) news.forEach(function (t) {
+      var amt = fmtA(t.inA, 12) + ' XMR';
+      var fg = true; try { fg = !window.HwNative || !HwNative.isFg || HwNative.isFg(); } catch (e) {}
+      if (fg) { toast('Received +' + amt); buzz([10, 50, 18]); snd('ok'); }
+      else if (jget('hw-notif', true) !== false) { try { HwNative.inNotify('xmr:' + t.hash, 'Received +' + amt, 'On Monero' + (A.label ? ' \u00b7 ' + A.label : '') + (t.pool ? ' \u00b7 waiting for a block' : '')); } catch (e) {} }
+    });
+    /* our own sends: pending until they are in a block */
+    var byH = {}; (st.txs || []).forEach(function (t) { byH[t.hash] = t; });
+    var chg = false; ACT.forEach(function (a) { if (a.ch === 'xmr' && a.st === 'pending' && byH[a.hash] && !byH[a.hash].pool) { a.st = byH[a.hash].failed ? 'fail' : 'ok'; chg = true; if (typeof txNote === 'function') txNote('xmr', null, a.hash, a.st); } });
+    if (chg) saveActs();
+    if (prev && (prev.bal !== st.bal || (prev.txs || []).length !== (st.txs || []).length)) { try { histRefresh(); } catch (e) {} }
+    var el = $('xmrsync'); if (el) el.innerHTML = xmrSyncInner();
+    update();
+  }
+  function xmrItems(st) {
+    return (st.txs || []).map(function (t) {
+      var out = t.dir === 'out', raw = out ? (function () { var s = 0n; (t.to || []).forEach(function (d) { s += BI(d.v || 0); }); return s > 0n ? s : (BI(t.outA || 0) - BI(t.inA || 0) - BI(t.fee || 0)); })() : BI(t.inA || 0);
+      if (raw < 0n) raw = -raw;
+      return itm({ ch: 'xmr', hash: t.hash, t: t.ts || Date.now(), dir: out ? 'out' : 'in', key: 'native', s: 'XMR', d: 12, raw: String(raw), cg: 'monero', cp: out && t.to && t.to[0] ? t.to[0].a : '', st: t.failed ? 'fail' : t.pool ? 'pending' : 'ok', conf: t.conf | 0, fee: t.fee, xsub: t.sub && t.sub.length ? t.sub[0] : null });
+    });
+  }
+  /* the Activity stream for Monero: rows straight from the last scan (no network) */
+  function xmrStream() { return { id: 'xmr', ch: 'xmr', page: function () { xmrLoadSt(); return Promise.resolve({ items: XS.st ? xmrItems(XS.st) : [], cursor: null }); } }; }
+
+  /* ---------- scan loop ---------- */
+  function xmrCfg() { return { address: xmrPrimary(), view: A.xmrView, height: Math.max(0, xmrHeight()), pw: xmrPw(), server: xmrNode() }; }
+  function xmrSync(force) {
+    xmrLoadSt();
+    if (!xmrReady() || XS.busy) return Promise.resolve(XS.st);
+    if (xmrHeight() < 0) return Promise.resolve(XS.st);
+    if (!force && Date.now() - XS.last < 25000) return Promise.resolve(XS.st);
+    XS.busy = true; XS.last = Date.now();
+    var cfg = xmrCfg(), sig = cfg.address + ':' + cfg.height + ':' + cfg.server, me = XS.key;
+    var el0 = $('xmrsync'); if (el0) el0.innerHTML = xmrSyncInner();
+    return (XS.opened === sig ? Promise.resolve() : xe('open', cfg, 180000).then(function () { XS.opened = sig; }))
+      .then(function () { return xe('sync', {}, 3600000); })
+      .then(function (st) { XS.busy = false; if (XS.key !== me) return null; if (st && !st.busy) xmrApply(st, true); return st; }, function (e) {
+        XS.busy = false; if (XS.key !== me) return null;
+        var msg = String(e && e.message || e);
+        XS.fails++;
+        if (!jget('hw-xmr-node', '') && XS.fails < XMRN.length * 2) { XS.ni++; XS.opened = ''; XS.err = 'Node busy. Trying ' + xmrNodeName() + '\u2026'; }
+        else XS.err = /offline|unreachable|timed out|network|fetch/i.test(msg) ? 'Can\u2019t reach the Monero node (' + xmrNodeName() + '). Check the connection or pick another node in Settings.' : 'Monero scan stopped: ' + msg.slice(0, 120);
+        var el = $('xmrsync'); if (el) el.innerHTML = xmrSyncInner();
+        if (XS.fails < XMRN.length * 2) setTimeout(function () { xmrSync(true); }, Math.min(60000, 4000 * XS.fails));
+        return XS.st;
+      });
+  }
+  /* background rhythm: about one Monero block (2 min); every minute while the coin page is open */
+  var XT = 0;
+  function xmrTick() {
+    clearTimeout(XT);
+    var fg = true; try { fg = !window.HwNative || !HwNative.isFg || HwNative.isFg(); } catch (e) {}
+    var ms = fg && V && V.v === 'coin' && V.ch === 'xmr' ? 60000 : fg ? 90000 : 120000;
+    XT = setTimeout(function () { if (xmrReady()) xmrSync(false); xmrTick(); }, ms);
+  }
+  function xmrWalletChanged() { xeStop(); XS.key = ''; xmrLoadSt(); if (xmrReady()) setTimeout(function () { xmrSync(true); }, 1500); }
+  window.hwXmrWalletChanged = xmrWalletChanged;
+  function xmrKick() { xmrLoadSt(); if (xmrReady()) { xmrSync(false); if (!XT) xmrTick(); } return Promise.resolve(C.b.xmr || null); }
+
+  /* ---------- restore height: set once, editable in Settings ---------- */
+  function xmrHeightSheet(after) {
+    var cur = xmrHeight(), tip = XS.st ? XS.st.daemon || XS.st.height : xmrHeightAt(Date.now());
+    sheet('<h3>Monero scan start</h3><p class="sp">The scan reads every block from this point on with your view key, on this phone. Earlier is safer, later is faster. Nothing is sent anywhere.</p>' +
+      '<div class="xh-o"><button class="opt tap" data-xo="new"><span><b>This wallet is new</b><small>Start about one day ago (block ' + Math.max(0, tip - 720).toLocaleString('en-US') + ')</small></span></button>' +
+      '<div class="xh-f"><b>From a date</b><small>The day the wallet was made, or the first day it got Monero. One month earlier is used to be safe.</small><input type="date" id="xh-d" max="' + new Date().toISOString().slice(0, 10) + '" min="2014-04-18"><button class="btn" data-xo="date">Use this date</button></div>' +
+      '<div class="xh-f"><b>From a block height</b><small>' + (cur >= 0 ? 'Now: ' + cur.toLocaleString('en-US') : 'Not set yet') + '</small><input inputmode="numeric" id="xh-h" placeholder="e.g. 3200000" value="' + (cur >= 0 ? cur : '') + '"><button class="btn" data-xo="h">Use this height</button></div>' +
+      '<button class="opt tap" data-xo="all"><span><b>Scan everything</b><small>From 2014. Finds every payment ever, takes a long time on a phone</small></span></button></div>', function (ov, close) {
+      function set(h) {
+        h = Math.max(0, h | 0); xmrSet('h', h); XS.opened = ''; XS.st = null; XS.prog = null; XS.err = ''; jset(xmrStKey(), null); delete C.b.xmr;
+        xe('forget', { key: 'v1:' + xmrPrimary() + ':' + h }).catch(function () {});
+        close(); buzz(8); toast('Monero scan starts at block ' + h.toLocaleString('en-US')); if (after) after(h); xmrSync(true); try { render(); } catch (e) {}
+      }
+      ov.querySelectorAll('[data-xo]').forEach(function (b) {
+        b.onclick = function () {
+          var k = b.getAttribute('data-xo');
+          if (k === 'new') return set(tip - 720);
+          if (k === 'all') return set(0);
+          if (k === 'date') { var d = ov.querySelector('#xh-d').value; if (!d) { toast('Pick a date'); return; } return set(xmrHeightAt(new Date(d + 'T00:00:00Z').getTime()) - 21600); }
+          if (k === 'h') { var v = ov.querySelector('#xh-h').value.replace(/[^\d]/g, ''); if (!v) { toast('Enter a block height'); return; } return set(+v); }
+        };
+      });
+    });
+  }
+
+  /* ---------- receive: the paired address + subaddresses (new address button) ---------- */
+  function xmrRecv() {
+    var subs = (XS.st && XS.st.subs) || [], main = A.xmr || xmrPrimary(), pick = main;
+    function qrOf(a) { try { var q = qrcode(0, 'M'); q.addData('monero:' + a); q.make(); return q.createSvgTag({ cellSize: 5, margin: 2, scalable: true }); } catch (e) { return ''; } }
+    function list() {
+      var rows = [{ i: -1, a: main, l: main === xmrPrimary() ? 'Main address' : 'Paired address' }].concat(subs.filter(function (s) { return s.a !== main; }).map(function (s) { return { i: s.i, a: s.a, l: s.l || (s.i === 0 ? 'Main address' : 'Address #' + s.i), b: s.b, used: s.used }; }));
+      return rows.map(function (r) { return '<button class="xr-r tap' + (r.a === pick ? ' on' : '') + '" data-xa="' + esc(r.a) + '"><span class="am"><span class="an">' + esc(r.l) + (r.used ? ' <small class="xr-u">used</small>' : '') + '</span><span class="ap mono">' + esc(short(r.a, 6)) + '</span></span>' + (U(r.b) > 0n ? '<span class="xr-b" data-money>' + money(esc(fmtA(r.b, 12))) + '</span>' : '') + '</button>'; }).join('');
+    }
+    function body() {
+      return '<h3>Receive XMR</h3><p class="sp">Send only Monero to this address. A new address for each payer keeps your payments unlinkable.</p><div class="qr">' + qrOf(pick) + '<span class="qrl">' + logo('monero', 'XMR') + '</span></div>' +
+        '<div class="addr mono" id="xr-a">' + esc(pick) + '</div><div class="row2"><button class="btn" data-xn' + (XS.st ? '' : ' disabled') + '>' + sv('plus') + ' New address</button><button class="btn pri" data-c>' + sv('copy') + ' Copy</button></div>' +
+        '<div class="sech">Your addresses</div><div class="lst xr-l">' + list() + '</div>' + (XS.st ? '' : '<p class="hint">New addresses can be made once the first Monero scan has finished.</p>');
+    }
+    sheet('<div id="xr-b">' + body() + '</div>', function (ov) {
+      function bind() {
+        ov.querySelector('[data-c]').onclick = function () { copy(pick).then(function () { toast('Address copied'); buzz(8); snd('addr'); }); };
+        ov.querySelectorAll('[data-xa]').forEach(function (b) { b.onclick = function () { pick = b.getAttribute('data-xa'); buzz(6); ov.querySelector('#xr-b').innerHTML = body(); bind(); }; });
+        var nb = ov.querySelector('[data-xn]'); if (nb) nb.onclick = function () {
+          if (nb.disabled) return; nb.disabled = true; nb.textContent = 'Making\u2026';
+          xe('newSub', { label: '' }, 60000).then(function (s) { subs = subs.concat([{ i: s.i, a: s.a, l: s.l, b: '0', used: false }]); if (XS.st) { XS.st.subs = subs; jset(xmrStKey(), XS.st); } pick = s.a; buzz([10, 40, 10]); snd('addr'); ov.querySelector('#xr-b').innerHTML = body(); bind(); },
+            function (e) { toast('Could not make an address: ' + String(e && e.message || e).slice(0, 80)); nb.disabled = false; nb.innerHTML = sv('plus') + ' New address'; });
+        };
+      }
+      bind();
+    });
+  }
+
+  /* ---------- send: fee levels (live from the node), unsigned build, Kwallet signs, broadcast ---------- */
+  var XFEE = { at: 0, d: null };
+  PREP.xmr = function (S) {
+    var job = Date.now() - XFEE.at < 30000 && XFEE.d ? Promise.resolve(XFEE.d) : http(xmrNode() + '/json_rpc', { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: '0', method: 'get_fee_estimate', params: { grace_blocks: 10 } }), timeout: 9000 }).then(function (j) {
+      var r = j && j.result; if (!r || !r.fees || r.fees.length < 3) throw new Error('fee');
+      XFEE = { at: Date.now(), d: r }; return r;
+    });
+    return job.then(function (r) {
+      var q = BI(r.quantization_mask || 10000), w = 1600n;   /* a 2-in / 2-out transaction weighs about 1.5 kB */
+      var lv = function (i) { var f = BI(r.fees[i]) * w; f = (f + q - 1n) / q * q; return { fpb: String(r.fees[i]), fee: f.toString() }; };
+      var st = XS.st || {}, unl = BI(st.unl || 0), bal = BI(st.bal || 0);
+      var d = { levels: { slow: lv(0), medium: lv(1), fast: lv(2) }, approx: true, tbal: bal, gbal: bal, unl: unl };
+      d.feeFor = function (k) { var L = d.levels[k] || d.levels.medium; return BI(L.fee); };
+      d.maxAmt = function (k) { var v = unl - d.feeFor(k); return v > 0n ? v : 0n; };
+      d.req = function () { return {}; };
+      d.feed = function () { return { fee: { levels: d.levels } }; };
+      return d;
+    });
+  };
+  function xmrReview() {
+    var r = SND.r, to = SND.to, now = Date.now(), lvl = SND.lv === 'custom' ? 'medium' : SND.lv;
+    if (!xmrCanSend()) { toast(XS.st ? 'Pair Monero with Kwallet to send' : 'Wait for the first Monero scan to finish'); return; }
+    var st = XS.st || {}, unl = BI(st.unl || 0);
+    if (!SND.max && SND.amt != null && SND.amt + SND.d.feeFor(lvl) > unl) { toast(unl < BI(st.bal || 0) ? 'Part of your XMR is still locked (10 blocks, about 20 min after it arrives)' : 'Not enough XMR for this amount plus the network fee'); buzz([30, 40, 30]); return; }
+    SND.busy = true; validate(); $('go').textContent = 'Preparing\u2026';
+    var built = null;
+    xe('build', { to: to, amount: SND.max ? '0' : SND.amt.toString(), max: !!SND.max, level: lvl }, 240000).then(function (b) {
+      built = b;
+      var req = { v: 2, id: rid(16), action: 'sign', chain: 'xmr', from: xmrPrimary(), to: to, token: 'native', tokenSym: 'XMR', tokenDec: 12,
+        amount: SND.max ? 'max' : SND.amt.toString(), balance: { token: String(st.bal || '0'), gas: String(st.unl || '0') },
+        fee: { level: lvl, levels: (function () { var o = {}; o[lvl] = { fee: b.fee }; return o; })() },
+        prices: { gasUsd: px('monero'), tokenUsd: px('monero'), ts: C.pt }, firstTime: RCP.indexOf(to.toLowerCase()) < 0, live: false, toName: toName('xmr', to),
+        xmr: { unsigned: b.unsigned, outputs: b.outputs, fee: b.fee, amount: b.amount, n: b.n },
+        created: now, expires: Date.now() + 120000 };
+      var size = 0; try { size = JSON.stringify(req).length; } catch (e) {}
+      if (size > 395000) throw new Error('This wallet has too many small outputs for one Kwallet request. Send a smaller amount first');
+      if ($('go')) $('go').textContent = 'Opening Kwallet\u2026';
+      return callK(req);
+    }).then(function (res) {
+      if (!res || res.status !== 'signed' || !res.signed) {
+        var m = { rejected: 'Cancelled in Kwallet', expired: 'The request expired. Try again', refused: res && res.error || 'Kwallet refused the request', missing: 'Install Kwallet v3.98 on this phone' }[res && res.status] || (res && res.error) || 'Not signed';
+        throw Object.assign(new Error(m), { quiet: true });
+      }
+      if ($('go')) $('go').textContent = 'Sending\u2026';
+      return xe('submit', { signed: res.signed }, 120000).then(function (o) {
+        /* signed key images (with proofs) from Kwallet: spent status of every output is checked against the node */
+        if (res.ki && res.ki.length) xe('importKI', { ki: res.ki, offset: res.kiOffset | 0 }, 120000).then(function (k) { if (k && k.state) xmrApply(k.state, false); }, function () {});
+        return { hashes: o.hashes || res.hashes || [], state: o.state, amount: res.amount || built.amount };
+      });
+    }).then(function (o) {
+      SND.busy = false;
+      var hash = o.hashes[0] || ''; if (o.state) xmrApply(o.state, false);
+      var amtTxt = fmtU(o.amount, 12, 8);
+      ACT.unshift({ t: Date.now(), ch: 'xmr', net: null, key: 'native', s: 'XMR', amt: amtTxt, to: to, hash: hash, st: 'pending', kind: 'transfer' }); ACT = ACT.slice(0, 300); saveActs();
+      if (RCP.indexOf(to.toLowerCase()) < 0) { RCP.unshift(to.toLowerCase()); RCP = RCP.slice(0, 300); jset('hw-recips', RCP); }
+      buzz([10, 50, 18]); snd('ok'); toast('Sent. Waiting for a Monero block');
+      if (typeof txNote === 'function') txNote('xmr', null, hash, 'pending');
+      var back0 = stack.pop() || { v: 'home' }, sh = $('sndov') && $('sndov').querySelector('.hp-sheet');
+      if (sh) sh.innerHTML = '<div class="hp-grab"></div><div class="hp-done"><svg viewBox="0 0 84 84"><circle cx="42" cy="42" r="38"/><path d="M26 43l11 11 21-23"/></svg><div>Sent</div></div>';
+      setTimeout(function () { V = { v: 'coin', ch: 'xmr', net: null, tk: 'native' }; render('in'); }, sh ? 800 : 0);
+      setTimeout(function () { xmrSync(true); }, 20000);
+    }).catch(function (e) {
+      SND.busy = false; if ($('go')) $('go').textContent = 'Continue';
+      var m = String(e && e.message || e);
+      if (/double spend|already spent|key image/i.test(m)) m = 'The node says an output was already spent. Run Settings \u203a Monero \u203a Sync spent status, then try again';
+      toast((e && e.quiet ? '' : 'Not sent: ') + m.slice(0, 160)); validate();
+      xmrSync(true);
+    });
+  }
+
+  /* ---------- Settings > Monero ---------- */
+  function xmrKiSync() {
+    if (!xmrReady() || !(A.paired && A.paired.xmr)) { toast('Pair Monero with Kwallet first'); return; }
+    if (!(window.HwNative && HwNative.sign)) { toast('Works in the Hwallet app with Kwallet on the same phone'); return; }
+    toast('Preparing\u2026');
+    xe('outputs', {}, 120000).then(function (o) {
+      var now = Date.now();
+      return callK({ v: 2, id: rid(16), action: 'sign', chain: 'xmr', kind: 'xmr-ki', from: xmrPrimary(), to: xmrPrimary(), token: 'native', tokenSym: 'XMR', tokenDec: 12, amount: '0', fee: { level: 'medium', levels: { medium: { fee: '0' } } }, xmr: { outputs: o.outputs }, live: false, created: now, expires: now + 120000 });
+    }).then(function (res) {
+      if (!res || res.status !== 'signed' || !res.ki) throw new Error({ rejected: 'Cancelled in Kwallet', expired: 'The request expired' }[res && res.status] || (res && res.error) || 'Kwallet did not answer');
+      return xe('importKI', { ki: res.ki, offset: res.kiOffset | 0 }, 180000);
+    }).then(function (k) { if (k && k.state) xmrApply(k.state, false); toast('Spent status synced'); buzz([10, 40, 10]); }, function (e) { toast(String(e && e.message || e).slice(0, 140)); });
+  }
+  function xmrNodeSheet(done) {
+    var cur = jget('hw-xmr-node', '');
+    sheet('<h3>Monero node</h3><p class="sp">Hwallet asks this node for blocks and scans them on the phone. The node never gets your view key. HTTPS nodes only.</p><div class="xn-l">' +
+      '<button class="opt tap' + (!cur ? ' on' : '') + '" data-xn=""><span><b>Automatic</b><small>Public nodes, switches when one is down</small></span></button>' +
+      XMRN.map(function (n) { return '<button class="opt tap' + (cur === n.u ? ' on' : '') + '" data-xn="' + esc(n.u) + '"><span><b>' + esc(n.n) + '</b><small>' + esc(n.u.replace(/^https:\/\//, '')) + '</small></span></button>'; }).join('') +
+      '</div><div class="xh-f"><b>Your own node</b><small>https://host:port of a node you run or trust</small><input id="xn-c" placeholder="https://node.example.com:18089" autocapitalize="off" spellcheck="false" value="' + esc(cur && !XMRN.some(function (n) { return n.u === cur; }) ? cur : '') + '"><button class="btn" data-xc>Use this node</button></div>', function (ov, close) {
+      function use(u) { jset('hw-xmr-node', u); XS.ni = 0; XS.fails = 0; XS.err = ''; if (XS.opened) xe('server', { uri: xmrNode() }).catch(function () {}); XS.opened = ''; close(); buzz(8); toast('Monero node: ' + xmrNodeName()); if (done) done(); xmrSync(true); }
+      ov.querySelectorAll('[data-xn]').forEach(function (b) { b.onclick = function () { use(b.getAttribute('data-xn')); }; });
+      ov.querySelector('[data-xc]').onclick = function () {
+        var v = ov.querySelector('#xn-c').value.trim().replace(/\/+$/, '');
+        if (!/^https:\/\/[a-z0-9.-]+(:\d{2,5})?$/i.test(v)) { toast('Enter https://host or https://host:port'); return; }
+        var b = ov.querySelector('[data-xc]'); b.textContent = 'Checking\u2026';
+        http(v + '/get_height', { method: 'POST', body: '{}', timeout: 9000 }).then(function (j) { if (!(j && j.height > 0)) throw new Error('no'); use(v); }, function () { b.textContent = 'Use this node'; toast('That node did not answer'); });
+      };
+    });
+  }
+  function xmrSettingsHtml() {
+    if (!xmrPrimary()) return '';
+    var KIx = 'M12 2 4 5v6c0 5.5 3.4 10.7 8 12 4.6-1.3 8-6.5 8-12V5l-8-3zm0 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm4 8H8v-.6c0-1.6 2.7-2.4 4-2.4s4 .8 4 2.4v.6z';
+    var NIx = 'M4 4h16v6H4V4zm0 10h16v6H4v-6zm3-8v2h2V6H7zm0 10v2h2v-2H7z', HIx = 'M13 3a9 9 0 0 0-9 9H1l4 4 4-4H6a7 7 0 1 1 2.05 4.95l-1.42 1.42A9 9 0 1 0 13 3zm-1 5v5l4.25 2.52.77-1.28-3.52-2.09V8H12z';
+    return '<div class="kws-sec">Monero</div><div class="kws-grp">' +
+      krow('kws-xnode', NIx, 'Node', esc(xmrNodeName()) + (jget('hw-xmr-node', '') ? '' : ' \u00b7 automatic')) +
+      krow('kws-xh', HIx, 'Scan start (restore height)', xmrHeight() >= 0 ? 'Block ' + xmrHeight().toLocaleString('en-US') : 'Not set') +
+      krow('kws-xki', KIx, 'Sync spent status', 'Kwallet signs key images so spends from elsewhere show up') +
+      krow('kws-xre', 'M17.65 6.35A7.958 7.958 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z', 'Rescan', 'Forget the scan cache and scan again from the start block') +
+      '</div>';
+  }
+  function xmrSettingsBind(on, $k) {
+    var sub = function (id, t) { var s = $k(id + '-s'); if (s) s.textContent = t; };
+    on('kws-xnode', function () { buzz(6); xmrNodeSheet(function () { sub('kws-xnode', xmrNodeName() + (jget('hw-xmr-node', '') ? '' : ' \u00b7 automatic')); }); });
+    on('kws-xh', function () { buzz(6); xmrHeightSheet(function (h) { sub('kws-xh', 'Block ' + h.toLocaleString('en-US')); }); });
+    on('kws-xki', function () { buzz(6); xmrKiSync(); });
+    on('kws-xre', function () {
+      buzz(6); var h = Math.max(0, xmrHeight());
+      xe('forget', { key: 'v1:' + xmrPrimary() + ':' + h }).catch(function () {}).then(function () { XS.opened = ''; XS.st = null; XS.prog = null; jset(xmrStKey(), null); jset('hw-xmr-seen:' + xmrPrimary(), null); delete C.b.xmr; toast('Rescanning Monero from block ' + h.toLocaleString('en-US')); xmrSync(true); update(); });
+    });
+  }
+  /* the scan card on the coin page is redrawn in place: one delegated listener for its buttons */
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('#xmrsync [data-xh], #xmrsync [data-xr]') : null; if (!b) return;
+    buzz(6); if (b.hasAttribute('data-xh')) xmrHeightSheet(); else { XS.fails = 0; XS.err = ''; XS.last = 0; xmrSync(true); }
+  });
+  window.hwXmr = { sync: xmrSync, state: function () { return XS.st; }, heightAt: xmrHeightAt };
+
 
   /* ---------- TRON: TronLink-style Energy / Bandwidth bar (#37), live from TronGrid getaccountresource ---------- */
   function resBar(first) {
@@ -11793,7 +12201,7 @@ window.hwCrashPrompt = crashPrompt;
     });
   }
   function licenses() {
-    sheet('<h3>Open-source licenses</h3><div class="lic">Hwallet\nCopyright (C) 2026 Kwallet contributors.\nLicensed under the GNU General Public License v3.0 or later. You may copy, change and share it under the same license. It comes with no warranty.\n\nGem Wallet\nHwallet\u2019s layout, lists, pickers, navigation and wallet tools follow Gem Wallet (github.com/gemwalletcom), Copyright (C) Gem Wallet contributors, GPL-3.0. Chain and token logos come from Gem Wallet\u2019s and Trust Wallet\u2019s asset repositories (MIT, Copyright (c) 2019-2023 Trust Wallet). Gem Wallet is not affiliated with Hwallet.\n\nMonero symbol: The Monero Project (getmonero.org).\n\nKwallet (the offline signer) is a separate app under the MIT license.\n\nMiuix (UI style \u201cMiuix\u201d, pull to refresh)\nCopyright compose-miuix-ui contributors. Apache License 2.0. github.com/compose-miuix-ui/miuix\n\nMaterial Design 3 (UI style \u201cMaterial UI\u201d)\nMaterial 3 specification and androidx.compose.material3 tokens, Apache License 2.0.</div><div class="row2"><button class="btn" data-x>Close</button></div>');
+    sheet('<h3>Open-source licenses</h3><div class="lic">Hwallet\nCopyright (C) 2026 Kwallet contributors.\nLicensed under the GNU General Public License v3.0 or later. You may copy, change and share it under the same license. It comes with no warranty.\n\nGem Wallet\nHwallet\u2019s layout, lists, pickers, navigation and wallet tools follow Gem Wallet (github.com/gemwalletcom), Copyright (C) Gem Wallet contributors, GPL-3.0. Chain and token logos come from Gem Wallet\u2019s and Trust Wallet\u2019s asset repositories (MIT, Copyright (c) 2019-2023 Trust Wallet). Gem Wallet is not affiliated with Hwallet.\n\nMonero symbol: The Monero Project (getmonero.org).\n\nMonero engine (v1.8)\nmonero-ts, Copyright (c) woodser, MIT License (github.com/woodser/monero-ts), with the Monero Project\u2019s wallet2 compiled to WebAssembly, Copyright (c) 2014-2025 The Monero Project, BSD 3-Clause License; Boost (BSL-1.0) and libsodium (ISC).\n\nKwallet (the offline signer) is a separate app under the MIT license.\n\nMiuix (UI style \u201cMiuix\u201d, pull to refresh)\nCopyright compose-miuix-ui contributors. Apache License 2.0. github.com/compose-miuix-ui/miuix\n\nMaterial Design 3 (UI style \u201cMaterial UI\u201d)\nMaterial 3 specification and androidx.compose.material3 tokens, Apache License 2.0.</div><div class="row2"><button class="btn" data-x>Close</button></div>');
   }
 
   /* ---------- themes: Kwallet light / dark + Material You from the wallpaper ---------- */
@@ -11871,7 +12279,7 @@ window.hwCrashPrompt = crashPrompt;
     return o;
   }
   function incoming(id, before) {
-    if (!before) return; var after = snapOf(id); if (!after) return;
+    if (!before || id === 'xmr') return; var after = snapOf(id); if (!after) return;   /* v1.8: Monero reports its own payments (segXmr) */
     Object.keys(after).forEach(function (k) {
       var a0 = U(before[k]), a1 = U(after[k]); if (a0 == null || a1 == null || a1 <= a0) return;
       var r = null, net = null;

@@ -24,7 +24,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Kwallet</title>
 <meta name="theme-color" content="#0e1117">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; worker-src blob:; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none';">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="dark light">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230e1117'/%3E%3Crect x='12' y='20' width='40' height='28' rx='6' fill='%23DDF869'/%3E%3Crect x='12' y='20' width='40' height='10' rx='5' fill='%23223348'/%3E%3Ccircle cx='42' cy='37' r='3' fill='%23223348'/%3E%3C/svg%3E">
@@ -11737,7 +11737,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.97.5';
+const APP_VERSION = '3.98';
 const APP_BUILD = '2026-10-13';
 let derivedRows = [];
 let copiedState = {};
@@ -20706,6 +20706,9 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
           var xc = FastCore.makeCtx({ net: 'xmr', pathTpl: DEFAULT_PATH.xmr, ssk: ssk, seedType: st });
           var xr = FastCore.derive(xc, index, true);
           rec.addrs.xmr = xr.address; rec.xmrView = xr.viewKey || '';
+          /* v3.98: Hwallet's view-only Monero wallet needs the primary address (index 0) and where to start scanning */
+          try { rec.xmrPrimary = FastCore.xmrAddr(FastCore.xmrAccount(ssk), 0, 0); } catch (e) {}
+          try { if (st === 'poly' && typeof polyDecodePhrase === 'function' && typeof POLY !== 'undefined') { var pd = await polyDecodePhrase(m); var bts = POLY.EPOCH + (pd.birthday | 0) * POLY.TIME_STEP; rec.xmrHeight = Math.max(0, xmrHeightAt(bts * 1000) - 21600); } } catch (e) {}
         } else {
           var ctx = FastCore.makeCtx({ net: net, pathTpl: DEFAULT_PATH[net], seedHex: getBip39SeedHex(m, p), adaEnt: net === 'ada' ? adaEntropyHex() : null, pass: p, seedType: st });
           rec.addrs[net] = FastCore.derive(ctx, index, false).address;
@@ -20721,9 +20724,17 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     return rec;
   }
   function publicExport(r) {
-    return { v: 1, src: 'kwallet', label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: 0 } : null };
+    /* v3.98: + the primary address (a subaddress pairing still scans the whole wallet) and the restore height when known */
+    return { v: 1, src: 'kwallet', label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null };
   }
   function exportText(r) { return 'kwallet-pair:' + btoa(unescape(encodeURIComponent(JSON.stringify(publicExport(r))))); }
+  /* v3.98: block height for a date, offline (60 s blocks to the v2 fork 1009827, 120 s after; anchor 3,783,000 = 1791875075) */
+  function xmrHeightAt(ms) {
+    var t = Math.floor((+ms || Date.now()) / 1000);
+    if (t <= 1397818193) return 0;
+    if (t < 1458748658) return Math.max(0, Math.floor((t - 1397818193) / 60));
+    return Math.max(1009827, Math.floor(3783000 + (t - 1791875075) / 120.13));
+  }
   function findPub(addr, net) {
     addr = String(addr || '').toLowerCase(); if (!addr) return null;
     var all = pubList();
@@ -21019,9 +21030,156 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     try { if (c === 'xrp') { KwChains.xrp.tok(tok); if (+R.tokenDec !== 15) return 'Bad token decimals.'; } if (c === 'ada') KwChains.ada.tok(tok); } catch (e) { return 'The token is not valid: ' + (e.message || e); }
     return '';
   }
+
+  /* ---------- v3.98: Monero, signed here with the spend key (Kwallet stays offline) ----------
+     Hwallet sends the unsigned transaction set its view-only wallet built (inputs, decoys from the node, fee) and its
+     exported outputs. After the hold (and PIN, if on) Kwallet derives the spend key from the paired seed, and the Monero
+     engine (monero-ts / wallet2 in WebAssembly, xmr/hwxmr.js, run in a worker with no network at all) imports the
+     outputs, makes their key images, reads what the set really does and signs it (CLSAG + Bulletproofs+). Kwallet only
+     answers when the set pays exactly the address and amount on this sheet with a fee no higher than shown.
+     The spend key never leaves this phone's Kwallet process; the worker is closed after each request. */
+  var KX = { w: null, ready: null, q: {}, n: 0 };
+  function kxStart() {
+    if (KX.ready) return KX.ready;
+    KX.ready = new Promise(function (res, rej) {
+      var settled = false, tm = 0;
+      function wire(w, blobbed) {
+        KX.w = w;
+        w.onmessage = function (e) {
+          var m = e.data || {};
+          if (m.ev === 'ready') { if (!settled) { settled = true; clearTimeout(tm); res(true); } return; }
+          if (m.ev === 'http') { try { w.postMessage({ hid: m.hid, st: 0, err: 'Kwallet is offline' }); } catch (x) {} return; }
+          if (m.ev) return;
+          var q = KX.q[m.id]; if (!q) return; delete KX.q[m.id]; clearTimeout(q.t);
+          if (m.ok) q.res(m.r); else q.rej(new Error(m.e || 'Monero engine error'));
+        };
+        w.onerror = function (ev) { try { ev.preventDefault(); } catch (x) {} if (!settled && !blobbed) { try { w.terminate(); } catch (x) {} blob(); } else if (!settled) { settled = true; rej(new Error('The Monero engine could not start')); } };
+      }
+      function blob() {
+        fetch('xmr/hwxmr.js').then(function (r) { if (!r.ok) throw new Error('missing'); return r.text(); }).then(function (t) {
+          wire(new Worker(URL.createObjectURL(new Blob([t], { type: 'text/javascript' }))), true);
+        }).catch(function () { if (!settled) { settled = true; rej(new Error('The Monero engine is missing from this Kwallet build')); } });
+      }
+      try { wire(new Worker('xmr/hwxmr.js'), false); } catch (e) { blob(); }
+      tm = setTimeout(function () { if (!settled) { try { KX.w && KX.w.terminate(); } catch (x) {} KX.w = null; blob(); tm = setTimeout(function () { if (!settled) { settled = true; rej(new Error('The Monero engine did not start')); } }, 20000); } }, 12000);
+    }).catch(function (e) { KX.ready = null; KX.w = null; throw e; });
+    return KX.ready;
+  }
+  function kx(op, a, ms) {
+    return kxStart().then(function () {
+      return new Promise(function (res, rej) {
+        var id = ++KX.n, q = { res: res, rej: rej }; q.t = setTimeout(function () { if (KX.q[id]) { delete KX.q[id]; rej(new Error('The Monero engine timed out')); } }, ms || 110000);
+        KX.q[id] = q; KX.w.postMessage({ id: id, op: op, a: a || {} });
+      });
+    });
+  }
+  function kxStop() { try { if (KX.w) KX.w.terminate(); } catch (e) {} KX.w = null; KX.ready = null; KX.q = {}; }
+  /* Monero base58 (8-byte blocks -> 11 chars); the address body = prefix byte + public spend key + public view key */
+  var XA58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz', XBS = [0, 2, 3, 5, 6, 7, 9, 10, 11];
+  function xmrB58(s) {
+    s = String(s || ''); var out = [];
+    for (var i = 0; i < s.length; i += 11) {
+      var blk = s.slice(i, i + 11), n = XBS.indexOf(blk.length); if (n < 1) return null;
+      var v = 0n; for (var j = 0; j < blk.length; j++) { var k = XA58.indexOf(blk[j]); if (k < 0) return null; v = v * 58n + BI(k); }
+      for (var b = n - 1; b >= 0; b--) { out[(i / 11) * 8 + b] = Number(v & 255n); v >>= 8n; }
+      if (v) return null;
+    }
+    return out;
+  }
+  /* the two public keys an address pays to (standard, subaddress and integrated addresses compare by keys) */
+  function xmrKeysOf(a) { var b = xmrB58(a); if (!b || b.length < 69) return ''; var pre = b[0]; if ([18, 19, 42].indexOf(pre) < 0) return ''; return b.slice(1, 65).map(function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); }
+  function xmrAddrOk(a) { a = String(a || ''); return (/^[48][1-9A-HJ-NP-Za-km-z]{94}$/.test(a) || /^4[1-9A-HJ-NP-Za-km-z]{105}$/.test(a)) && !!xmrKeysOf(a); }
+  function xmrRecFor(from) {
+    var all = pubList(); for (var i = 0; i < all.length; i++) { var a = all[i].addrs || {}; if (a.xmr === from) return all[i]; }
+    /* a subaddress pairing: the record whose primary matches (kept in the vault copy, not the public index) */
+    try { var full = load(); for (var j = 0; j < full.length; j++) if (full[j].xmrPrimary === from) return { id: full[j].id, label: full[j].label, index: full[j].index, addrs: full[j].addrs, seedType: full[j].seedType }; } catch (e) {}
+    return null;
+  }
+  function xmrPage() {
+    var R = REQ, kind = R.kind || 'transfer', X = R.xmr || {};
+    if (kind !== 'transfer' && kind !== 'xmr-ki') return fail('Kwallet does not know this kind of Monero request.', 'Update Kwallet and Hwallet to matching versions.');
+    if (!/^4[1-9A-HJ-NP-Za-km-z]{94}$/.test(String(R.from || '')) || !xmrKeysOf(R.from)) return fail('The sending Monero address is not valid.');
+    if (kind === 'transfer' && !xmrAddrOk(R.to)) return fail('The recipient is not a valid Monero address.');
+    if (!/^[0-9a-f]+$/i.test(String(X.outputs || '')) || (kind === 'transfer' && !/^[0-9a-f]+$/i.test(String(X.unsigned || '')))) return fail('This Monero request is incomplete.', 'Update Hwallet to v1.8 or later.');
+    if (kind === 'transfer' && R.amount !== 'max' && !(U(R.amount) > 0n)) return fail('Bad amount.');
+    var rec = xmrRecFor(R.from);
+    try { if (!rec && window.KwE2E && KwE2E.on()) rec = { id: 'e2e', label: 'E2E test wallet', index: 0, e2e: true }; } catch (e) {}
+    if (!rec) return fail('No paired seed owns ' + short(R.from) + '.', 'Open Kwallet, go to <b>Settings &gt; Hwallet signer</b> and pair the seed that owns this Monero wallet, then pair again in Hwallet.');
+    var fee = U(X.fee) || 0n, amt = kind === 'transfer' ? (R.amount === 'max' ? U(X.amount) : U(R.amount)) : 0n;
+    S = { xmr: true, R: R, c: 'xmr', kind: kind, info: { name: 'Monero', sym: 'XMR', dec: 12, logo: 'monero' }, net: 'xmr', rec: rec, tok: null, dec: 12, gdec: 12, sym: 'XMR', gsym: 'XMR', armed: false,
+      level: (R.fee && R.fee.level) || 'medium', last: { amount: amt, fee: fee, err: null }, total: Math.max(1000, R.expires - Date.now()) };
+    lastFeed = Date.now();
+    xmrDraw(); mount(); arm(700);
+    setInterval(tickExp, 250);
+    kxStart().then(function () { return kx('boot', {}, 60000); }).catch(function () {});   /* warm the engine while the user reads */
+  }
+  function xmrDraw() {
+    var R = S.R, P = R.prices || {}, px = +P.gasUsd || 0, cic = LOGO.monero || '', c = S.last, X = R.xmr || {}, det = '', main = '';
+    if (S.kind === 'xmr-ki') {
+      main += HWP.card(HWP.perms([['ok', 'Mark the Monero this wallet already spent, so Hwallet shows the right balance'], ['ok', 'Uses key images: they prove spends, nothing else'], ['no', 'Can\u2019t move funds or sign a payment']]));
+      main += HWP.card(HWP.walletRow(S.rec.label + ' \u00b7 #' + S.rec.index, R.from, cic));
+    } else {
+      var lvlTxt = { slow: 'Slow', medium: 'Normal', fast: 'Fast', fastest: 'Fastest' }[S.level] || 'Normal';
+      main += HWP.changes([{ icon: cic, sym: 'XMR', sign: '-', amt: c.amount != null ? fmt(c.amount, 12, 8) : '\u2014', usd: (c.amount != null ? usdTxt(c.amount, 12, px) : '') + (R.amount === 'max' ? ' \u00b7 Max' : '') }]);
+      main += HWP.card(HWP.kv('To', '<span class="hp-to">' + (R.toName ? '<span>' + esc(String(R.toName).slice(0, 40)) + '</span>' : '') + '<em>' + esc(HWP.shortA(R.to)) + '</em></span>', R.firstTime ? '<span class="hp-badge">New address</span>' : ''));
+      main += HWP.card(HWP.kv('Network fee<small>' + lvlTxt + '</small>', fmt(c.fee, 12, 12) + ' XMR', usdTxt(c.fee, 12, px), { cls: 'hp-fee' }));
+      main += HWP.card(HWP.walletRow(S.rec.label + ' \u00b7 #' + S.rec.index, R.from, cic));
+      det += dAddrRow('From', esc(S.rec.label) + ' \u00b7 #' + S.rec.index, R.from) + dAddrRow('To', R.firstTime ? 'New address' : '', R.to);
+      det += kv('Transactions', String(X.n || 1), 'Ring size 16 \u00b7 CLSAG + Bulletproofs+');
+      det += kv('Network', 'Monero', 'Checked against what is signed: recipient, amount and fee');
+    }
+    var body = HWP.head({ icon: HWICON, name: 'Hwallet', sub: 'Monero' }) + HWP.title(KINDS[S.kind] || 'Send') + main + HWP.trust('ok', 'Signed offline in Kwallet') + (det ? HWP.details(det, false, 'kss-det') : '');
+    page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ exp: true, no: 'Cancel', ok: 'Confirm', okId: 'kss-go', noId: 'kss-no', hold: true, disabled: true, hint: '' })) + '</div>';
+    $('kss-no').onclick = function () { if (!busy) { kxStop(); finish({ status: 'rejected' }); } };
+    var x = page.querySelector('[data-hp-x]'); if (x) x.onclick = function () { if (!busy) { kxStop(); finish({ status: 'rejected' }); } };
+    hold($('kss-go')); tickExp(); syncBtn();
+  }
+  async function xmrSskFor(sec) {
+    var st = sec.seedType || 'bip39', m = String(sec.m || '');
+    if (st === 'xmr') { if (!(window.XmrMnemonic && XmrMnemonic.toSpendKeyHex)) throw new Error('Monero seed engine missing'); return XmrMnemonic.toSpendKeyHex(m); }
+    if (st === 'poly') { var d = await polyDecodePhrase(m); return Array.from(d.key).map(function (b) { return ('0' + (b & 255).toString(16)).slice(-2); }).join(''); }
+    if (!window.XmrUtils) throw new Error('Monero engine missing');
+    return await XmrUtils.get_ssk(getBip39SeedHex(m, sec.p || ''));
+  }
+  async function xmrProceed(snap) {
+    if (busy || done) return;
+    var R = S.R, X = R.xmr || {};
+    if (Date.now() > R.expires) return finish({ status: 'expired' });
+    if (S.rec && S.rec.e2e) return finish({ status: 'rejected', error: 'The E2E test wallet cannot sign' });
+    setBusy(true, 'Signing\u2026');
+    var keys = null;
+    try {
+      var sec = await getSecret();
+      if (!sec) { setBusy(false); buzz(8); return; }
+      var ssk = await xmrSskFor(sec); sec = null;
+      var acc = FastCore.xmrAccount(ssk); ssk = null;
+      keys = { address: FastCore.xmrAddr(acc, 0, 0), view: acc.viewKey, spend: acc.spendKey }; acc = null;
+      if (keys.address !== R.from) throw new Error('The paired seed no longer derives ' + short(R.from) + '.');
+      await new Promise(function (r) { setTimeout(r, 16); });
+      if (S.kind === 'xmr-ki') {
+        var k = await kx('kKeyImages', { address: keys.address, view: keys.view, spend: keys.spend, outputs: X.outputs }, 110000); keys = null; kxStop();
+        try { pushActivity('act', 'Hwallet: Monero spent status synced'); } catch (e) {}
+        return success({ status: 'signed', chain: 'xmr', kind: 'xmr-ki', ki: k.ki, kiOffset: k.kiOffset | 0 }, 'Done');
+      }
+      var r = await kx('kSign', { address: keys.address, view: keys.view, spend: keys.spend, outputs: X.outputs, unsigned: X.unsigned }, 110000); keys = null; kxStop();
+      /* what the set really does, read by wallet2 from the set itself: it must pay R.to exactly, nobody else, at the fee shown */
+      var want = xmrKeysOf(R.to), sum = 0n, feeSum = 0n, bad = '';
+      (r.desc && r.desc.txs || []).forEach(function (t) {
+        feeSum += U(t.fee) || 0n;
+        (t.dests || []).forEach(function (d) { if (xmrKeysOf(d.a) !== want) bad = 'pays ' + short(d.a) + ', not the address shown'; sum += U(d.v) || 0n; });
+      });
+      if (!r.desc || !(r.desc.txs || []).length) bad = 'has no transactions';
+      if (!bad && R.amount !== 'max' && sum !== U(R.amount)) bad = 'sends ' + fmt(sum, 12, 12) + ' XMR, not ' + fmt(U(R.amount), 12, 12);
+      if (!bad && feeSum > (U(X.fee) || 0n) + (U(X.fee) || 0n) / 10n) bad = 'has a fee of ' + fmt(feeSum, 12, 12) + ' XMR, more than shown';
+      if (!bad && !(sum > 0n)) bad = 'sends nothing';
+      if (bad) { r = null; setBusy(false); return fail('Not signed: this Monero transaction ' + bad + '.', 'Nothing was sent. Start the send again in Hwallet.'); }
+      try { pushActivity('act', 'Hwallet: send ' + fmt(sum, 12, 8) + ' XMR on Monero'); } catch (e) {}
+      success({ status: 'signed', chain: 'xmr', signed: r.signed, hashes: r.hashes || [], ki: r.ki || [], kiOffset: r.kiOffset | 0, amount: sum.toString(), fee: feeSum.toString(), level: S.level, kind: 'transfer' }, 'Signed');
+    } catch (e) { keys = null; kxStop(); setBusy(false); fail('Signing failed: ' + (e && e.message || e)); }
+  }
   function signPage() {
     var R = REQ, c = R.chain;
-    if (c === 'xmr') return fail('Monero sending is coming soon.', 'Kwallet signs EVM networks, Solana, Tron, Bitcoin, Sui, XRP and Cardano today.');
+    if (c === 'xmr') return xmrPage();
     var info, net;
     if (c === 'evm') {
       if (typeof ethers === 'undefined') return fail('Signing engine missing.');
@@ -21303,7 +21461,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
   }
   function feeKey(c) { return String(c.fee) + '|' + (S.c === 'evm' ? S.R.nonce : S.c === 'xrp' ? (S.R.xrp || {}).sequence : ''); }
   function stale() { return !!S.R.live && Date.now() - lastFeed > 10000; }
-  var KINDS = { transfer: 'Send', 'trx-freeze': 'Stake TRX', 'trx-unfreeze': 'Unstake TRX', 'trx-withdraw': 'Withdraw TRX', 'xrp-trustset': 'Add token' };
+  var KINDS = { transfer: 'Send', 'trx-freeze': 'Stake TRX', 'trx-unfreeze': 'Unstake TRX', 'trx-withdraw': 'Withdraw TRX', 'xrp-trustset': 'Add token', 'xmr-ki': 'Sync spent status' };
   function draw() {
     var R = S.R, c = calc(), P = R.prices || {}, gpx = +P.gasUsd || 0, tpx = S.tok ? (+P.tokenUsd || 0) : gpx, kind = R.kind || 'transfer';
     S.last = c; S.key = feeKey(c);
@@ -21566,6 +21724,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
     return d.privateKey;
   }
   async function proceed(snap) {
+    if (S && S.xmr) return xmrProceed(snap);
     if (busy || done) return;
     if (Date.now() > S.R.expires) return finish({ status: 'expired' });
     if (S.rec && S.rec.e2e) return finish({ status: 'rejected', error: 'The E2E test wallet cannot sign' });

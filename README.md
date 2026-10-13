@@ -116,11 +116,11 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 - **Several wallets**, tokens on every chain, TRON Energy / Bandwidth and Stake 2.0, XRP trust lines, Cardano native assets
 - **Always-on service** with a live four-coin notification and incoming-payment alerts
 - **Crash prompt** — if Hwallet ever closes unexpectedly, the next launch offers to copy the log (once per crash)
-- XMR is watch-only; full Monero send (cold-signed in Kwallet) comes in v3.98
+- **Monero, end to end** *(new in 1.8 / 3.98)* — the balance and history come from a view-key scan on the phone (monero-ts / wallet2 in WebAssembly, in a background worker): it starts at the wallet's restore height, keeps its cache on the phone and continues where it stopped, with a progress bar (% and blocks left). Receive with the main address or a new subaddress (QR), send with live fee levels: Hwallet builds the unsigned transaction, Kwallet signs it offline in the same sign sheet (CLSAG + Bulletproofs+, spend key never leaves Kwallet) after checking the recipient, amount and fee, Hwallet broadcasts it and imports the key images. Incoming XMR shows in Activity (with confirmations) and as a notification. Settings > Monero: node (automatic public HTTPS nodes or your own), scan start, sync spent status, rescan
 
-### Known limits (v3.97.5 / v1.7.5)
+### Known limits (v3.98 / v1.8)
 
-- XMR send is not included yet; full Monero comes in **v3.98**.
+- Monero: the scan runs inside Hwallet (WebView worker); it continues in the background while Hwallet's always-on service keeps the app alive, and resumes from its saved cache when Hwallet is opened again after Android closed it. Nodes must be HTTPS (Android blocks plain http). The node learns your IP and which blocks you download, never your view key. A wallet with a very large number of small outputs may exceed one Kwallet request (≈ 400 kB); send a smaller amount first. Monero needs Android System WebView 97 or later. The browser HTML builds have no Monero engine (it ships as `xmr/hwxmr.js` inside the APKs).
 - Approve → Swap is two Kwallet sheets with Hwallet's stepper between them (no Permit2 / EIP-2612 signature path yet). Approvals are always for the exact amount and skipped when the allowance is already enough.
 - The Jito tip is offered on Hwallet's own Jupiter swaps only; Kwallet never adds instructions to an app's transaction.
 - Android does not let a background app open another app, so a WalletConnect request that arrives while you are elsewhere waits for one tap on its notification.
@@ -173,8 +173,8 @@ Get the latest files from **[Releases](https://github.com/0xkabeno/Kwallet/relea
 # put the downloads and SHA256SUMS.txt in one folder, then
 sha256sum -c SHA256SUMS.txt --ignore-missing      # every line must say OK
 # Android: both APKs must carry the same signing certificate
-apksigner verify --print-certs Kwallet-v3.97.5.apk | grep SHA-256
-apksigner verify --print-certs Hwallet-v1.7.5.apk  | grep SHA-256
+apksigner verify --print-certs Kwallet-v3.98.apk | grep SHA-256
+apksigner verify --print-certs Hwallet-v1.8.apk  | grep SHA-256
 ```
 
 On Android, open the APK and allow *Install unknown apps* once. Updates install over the previous version (same permanent key).

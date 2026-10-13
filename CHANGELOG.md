@@ -1,5 +1,24 @@
 # Changelog
 
+## Kwallet v3.98 + Hwallet v1.8
+
+Full Monero.
+
+### New
+- **Monero balance and history from a view-key scan on the phone.** Hwallet runs the Monero engine (monero-ts, which is the Monero Project's wallet2 compiled to WebAssembly) in a background Web Worker, so the screen never blocks. The scan starts at the wallet's restore height, saves its block/output cache on the phone (IndexedDB) and continues incrementally from where it stopped; the coin page shows a progress bar with the percentage and blocks left. It keeps scanning while Hwallet's always-on service keeps the app running. Nothing about the wallet is uploaded: the node only serves blocks, the view key stays on the phone.
+- **Restore height**: Kwallet sends it at pairing when the seed carries a birthday (Polyseed), otherwise Hwallet asks once ("This wallet is new", a date, a block height, or scan everything). Editable in Settings > Monero > Scan start.
+- **Receive**: the main (or paired) address plus subaddresses, with a **New address** button, QR and copy; addresses that already received are marked.
+- **Send XMR** with the same Send screen and the same Kwallet sign sheet as every other chain: Hwallet picks the outputs and fetches decoys from the node, builds the **unsigned** transaction at the fee level you choose (Slow / Normal / Fast, live from the node's fee estimate), Kwallet derives the spend key from the paired seed only after the hold (and PIN if on), imports the outputs, makes their key images, reads what the set really does and refuses unless it pays exactly the address and amount shown with a fee no higher than shown, then signs (CLSAG + Bulletproofs+). Hwallet broadcasts it and imports the key images that came back, so the balance is right after the spend. Max sends sweep the unlocked balance.
+- **Activity rows for Monero**, received and sent, with "n/10 confirmations" until the funds unlock; tap for the detail sheet (fee, date, explorer).
+- **Incoming XMR notification** on the phone (found by the local scan), or a toast while Hwallet is open.
+- **Settings > Monero**: node (automatic over four public HTTPS nodes with fallback, or your own `https://host:port`, checked before it is saved), scan start, **Sync spent status** (Kwallet signs key images for every received output, so spends made elsewhere show up), and **Rescan**.
+- Kwallet pairing now carries the Monero primary address (a subaddress pairing scans the whole wallet) and the restore height when known; older pairings keep working.
+
+### Changed
+- Kwallet stays offline: the Monero engine in Kwallet has no network access at all (Kwallet still has no INTERNET permission); its worker is closed after every request.
+- Hwallet's node traffic for Monero goes through Hwallet's native HTTP client (same data-speed limit as the rest of the app).
+- Sign requests between Hwallet and Kwallet may now carry up to 400 kB (a Monero unsigned set with its outputs).
+
 ## Kwallet v3.97.5 + Hwallet v1.7.5
 
 UI styles redone from the phone test of v3.97.4.
