@@ -1,5 +1,24 @@
 # Changelog
 
+## Kwallet v3.98.4 + Hwallet v1.8.4
+
+Monero pairing fix, a friendlier pairing flow, fintech-style Hwallet Settings, one shared send check for both apps, and Monero subaddress coverage.
+
+### Fixed
+- **Monero after pairing from Hwallet ("needs view key").** Pairing started from Hwallet opens Kwallet's sign screen, where the vault is closed, so Kwallet sent an empty view key. Kwallet's public pairing index now carries the view-only Monero data (private view key, primary address, restore height), is rewritten once the next time Kwallet is opened, and old pairings are filled in from the seed. If the index is still old, the pair screen fills it from the signing copy (or after one PIN when Require PIN to sign is on). Hwallet shows **Pair again to enable Monero** on the Monero page, its home row and in Settings > Monero when a wallet has a Monero address but no view key.
+- **Solana token Max blocked by Kwallet ("Not enough to cover the network fee", amount "—").** A failed token-accounts request was counted as a token balance of 0 and sent to Kwallet, while Hwallet had checked the cached home balance. The request is now retried and a failed one never becomes 0; a token Max goes to Kwallet as the exact raw token balance; the fee and account rent are checked against SOL only.
+- **One send check for both apps (KwSend).** Hwallet and Kwallet now run the same code on the same balances for every chain (EVM, Solana, Tron, Bitcoin, Sui, XRP, Cardano), so their messages always agree. Solana: an account can end at 0 or at least 0.00089088 SOL (rent minimum), never in between. Bitcoin: the recipient output is sized by its address type in Hwallet too (Max and fee match Kwallet's planner). XRP tokens: an unknown balance stays unknown instead of 0.
+- **Monero subaddresses.** Hwallet's view-only wallet now covers Kwallet's addresses: 10 accounts and max(200, paired index + 100) subaddresses per account (wallet2 extends past any used index), with balances and history across all of them. The cache is rebuilt once, from the restore height (never from genesis). Sends use account 0, or the first account that can pay.
+- **Send sheet:** the token icon and chain badge are a fixed-width block with a 12dp gap after the badge (no more text touching the icon); the amount, USD / Max pills and To card share the card's 16dp edge; **Save to address book** shows only for a valid address that isn't saved yet (never for your own address).
+
+### Changed
+- **Pairing, seamless.** One button, **Pair with Kwallet**, with a 3-step explainer (Open Kwallet · Choose a wallet · Done) and a success sheet listing what came across (chains, Monero ready / scanning). Pairing a wallet that is already in Hwallet updates it (never a duplicate); another subaddress of the same Monero wallet joins its wallet. Friendly errors with one fix button: Install Kwallet, Show me how (no seed paired in Kwallet), Try again (cancelled / timed out). Pasting a pairing code and watch-only addresses are under **Other ways**. Kwallet's pair screen explains the steps when no seed is paired.
+- **Hwallet Settings, fintech style.** The main page is one row per category with a one-line summary: Wallets & pairing · Appearance · Sending & fees · Network · Monero · Security & privacy · Notifications & background · About, plus a slim Support card. Each row opens its own page with a slide-in (Android back slides out). Kwallet's Settings are unchanged.
+- **Kwallet signer header for Hwallet's own Send / Swap:** no "Hwallet" app row any more, only the Kwallet chip (top-left), the chain chip (top-right) and a small grey "Request from Hwallet" line. dApps and WalletConnect keep the app row with icon and link.
+- **Monero node sheet:** compact rows in one card with a radio, live latency and a status dot (green = in use and answering, including the node Automatic is using; grey = idle; red = unreachable). A custom node that answers is saved as its own row (with remove), selected, and joins Automatic's fallback pool; **Use this node** is a full-width pill.
+- **Monero speed:** the fastest default node is picked by a quick latency check; the scan resumes from the saved cache at once and shows blocks per second and an ETA.
+- **Monero page:** lists every address of the wallet (label, short address, balance, used).
+
 ## Kwallet v3.98.3 + Hwallet v1.8.3
 
 Polish from the phone test of v3.98.2 (its layout stays as it was).
