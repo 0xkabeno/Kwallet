@@ -279,6 +279,9 @@ class HwActivity : FragmentActivity() {
         fun brOpen(id: String, url: String, scroll: Int) { brw().open(id, url, scroll) }
         @android.webkit.JavascriptInterface
         fun brShow(id: String, top: Int, bottom: Int) { brw().show(id, top, bottom) }
+        /** v1.7.4 (#108): UI style for the Browser's native pull to refresh: og | m3 | miuix, optional ":dark" */
+        @android.webkit.JavascriptInterface
+        fun brPtrUi(v: String) { if (v.length in 2..24) { HwBrowser.ptrUiPref = v; br?.ptrUi(v) } }
         @android.webkit.JavascriptInterface
         fun brHide() { br?.hide() }
         @android.webkit.JavascriptInterface

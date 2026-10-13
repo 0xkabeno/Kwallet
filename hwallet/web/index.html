@@ -1434,10 +1434,199 @@ body[data-theme=dark] .snd-bks{color:#8fb0ff}
 .bk-a{display:flex;align-items:center;gap:10px}
 .bk-f input{height:48px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);padding:0 14px;font:inherit;font-size:16px}
 
+/* v3.97.4 / H 1.7.4 (#109): UI style skins. html[data-ui="og"] = the current look (no rules here).
+   html[data-ui="m3"]    = Material 3 (m3.material.io + androidx.compose.material3 tokens: shape scale 4/8/12/16/28, button 40dp
+                           full-round, list item 56/72dp, bottom sheet 28dp + 32x4 handle, dialog 28dp/24dp padding, snackbar 4dp
+                           inverse surface, switch 52x32 with 16->24dp thumb, outlined field 56dp/4dp, nav bar 80dp + 64x32 indicator,
+                           state layer 10% pressed, motion emphasized (.2,0,0,1) / decelerate (.05,.7,.1,1) / accelerate (.3,0,.8,.15)).
+   html[data-ui="miuix"] = Miuix / HyperOS (github.com/compose-miuix-ui/miuix, Apache-2.0: Card 16dp, BasicComponent 56dp min + 16dp
+                           margin, title 17sp Medium, summary 14sp, SmallTitle 14sp Bold 28/8dp, Button 16dp radius 40dp min 16x13 margin
+                           17sp, TextField 16dp radius 16x16 + 2dp focus border, Switch 49x28 thumb 20 (x 4->25), Dialog 32dp radius,
+                           12dp outside margin, 24dp inside, title 18sp Medium centered, BottomSheet 28dp + 24dp inside, handle 4dp,
+                           NavigationBar 64dp icon 26 label 12sp no indicator, Snackbar 16dp, TabRow 42dp 12dp radius, ListPopup 16dp,
+                           press overlay alpha .10, dim black .3).
+   Only colours are ours: every rule reads the app's own theme tokens (Hwallet navy / Kwallet lime, light + dark). */
+
+/* ---------- shared role tokens ---------- */
+html[data-ui="m3"] { --u-font: 'RobotoE','Roboto',system-ui,sans-serif; --u-ease: cubic-bezier(.2,0,0,1); --u-dec: cubic-bezier(.05,.7,.1,1); --u-acc: cubic-bezier(.3,0,.8,.15);
+  --u-r-card: 12px; --u-r-btn: 20px; --u-r-cta: 28px; --u-r-sheet: 28px; --u-r-dlg: 28px; --u-r-field: 4px; --u-r-chip: 8px; --u-r-toast: 4px; --u-r-menu: 4px;
+  --u-btn-h: 40px; --u-cta-h: 56px; --u-row-h: 56px; --u-press: rgba(0,0,0,.10); --u-scrim: .32; }
+html[data-ui="miuix"] { --u-font: system-ui,'MiSans','RobotoE','Roboto',sans-serif; --u-ease: cubic-bezier(.25,.8,.25,1); --u-dec: cubic-bezier(.17,.89,.32,1); --u-acc: cubic-bezier(.4,0,1,1);
+  --u-r-card: 16px; --u-r-btn: 16px; --u-r-cta: 16px; --u-r-sheet: 28px; --u-r-dlg: 32px; --u-r-field: 16px; --u-r-chip: 12px; --u-r-toast: 16px; --u-r-menu: 16px;
+  --u-btn-h: 50px; --u-cta-h: 50px; --u-row-h: 56px; --u-press: rgba(0,0,0,.10); --u-scrim: .30; }
+html[data-ui="m3"] body[data-theme="dark"], html[data-ui="miuix"] body[data-theme="dark"],
+html[data-ui="m3"][data-theme="dark"], html[data-ui="miuix"][data-theme="dark"] { --u-press: rgba(255,255,255,.10); }
+html[data-ui="m3"] body, html[data-ui="miuix"] body { font-family: var(--u-font) !important; }
+html[data-ui="miuix"] body { letter-spacing: 0; }
+html[data-ui="m3"] body { letter-spacing: .5px; }
+html[data-ui="m3"] h1, html[data-ui="m3"] h2, html[data-ui="m3"] h3, html[data-ui="m3"] b, html[data-ui="m3"] button { letter-spacing: 0; }
+
+/* ---------- pressed state layers (both systems draw an overlay, no colour change) ---------- */
+html[data-ui="m3"] .btn:active, html[data-ui="m3"] .kws-row:active, html[data-ui="m3"] .kwd-opt:active, html[data-ui="m3"] .hp-pr:active, html[data-ui="m3"] .hp-btn:active, html[data-ui="m3"] .br-row:active, html[data-ui="m3"] .tp-r:active, html[data-ui="m3"] .sw-tok:active, html[data-ui="m3"] .modal button:active, html[data-ui="m3"] .btn-p:active, html[data-ui="m3"] .btn-s:active, html[data-ui="m3"] .btn-a:active, html[data-ui="m3"] .btn-k:active, html[data-ui="m3"] .btn-v:active, html[data-ui="m3"] .btn-d:active, html[data-ui="m3"] .icon-btn:active, html[data-ui="m3"] .ib:active, html[data-ui="m3"] .hp-tap:active, html[data-ui="m3"] .kwd-act button:active,
+html[data-ui="miuix"] .btn:active , html[data-ui="miuix"] .kws-row:active , html[data-ui="miuix"] .kwd-opt:active , html[data-ui="miuix"] .hp-pr:active , html[data-ui="miuix"] .hp-btn:active , html[data-ui="miuix"] .br-row:active , html[data-ui="miuix"] .tp-r:active , html[data-ui="miuix"] .sw-tok:active , html[data-ui="miuix"] .modal button:active , html[data-ui="miuix"] .btn-p:active , html[data-ui="miuix"] .btn-s:active , html[data-ui="miuix"] .btn-a:active , html[data-ui="miuix"] .btn-k:active , html[data-ui="miuix"] .btn-v:active , html[data-ui="miuix"] .btn-d:active , html[data-ui="miuix"] .icon-btn:active , html[data-ui="miuix"] .ib:active , html[data-ui="miuix"] .hp-tap:active , html[data-ui="miuix"] .kwd-act button:active {
+  box-shadow: inset 0 0 0 999px var(--u-press) !important; transform: none !important; }
+
+/* ---------- cards / grouped lists ---------- */
+html[data-ui="m3"] .box, html[data-ui="miuix"] .box { border-radius: var(--u-r-card) !important; }
+html[data-ui="m3"] .lst>*:first-child, html[data-ui="miuix"] .lst>*:first-child { border-top-left-radius: var(--u-r-card) !important; border-top-right-radius: var(--u-r-card) !important; }
+html[data-ui="m3"] .lst>*:last-child, html[data-ui="miuix"] .lst>*:last-child { border-bottom-left-radius: var(--u-r-card) !important; border-bottom-right-radius: var(--u-r-card) !important; }
+html[data-ui="m3"] .lst>*, html[data-ui="miuix"] .lst>* { border-radius: 0; }
+html[data-ui="m3"] .lst>*:only-child, html[data-ui="miuix"] .lst>*:only-child { border-radius: var(--u-r-card) !important; }
+html[data-ui="m3"] .kws-grp, html[data-ui="miuix"] .kws-grp, html[data-ui="m3"] .panel, html[data-ui="miuix"] .panel,
+html[data-ui="m3"] .br-card, html[data-ui="miuix"] .br-card { border-radius: var(--u-r-card) !important; box-shadow: none !important; }
+html[data-ui="miuix"] .kws-grp { margin: 0 12px !important; gap: 0 !important; padding: 0 !important; }
+html[data-ui="miuix"] .panel { border: 0 !important; }
+html[data-ui="m3"] .panel { border: 0 !important; }
+html[data-ui="m3"] .sw-card, html[data-ui="miuix"] .sw-card, html[data-ui="m3"] .hp-card, html[data-ui="miuix"] .hp-card { border-radius: var(--u-r-card) !important; }
+
+/* list items: M3 ListItem 56dp one-line (72 two-line), 16dp sides, 16dp gap, headline bodyLarge 16/24, supporting bodyMedium 14/20 */
+html[data-ui="m3"] .kws-row { min-height: 56px !important; padding: 8px 24px 8px 16px !important; gap: 16px !important; font: 400 16px/24px var(--u-font) !important; letter-spacing: .5px; border-radius: 0 !important; }
+html[data-ui="m3"] .kws-row small, html[data-ui="m3"] .kws-s { font: 400 14px/20px var(--u-font) !important; letter-spacing: .25px; }
+html[data-ui="m3"] .kws-sec { padding: 16px 32px 8px !important; font: 500 14px/20px var(--u-font) !important; letter-spacing: .1px; }
+/* Miuix BasicComponent: min 56dp, 16dp inside margin, title 17sp Medium, summary 14sp (onSurfaceVariantSummary), SmallTitle 14sp Bold 28/8dp */
+html[data-ui="miuix"] .kws-row { min-height: 56px !important; padding: 16px !important; gap: 16px !important; font: 500 17px/1.2 var(--u-font) !important; border-radius: 0 !important; border-top: 0 !important; }
+html[data-ui="miuix"] .kws-row small, html[data-ui="miuix"] .kws-s { font: 400 14px/1.3 var(--u-font) !important; opacity: .6; color: var(--text) !important; }
+html[data-ui="miuix"] .kws-sec { padding: 8px 28px !important; font: 700 14px/1.3 var(--u-font) !important; letter-spacing: 0 !important; color: var(--muted, var(--text-muted)) !important; }
+html[data-ui="miuix"] .kws-row .kws-ic { background: transparent !important; border-radius: 0 !important; }
+
+/* ---------- buttons ---------- */
+html[data-ui="m3"] .btn { height: var(--u-btn-h) !important; border-radius: var(--u-r-btn) !important; font: 500 14px/20px var(--u-font) !important; letter-spacing: .1px; padding: 0 24px !important; }
+html[data-ui="m3"] .btn.big, html[data-ui="m3"] .btn.wide.pri, html[data-ui="m3"] .sw-go, html[data-ui="m3"] .snd-go, html[data-ui="m3"] .hp-btn { height: var(--u-cta-h) !important; border-radius: var(--u-r-cta) !important; font: 500 16px/24px var(--u-font) !important; letter-spacing: .15px; }
+html[data-ui="miuix"] .btn, html[data-ui="miuix"] .btn.big, html[data-ui="miuix"] .sw-go, html[data-ui="miuix"] .snd-go, html[data-ui="miuix"] .hp-btn {
+  min-height: 40px; height: auto !important; padding: 13px 16px !important; border-radius: 16px !important; font: 500 17px/1.4 var(--u-font) !important; letter-spacing: 0 !important; }
+html[data-ui="miuix"] .hp-btn+.hp-btn { margin-left: 12px; }
+html[data-ui="miuix"] .btn:not(.pri), html[data-ui="miuix"] .hp-btn:not(.hp-go) { background: var(--card2, var(--bg-input)); }
+html[data-ui="m3"] .modal button, html[data-ui="m3"] .btn-p, html[data-ui="m3"] .btn-s { border-radius: 20px !important; min-height: 40px; font-weight: 500 !important; letter-spacing: .1px; }
+html[data-ui="miuix"] .modal button, html[data-ui="miuix"] .btn-p, html[data-ui="miuix"] .btn-s { border-radius: 16px !important; min-height: 40px; font-weight: 500 !important; }
+html[data-ui="m3"] .ac { border-radius: 16px !important; }   /* M3 FAB-family container: 16dp */
+html[data-ui="miuix"] .ac { border-radius: 50% !important; }
+
+/* ---------- segmented controls / tabs ---------- */
+html[data-ui="m3"] .seg, html[data-ui="m3"] .kws-seg, html[data-ui="m3"] .hp-seg { background: transparent !important; border: 1px solid var(--border, var(--hp-border)) !important; border-radius: 20px !important; padding: 0 !important; gap: 0 !important; overflow: hidden; }
+html[data-ui="m3"] .seg button { height: 40px !important; border-radius: 0 !important; font: 500 14px/20px var(--u-font) !important; letter-spacing: .1px; box-shadow: none !important; }
+html[data-ui="m3"] .seg button+button { border-left: 1px solid var(--border) !important; }
+html[data-ui="m3"] .seg button.on { background: var(--sel, var(--pill)) !important; color: var(--text) !important; }
+html[data-ui="miuix"] .seg, html[data-ui="miuix"] .hp-seg { border-radius: 12px !important; padding: 5px !important; gap: 0 !important; }
+html[data-ui="miuix"] .seg button { height: 35px !important; border-radius: 8px !important; font: 400 16px/1 var(--u-font) !important; box-shadow: none !important; }
+html[data-ui="miuix"] .seg button.on { font-weight: 700 !important; }
+
+/* ---------- text fields ---------- */
+html[data-ui="m3"] .inp, html[data-ui="m3"] .srch { border-radius: 4px !important; border: 1px solid var(--border) !important; background: transparent !important; min-height: 56px; }
+html[data-ui="m3"] .inp:focus-within, html[data-ui="m3"] .srch:focus-within { border: 2px solid var(--acc) !important; }
+html[data-ui="m3"] .srch { border-radius: 28px !important; border: 0 !important; background: var(--card2) !important; }   /* M3 SearchBar: 56dp full-round */
+html[data-ui="miuix"] .inp, html[data-ui="miuix"] .srch { border-radius: 16px !important; border: 2px solid transparent !important; background: var(--card2) !important; }
+html[data-ui="miuix"] .inp:focus-within { border-color: var(--acc) !important; }
+html[data-ui="miuix"] .srch { min-height: 45px; border-radius: 50px !important; }
+html[data-ui="m3"] .kwd-in, html[data-ui="m3"] .modal input { border-radius: 4px !important; min-height: 56px; }
+html[data-ui="miuix"] .kwd-in, html[data-ui="miuix"] .modal input { border-radius: 16px !important; border: 2px solid transparent !important; padding: 16px !important; font-size: 17px !important; background: var(--bg-input, var(--card2)) !important; }
+
+/* ---------- switches ---------- */
+html[data-ui="m3"] .sw, html[data-ui="m3"] .kws-sw { flex: 0 0 52px !important; width: 52px !important; height: 32px !important; border-radius: 16px !important; border: 2px solid var(--muted, var(--text-muted)) !important; background: var(--card2, var(--bg-input)) !important; box-sizing: border-box; }
+html[data-ui="m3"] .sw::after, html[data-ui="m3"] .kws-sw::after { top: 6px !important; left: 6px !important; width: 16px !important; height: 16px !important; box-shadow: none !important; background: var(--muted, var(--text-muted)) !important; transition: transform .25s cubic-bezier(.2,0,0,1), width .25s cubic-bezier(.2,0,0,1), height .25s cubic-bezier(.2,0,0,1), top .25s, left .25s !important; }
+html[data-ui="m3"] .on>.sw, html[data-ui="m3"] .sw.on, html[data-ui="m3"] .on .kws-sw { background: var(--acc, var(--accent)) !important; border-color: var(--acc, var(--accent)) !important; }
+html[data-ui="m3"] .on>.sw::after, html[data-ui="m3"] .sw.on::after, html[data-ui="m3"] .on .kws-sw::after { top: 2px !important; left: 22px !important; width: 24px !important; height: 24px !important; transform: none !important; background: var(--accI, #fff) !important; }
+html[data-ui="miuix"] .sw, html[data-ui="miuix"] .kws-sw { flex: 0 0 49px !important; width: 49px !important; height: 28px !important; border-radius: 14px !important; border: 0 !important; background: var(--border) !important; }
+html[data-ui="miuix"] .sw::after, html[data-ui="miuix"] .kws-sw::after { top: 4px !important; left: 4px !important; width: 20px !important; height: 20px !important; box-shadow: none !important; background: #fff !important; transition: transform .35s cubic-bezier(.25,.8,.25,1) !important; }
+html[data-ui="miuix"] .on>.sw, html[data-ui="miuix"] .sw.on, html[data-ui="miuix"] .on .kws-sw { background: var(--acc, var(--accent)) !important; }
+html[data-ui="miuix"] .on>.sw::after, html[data-ui="miuix"] .sw.on::after, html[data-ui="miuix"] .on .kws-sw::after { transform: translateX(21px) !important; left: 4px !important; background: var(--accI, #fff) !important; }
+
+/* ---------- bottom sheets (Hwallet sheets, popups, Kwallet sign sheet, connect, pickers, send, fee) ---------- */
+html[data-ui="m3"] .sheet , html[data-ui="m3"] .hp-sheet , html[data-ui="m3"] .tp-sheet , html[data-ui="m3"] .snd-sheet { border-radius: 28px 28px 0 0 !important; }
+html[data-ui="m3"] .grab , html[data-ui="m3"] .hp-grab { width: 32px !important; height: 4px !important; border-radius: 2px !important; margin: 22px auto 22px !important; background: var(--muted, var(--hp-muted)) !important; opacity: .4 !important; }
+html[data-ui="m3"] .sheet { transition: transform .4s var(--u-dec) !important; }
+html[data-ui="m3"] .hp-ov.in .hp-sheet { transition: transform .4s cubic-bezier(.05,.7,.1,1) !important; }
+html[data-ui="m3"] .hp-ov.out .hp-sheet { transition: transform .2s cubic-bezier(.3,0,.8,.15) !important; }
+html[data-ui="m3"] .hp-ov.in .hp-dim { opacity: .32 !important; }
+html[data-ui="m3"] .sheet-ov.show { background: rgba(0,0,0,.32) !important; }
+html[data-ui="m3"] .sheet h3, html[data-ui="m3"] .hp-title { font: 400 24px/32px var(--u-font) !important; letter-spacing: 0 !important; }
+html[data-ui="miuix"] .sheet , html[data-ui="miuix"] .hp-sheet , html[data-ui="miuix"] .tp-sheet , html[data-ui="miuix"] .snd-sheet { border-radius: 28px 28px 0 0 !important; max-width: 640px !important; padding-left: 24px !important; padding-right: 24px !important; box-shadow: none !important; }
+html[data-ui="miuix"] .hp-sheet { padding-left: 0 !important; padding-right: 0 !important; }
+html[data-ui="miuix"] .hp-sheet .hp-scroll, html[data-ui="miuix"] .hp-sheet .hp-foot { padding-left: 24px !important; padding-right: 24px !important; }
+html[data-ui="miuix"] .grab , html[data-ui="miuix"] .hp-grab { width: 45px !important; height: 4px !important; border-radius: 2px !important; margin: 10px auto 12px !important; background: var(--muted, var(--hp-muted)) !important; opacity: .35 !important; }
+html[data-ui="miuix"] .sheet h3, html[data-ui="miuix"] .hp-title { font: 500 18px/1.3 var(--u-font) !important; text-align: center !important; letter-spacing: 0 !important; }
+html[data-ui="miuix"] .sheet { transition: transform .45s cubic-bezier(.17,.89,.32,1) !important; }
+html[data-ui="miuix"] .hp-ov.in .hp-sheet { transition: transform .45s cubic-bezier(.17,.89,.32,1) !important; }
+html[data-ui="miuix"] .hp-ov.out .hp-sheet { transition: transform .25s cubic-bezier(.4,0,1,1) !important; }
+html[data-ui="miuix"] .hp-ov.in .hp-dim { opacity: .3 !important; }
+html[data-ui="miuix"] .sheet-ov.show { background: rgba(0,0,0,.3) !important; }
+/* sign sheet in Kwallet: the same rules apply because the sheet is .hp-sheet; its picker rows */
+html[data-ui="m3"] .hp-pr { min-height: 56px !important; padding: 8px 24px 8px 16px !important; }
+html[data-ui="miuix"] .hp-pr { min-height: 56px !important; padding: 16px !important; border-top: 0 !important; }
+html[data-ui="miuix"] .hp-prl b, html[data-ui="miuix"] .hp-prv b { font-weight: 500 !important; font-size: 17px !important; }
+html[data-ui="miuix"] .hp-prl small, html[data-ui="miuix"] .hp-prv small { font-size: 14px !important; }
+html[data-ui="m3"] .hp-chip, html[data-ui="m3"] .tp-chips button { border-radius: 8px !important; height: 32px !important; }
+html[data-ui="miuix"] .hp-chip, html[data-ui="miuix"] .tp-chips button { border-radius: 12px !important; }
+
+/* ---------- dialogs (Hwallet .kwd, Kwallet .kwd and .modal) ---------- */
+html[data-ui="m3"] .kwd, html[data-ui="m3"] .modal { border-radius: 28px !important; border: 0 !important; min-width: 280px; box-shadow: 0 3px 6px rgba(0,0,0,.15), 0 2px 4px rgba(0,0,0,.12) !important; }
+html[data-ui="m3"] .modal { padding: 24px !important; }
+html[data-ui="m3"] .kwd h3 { font: 400 24px/32px var(--u-font) !important; }
+html[data-ui="m3"] .kwd-ov.show, html[data-ui="m3"] .modal-overlay { background: rgba(0,0,0,.32) !important; }
+html[data-ui="miuix"] .kwd-ov, html[data-ui="miuix"] .modal-overlay { align-items: flex-end !important; padding: 12px !important; }
+html[data-ui="miuix"] .kwd-ov.show, html[data-ui="miuix"] .modal-overlay { background: rgba(0,0,0,.3) !important; }
+html[data-ui="miuix"] .kwd, html[data-ui="miuix"] .modal { width: 100% !important; max-width: 420px !important; border-radius: 32px !important; border: 0 !important; box-shadow: none !important; padding: 24px 0 !important; margin: 0 auto calc(var(--sab, 0px) + 0px) !important; }
+html[data-ui="miuix"] .modal { padding: 24px !important; }
+html[data-ui="miuix"] .kwd h3 { font: 500 18px/1.3 var(--u-font) !important; text-align: center; margin: 0 24px 12px !important; }
+html[data-ui="miuix"] .kwd-p { text-align: center; font: 400 16px/1.4 var(--u-font) !important; }
+html[data-ui="miuix"] .kwd-opt { height: auto !important; min-height: 56px; padding: 16px 24px !important; font: 500 17px/1.2 var(--u-font) !important; }
+html[data-ui="miuix"] .kwd-act { gap: 12px; padding: 12px 24px 0 !important; }
+html[data-ui="miuix"] .kwd-act > span { display: none; }
+html[data-ui="miuix"] .kwd-act button { flex: 1 1 0; height: auto !important; min-height: 40px; padding: 13px 16px !important; border-radius: 16px !important; background: var(--card2, var(--bg-input)) !important; color: var(--text) !important; font: 500 17px/1.4 var(--u-font) !important; }
+html[data-ui="miuix"] .kwd-act button:last-child { background: var(--acc, var(--accent)) !important; color: var(--accI, #fff) !important; }
+html[data-ui="m3"] .kwd-ov .kwd, html[data-ui="miuix"] .kwd-ov .kwd { transition: transform .3s var(--u-dec), opacity .2s linear; }
+html[data-ui="miuix"] .kwd-ov:not(.show) .kwd { transform: translateY(40px); }
+
+/* ---------- snackbar / toast ---------- */
+html[data-ui="m3"] .toast { left: 12px !important; right: 12px !important; transform: translate3d(0,20px,0) !important; border-radius: 4px !important; min-height: 48px; padding: 14px 16px !important; font: 400 14px/20px var(--u-font) !important; letter-spacing: .25px; text-align: left; box-shadow: 0 3px 6px rgba(0,0,0,.15) !important; max-width: none !important; }
+html[data-ui="m3"] .toast.show { transform: none !important; }
+html[data-ui="miuix"] .toast { left: 12px !important; right: 12px !important; transform: translate3d(0,20px,0) !important; border-radius: 16px !important; min-height: 48px; padding: 14px 16px !important; font: 400 16px/20px var(--u-font) !important; text-align: left; box-shadow: 0 2px 10px rgba(0,0,0,.12) !important; max-width: none !important; }
+html[data-ui="miuix"] .toast.show { transform: none !important; }
+
+/* ---------- top bars ---------- */
+html[data-ui="m3"] .bar .bt, html[data-ui="m3"] .kws-top h2 { font: 400 22px/28px var(--u-font) !important; letter-spacing: 0 !important; }
+html[data-ui="m3"] .bar { min-height: 64px; }
+html[data-ui="miuix"] .bar .bt.l, html[data-ui="miuix"] .kws-page .bar .bt { font: 400 32px/1.2 var(--u-font) !important; letter-spacing: 0 !important; }   /* Miuix large title (title1 32sp) */
+html[data-ui="miuix"] .bar .bt:not(.l) { font: 500 20px/1.2 var(--u-font) !important; }   /* collapsed title3 20sp Medium */
+html[data-ui="miuix"] .kws-top h2 { font: 500 20px/1.2 var(--u-font) !important; }
+
+/* ---------- navigation bar ---------- */
+html[data-ui="m3"] .nav button { font: 500 12px/16px var(--u-font) !important; letter-spacing: .5px; gap: 4px !important; }
+html[data-ui="m3"] .nav .ni { width: 64px !important; height: 32px !important; border-radius: 16px !important; }
+html[data-ui="m3"] .nav button.on .ni { background: var(--sel, var(--pill)) !important; }
+html[data-ui="miuix"] .nav button { font: 400 12px/1.2 var(--u-font) !important; gap: 2px !important; color: var(--soft, var(--muted)) !important; }
+html[data-ui="miuix"] .nav button.on { font-weight: 700 !important; color: var(--text) !important; }
+html[data-ui="miuix"] .nav .ni { width: 26px !important; height: 26px !important; background: transparent !important; border-radius: 0 !important; }
+html[data-ui="miuix"] .nav .ni .ic { width: 26px !important; height: 26px !important; }
+html[data-ui="miuix"] .nav button.on .ni { color: var(--text) !important; background: transparent !important; }
+html[data-ui="miuix"] .nav .ind, html[data-ui="miuix"] .nav .pill, html[data-ui="miuix"] .nav::before { display: none !important; }
+
+/* ---------- menus ---------- */
+html[data-ui="m3"] .wc-menu, html[data-ui="m3"] .br-mn, html[data-ui="m3"] .menu { border-radius: 4px !important; }
+html[data-ui="miuix"] .wc-menu, html[data-ui="miuix"] .br-mn, html[data-ui="miuix"] .menu { border-radius: 16px !important; min-width: 200px; }
+
+/* ---------- progress / spinners keep their colour; M3 indicator 4dp stroke, Miuix ring ---------- */
+html[data-ui="m3"] .spin { border-width: 4px !important; }
+
+/* ---------- pull to refresh (#108): style-specific indicators (built by segD ptr*) ---------- */
+.ptrM3, .ptrMx { position: fixed; left: 0; right: 0; z-index: 40; pointer-events: none; display: flex; justify-content: center; }
+.ptrM3 { height: 220px; overflow: hidden; }
+.ptrM3 .m3c { width: 40px; height: 40px; border-radius: 50%; background: var(--card2, var(--bg-input)); box-shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 8px 3px rgba(0,0,0,.15); display: grid; place-items: center; will-change: transform; }
+.ptrM3 svg { width: 24px; height: 24px; overflow: visible; }
+.ptrM3 .m3sp { display: none; width: 24px; height: 24px; animation: m3rot 1568ms linear infinite; }
+.ptrM3.ref .m3ar { display: none; }
+.ptrM3.ref .m3sp { display: block; }
+.ptrM3 .m3sp circle { stroke-dasharray: 1 100; animation: m3dash 1333ms cubic-bezier(.4,0,.2,1) infinite; }
+@keyframes m3rot { to { transform: rotate(360deg); } }
+@keyframes m3dash { 0% { stroke-dasharray: 1 100; stroke-dashoffset: 0; } 50% { stroke-dasharray: 26 100; stroke-dashoffset: -6; } 100% { stroke-dasharray: 1 100; stroke-dashoffset: -34; } }
+.ptrMx { flex-direction: column; align-items: center; justify-content: flex-start; height: 0; color: var(--muted, var(--text-muted)); }
+.ptrMx canvas { width: 20px; flex: 0 0 auto; }
+.ptrMx span { color: inherit; margin-top: 6px; font: 700 14px/1.2 system-ui,'MiSans','RobotoE',sans-serif; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .ptrM3 .m3sp, .ptrM3 .m3sp circle { animation-duration: 3s; } }
+
 </style>
 </head>
 <body data-theme="light">
-<script>try{document.body.setAttribute("data-theme",localStorage.getItem("wallet-theme")||"light")}catch(e){}</script>
+<script>try{document.body.setAttribute("data-theme",localStorage.getItem("wallet-theme")||"light")}catch(e){}try{var __u=localStorage.getItem("hw-ui");document.documentElement.setAttribute("data-ui",__u==="m3"||__u==="miuix"?__u:"og")}catch(e){document.documentElement.setAttribute("data-ui","og")}</script>
 <noscript><div style="padding:40px;text-align:center">Hwallet requires JavaScript.</div></noscript>
 <script>
 /* v1.4 (#52): the system bar sizes first, exactly like Kwallet's head script, so the opening is laid out in the same box */
@@ -1626,68 +1815,8 @@ window.hwPlayOpening();
 </script>
 <main id="app" class="app"></main>
 <div class="toast" id="toast" role="status"></div>
-<script type="text/plain" id="hw-prov">/* Hwallet v1.7.2 (S1): pull to refresh for Browser pages. Only when the page (and whatever scroll box the finger is
-   in) is at the very top, one finger, mostly vertical, not zoomed, not on a map/canvas/gesture area. A small spinner chip
-   follows the finger with rubber-band resistance, turns with the pull, and past the threshold the page reloads. The
-   page's own touch handling is never blocked (passive listeners only). */
-(function () {
-  if (window.top !== window || window.__hwPtrPg) return;
-  try { Object.defineProperty(window, '__hwPtrPg', { value: 1 }); } catch (e) { return; }
-  var TH = 70, MAX = 120, st = null, el = null;
-  function band(dy) { return MAX * (1 - Math.exp(-Math.max(0, dy) / (MAX * 1.6))); }
-  function atTop(t) {
-    if ((window.scrollY || (document.scrollingElement && document.scrollingElement.scrollTop) || 0) > 0) return false;
-    for (var n = t; n && n.nodeType === 1 && n !== document.documentElement; n = n.parentElement) {
-      if (n.scrollTop > 0) return false;
-      var tn = n.tagName; if (tn === 'CANVAS' || tn === 'INPUT' || tn === 'TEXTAREA' || tn === 'SELECT' || tn === 'IFRAME' || tn === 'VIDEO') return false;
-      try { var ta = getComputedStyle(n).touchAction; if (ta && /none|pan-x|pinch/.test(ta) && !/pan-y|auto|manipulation/.test(ta)) return false; } catch (e) {}
-    }
-    return true;
-  }
-  function chip() {
-    if (el && el.h.isConnected) return el;
-    var h = document.createElement('div');
-    h.style.cssText = 'position:fixed;left:0;right:0;top:0;height:0;z-index:2147483647;pointer-events:none;contain:layout';
-    var root = h.attachShadow ? h.attachShadow({ mode: 'closed' }) : h;
-    var css = document.createElement('style');
-    css.textContent = '.c{position:absolute;left:50%;top:-46px;width:38px;height:38px;margin-left:-19px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(16,24,40,.22);display:flex;align-items:center;justify-content:center;opacity:0;will-change:transform,opacity}' +
-      '.c i{display:block;width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(34,51,72,.14);border-top-color:#223348;box-sizing:border-box}' +
-      '.c.a i{animation:r .7s linear infinite}@keyframes r{to{transform:rotate(360deg)}}' +
-      '@media (prefers-color-scheme:dark){.c{background:#1e2533}.c i{border-color:rgba(255,255,255,.14);border-top-color:#5b8def}}';
-    var c = document.createElement('div'); c.className = 'c'; var i = document.createElement('i'); c.appendChild(i);
-    root.appendChild(css); root.appendChild(c); (document.body || document.documentElement).appendChild(h);
-    el = { h: h, c: c, i: i }; return el;
-  }
-  function put(px, anim) {
-    var e = chip();
-    e.c.style.transition = anim ? 'transform .36s cubic-bezier(.22,.9,.24,1), opacity .25s ease' : 'none';
-    var k = Math.min(1, px / TH);
-    e.c.style.transform = 'translate3d(0,' + (px * 0.9).toFixed(1) + 'px,0) scale(' + (0.7 + 0.3 * k).toFixed(3) + ')';
-    e.c.style.opacity = px > 2 ? (0.2 + 0.8 * k).toFixed(2) : '0';
-    if (!e.c.classList.contains('a')) e.i.style.transform = 'rotate(' + Math.round(px * 3.2) + 'deg)';
-  }
-  addEventListener('touchstart', function (ev) {
-    st = null;
-    if (ev.touches.length !== 1 || (window.visualViewport && window.visualViewport.scale > 1.01) || !atTop(ev.target)) return;
-    st = { y: ev.touches[0].clientY, x: ev.touches[0].clientX, px: 0, go: false };
-  }, { passive: true, capture: true });
-  addEventListener('touchmove', function (ev) {
-    if (!st) return;
-    var dy = ev.touches[0].clientY - st.y, dx = Math.abs(ev.touches[0].clientX - st.x);
-    if (!st.go) { if (dy < -4 || dx > 10 && dx > dy) { st = null; return; } if (dy < 8) return; if ((window.scrollY || 0) > 0) { st = null; return; } st.go = true; st.y += 8; dy -= 8; }
-    st.px = band(dy); put(st.px, false);
-  }, { passive: true, capture: true });
-  function end() {
-    if (!st) return; var s = st; st = null;
-    if (!s.go) return;
-    if (s.px < TH) { put(0, true); return; }
-    var e = chip(); put(TH * 0.8, true); e.i.style.transform = ''; e.c.classList.add('a');
-    setTimeout(function () { try { location.reload(); } catch (x) {} }, 120);
-    setTimeout(function () { e.c.classList.remove('a'); put(0, true); }, 9000);
-  }
-  addEventListener('touchend', end, { passive: true, capture: true });
-  addEventListener('touchcancel', function () { if (st && st.go) put(0, true); st = null; }, { passive: true, capture: true });
-})();
+<script type="text/plain" id="hw-prov">/* Hwallet v1.7.4 (#108): Browser pull to refresh is native now (HwPull.kt, every page incl. http, in the selected UI
+   style); the v1.7.2 in-page pull handler that lived here is removed. */
 /* Hwallet v1.6 (#59): wallet providers injected into every https page of the Browser tab at document start
    (WebViewCompat.addDocumentStartJavaScript, main frame only). Talks to Hwallet over the origin-checked
    WebMessageListener object `hwBridge`; Hwallet sees the page's real origin from the native side, never from here.
@@ -4921,7 +5050,7 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.7.3';
+var APP_VERSION = '1.7.4';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -6096,7 +6225,7 @@ var APP_VERSION = '1.7.3';
   window.hwSignDone = function (json) { var o = null; try { o = JSON.parse(json || 'null'); } catch (e) {} stopLive(); var cb = SIGN; SIGN = null; if (cb) cb(o || { status: 'rejected' }); };
   /* wave A (#102): Kwallet's sheet wears Hwallet's live theme (light/dark, classic or Material You): the tokens go with every request */
   var THV = ['bg', 'card', 'card2', 'line', 'border', 'text', 'muted', 'soft', 'acc', 'accI', 'pill', 'sel', 'up', 'dn', 'warn', 'warnBg', 'errBg'];
-  function hwTheme() { var o = { dark: document.body.getAttribute('data-theme') === 'dark', v: {} }; try { var cs = getComputedStyle(document.body); THV.forEach(function (k) { var v = cs.getPropertyValue('--' + k).trim(); if (v) o.v[k] = v; }); } catch (e) {} return o; }
+  function hwTheme() { var o = { dark: document.body.getAttribute('data-theme') === 'dark', v: {}, ui: (window.hwUiGet ? hwUiGet() : 'og') }; try { var cs = getComputedStyle(document.body); THV.forEach(function (k) { var v = cs.getPropertyValue('--' + k).trim(); if (v) o.v[k] = v; }); } catch (e) {} return o; }
   /* v1.7.2 (S19): one Kwallet request at a time can never wedge the queue: a request still waiting when a new one starts
      is closed as rejected, and an answer that never comes ends as expired after 300 s (Kwallet's own request limit is 115-120 s) */
   var SIGNT = 0;
@@ -6922,11 +7051,24 @@ var APP_VERSION = '1.7.3';
       });
     } };
   }
+  /* v1.7.4: Tron history past TronGrid's fingerprint depth (~200 rows). The cursor is "<fingerprint>|<oldest ms>": the
+     fingerprint is used while TronGrid gives one; when it stops (no fingerprint on a full page) or a fingerprint request
+     fails, the next page asks max_timestamp = oldest - 1 ("ts:<ms>"), which walks back without limit. */
+  function trxPage(path, cur, rows0) {
+    var c = String(cur || ''), fp = '', ts = 0;
+    if (/^ts:\d+$/.test(c)) ts = +c.slice(3); else if (c) { var k = c.lastIndexOf('|'); fp = k > 0 ? c.slice(0, k) : c; ts = k > 0 ? +c.slice(k + 1) || 0 : 0; }
+    var q = function (useFp) { return tron(path + '?limit=20' + (useFp && fp ? '&fingerprint=' + encodeURIComponent(fp) : (ts ? '&max_timestamp=' + Math.max(0, ts - 1) : ''))); };
+    return (fp ? q(true).catch(function (e) { if (!ts) throw e; fp = ''; return q(false); }) : q(false)).then(function (j) {
+      var rows = (j && j.data) || [], low = lowOf(rows, function (t) { return t.block_timestamp; }), f = j && j.meta && j.meta.fingerprint;
+      var next = rows.length ? (f ? f + '|' + (low || '') : (rows.length >= 20 && low ? 'ts:' + low : null)) : null;
+      return { j: j || {}, rows: rows, next: next, low: low };
+    });
+  }
   function trxStreams() {
     var a = A.trx, me = trxHex(a).toLowerCase();
     return [{ id: 'trx:n', ch: 'trx', page: function (cur) {
-      return tron('/v1/accounts/' + a + '/transactions?limit=20' + (cur ? '&fingerprint=' + encodeURIComponent(cur) : '')).then(function (j) {
-        var rows = (j.data || []);
+      return trxPage('/v1/accounts/' + a + '/transactions', cur).then(function (P) {
+        var j = P.j, rows = P.rows;
         return Promise.all(rows.map(function (t) {
           var c = ((t.raw_data || {}).contract || [])[0] || {}, v = (c.parameter || {}).value || {}, ty = c.type, ok = ((t.ret || [])[0] || {}).contractRet;
           var st = ok && ok !== 'SUCCESS' ? 'fail' : 'ok', time = t.block_timestamp || Date.now();
@@ -6937,15 +7079,15 @@ var APP_VERSION = '1.7.3';
           var label = { FreezeBalanceV2Contract: 'stake', UnfreezeBalanceV2Contract: 'unstake', WithdrawExpireUnfreezeContract: 'withdraw' }[ty];
           if (label) return Promise.resolve(itm({ ch: 'trx', hash: t.txID, t: time, dir: label, key: 'native', s: 'TRX', d: 6, raw: String(v.frozen_balance || v.unfreeze_balance || 0), cg: 'tron', res: v.resource || 'BANDWIDTH', st: st }));
           return Promise.resolve(null);
-        })).then(function (items) { return { items: items.filter(Boolean), cursor: (j.meta && j.meta.fingerprint) || null, low: lowOf(rows, function (t) { return t.block_timestamp; }) }; });
+        })).then(function (items) { return { items: items.filter(Boolean), cursor: P.next, low: P.low }; });
       });
     } }, { id: 'trx:t', ch: 'trx', page: function (cur) {
-      return tron('/v1/accounts/' + a + '/transactions/trc20?limit=20' + (cur ? '&fingerprint=' + encodeURIComponent(cur) : '')).then(function (j) {
-        var items = (j.data || []).map(function (t) {
+      return trxPage('/v1/accounts/' + a + '/transactions/trc20', cur).then(function (P) {
+        var j = P.j, items = P.rows.map(function (t) {
           var ti = t.token_info || {}, kt = tokOf('trx', ti.address); if (!kt) return null;
           var out = t.from === a; return itm({ ch: 'trx', hash: t.transaction_id, t: t.block_timestamp || Date.now(), dir: t.from === t.to ? 'self' : out ? 'out' : 'in', key: kt.a, s: kt.s, d: kt.d, raw: String(t.value || 0), cg: kt.cg, icon: kt.icon, pin: kt.pin, cp: out ? t.to : t.from, st: 'ok' });
         }).filter(Boolean);
-        return { items: items, cursor: (j.meta && j.meta.fingerprint) || null, low: lowOf(j.data, function (t) { return t.block_timestamp; }) };
+        return { items: items, cursor: P.next, low: P.low };
       });
     } }];
   }
@@ -7497,6 +7639,7 @@ var APP_VERSION = '1.7.3';
       krow('kws-wc', KI.wc, 'WalletConnect', typeof wcSub === 'function' ? wcSub() : '') +
       '</div><div class="kws-sec">Appearance</div><div class="kws-grp">' +
       krow('kws-theme', KI.theme, 'Theme', null, '<span class="kws-seg" role="radiogroup"><span data-t="light">Light</span><span data-t="dark">Dark</span></span>') +
+      krow('kws-ui', KI.md3, 'UI style', '') +
       krow('kws-md3', KI.md3, 'Material You', '', KSW) +
       krow('kws-snd', KI.snd, 'Sounds', '') +
       krow('kws-hap', KI.vib, 'Haptics', 'Kwallet vibration patterns', KSW) +
@@ -7538,6 +7681,7 @@ var APP_VERSION = '1.7.3';
       clearTimeout(window.__hwThT); window.__hwThT = setTimeout(function () { kswap(function () { setTheme(v); }); setTimeout(ksync, 60); }, 120);
     };
     on('kws-md3', function () { ktick(); var m = !(jget('hw-md3', false) === true); jset('hw-md3', m); try { if (window.HarkNative && HarkNative.setMd3) HarkNative.setMd3(m); } catch (e) {} buzz(10); kswap(applyTheme); ksync(); });
+    on('kws-ui', function () { ktick(); kchoose('UI style', UIS.map(function (x) { return [x[0], x[1]]; }), uiGet(), function (v) { uiSet(v); buzz(10); ksync(); }); });
     on('kws-snd', function () { ktick(); var sets = (window.FX && FX.SETS) || ['Original'], o = sets.map(function (n, i) { return [String(i), n + (i ? '' : ' (default)')]; });
       kchooseLive('Sound set', o, String(window.FX ? FX.soundSet() : 0), function (v) { try { FX.setSoundSet(+v); if (!FX.soundOn()) FX.setSound(true); } catch (e) {} ksync(); toast(sets[+v] + ' sounds'); }, function (v) { try { localStorage.setItem('kw-snd-set', v); } catch (x) {} try { FX.seedGen(); } catch (x) {} }); });
     on('kws-wc', function () { ktick(); wcOpenList(); });
@@ -7580,7 +7724,7 @@ var APP_VERSION = '1.7.3';
     var md = jget('hw-md3', false) === true, nativeMd = false; try { nativeMd = !!(window.HarkNative && HarkNative.dynamicColors && JSON.parse(String(HarkNative.dynamicColors()) || '{}').a1); } catch (e) {}
     kflag('kws-md3', md); ksub('kws-md3', nativeMd ? (md ? 'Colours from your wallpaper' : 'Off. Classic colours') : (md ? 'Expressive shapes and tonal colours' : 'Off. Classic colours'));
     var sets = (window.FX && FX.SETS) || ['Original']; ksub('kws-snd', (sets[window.FX ? FX.soundSet() : 0] || 'Original') + (window.FX && !FX.soundOn() ? ' \u00b7 sound is off' : ''));
-    kflag('kws-hap', hapOn());
+    kflag('kws-hap', hapOn()); ksub('kws-ui', (UIS.filter(function (x) { return x[0] === uiGet(); })[0] || UIS[0])[2]);
     if (kov.querySelector('#kws-icon')) { var ic = 'lime'; try { ic = String(HarkNative.appIcon()); } catch (x) {} kov.querySelectorAll('.kws-ico [data-i]').forEach(function (x) { var o = x.getAttribute('data-i') === ic; x.classList.toggle('on', o); x.setAttribute('aria-checked', o ? 'true' : 'false'); }); }
     kflag('kws-hide', hidden()); ksub('kws-hide', hidden() ? 'On. Amounts show as \u2022\u2022\u2022\u2022' : 'Off');
     ksub('kws-wallets', W.length + (W.length === 1 ? ' wallet' : ' wallets') + ' \u00b7 ' + ((curW() || {}).label || ''));
@@ -7608,6 +7752,20 @@ var APP_VERSION = '1.7.3';
     requestAnimationFrame(function () { fn(); kswap.t = setTimeout(function () { de.classList.remove('kw-theming'); }, 520); });
   }
   /* Kwallet's choice dialogs */
+  /* v1.7.4 (#109): app-wide UI style. OG = the current look; Material UI = Material 3; Miuix = Xiaomi HyperOS (compose-miuix-ui/miuix).
+     Same screens and flows in all three; html[data-ui] switches the skin (ui_skin.css), the pull-to-refresh indicator (segD),
+     the browser's native pull indicator (HwNative.brPtrUi) and Kwallet's sign sheet over Hwallet (theme.ui in every request). */
+  var UIS = [['og', 'OG (default)', 'OG \u00b7 the classic Hwallet look'], ['m3', 'Material UI', 'Material 3'], ['miuix', 'Miuix', 'Xiaomi HyperOS style']];
+  function uiGet() { var v = 'og'; try { v = localStorage.getItem('hw-ui') || 'og'; } catch (e) {} return v === 'm3' || v === 'miuix' ? v : 'og'; }
+  function uiSet(v) {
+    v = v === 'm3' || v === 'miuix' ? v : 'og';
+    try { localStorage.setItem('hw-ui', v); } catch (e) {}
+    try { if (window.hwPtr) hwPtr.reset(); } catch (e) {}
+    document.documentElement.setAttribute('data-ui', v);
+    brPtrSync();
+  }
+  function brPtrSync() { try { if (window.HwNative && HwNative.brPtrUi) HwNative.brPtrUi(uiGet() + (document.body.getAttribute('data-theme') === 'dark' ? ':dark' : '')); } catch (e) {} }
+  window.hwUiGet = uiGet; window.hwBrPtrSync = brPtrSync;
   function kchoose(t, opts, val, done) {
     var d = document.createElement('div'); d.className = 'kwd-ov';
     d.innerHTML = '<div class="kwd" role="dialog" aria-modal="true"><h3>' + t + '</h3><div role="radiogroup">' +
@@ -8782,6 +8940,7 @@ window.hwCrashPrompt = crashPrompt;
     var r = v.getBoundingClientRect(), top = Math.round(r.top), bot = Math.max(0, Math.round(window.innerHeight - r.bottom)), key = t.id + ':' + top + ':' + bot;
     if (brShown === key) return;
     if (!BRL[t.id] || !BRL[t.id].open) { brOpenNative(t); }
+    if (window.hwBrPtrSync) hwBrPtrSync();   /* v1.7.4 (#108): native pull to refresh in the selected UI style */
     brNat('brShow', t.id, top, bot); brShown = key;
   }
   function brOpenNative(t) {
@@ -9248,22 +9407,24 @@ window.hwCrashPrompt = crashPrompt;
     var needP = cands.filter(function (m) { return FEEPROG[m] == null; });
     var pp = needP.length ? rpcF(CHBY.sol.rpc, 'getMultipleAccounts', [needP, { encoding: 'base64', dataSlice: { offset: 0, length: 0 } }], 6000).then(function (r) { (r.value || []).forEach(function (v, i) { FEEPROG[needP[i]] = v ? v.owner : ''; }); }, function () { needP.forEach(function (m) { FEEPROG[m] = SPL; }); setTimeout(function () { needP.forEach(function (m) { delete FEEPROG[m]; }); }, 30000); }) : Promise.resolve();
     return pp.then(function () {
-      var ok = cands.filter(function (m) { return FEEPROG[m] === SPL; });
+      /* v1.7.4: Token-2022 mints too (Jupiter supports Token-2022 fee accounts since Oct 2025: Metis quote needs
+         instructionVersion=V2; Swap v2 /build takes them as is). A classic SPL mint of the pair is preferred. */
+      var ok = cands.filter(function (m) { return FEEPROG[m] === SPL; }).concat(cands.filter(function (m) { return FEEPROG[m] === SPL22; }));
       if (!ok.length) return null;
-      return Promise.all(ok.map(function (m) { return pda([b58d(owner), b58d(SPL), b58d(m)], b58d(ATAP)); })).then(function (atas) {
+      return Promise.all(ok.map(function (m) { return pda([b58d(owner), b58d(FEEPROG[m]), b58d(m)], b58d(ATAP)); })).then(function (atas) {
         var need = atas.filter(function (a) { return FEEATA[a] == null; });
         var p = need.length ? rpcF(CHBY.sol.rpc, 'getMultipleAccounts', [need, { encoding: 'base64', dataSlice: { offset: 0, length: 0 } }], 6000).then(function (r) { (r.value || []).forEach(function (v, i) { FEEATA[need[i]] = !!v; }); }, function () {}) : Promise.resolve();
         return p.then(function () {
-          for (var i = 0; i < atas.length; i++) if (FEEATA[atas[i]]) return { acct: atas[i], mint: ok[i] };
-          /* none yet: create the input-side one (else the output-side one) in this swap */
-          var k = ok.indexOf(inM) >= 0 ? ok.indexOf(inM) : 0;
-          return { acct: atas[k], mint: ok[k], create: { owner: owner, mint: ok[k], ata: atas[k] } };
+          for (var i = 0; i < atas.length; i++) if (FEEATA[atas[i]]) return { acct: atas[i], mint: ok[i], t22: FEEPROG[ok[i]] === SPL22 };
+          /* none yet: create the input-side one (else the first candidate) in this swap */
+          var k = ok.indexOf(inM) >= 0 ? ok.indexOf(inM) : 0, t22 = FEEPROG[ok[k]] === SPL22;
+          return { acct: atas[k], mint: ok[k], t22: t22, len: t22 ? 170 : 165, create: { owner: owner, mint: ok[k], ata: atas[k], prog: FEEPROG[ok[k]] } };
         });
       });
     });
   }
   function ixFeeAta(c) {
-    return { programId: ATAP, accounts: [{ pubkey: A.sol, isSigner: true, isWritable: true }, { pubkey: c.ata, isSigner: false, isWritable: true }, { pubkey: c.owner, isSigner: false, isWritable: false }, { pubkey: c.mint, isSigner: false, isWritable: false }, { pubkey: SYSP, isSigner: false, isWritable: false }, { pubkey: SPL, isSigner: false, isWritable: false }], data: b64e(Uint8Array.from([1])) };
+    return { programId: ATAP, accounts: [{ pubkey: A.sol, isSigner: true, isWritable: true }, { pubkey: c.ata, isSigner: false, isWritable: true }, { pubkey: c.owner, isSigner: false, isWritable: false }, { pubkey: c.mint, isSigner: false, isWritable: false }, { pubkey: SYSP, isSigner: false, isWritable: false }, { pubkey: c.prog || SPL, isSigner: false, isWritable: false }], data: b64e(Uint8Array.from([1])) };
   }
   function jupBuild(pay, recv, amt, fa) {
     var inM = pay.gas ? WSOL : pay.a, outM = recv.gas ? WSOL : recv.a;
@@ -9273,7 +9434,7 @@ window.hwCrashPrompt = crashPrompt;
       return http('https://api.jup.ag/swap/v2/build?' + qs, { headers: { 'x-api-key': '{{K:jupiter}}' }, timeout: 12000 }).then(function (j) { j.v = 2; return j; });
     }, function () {
       /* keyless: Metis v1 on lite-api (quote + swap-instructions) */
-      var q1 = 'inputMint=' + inM + '&outputMint=' + outM + '&amount=' + amt + '&slippageBps=' + slipBps() + (fa ? '&platformFeeBps=' + SWBPS : '');
+      var q1 = 'inputMint=' + inM + '&outputMint=' + outM + '&amount=' + amt + '&slippageBps=' + slipBps() + (fa ? '&platformFeeBps=' + SWBPS + (fa.t22 ? '&instructionVersion=V2' : '') : '');
       return http('https://lite-api.jup.ag/swap/v1/quote?' + q1, { timeout: 12000 }).then(function (q) {
         return http('https://lite-api.jup.ag/swap/v1/swap-instructions', { method: 'POST', timeout: 12000, body: JSON.stringify({ quoteResponse: q, userPublicKey: A.sol, feeAccount: fa ? fa.acct : undefined, wrapAndUnwrapSol: true, dynamicComputeUnitLimit: true, prioritizationFeeLamports: jt ? { jitoTipLamports: Number(jt) } : undefined }) }).then(function (s) {
           return Object.assign({ v: 1, outAmount: q.outAmount, otherAmountThreshold: q.otherAmountThreshold, platformFee: q.platformFee, priceImpactPct: q.priceImpactPct }, s);
@@ -9285,9 +9446,10 @@ window.hwCrashPrompt = crashPrompt;
     if (pay.ch !== 'sol' || recv.ch !== 'sol' || !A.sol) return null;
     var inM = pay.gas ? WSOL : pay.a, outM = recv.gas ? WSOL : recv.a;
     return jupFeeAcct(inM, outM).then(function (fa) {
-      return jupBuild(pay, recv, amt, fa).then(function (j) {
+      /* a Token-2022 fee account the route refuses (e.g. transfer-hook mints) falls back to the swap without the service fee */
+      return jupBuild(pay, recv, amt, fa).catch(function (e) { if (!(fa && fa.t22)) throw e; fa = null; return jupBuild(pay, recv, amt, null); }).then(function (j) {
         var pf = j.platformFee || {}, svc = fa ? String(pf.amount || 0) : '0', onOut = fa && fa.mint === outM;
-        return { out: String(j.outAmount || 0), min: String(j.otherAmountThreshold || 0), svcBps: fa ? SWBPS : 0, svcRaw: svc, svcIn: fa ? !onOut : true, svcNote: fa ? '' : 'Not on Token-2022 pairs', provTxt: 'None', fa: fa, raw: j };
+        return { out: String(j.outAmount || 0), min: String(j.otherAmountThreshold || 0), svcBps: fa ? SWBPS : 0, svcRaw: svc, svcIn: fa ? !onOut : true, svcNote: fa ? '' : 'Not available for this pair', provTxt: 'None', fa: fa, raw: j };
       }).then(function (o) { if (!(fa && fa.create)) return o; return solRent(fa.len || 165).then(function (r) { o.rent = String(r); return o; }); });
     });
   }
@@ -10191,41 +10353,206 @@ window.hwCrashPrompt = crashPrompt;
      screen refreshes, and the content always eases back: when the refresh settles or at the 9 s cap, whatever throws
      (a synchronous throw in a refresh used to leave Activity's spinner in the gap forever). A token guards against a
      late finish of an older pull resetting a newer one. */
-  var PTR = { y0: 0, x0: 0, dy: 0, on: false, busy: false, armed: false, el: null, tok: 0, t0: 0 };
+  /* v1.7.4 (#108): pull to refresh in the selected UI style (Settings > UI style), same state machine for every refreshable
+     screen (home, networks, coin/token pages, Activity) and for the top-bar refresh button.
+     OG     : classic detach: the content under the header follows the finger (rubber band), the plain spinner turns with the
+              pull, spins while the screen refreshes and the content eases back. Updates are batched to one per frame; every
+              path ends in ptrReset (refresh settled, 9 s cap, touchcancel below the threshold, screen change, app hidden).
+     Material 3 (androidx.compose.material3 PullToRefresh): content stays, a 40dp surface circle with elevation slides down
+              from under the top bar; drag x0.5; past the 80dp positional threshold a tension curve (t - t^2/4) slows it
+              (max 2x threshold); CircularArrowProgressIndicator (arc radius 5.5dp, stroke 2.5dp, arrow 10x5dp, sweep up to 0.8,
+              rotation (-0.25 + 0.4p + tension) x 0.5 turn, alpha 0.3 -> 1 at the threshold); refreshing = indeterminate
+              spinner; done = slides back up.
+     Miuix (compose-miuix-ui/miuix PullToRefresh.kt + SpringUtils.kt, Apache-2.0): drag damped by x - x^2 + x^3/3 over the
+              window height; visual threshold H/24, trigger 0.25 x H/3; header (20dp ring + 36dp) grows with the pull, ring
+              fades in (alpha p - 0.2), past the threshold it stretches into a capsule; texts Pull down to refresh / Release
+              to refresh / Refreshing... / Refreshed successfully; haptic at the threshold; release springs (critical damping,
+              0.4 s period) to H/24 and an orbiting dot turns (800 ms); done = ring shrinks and fades in 200 ms
+              (cubic-bezier(0,0,0,.37)) while the header closes. */
+  var PTR = { y0: 0, x0: 0, dy: 0, on: false, busy: false, armed: false, el: null, tok: 0, t0: 0, raf: 0, nextPx: null };
   var PTR_MAX = 120, PTR_TH = 64, PTR_HOLD = 54, PTR_CAP = 9000;
+  function ptrUi() { var u = document.documentElement.getAttribute('data-ui'); return u === 'm3' || u === 'miuix' ? u : 'og'; }
   function ptrScreen() { return V.v === 'home' || V.v === 'nets' || V.v === 'coin' || V.v === 'activity'; }
   function ptrBlocked() { return !!document.querySelector('.ov.show, .sheet.show, .kws-page.show, #scan.show, .scan.show, .hp-ov.show') || (window.hwBrVisible && hwBrVisible()); }
-  function ptrRing() {
-    if (!PTR.el || !PTR.el.isConnected) { var d = document.createElement('div'); d.className = 'ptr3'; d.setAttribute('aria-hidden', 'true'); d.innerHTML = '<i></i>'; document.body.appendChild(d); PTR.el = d; }
+  function ptrTop() {
     var app = $('app'), h = app && app.children[0], hdr = h && (h.tagName === 'HEADER' || h.classList.contains('bar') || h.classList.contains('hbar')) ? h : null;
-    PTR.top = hdr ? Math.max(0, hdr.getBoundingClientRect().bottom) : 0;
-    PTR.el.style.top = PTR.top + 'px';
-    return PTR.el;
+    return hdr ? Math.max(0, hdr.getBoundingClientRect().bottom) : 0;
   }
-  /* rubber band: ~1:1 for the first few px, then harder and harder, never past PTR_MAX */
-  function ptrBand(dy) { return PTR_MAX * (1 - Math.exp(-Math.max(0, dy) / (PTR_MAX * 1.6))); }
-  function ptrSet(px, anim) {
-    var pg = $('pg'), r = PTR.el; if (!pg) return;
-    pg.classList.add('ptr-on');
-    pg.classList.toggle('ptr-anim', !!anim);
+  function ptrContent(px, anim) {
+    var pg = $('pg'); if (!pg) return;
+    pg.classList.add('ptr-on'); pg.classList.toggle('ptr-anim', !!anim);
     pg.style.setProperty('--ptr', px.toFixed(1) + 'px');
-    if (!r) return;
-    var k = Math.min(1, px / PTR_TH);
-    r.style.transition = anim ? 'transform .38s cubic-bezier(.22,.9,.24,1), opacity .25s ease' : 'none';
-    r.style.transform = 'translate3d(-50%,' + (Math.max(0, px - 22) / 2).toFixed(1) + 'px,0) scale(' + (0.6 + 0.4 * k).toFixed(3) + ')';
-    r.style.opacity = px > 2 ? (0.15 + 0.85 * k).toFixed(2) : '0';
-    r.classList.toggle('armed', px >= PTR_TH);
-    if (!PTR.busy) { r.firstChild.style.transform = 'rotate(' + Math.round(px * 3.2) + 'deg)'; r.firstChild.style.borderTopColor = ''; }
   }
-  /* back to rest; classes come off only after the ease has played (and never undo a newer pull) */
-  function ptrReset(tok) {
+  function ptrContentOff() { var g = $('pg'); if (g) { g.classList.remove('ptr-on', 'ptr-anim'); g.style.setProperty('--ptr', '0px'); } }
+
+  /* ----- OG renderer ----- */
+  var OG = {
+    ring: function () {
+      if (!PTR.el || !PTR.el.isConnected || PTR.el.className.indexOf('ptr3') < 0) { if (PTR.el && PTR.el.parentNode) PTR.el.parentNode.removeChild(PTR.el); var d = document.createElement('div'); d.className = 'ptr3'; d.setAttribute('aria-hidden', 'true'); d.innerHTML = '<i></i>'; document.body.appendChild(d); PTR.el = d; }
+      PTR.el.style.top = ptrTop() + 'px'; return PTR.el;
+    },
+    band: function (dy) { return PTR_MAX * (1 - Math.exp(-Math.max(0, dy) / (PTR_MAX * 1.6))); },
+    armedAt: function (px) { return px >= PTR_TH; },
+    set: function (px, anim) {
+      ptrContent(px, anim);
+      var r = PTR.el; if (!r) return;
+      var k = Math.min(1, px / PTR_TH);
+      r.style.transition = anim ? 'transform .38s cubic-bezier(.22,.9,.24,1), opacity .25s ease' : 'none';
+      r.style.transform = 'translate3d(-50%,' + (Math.max(0, px - 22) / 2).toFixed(1) + 'px,0) scale(' + (0.6 + 0.4 * k).toFixed(3) + ')';
+      r.style.opacity = px > 2 ? (0.15 + 0.85 * k).toFixed(2) : '0';
+      r.classList.toggle('armed', px >= PTR_TH);
+      if (!PTR.busy) r.firstChild.style.transform = 'rotate(' + Math.round(px * 3.2) + 'deg)';
+    },
+    pull: function (dy) { var px = OG.band(dy); return { px: px, armed: OG.armedAt(px) }; },
+    start: function () { OG.ring(); OG.set(PTR_HOLD, true); if (PTR.el) { PTR.el.firstChild.style.transform = ''; PTR.el.classList.add('spin-on'); } },
+    done: function (cb) {
+      if (PTR.el) { PTR.el.classList.remove('spin-on'); PTR.el.firstChild.style.transform = 'rotate(0deg)'; }
+      OG.set(0, true); setTimeout(cb, 400);
+    },
+    cancel: function (cb) { OG.set(0, true); setTimeout(cb, 400); }
+  };
+
+  /* ----- Material 3 renderer ----- */
+  var M3TH = 80, M3SZ = 40;
+  function m3Off(pulled) { if (pulled <= M3TH) return pulled; var t = Math.min(2, Math.max(0, pulled / M3TH - 1)); return M3TH + M3TH * (t - t * t / 4); }
+  var M3 = {
+    frac: 0, anim: 0,
+    ring: function () {
+      if (!PTR.el || !PTR.el.isConnected || PTR.el.className.indexOf('ptrM3') < 0) {
+        if (PTR.el && PTR.el.parentNode) PTR.el.parentNode.removeChild(PTR.el);
+        var d = document.createElement('div'); d.className = 'ptrM3'; d.setAttribute('aria-hidden', 'true');
+        d.innerHTML = '<div class="m3c"><svg class="m3ar" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="butt"/><path class="m3h" fill="currentColor"/></svg>' +
+          '<svg class="m3sp" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" pathLength="100"/></svg></div>';
+        document.body.appendChild(d); PTR.el = d;
+      }
+      PTR.el.style.top = ptrTop() + 'px'; PTR.el.style.color = 'var(--muted, var(--text-muted))'; return PTR.el;
+    },
+    draw: function (f) {
+      M3.frac = f; var r = PTR.el; if (!r) return;
+      var c = r.firstChild; c.style.transform = 'translate3d(0,' + (f * M3TH - M3SZ).toFixed(1) + 'px,0)';
+      c.style.opacity = f > 0 || PTR.busy ? '1' : '0';
+      if (PTR.busy) return;
+      /* CircularArrowProgressIndicator */
+      var ap = Math.max(Math.min(1, f) - 0.4, 0) * 5 / 3, over = Math.abs(f) - 1, lt = Math.min(2, Math.max(0, over)), tp = lt - lt * lt / 4;
+      var end = ap * 0.8, rot = (-0.25 + 0.4 * ap + tp) * 0.5, a0 = rot * 2 * Math.PI, a1 = a0 + end * 2 * Math.PI, R = 5.5 * 24 / 16;
+      var path = r.querySelector('.m3ar path'), head = r.querySelector('.m3h');
+      if (end <= 0.001) { path.setAttribute('d', ''); head.setAttribute('d', ''); }
+      else {
+        var x0 = 12 + R * Math.cos(a0), y0 = 12 + R * Math.sin(a0), x1 = 12 + R * Math.cos(a1), y1 = 12 + R * Math.sin(a1);
+        path.setAttribute('d', 'M' + x0.toFixed(2) + ' ' + y0.toFixed(2) + ' A' + R + ' ' + R + ' 0 ' + (end > 0.5 ? 1 : 0) + ' 1 ' + x1.toFixed(2) + ' ' + y1.toFixed(2));
+        var s = Math.min(1, ap), aw = 10 * 24 / 16 * s, ah = 5 * 24 / 16 * s, tx = -Math.sin(a1), ty = Math.cos(a1), nx = Math.cos(a1), ny = Math.sin(a1);
+        head.setAttribute('d', 'M' + (x1 - nx * aw / 2).toFixed(2) + ' ' + (y1 - ny * aw / 2).toFixed(2) + ' L' + (x1 + nx * aw / 2).toFixed(2) + ' ' + (y1 + ny * aw / 2).toFixed(2) + ' L' + (x1 + tx * ah).toFixed(2) + ' ' + (y1 + ty * ah).toFixed(2) + 'Z');
+      }
+      r.querySelector('.m3ar').style.opacity = f >= 1 ? '1' : '0.3';
+    },
+    to: function (target, ms, cb) {
+      cancelAnimationFrame(M3.anim); var from = M3.frac, t0 = 0;
+      function step(t) { if (!t0) t0 = t; var k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3); M3.draw(from + (target - from) * e); if (k < 1) M3.anim = requestAnimationFrame(step); else if (cb) cb(); }
+      M3.anim = requestAnimationFrame(step);
+    },
+    pull: function (dy) { var f = m3Off(dy * 0.5) / M3TH; return { f: f, armed: f >= 1 }; },
+    set: function (st) { cancelAnimationFrame(M3.anim); M3.draw(st.f); },
+    start: function () { M3.ring(); PTR.el.classList.add('ref'); M3.to(1, 250); },
+    done: function (cb) { M3.to(0, 300, function () { if (PTR.el) PTR.el.classList.remove('ref'); cb(); }); },
+    cancel: function (cb) { M3.to(0, 250, cb); }
+  };
+
+  /* ----- Miuix renderer (math from PullToRefresh.kt / SpringUtils.kt) ----- */
+  function mxDamp(x, range) { x = Math.max(0, Math.min(x, 1)); return (x - x * x + x * x * x / 3) * range; }
+  function mxTouch(off, range) {
+    var a = Math.abs(off), mx = Math.abs(mxDamp(1, range)); if (a <= 0) return 0; if (a >= mx) a = mx;
+    var base = range - 3 * a; return range - Math.pow(range, 2 / 3) * Math.sign(base) * Math.pow(Math.abs(base), 1 / 3);
+  }
+  var MXC = 20, MXTX = ['Pull down to refresh', 'Release to refresh', 'Refreshing...', 'Refreshed successfully'];
+  var MX = {
+    off: 0, st: 'idle', rot: 0, raf: 0, comp: 1, rot0: 0, tRot: 0,
+    H: function () { return Math.max(1, window.innerHeight || document.documentElement.clientHeight || 800); },
+    thr: function () { return MX.H() / 24; },          /* refreshThresholdOffset = H x 1/6 x 1/4 */
+    trig: function () { return 0.25 * mxDamp(1, MX.H()); },   /* refreshThreshold 0.25 x fullDragRange (H/3) */
+    vp: function () { var e = Math.min(MX.thr(), MX.trig()); return e > 0 ? Math.max(0, Math.min(1, MX.off / e)) : 1; },
+    ring: function () {
+      if (!PTR.el || !PTR.el.isConnected || PTR.el.className.indexOf('ptrMx') < 0) {
+        if (PTR.el && PTR.el.parentNode) PTR.el.parentNode.removeChild(PTR.el);
+        var d = document.createElement('div'); d.className = 'ptrMx'; d.setAttribute('aria-hidden', 'true');
+        d.innerHTML = '<canvas></canvas><span></span>'; document.body.appendChild(d); PTR.el = d;
+      }
+      PTR.el.style.top = ptrTop() + 'px'; return PTR.el;
+    },
+    paint: function () {
+      var r = PTR.el; if (!r) return;
+      var st = MX.st, thr = MX.thr(), vp = MX.vp(), extra = MX.off - thr;
+      var ih = st === 'idle' ? 0 : (extra <= 0 ? MXC * vp : MXC + extra), hh = st === 'idle' ? 0 : (extra <= 0 ? (MXC + 36) * vp : (MXC + 36) + extra);
+      if (st === 'done') { ih = MXC * (1 - MX.comp); hh = (MXC + 36) * (1 - MX.comp); }
+      r.style.height = hh.toFixed(1) + 'px'; ptrContent(hh, false);
+      var txt = st === 'pull' ? (vp > 0.5 ? MXTX[0] : '') : st === 'arm' ? MXTX[1] : st === 'ref' ? MXTX[2] : st === 'done' ? MXTX[3] : '';
+      var ta = st === 'pull' ? (vp > 0.6 ? (vp - 0.5) * 2 : 0) : st === 'arm' ? 1 : st === 'ref' ? Math.max(0, Math.min(1, (vp - 0.5) * 2)) : st === 'done' ? Math.max(0, 1 - MX.comp * 1.95) : 0;
+      var sp = r.lastChild; if (sp.textContent !== txt) sp.textContent = txt; sp.style.opacity = ta.toFixed(3);
+      var cv = r.firstChild, dpr = window.devicePixelRatio || 1, ch = Math.max(MXC, ih) + 4;
+      cv.style.height = Math.max(0, ih).toFixed(1) + 'px';
+      var W = Math.round(MXC * dpr), Hh = Math.round(ch * dpr); if (cv.width !== W) cv.width = W; if (cv.height !== Hh) cv.height = Hh;
+      cv.style.height = ch.toFixed(1) + 'px'; cv.style.marginBottom = (ih - ch).toFixed(1) + 'px';
+      var g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, MXC, ch);
+      var col = getComputedStyle(sp).color, sw = MXC / 11, rad = Math.max(MXC / 2, MXC / 3.5), cx = MXC / 2, cy = MXC / 1.8;
+      g.strokeStyle = col; g.fillStyle = col; g.lineWidth = sw; g.lineCap = 'round';
+      function circ(a, rr, y) { g.globalAlpha = Math.max(0, Math.min(1, a)); g.beginPath(); g.arc(cx, y == null ? cy : y, rr || rad, 0, Math.PI * 2); g.stroke(); }
+      if (st === 'idle') return;
+      if ((st === 'pull' || st === 'arm') && MX.off > thr) {
+        var L = Math.max(0, Math.min(MX.off - thr, MX.H() - thr)); g.globalAlpha = 1;
+        g.beginPath(); g.arc(cx, cy, rad, Math.PI, 2 * Math.PI); g.stroke();
+        g.beginPath(); g.arc(cx, cy + L, rad, 0, Math.PI); g.stroke();
+        g.beginPath(); g.moveTo(cx - rad, cy); g.lineTo(cx - rad, cy + L); g.moveTo(cx + rad, cy); g.lineTo(cx + rad, cy + L); g.stroke();
+      } else if (st === 'pull') circ(vp - 0.2);
+      else if (st === 'ref') {
+        var ea = Math.max(0, Math.min(1, (vp - 0.2) / 0.8)); circ(ea);
+        var orb = rad - 2 * sw, an = MX.rot * Math.PI / 180; g.beginPath(); g.arc(cx + orb * Math.cos(an), cy + orb * Math.sin(an), sw, 0, Math.PI * 2); g.fill();
+      } else if (st === 'done') {
+        var ar = rad * Math.max(1 - MX.comp, 0.9); circ(1 - MX.comp - 0.35, ar, cy - rad - sw + ar);
+      }
+      g.globalAlpha = 1;
+    },
+    loop: function () { cancelAnimationFrame(MX.raf); var last = 0; function f(t) { if (MX.st !== 'ref') return; if (!MX.tRot) MX.tRot = t; MX.rot = MX.rot0 + ((t - MX.tRot) % 800) / 800 * 360; MX.paint(); MX.raf = requestAnimationFrame(f); } MX.raf = requestAnimationFrame(f); },
+    /* SpringEngine: critical damping, natural period 0.4 s, explicit steps with dt clamped to [1 ms, 16 ms] */
+    spring: function (target, cb) {
+      cancelAnimationFrame(MX.sraf); var w = 2 * Math.PI / 0.4, k = w * w, c = 2 * w, pos = MX.off, v = 0, p0 = pos, last = -1;
+      function eq() { if (p0 < target && pos > target) return true; if (p0 <= target || pos >= target) return (p0 === target && Math.sign(0) !== Math.sign(pos)) || Math.abs(pos - target) < 1; return true; }
+      function f(t) {
+        if (last < 0) { last = t; MX.sraf = requestAnimationFrame(f); return; }
+        var dt = Math.min(0.016, Math.max(0.001, (t - last) / 1000)); last = t;
+        v = v * (1 - c * dt) + k * (target - pos) * dt; pos += dt * v;
+        var fin = eq(); if (fin) pos = target; MX.off = pos; MX.paint();
+        if (fin) { if (cb) cb(); } else MX.sraf = requestAnimationFrame(f);
+      }
+      MX.sraf = requestAnimationFrame(f);
+    },
+    pull: function (dy) { var H = MX.H(), t = Math.max(-H, Math.min(H, dy)), off = Math.sign(t) * mxDamp(Math.min(Math.abs(t) / H, 1), H); return { off: Math.max(0, off), armed: off > 0 && off >= MX.trig() }; },
+    set: function (s) { cancelAnimationFrame(MX.sraf); MX.off = s.off; MX.st = s.off <= 0 ? 'idle' : (s.armed ? 'arm' : 'pull'); MX.ring(); MX.paint(); },
+    start: function () {
+      MX.ring(); MX.rot0 = Math.random() * 360; MX.tRot = 0;
+      if (MX.st === 'arm') { MX.spring(MX.thr(), function () { MX.st = 'ref'; MX.loop(); }); return; }
+      MX.st = 'ref'; MX.loop(); MX.spring(MX.thr());   /* showRefreshing: programmatic expansion */
+    },
+    done: function (cb) {
+      cancelAnimationFrame(MX.raf); cancelAnimationFrame(MX.sraf); var thr = MX.thr(), p0 = thr > 0 ? 1 - Math.max(0, Math.min(1, MX.off / thr)) : 1, t0 = 0;
+      MX.st = 'done'; MX.comp = p0;
+      /* tween 200 ms, CubicBezierEasing(0, 0, 0, 0.37) */
+      function ez(x) { var lo = 0, hi = 1, s; for (var i = 0; i < 18; i++) { s = (lo + hi) / 2; var bx = 3 * (1 - s) * (1 - s) * s * 0 + 3 * (1 - s) * s * s * 0 + s * s * s; if (bx < x) lo = s; else hi = s; } s = (lo + hi) / 2; return 3 * (1 - s) * s * s * 0.37 + s * s * s; }
+      function f(t) { if (!t0) t0 = t; var k = Math.min(1, (t - t0) / 200); MX.comp = p0 + (1 - p0) * ez(k); MX.off = thr * (1 - MX.comp); MX.paint(); if (k < 1) MX.raf = requestAnimationFrame(f); else { MX.st = 'idle'; MX.off = 0; MX.paint(); cb(); } }
+      MX.raf = requestAnimationFrame(f);
+    },
+    cancel: function (cb) { MX.spring(0, function () { MX.st = 'idle'; MX.paint(); cb(); }); }
+  };
+  function ptrR() { var u = ptrUi(); return u === 'm3' ? M3 : u === 'miuix' ? MX : OG; }
+  function ptrRing() { var R = ptrR(); return R.ring ? R.ring() : null; }
+
+  /* back to rest; never undo a newer pull */
+  function ptrReset(tok, soft) {
     if (tok != null && tok !== PTR.tok) return;
-    var pg = $('pg'); PTR.busy = false; PTR.on = false; PTR.armed = false; PTR.dy = 0;
-    if (PTR.el) { PTR.el.classList.remove('spin-on'); PTR.el.firstChild.style.transform = 'rotate(0deg)'; }
-    ptrSet(0, true);
-    var my = PTR.tok;
-    setTimeout(function () { if (my !== PTR.tok || PTR.on || PTR.busy) return; var g = $('pg'); if (g) g.classList.remove('ptr-on', 'ptr-anim'); }, 420);
+    var R = PTR.R || ptrR(), my = PTR.tok, was = PTR.busy;
+    PTR.busy = false; PTR.on = false; PTR.armed = false; PTR.dy = 0; cancelAnimationFrame(PTR.raf); PTR.nextPx = null;
+    function clean() { if (my !== PTR.tok || PTR.on || PTR.busy) return; ptrContentOff(); if (PTR.el) { PTR.el.style.opacity = R === OG ? '0' : ''; } }
+    try { (was && !soft ? R.done : R.cancel)(clean); } catch (e) { clean(); }
   }
+  function ptrHardReset() { PTR.tok++; PTR.busy = false; PTR.on = false; PTR.armed = false; PTR.dy = 0; cancelAnimationFrame(PTR.raf); cancelAnimationFrame(M3.anim); cancelAnimationFrame(MX.raf); cancelAnimationFrame(MX.sraf); MX.st = 'idle'; MX.off = 0; M3.frac = 0; ptrContentOff(); if (PTR.el && PTR.el.parentNode) PTR.el.parentNode.removeChild(PTR.el); PTR.el = null; }
   /* what each screen refreshes; numbers update in place (update(), histRefresh merge) so nothing flickers */
   function ptrRun() {
     var ps = [];
@@ -10241,12 +10568,11 @@ window.hwCrashPrompt = crashPrompt;
     var fresh = streamsFor(F.scope); try { local2(F); } catch (e) {}
     return Promise.all(fresh.map(function (s) { return Promise.resolve().then(function () { return s.page(null); }).then(function (p) { p = p || {}; actStore(p.items || []); if (F === HB) { merge(F, p.items || []); if (!F.scope) saveFeed(F); } }, function () {}); }));
   }
-  /* the spin + refresh + snap back, shared by a released pull and the top-bar refresh button */
+  /* the spin + refresh + close, shared by a released pull and the top-bar refresh button */
   function ptrGo(run, fromBtn) {
-    if (PTR.busy) { if (Date.now() - PTR.t0 < PTR_CAP + 1500) return Promise.resolve(); ptrReset(); }
-    var tok = ++PTR.tok; PTR.busy = true; PTR.t0 = Date.now();
-    ptrRing(); ptrSet(PTR_HOLD, true);
-    if (PTR.el) { PTR.el.firstChild.style.transform = ''; PTR.el.classList.add('spin-on'); }
+    if (PTR.busy) { if (Date.now() - PTR.t0 < PTR_CAP + 1500) return Promise.resolve(); ptrHardReset(); }
+    var tok = ++PTR.tok; PTR.busy = true; PTR.t0 = Date.now(); PTR.R = ptrR();
+    try { PTR.R.ring(); PTR.R.start(); } catch (e) {}
     var late = false, done = false, cap = new Promise(function (r) { setTimeout(function () { late = true; r(); }, PTR_CAP); });
     var job; try { job = Promise.resolve((run || ptrRun)()); } catch (e) { job = Promise.resolve(); }
     var t0 = Date.now();
@@ -10262,34 +10588,38 @@ window.hwCrashPrompt = crashPrompt;
   function ptrInit(pg) {
     pg.addEventListener('touchstart', function (e) {
       PTR.on = false; PTR.armed = false;
-      if (PTR.busy && Date.now() - PTR.t0 > PTR_CAP + 1500) ptrReset();   /* a stuck state can never block the next pull */
+      if (PTR.busy && Date.now() - PTR.t0 > PTR_CAP + 1500) ptrHardReset();   /* a stuck state can never block the next pull */
       if (PTR.busy || pg.scrollTop > 0 || !ptrScreen() || ptrBlocked() || e.touches.length !== 1) return;
       if (e.target.closest && e.target.closest('input, textarea, .hscroll, .chips, [data-noptr], .swr.open')) return;
-      PTR.y0 = e.touches[0].clientY; PTR.x0 = e.touches[0].clientX; PTR.dy = 0; PTR.on = true;
+      PTR.y0 = e.touches[0].clientY; PTR.x0 = e.touches[0].clientX; PTR.dy = 0; PTR.on = true; PTR.R = ptrR();
     }, { passive: true });
     pg.addEventListener('touchmove', function (e) {
       if (!PTR.on) return;
       var dy = e.touches[0].clientY - PTR.y0, dx = Math.abs(e.touches[0].clientX - PTR.x0);
       if (!PTR.dy && (dy <= 2 || dx > dy)) { if (dy < -2 || dx > 8) PTR.on = false; return; }
-      if (pg.scrollTop > 0) { PTR.on = false; ptrReset(); return; }
+      if (pg.scrollTop > 0) { PTR.on = false; ptrReset(null, true); return; }
       if (e.cancelable) e.preventDefault();   /* the page itself never overscrolls here */
-      if (!PTR.dy) ptrRing();
+      if (!PTR.dy) PTR.R.ring();
       PTR.dy = Math.max(0, dy);
-      var px = ptrBand(PTR.dy);
-      if (!PTR.armed && px >= PTR_TH) { PTR.armed = true; buzz(6); snd('tick', 900); }
-      else if (PTR.armed && px < PTR_TH - 8) PTR.armed = false;
-      ptrSet(px, false);
+      var s = PTR.R.pull(PTR.dy);
+      if (PTR.R === OG) { if (!PTR.armed && s.armed) { PTR.armed = true; buzz(6); snd('tick', 900); } else if (PTR.armed && s.px < PTR_TH - 8) PTR.armed = false; }
+      else if (PTR.R === MX) { if (!PTR.armed && s.armed) { PTR.armed = true; buzz(6); } else if (PTR.armed && !s.armed) PTR.armed = false; }
+      else PTR.armed = s.armed;
+      PTR.nextPx = s;
+      if (!PTR.raf) PTR.raf = requestAnimationFrame(function () { PTR.raf = 0; var n = PTR.nextPx; if (!n || !PTR.on) return; if (PTR.R === OG) OG.set(n.px, false); else PTR.R.set(n); });
     }, { passive: false });
-    function end() {
-      if (!PTR.on) return; PTR.on = false;
+    function end(ev) {
+      if (!PTR.on) return; PTR.on = false; cancelAnimationFrame(PTR.raf); PTR.raf = 0;
       if (!PTR.dy) return;
-      if (!PTR.armed) { ptrReset(); return; }
+      var s = PTR.nextPx; if (s) { if (PTR.R === OG) OG.set(s.px, false); else PTR.R.set(s); }
+      if (!PTR.armed || (ev && ev.type === 'touchcancel' && !PTR.armed)) { ptrReset(null, true); return; }
       PTR.armed = false; ptrGo();
     }
     pg.addEventListener('touchend', end, { passive: true });
     pg.addEventListener('touchcancel', end, { passive: true });
+    document.addEventListener('visibilitychange', function () { if (document.hidden && !PTR.busy && (PTR.on || PTR.dy)) ptrHardReset(); });
   }
-  window.hwPtr = { run: ptrRun, go: ptrGo, reset: function () { ptrReset(); }, state: function () { return { busy: PTR.busy, armed: PTR.armed, on: PTR.on }; } };
+  window.hwPtr = { run: ptrRun, go: ptrGo, reset: function () { ptrHardReset(); }, ui: ptrUi, state: function () { return { busy: PTR.busy, armed: PTR.armed, on: PTR.on }; } };
 
   /* ---------- #76 notification bar coins: four slots, each any coin in the wallet or a token imported by contract ---------- */
   var NDEF = [{ ch: 'btc', key: 'native', s: 'BTC', cg: 'bitcoin' }, { ch: 'eth', net: 'ethereum', key: 'native', s: 'ETH', cg: 'ethereum' }, { ch: 'sol', key: 'native', s: 'SOL', cg: 'solana' }, { ch: 'xmr', key: 'native', s: 'XMR', cg: 'monero' }];
@@ -10559,7 +10889,7 @@ window.hwCrashPrompt = crashPrompt;
     var all = keys.concat(lw, lr); lw.forEach(function (k) { if (k) w.push(k); });
     var cuL = 200000 * Math.max(1, ixs.length), cuP = 0n, progs = [];
     ixs.forEach(function (x) { var pid = all[x.p]; if (progs.indexOf(pid) < 0) progs.push(pid); if (pid === 'ComputeBudget111111111111111111111111111111') { if (x.d[0] === 2 && x.d.length >= 5) cuL = (x.d[1] | (x.d[2] << 8) | (x.d[3] << 16) | (x.d[4] << 24)) >>> 0; if (x.d[0] === 3 && x.d.length >= 9) { var v = 0n; for (var b = 8; b >= 1; b--) v = (v << 8n) | BI(x.d[b]); cuP = v; } } });
-    return { keys: keys, w: w, payer: keys[0], nsig: nrs, progs: progs, fee: BI(5000 * nrs) + (cuP * BI(cuL) + 999999n) / 1000000n };
+    return { ixs: ixs.map(function (x) { return { p: all[x.p], d: x.d }; }), keys: keys, w: w, payer: keys[0], nsig: nrs, progs: progs, fee: BI(5000 * nrs) + (cuP * BI(cuL) + 999999n) / 1000000n };
   }
   function pvSolMeta(mints) {
     var need = mints.filter(function (m) { return !PVDAS[m]; });
@@ -10577,17 +10907,68 @@ window.hwCrashPrompt = crashPrompt;
       }));
     }).then(function () { var o = {}; mints.forEach(function (m) { o[m] = PVDAS[m] || { s: short(m, 4), d: null }; }); return o; });
   }
+  /* v1.7.4: unknown Solana programs are named from their on-chain Anchor IDL when one is published: the IDL account is
+     createWithSeed(findProgramAddress([], program), "anchor:idl", program); data = 8-byte discriminator, 32-byte authority,
+     u32 length, zlib-compressed JSON. Name = metadata.name (Anchor >= 0.30) or name; the instruction is matched by its
+     discriminator (new IDLs) or sha256("global:" + snake_case(name))[0..8] (old IDLs). Cached per program for the session. */
+  var PVIDL = {}, PVSYS = { '11111111111111111111111111111111': 1, 'ComputeBudget111111111111111111111111111111': 1, 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA': 1, 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PazQaGZ3cx6CKBvkm7': 1, 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL': 1, 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr': 1, 'Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo': 1, 'AddressLookupTab1e1111111111111111111111111': 1, 'Vote111111111111111111111111111111111111111': 1, 'Stake11111111111111111111111111111111111111': 1 };
+  function pvIdlName(t) { t = String(t || '').replace(/[_-]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; }
+  function pvSnake(t) { return String(t).replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase(); }
+  function pvInflate(bytes) {
+    if (typeof DecompressionStream !== 'function') return Promise.reject(new Error('no inflate'));
+    var ds = new DecompressionStream('deflate'), w = ds.writable.getWriter(); w.write(bytes); w.close();
+    return new Response(ds.readable).arrayBuffer().then(function (b) { return new TextDecoder().decode(b); });
+  }
+  function pvIdl(prog) {
+    if (PVIDL[prog]) return PVIDL[prog];
+    PVIDL[prog] = (async function () {
+      var pb = b58d(prog), base = b58d(await pda([], pb)), seed = new TextEncoder().encode('anchor:idl');
+      var buf = new Uint8Array(base.length + seed.length + pb.length); buf.set(base, 0); buf.set(seed, base.length); buf.set(pb, base.length + seed.length);
+      var addr = b58e(new Uint8Array(await crypto.subtle.digest('SHA-256', buf)));
+      var r = await pvHelius('getAccountInfo', [addr, { encoding: 'base64', commitment: 'confirmed' }], 5000);
+      var v = r && r.value; if (!v || !v.data) return null;
+      var raw = b64d(Array.isArray(v.data) ? v.data[0] : v.data); if (raw.length < 45) return null;
+      var len = raw[40] | (raw[41] << 8) | (raw[42] << 16) | (raw[43] << 24); if (!(len > 0) || 44 + len > raw.length) return null;
+      var j = JSON.parse(await pvInflate(raw.slice(44, 44 + len)));
+      var name = (j.metadata && j.metadata.name) || j.name || '', ix = [];
+      for (var i = 0; i < (j.instructions || []).length && i < 200; i++) {
+        var it = j.instructions[i], disc = Array.isArray(it.discriminator) ? it.discriminator : null;
+        if (!disc) { var h = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('global:' + pvSnake(it.name)))); disc = Array.from(h.slice(0, 8)); }
+        ix.push({ n: String(it.name || ''), d: disc });
+      }
+      return name ? { name: pvIdlName(name).slice(0, 32), ix: ix } : null;
+    })().catch(function () { return null; });
+    return PVIDL[prog];
+  }
+  function pvIdlFor(info) {
+    var want = info.progs.filter(function (p) { return p && !PVSOLP[p] && !PVSYS[p]; }).slice(0, 3);
+    if (!want.length) return Promise.resolve(null);
+    var to = new Promise(function (r) { setTimeout(function () { r(null); }, 3500); });
+    return Promise.race([Promise.all(want.map(pvIdl)), to]).then(function (l) {
+      if (!l) return null;
+      for (var i = 0; i < want.length; i++) {
+        var I = l[i]; if (!I) continue;
+        var x = info.ixs.filter(function (q) { return q.p === want[i]; })[0], hit = '';
+        if (x && x.d && x.d.length >= 8) I.ix.forEach(function (k) { if (!hit && k.d.length === 8 && k.d.every(function (b, n) { return x.d[n] === b; })) hit = k.n; });
+        return { prog: want[i], name: I.name, ix: hit ? pvIdlName(hit) : '' };
+      }
+      return null;
+    }, function () { return null; });
+  }
   function pvSol(txb64, alts, site) {
     var me = A.sol, WS = 'So11111111111111111111111111111111111111112', info;
     try { info = pvSolMsg(b64d(txb64), alts || {}); } catch (e) { return Promise.resolve(null); }
     var addrs = [me]; info.w.forEach(function (a) { if (a && addrs.indexOf(a) < 0) addrs.push(a); });
     var co = info.payer !== me, via = '';
     info.progs.forEach(function (p) { if (!via && PVSOLP[p]) via = PVSOLP[p]; });
+    var idlP = via ? Promise.resolve(null) : pvIdlFor(info);
     if (!via) via = site && site.name ? String(site.name).slice(0, 24) : '';
-    return Promise.all([
+    return Promise.all([idlP,
       pvHelius('getMultipleAccounts', [addrs, { encoding: 'jsonParsed', commitment: 'confirmed' }], 8000),
       pvHelius('simulateTransaction', [txb64, { encoding: 'base64', sigVerify: false, replaceRecentBlockhash: true, commitment: 'confirmed', accounts: { encoding: 'jsonParsed', addresses: addrs } }], 9000)
     ]).then(function (x) {
+      var idl = x.shift();
+      if (idl) { via = idl.name; PVSOLP[idl.prog] = idl.name; }
       var pre = (x[0] && x[0].value) || [], sim = x[1] && x[1].value;
       if (!sim) return null;
       var pv = { send: [], recv: [], appr: [], lines: [], to: [], via: via, src: 'Helius simulation', est: 0 };
@@ -10642,6 +11023,7 @@ window.hwCrashPrompt = crashPrompt;
         var swap = pv.send.length && pv.recv.length;
         if (via && (swap || !pv.to.length)) pv.to.unshift({ l: 'App', n: via, a: info.progs.filter(function (p) { return PVSOLP[p]; })[0] || '' });
         pv.head = pvHead(pv, via, 'Swap');
+        if (idl && idl.ix) pv.lines.push(idl.ix + ' on ' + idl.name);
         if (co) pv.lines.push((via || 'The app') + ' pays the network fee');
         return pvIcons(pv.send.concat(pv.recv)).then(function () { return pv; });
       });
@@ -11024,7 +11406,7 @@ window.hwCrashPrompt = crashPrompt;
     });
   }
   function licenses() {
-    sheet('<h3>Open-source licenses</h3><div class="lic">Hwallet\nCopyright (C) 2026 Kwallet contributors.\nLicensed under the GNU General Public License v3.0 or later. You may copy, change and share it under the same license. It comes with no warranty.\n\nGem Wallet\nHwallet\u2019s layout, lists, pickers, navigation and wallet tools follow Gem Wallet (github.com/gemwalletcom), Copyright (C) Gem Wallet contributors, GPL-3.0. Chain and token logos come from Gem Wallet\u2019s and Trust Wallet\u2019s asset repositories (MIT, Copyright (c) 2019-2023 Trust Wallet). Gem Wallet is not affiliated with Hwallet.\n\nMonero symbol: The Monero Project (getmonero.org).\n\nKwallet (the offline signer) is a separate app under the MIT license.</div><div class="row2"><button class="btn" data-x>Close</button></div>');
+    sheet('<h3>Open-source licenses</h3><div class="lic">Hwallet\nCopyright (C) 2026 Kwallet contributors.\nLicensed under the GNU General Public License v3.0 or later. You may copy, change and share it under the same license. It comes with no warranty.\n\nGem Wallet\nHwallet\u2019s layout, lists, pickers, navigation and wallet tools follow Gem Wallet (github.com/gemwalletcom), Copyright (C) Gem Wallet contributors, GPL-3.0. Chain and token logos come from Gem Wallet\u2019s and Trust Wallet\u2019s asset repositories (MIT, Copyright (c) 2019-2023 Trust Wallet). Gem Wallet is not affiliated with Hwallet.\n\nMonero symbol: The Monero Project (getmonero.org).\n\nKwallet (the offline signer) is a separate app under the MIT license.\n\nMiuix (UI style \u201cMiuix\u201d, pull to refresh)\nCopyright compose-miuix-ui contributors. Apache License 2.0. github.com/compose-miuix-ui/miuix\n\nMaterial Design 3 (UI style \u201cMaterial UI\u201d)\nMaterial 3 specification and androidx.compose.material3 tokens, Apache License 2.0.</div><div class="row2"><button class="btn" data-x>Close</button></div>');
   }
 
   /* ---------- themes: Kwallet light / dark + Material You from the wallpaper ---------- */
