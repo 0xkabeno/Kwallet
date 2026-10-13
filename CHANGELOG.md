@@ -1,5 +1,13 @@
 # Changelog
 
+## Kwallet v3.98.5 + Hwallet v1.8.5
+
+Hwallet Swap fixes from the phone test of v3.98.4.
+
+### Fixed
+- **Swap 25% / 50% / Max.** On a gas coin they now work on the spendable balance: the balance minus the native reserve the chain really needs (network fee, the Solana rent minimum, the temporary wSOL account and a new token account on a same-chain Solana swap, the XRP base and owner reserve). Max is all of the spendable amount (it used to keep a flat 0.01 SOL, so a 0.01008 SOL balance gave 0.00008). On a token they use the whole token balance, and Hwallet says when the native coin can't pay the fee. All in exact base units.
+- **Swap errors are short and friendly.** No HTTP codes or JSON: a compact amber note such as "Minimum for this route is $1,000" (with a one-tap Set amount), "No route for this pair right now", "This pair isn't supported", "Swap providers are busy" or "Can't reach the swap providers" (with Try again).
+
 ## Kwallet v3.98.4 + Hwallet v1.8.4
 
 Monero pairing fix, a friendlier pairing flow, fintech-style Hwallet Settings, one shared send check for both apps, and Monero subaddress coverage.

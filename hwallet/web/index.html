@@ -2511,6 +2511,14 @@ html.hwa:not(#p10a):not(#p10b):not(#p10c):not(#p10d):not(#p10e):not(#p10f) .xn-x
 html.hwa:not(#p10a):not(#p10b):not(#p10c):not(#p10d):not(#p10e):not(#p10f) .xn-x svg { width: 18px !important; height: 18px !important; fill: currentColor !important; }
 html.hwa:not(#p10a):not(#p10b):not(#p10c):not(#p10d):not(#p10e):not(#p10f) .xn-add .xn-use { align-self: stretch !important; width: 100% !important; height: 48px !important; min-height: 48px !important; margin-top: 6px !important; border-radius: 999px !important; display: flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; font: 600 16px/1 var(--p8-f, 'InterE', system-ui) !important; }
 
+
+html.hwa:not(#p10a):not(#p10b):not(#p10c):not(#p10d):not(#p10e):not(#p10f) #sw-err.sw-note { display: flex !important; align-items: center !important; margin: 12px 16px 0 !important; padding: 10px 12px !important; border-radius: 12px !important;
+  background: rgba(224,168,0,.12) !important; color: var(--text) !important; font: 400 13.5px/18px var(--p8-f, 'InterE', system-ui) !important; }
+html.hwa:not(#p10a):not(#p10b):not(#p10c):not(#p10d):not(#p10e):not(#p10f) body[data-theme="light"] #sw-err.sw-note { background: #fff6dc !important; }
+html.hwa:not(#p10a):not(#p10b):not(#p10c):not(#p10d):not(#p10e):not(#p10f) #sw-err.sw-note > span { flex: 1 1 auto !important; min-width: 0 !important; }
+html.hwa:not(#p10a):not(#p10b):not(#p10c):not(#p10d):not(#p10e):not(#p10f) #sw-err.sw-note[hidden] { display: none !important; }
+html.hwa:not(#p10a):not(#p10b):not(#p10c):not(#p10d):not(#p10e):not(#p10f) #sw-err .sw-fx { flex: 0 0 auto !important; margin-left: 12px !important; height: 32px !important; padding: 0 12px !important; border: 0 !important; border-radius: 999px !important; background: #ACF47D !important; color: #07090E !important; font: 600 13px/1 var(--p8-f, 'InterE', system-ui) !important; white-space: nowrap !important; }
+
 </style>
 </head>
 <body data-theme="light">
@@ -6060,7 +6068,7 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.4';
+var APP_VERSION = '1.8.5';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -10832,7 +10840,8 @@ window.hwCrashPrompt = crashPrompt;
       SW.quotes = qs; SW.loading = false; SW.at = Date.now();
       var keep = SW.userSel && qs.some(function (q) { return q.id === SW.sel && q.ok; });
       if (!keep) { SW.sel = qs[0] && qs[0].ok ? qs[0].id : ''; SW.userSel = false; }
-      if (!qs.some(function (q) { return q.ok; })) SW.err = 'No quote for this amount. ' + (qs[0] && qs[0].err ? qs[0].err : '');
+      SW.fix = null;
+      if (!qs.some(function (q) { return q.ok; })) { var fe = swFriendly(qs, p, r); SW.err = fe.t; SW.fix = fe.fix; }
       swPaint(); if (DET && DET.isConnected) detPaint();
       var nq = curQ(); if (bg && nq && prevOut && nq.out !== prevOut) swFlash(U(nq.out) > U(prevOut) ? 'up' : 'dn');
       swLive();
@@ -11148,9 +11157,13 @@ window.hwCrashPrompt = crashPrompt;
     var d = $('sw-det'); if (d) { d.hidden = !q; var rt = $('sw-rate'); if (rt && q) rt.innerHTML = rateTxt(q); }
     var pb = $('sw-pbal'); if (pb) pb.innerHTML = balTxt(p); var rb = $('sw-rbal'); if (rb) rb.innerHTML = balTxt(r);
     var prk = $('sw-prk'); if (prk) prk.innerHTML = riskPill(p); var rrk = $('sw-rrk'); if (rrk) rrk.innerHTML = riskPill(r);
-    var err = '', low = amt && p && p.raw != null && U(p.raw) < amt;
-    if (low) err = 'Not enough ' + p.s + '.'; else if (SW.err && !SW.loading) err = SW.err;
-    var e = $('sw-err'); if (e) { e.hidden = !err; e.textContent = err; }
+    var err = '', fix = null, low = amt && p && p.raw != null && U(p.raw) < amt;
+    /* v1.8.5: the gas coin must also cover its reserve; a token needs the native coin for the fee */
+    var keepLow = false;
+    if (!low && amt && p && p.gas && p.raw != null) { var kp = swKeep(p, r); if (amt + kp > U(p.raw)) { keepLow = true; err = 'Leave about ' + fmtU(kp, p.d, 6) + ' ' + p.s + ' for the network fee and reserve.'; fix = ['Use Max', function () { swAct('max'); }]; } }
+    if (!low && !keepLow && amt && p && !p.gas) { var ga = swGasOf(p); if (ga && ga.raw != null && U(ga.raw) < swFeeMin(ga)) { err = 'Add a little ' + ga.s + ' to pay the network fee.'; } }
+    if (low) err = 'Not enough ' + p.s + '.'; else if (!err && SW.err && !SW.loading) { err = SW.err; fix = SW.fix || null; }
+    var e = $('sw-err'); if (e) { e.hidden = !err; e.innerHTML = err ? '<span>' + esc(err) + '</span>' + (fix ? '<button type="button" class="sw-fx" data-swfx>' + esc(fix[0]) + '</button>' : '') : ''; var fb = e.querySelector('[data-swfx]'); if (fb) fb.onclick = function () { buzz(6); fix[1](); }; }
     var g = $('sw-go'); if (g) { g.disabled = !q || SW.busy || !!low; g.textContent = SW.busy ? 'Waiting for Kwallet\u2026' : SW.loading && !q ? 'Getting quotes\u2026' : 'Swap'; }
   }
   var swT = 0, swIv = 0;
@@ -11183,23 +11196,67 @@ window.hwCrashPrompt = crashPrompt;
     if (a === 'pay' || a === 'recv') { pickTok(a); return; }
     /* v1.7.2 (S5): 25% / 50% / Max for every coin and token on every chain; only Max on a gas coin keeps the network fee back
        (the fee is paid in that same coin). Tokens use their whole balance. */
+    /* v1.8.5 (push 10 swap #1): a gas coin's chips work on its SPENDABLE balance = balance - the native reserve (network fee +
+       rent / reserve the chain keeps + any temporary or new account rent the route needs, per chain); Max = all of it.
+       A token's chips work on the full token balance (its fee is checked against the native coin). BigInt base units. */
     if (a === 'max' || a === 'q25' || a === 'q50') {
       var p = SW.pay; if (!p || p.raw == null) { toast('Balance not loaded yet'); return; }
       var raw = U(p.raw) || 0n;
+      if (p.gas) { var keep = swKeep(p, SW.recv); raw = raw > keep ? raw - keep : 0n; if (!raw) { toast('Not enough ' + p.s + ' left after the network fee and reserve'); return; } }
       if (a === 'q25') raw = raw / 4n; else if (a === 'q50') raw = raw / 2n;
-      else if (p.gas) { var keep = swKeep(p); raw = raw > keep ? raw - keep : 0n; if (!raw) { toast('Not enough ' + p.s + ' left after the network fee'); return; } }
       SW.amt = rawDec(raw, p.d); var i = $('sw-amt'); if (i) i.value = SW.amt; buzz(6); snd('tick', 900); SW.quotes = []; SW.sel = ''; swPaint(); swQuote(); return;
     }
     if (a === 'det') { openDet(); return; }
     if (a === 'slip') { openSlip(); return; }
   }
   /* the network fee a swap from this gas coin needs, kept back on Max (live gas price on EVM, a safe margin elsewhere) */
-  function swKeep(p) {
-    if (p.ch === 'sol') return 10000000n; if (p.ch === 'trx') return 30000000n; if (p.ch === 'btc') return 20000n; if (p.ch === 'sui') return 50000000n; if (p.ch === 'xrp') return 1000000n; if (p.ch === 'ada') return 2000000n;
+  function swKeep(p, r) {
+    if (p.ch === 'sol') {
+      /* fee + priority margin (0.0001 SOL) + the account's rent-exempt minimum; a same-chain (Jupiter) swap also wraps SOL in a
+         temporary wSOL account (rent back at the end) and may open the output token's account when this wallet has none.
+         A cross-chain route is one plain transfer to the deposit address. (It was a flat 0.01 SOL, which ate a 0.01 SOL balance.) */
+      var k = 100000n + KwSend.SOL_RENT_MIN, same = r && r.ch === 'sol';
+      if (same) { k += KwSend.SOL_ATA_RENT; if (!r.gas && !(U(r.raw) > 0n)) k += KwSend.SOL_ATA_RENT; }
+      return k;
+    }
+    if (p.ch === 'trx') return 30000000n; if (p.ch === 'btc') return 20000n; if (p.ch === 'sui') return 50000000n; if (p.ch === 'ada') return 2000000n;
+    /* XRP: the base reserve (1 XRP) + 0.2 XRP per owned object (trust lines, offers) stay locked; + a fee margin */
+    if (p.ch === 'xrp') { var o = (C.b.xrp && C.b.xrp.owners) | 0; return 1000000n + 200000n * BI(o) + 100000n; }
     if (p.ch === 'eth') { var g = SWGP[p.net]; return g ? g * 400000n * 15n / 10n + ((EVMBY[p.net] || {}).l1 === 'op' ? 20000000000000n : 0n) : 10n ** 15n; }
     return 0n;
   }
   var SWGP = {};
+  /* the native coin that pays a token's fee, and the least it needs for one swap transaction */
+  function swGasOf(t) { try { var a = assets(t.ch, t.ch === 'eth' ? t.net : null); return a && a[0] && a[0].gas ? Object.assign({ ch: t.ch, net: t.net }, a[0]) : null; } catch (e) { return null; } }
+  function swFeeMin(g) { return { sol: 10000n, trx: 5000000n, btc: 2000n, sui: 5000000n, xrp: 100000n, ada: 300000n }[g.ch] || (g.ch === 'eth' ? (SWGP[g.net] ? SWGP[g.net] * 300000n : 1n) : 1n); }
+  /* v1.8.5 (push 10 swap #2): provider errors become one short note (never an HTTP code or JSON), with a one-tap fix when there is one */
+  function swErrText(e) {
+    var t = String(e || ''), m = t.match(/\{[\s\S]*\}?/), msg = '';
+    if (m) { try { var j = JSON.parse(m[0]); msg = j.message || j.error && (j.error.message || j.error) || j.description || j.detail || j.msg || ''; } catch (x) { var mm = m[0].match(/"(?:message|error|description|detail|msg)"\s*:\s*"([^"]+)"/); msg = mm ? mm[1] : ''; } }
+    if (!msg) msg = t.replace(/HTTP \d+:?\s*/g, '');
+    return { raw: t, msg: String(msg).slice(0, 200), st: +((t.match(/HTTP (\d{3})/) || [])[1] || 0) };
+  }
+  function swFriendly(qs, p, r) {
+    var E = (qs || []).filter(function (q) { return q && !q.ok && q.err; }).map(function (q) { var x = swErrText(q.err); x.id = q.id; x.name = q.name; return x; });
+    var retry = ['Try again', function () { SW.err = ''; swQuote(); }];
+    var px = p ? tokPx(p) : 0;
+    for (var i = 0; i < E.length; i++) {
+      var x = E[i], mn = x.msg.match(/min(?:imum)?[^$\d]{0,40}\$\s?([\d,]+(?:\.\d+)?)/i);
+      if (mn) {
+        var usd = parseFloat(mn[1].replace(/,/g, '')), fx = null;
+        if (px > 0 && p) { var need = Math.ceil(usd / px * 1.01 * Math.pow(10, Math.min(p.d, 8))) / Math.pow(10, Math.min(p.d, 8)); fx = ['Set ' + need + ' ' + p.s, function () { var v = String(need); SW.amt = v; var inp = $('sw-amt'); if (inp) inp.value = v; SW.quotes = []; SW.sel = ''; swPaint(); swQuote(); }]; }
+        return { t: 'Minimum for this route is $' + usd.toLocaleString('en-US') + (x.name ? ' (' + x.name + ')' : '') + '.', fix: fx };
+      }
+      var mt = x.msg.match(/(?:min(?:imum)?|too (?:small|low))[^\d]{0,30}([\d.]+)\s*([A-Z]{2,6})?/i);
+      if (/too (?:small|low)|below (?:the )?min|minimum/i.test(x.msg)) return { t: 'This amount is below the route\u2019s minimum' + (mt && mt[1] ? ' (' + mt[1] + (mt[2] ? ' ' + mt[2] : '') + ')' : '') + '. Try a larger amount.', fix: null };
+      if (/max(?:imum)?|too (?:large|big|high)|exceed/i.test(x.msg)) return { t: 'This amount is above the route\u2019s maximum. Try a smaller amount.', fix: null };
+    }
+    if (E.some(function (x) { return x.st === 429 || /rate.?limit|too many requests/i.test(x.msg); })) return { t: 'Swap providers are busy right now.', fix: retry };
+    if (E.length && E.every(function (x) { return !x.st && /network|timeout|timed out|fetch|unreachable|offline|failed/i.test(x.raw); }) || E.some(function (x) { return x.st >= 500; }) && !E.some(function (x) { return x.st && x.st < 500; })) return { t: 'Can\u2019t reach the swap providers. Check your connection.', fix: retry };
+    if (E.some(function (x) { return /not supported|unsupported|invalid (?:token|asset|mint)|not tradable|unknown (?:token|asset)/i.test(x.msg); }) && !E.some(function (x) { return /liquidity|route/i.test(x.msg); })) return { t: 'This pair isn\u2019t supported by the swap providers.', fix: null };
+    if (E.some(function (x) { return /liquidity|no route|route not found|could not find|no quotes?|not found|insufficient/i.test(x.msg); })) return { t: 'No route for this pair right now.', fix: retry };
+    return { t: 'No quote for this amount right now.', fix: retry };
+  }
   function swGasWarm(p) { if (p && p.ch === 'eth' && p.gas && EVMBY[p.net]) rpcF(EVMBY[p.net].rpc, 'eth_gasPrice', [], 5000).then(function (v) { var g = hexU(v); if (g) SWGP[p.net] = g; }, function () {}); }
   /* ---- v1.7.2 (S14): favourites + recent picks (asset keys, newest first) ---- */
   function swFav() { var a = jget('hw-sw-fav', []); return Array.isArray(a) ? a : []; }
