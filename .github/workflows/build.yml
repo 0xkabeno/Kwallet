@@ -30,6 +30,37 @@ jobs:
         with:
           gradle-version: "8.9"
 
+      # v1.8.12 (push 17, R1): Hwallet's native Monero engine = monero_c (github.com/MrCyjaneK/monero_c, LGPL-3.0) prebuilt
+      # libwallet2_api_c for Android, the library Cake Wallet uses. Downloaded from its pinned release, checked against the
+      # SHA-256 sums below, stripped with the NDK and placed in hwallet's jniLibs. Never committed to this repository.
+      - name: Cache monero_c
+        uses: actions/cache@v4
+        with:
+          path: ~/monero_c
+          key: monero_c-v0.18.4.6-RC2
+
+      - name: Native Monero engine (monero_c v0.18.4.6-RC2)
+        run: |
+          set -e
+          D=~/monero_c; mkdir -p $D
+          if [ ! -f $D/ok ]; then
+            for i in 1 2 3; do curl -fsSL -o $D/bundle.zip https://github.com/MrCyjaneK/monero_c/releases/download/v0.18.4.6-RC2/release-bundle.zip && break; sleep 10; done
+            (cd $D && unzip -qo bundle.zip 'v0.18.4.6-RC2/aarch64-linux-android/libmonero_wallet2_api_c.so' 'v0.18.4.6-RC2/armv7a-linux-androideabi/libmonero_wallet2_api_c.so' 'v0.18.4.6-RC2/x86_64-linux-android/libmonero_wallet2_api_c.so' && rm -f bundle.zip)
+            touch $D/ok
+          fi
+          cd $D/v0.18.4.6-RC2
+          printf '%s\n' \
+            '0ebd46d3adf41692ff84efc1fbdbe5d287dea944a7c455f4a45f2680ce7b8cdc  aarch64-linux-android/libmonero_wallet2_api_c.so' \
+            '6a03dae018c702db3ab0d85b1182105b7a6821d4e95564d3f89ae860adeec319  armv7a-linux-androideabi/libmonero_wallet2_api_c.so' \
+            '019e7dddcb4bcb76167426d4a4765e41e5e6217555850f519ac985e527f4dc80  x86_64-linux-android/libmonero_wallet2_api_c.so' | sha256sum -c -
+          STRIP=$(ls ${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip 2>/dev/null || true)
+          J=$GITHUB_WORKSPACE/hwallet/app/src/main/jniLibs
+          for m in "aarch64-linux-android arm64-v8a" "armv7a-linux-androideabi armeabi-v7a" "x86_64-linux-android x86_64"; do
+            set -- $m; mkdir -p $J/$2; cp $1/libmonero_wallet2_api_c.so $J/$2/
+            if [ -n "$STRIP" ]; then "$STRIP" --strip-unneeded $J/$2/libmonero_wallet2_api_c.so; fi
+          done
+          ls -la $J/*
+
       - name: Read version
         id: ver
         run: |
