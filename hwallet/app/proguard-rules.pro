@@ -21,3 +21,10 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+# v1.8.12 (push 17): JNA + the native Monero engine interface (method names must match the C symbols)
+-keep class com.sun.jna.** { *; }
+-keep class * implements com.sun.jna.** { *; }
+-keep interface app.hwallet.HwXmrLib { *; }
+-dontwarn java.awt.**
+-dontwarn com.sun.jna.**

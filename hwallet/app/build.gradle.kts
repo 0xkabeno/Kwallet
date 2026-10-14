@@ -102,7 +102,12 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { buildConfig = true }
     lint { abortOnError = false; checkReleaseBuilds = false }
-    packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+    packaging {
+        resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        // v1.8.12 (push 17): the native Monero engine (monero_c wallet2, ~30 MB per ABI) is stored compressed in the APK and
+        // extracted at install (much smaller download); CI puts the verified, stripped libraries in src/main/jniLibs
+        jniLibs.useLegacyPackaging = true
+    }
 }
 
 dependencies {
@@ -119,6 +124,8 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.4")
     implementation("androidx.camera:camera-view:1.3.4")
     implementation("com.google.zxing:core:3.5.3")
+    // v1.8.12 (push 17, R1): JNA calls monero_c's C API (libmonero_wallet2_api_c.so) without any C code of ours
+    implementation("net.java.dev.jna:jna:5.14.0@aar")
     // v1.4 (#53): JVM unit test of the shared data speed limit (HwRateTest)
     testImplementation("junit:junit:4.13.2")
 }

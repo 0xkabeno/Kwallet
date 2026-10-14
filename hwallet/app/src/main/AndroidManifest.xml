@@ -70,6 +70,15 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Live wallet balance and price monitoring with incoming payment alerts, chosen by the user" />
         </service>
+        <!-- v1.8.12 (push 17): the native Monero sync keeps running to the chain tip (screen off, app in the background) -->
+        <service
+            android:name=".HwXmrService"
+            android:exported="false"
+            android:stopWithTask="false"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Monero wallet synchronisation: scanning blocks with the user's view key until the wallet reaches the chain tip, started by the user's wallet" />
+        </service>
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

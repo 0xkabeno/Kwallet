@@ -11,6 +11,8 @@ class BootReceiver : BroadcastReceiver() {
             val a = intent.action ?: return
             if (a == Intent.ACTION_BOOT_COMPLETED || a == Intent.ACTION_MY_PACKAGE_REPLACED || a == "android.intent.action.QUICKBOOT_POWERON" || a == Intent.ACTION_LOCKED_BOOT_COMPLETED) {
                 HwLiveService.start(context, false)
+                /* v1.8.12 (push 17): a Monero sync that had not reached the chain tip goes on after a reboot / update */
+                try { if (HwXmrN.wanted(context)) HwXmrService.kick(context) } catch (_: Throwable) {}
             }
         } catch (e: Throwable) { HwApp.write(context, "note: boot restart failed", e.toString()) }
     }

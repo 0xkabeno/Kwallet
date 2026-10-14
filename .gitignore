@@ -10,3 +10,4 @@ local.properties
 captures/
 hwallet/app/build/
 __pycache__/
+hwallet/app/src/main/jniLibs/

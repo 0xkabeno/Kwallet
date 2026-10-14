@@ -179,6 +179,22 @@ class HwActivity : FragmentActivity() {
             }
         }
 
+        /** v1.8.12 (push 17, R1): the native Monero engine (monero_c wallet2). xmrNOk: the library loaded on this phone.
+         *  xmrN: one engine op, answered later through window.hwXmrN(id, ok, json). xmrNStatus: cached heights, never blocks. */
+        @android.webkit.JavascriptInterface
+        fun xmrNOk(): Boolean = try { HwXmrN.available(this@HwActivity) } catch (_: Throwable) { false }
+
+        @android.webkit.JavascriptInterface
+        fun xmrNStatus(): String = HwXmrN.status()
+
+        @android.webkit.JavascriptInterface
+        fun xmrN(op: String, args: String, cb: String) {
+            val id = cb.replace(Regex("[^A-Za-z0-9_-]"), "").take(32)
+            HwXmrN.call(this@HwActivity, op.take(16), args) { ok, json ->
+                runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript("window.hwXmrN&&hwXmrN(" + JSONObject.quote(id) + "," + ok + "," + JSONObject.quote(json) + ")", null) } catch (_: Throwable) {} }
+            }
+        }
+
         /** v1.8.8 (R9c): the Monero worker's direct node path token (this app run only) */
         @android.webkit.JavascriptInterface
         fun xmrTok(): String = xmrToken

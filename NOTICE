@@ -8,6 +8,13 @@ Monero engine (web/xmr/hwxmr.js, since v3.98; the same file ships in Hwallet as 
   hwxmr.js (axios, decimal.js, crypto-js, buffer, safe-buffer: MIT; ieee754: BSD-3-Clause).
   In Kwallet the engine runs with no network access: it only signs Monero transactions offline.
 
+Sui, Cardano and XRP Ledger dApp signing (since Kwallet v3.98.12), inlined in web/index.html as "KwVend17":
+  @mysten/sui (BCS schemas of Sui transactions: @mysten/sui/bcs and @mysten/bcs) - Apache License 2.0,
+    Copyright (c) Mysten Labs, Inc. - https://github.com/MystenLabs/ts-sdks
+  ripple-binary-codec - ISC License, Copyright (c) 2017-2025 Ripple Labs Inc. and XRPL contributors -
+    https://github.com/XRPLF/xrpl.js (and its dependencies @xrplf/isomorphic, @noble/hashes: MIT; bignumber.js: MIT)
+  Bundled with esbuild, unmodified. Kwallet only decodes and encodes with them; keys and signatures are Kwallet's own code.
+
 Inter typeface (since Kwallet v3.98.2 / Hwallet v1.8.2): Inter 4.1, Copyright (c) 2016 The Inter Project Authors,
   https://github.com/rsms/inter - SIL Open Font License 1.1 (full text below). Inlined in both apps as a woff2 subset
   (Latin, punctuation, arrows, subscript digits; variable weight 100-900, optical size fixed at 14). The subset keeps the
