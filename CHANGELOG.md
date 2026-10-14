@@ -1,5 +1,29 @@
 # Changelog
 
+## Kwallet v3.98.12 · Hwallet v1.8.12 (2026-10-14, pre-release)
+
+Pre-release for phone testing. Not tested on a device or emulator: only static checks (`node --check` of every inline script in both apps and of the JS modules, CSS brace balance and a full CSS parse of both apps), Node tests of Kwallet's new signers against the official libraries, mock dApps that drive Hwallet's injected providers with the dApp-side libraries, a scripted run of Kwallet's approval sheet in headless Chromium, and the CI build.
+
+### Native Monero engine (Hwallet)
+- Monero now syncs with monero_c (the wallet2 library Cake Wallet uses, LGPL-3.0) instead of the WebAssembly engine. In a desktop benchmark on the same node and wallet it scanned about 7 to 8 times faster (about 260 blocks/s instead of about 34) and reached the restore height about 6 times sooner.
+- The scan runs in a foreground service with a progress notification and keeps going with the screen off until it reaches the chain tip. It resumes after a reboot and saves its progress every 90 seconds. The view key is sealed with the Android Keystore.
+- The node traffic goes through Hwallet's own HTTPS client with a node list, failover and backoff (wallet2 only talks to a local relay).
+- "Sync spent status" freezes outputs whose key images the node reports as spent (a view-only wallet2 cannot import key images on its own). Submitting a transaction signed by Kwallet imports all its key images.
+- The WebAssembly engine stays as the fallback when the native library is missing (for example on an unsupported ABI).
+
+### Connect Wallet for Sui, Cardano and the XRP Ledger
+- Sui: Hwallet registers as a Wallet Standard wallet (connect, signPersonalMessage, signTransaction, signAndExecuteTransaction and the legacy *TransactionBlock calls, mainnet only). Hwallet builds and dry-runs the transaction with its node, Kwallet signs, Hwallet executes.
+- Cardano: a CIP-30 wallet at `window.cardano.hwallet` (enable, getNetworkId, addresses, balance, UTxOs, collateral, signTx, signData, submitTx).
+- XRP Ledger: Hwallet answers GemWallet's page protocol, so apps built on `@gemwallet/api` see it as GemWallet (address, network, public key, signMessage, signTransaction, submitTransaction, sendPayment, setTrustline). Hwallet fills in Fee, Sequence and LastLedgerSequence.
+- Kwallet's approval sheet shows these requests like the others: the app and its address, the decoded transaction (Sui commands, Cardano outputs, XRP fields), the amounts, the network fee and your balance. When Kwallet cannot see what a smart contract will do (a Sui Move call with no simulation, Cardano script outputs, certificates or minting, an unknown XRP transaction type), it shows a blind-signing warning. Kwallet decodes every request itself and signs only what it decoded. It refuses a request from another account, a signData request for another address, and an XRP fee above 2 XRP.
+
+### Known issues
+- Nothing in this release was run on a device or emulator; the phone test decides when it becomes the latest release.
+- Native Monero: building an unsigned transaction with a funded wallet was not tested (no funds). The spent status of a view-only wallet comes from the node's key image check ("Sync spent status").
+- Cardano: Kwallet signs with the payment key only (no stake-key witness for certificates or reward withdrawals), and it sees where ADA goes but not the value of the inputs it spends.
+- Sui: amounts beyond plain SUI transfers come from Hwallet's dry run. Sui's public fullnode JSON-RPC is deprecated, so Hwallet uses https://sui-rpc.publicnode.com.
+- XRP Ledger: only apps that use GemWallet's protocol are supported (there is no common injected XRPL standard).
+
 ## Kwallet v3.98.11 · Hwallet v1.8.11 (2026-10-14, pre-release)
 
 Pre-release for phone testing. Not tested on a device or emulator by the build: only static checks (`node --check` of every inline script in both apps and of the translation engine, the Monero engine and the browser provider, CSS brace balance and a full CSS parse of both apps), a scripted run of Hwallet's pull-to-refresh state machine in all three pull styles, and the CI build.

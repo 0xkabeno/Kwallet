@@ -89,6 +89,22 @@ v1.8 / Kwallet v3.98 Monero engine (hwallet/web/xmr/hwxmr.js and web/xmr/hwxmr.j
   Bundled with esbuild; the only change is the network layer: every request goes back to the app (Hwallet's native client;
   in Kwallet nothing, it is offline).
 
+v1.8.12 native Monero engine (Android only):
+  monero_c v0.18.4.6-RC2 (libmonero_wallet2_api_c.so for arm64-v8a, armeabi-v7a and x86_64) by Czarek Nakamoto (MrCyjaneK),
+  https://github.com/MrCyjaneK/monero_c - GNU Lesser General Public License v3.0 (LGPL-3.0). It contains the Monero
+  Project's wallet2 (BSD 3-Clause License, Copyright (c) 2014-2025 The Monero Project) and its dependencies (Boost: Boost
+  Software License 1.0; libsodium: ISC; OpenSSL: Apache-2.0; unbound: BSD; zeromq: MPL-2.0; and others listed by monero_c).
+  The library is not modified: CI downloads the pinned release bundle, checks the SHA-256 of each .so, strips debug symbols
+  and packages it as a separate shared library that Hwallet loads at run time, so it can be replaced with a compatible
+  build (LGPL-3.0 section 4). Source: https://github.com/MrCyjaneK/monero_c/tree/v0.18.4.6-RC2.
+  JNA 5.14.0 (https://github.com/java-native-access/jna) - Apache License 2.0 (dual licensed Apache-2.0 / LGPL-2.1).
+
+v1.8.12 Sui dApps (hwallet/web/index.html, "HwSui"): @mysten/sui (Transaction builder and JSON-RPC client) and its
+  dependencies (@mysten/bcs, @mysten/utils: Apache-2.0; @noble/hashes, @noble/curves, @scure/base, valibot: MIT),
+  Apache License 2.0, Copyright (c) Mysten Labs, Inc., https://github.com/MystenLabs/ts-sdks. Bundled with esbuild, unmodified.
+  The XRP Ledger provider speaks GemWallet's page protocol (@gemwallet/api, MIT, https://github.com/GemWallet/gemwallet-extension);
+  no GemWallet code is included.
+
 v1.8.2 / Kwallet v3.98.2 typeface: Inter 4.1, Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter),
   SIL Open Font License 1.1, inlined as a woff2 subset (face name "InterE"). The full license text is in the root NOTICE file.
 
