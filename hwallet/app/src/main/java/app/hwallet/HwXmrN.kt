@@ -218,9 +218,10 @@ object HwXmrN {
         val o = JSONObject(cfg.toString()); o.put("view", seal(cfg.optString("view")))
         prefs(c).edit().putString("cfg", o.toString()).putBoolean("want", true).apply()
     }
-    private fun loadCfg(c: Context): JSONObject? = try {
-        val o = JSONObject(prefs(c).getString("cfg", null) ?: return null); o.put("view", unseal(o.optString("view"))); if (o.optString("view").length == 64) o else null
-    } catch (_: Throwable) { null }
+    private fun loadCfg(c: Context): JSONObject? {
+        val raw = try { prefs(c).getString("cfg", null) } catch (_: Throwable) { null } ?: return null
+        return try { val o = JSONObject(raw); o.put("view", unseal(o.optString("view"))); if (o.optString("view").length == 64) o else null } catch (_: Throwable) { null }
+    }
 
     private fun sha(s: String): String = MessageDigest.getInstance("SHA-256").digest(s.toByteArray()).joinToString("") { "%02x".format(it) }.take(20)
 
