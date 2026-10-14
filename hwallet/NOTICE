@@ -99,3 +99,19 @@ uBlock filters, uBlock filters - Privacy, Badware risks, Quick fixes and Unbreak
 EasyList and EasyPrivacy (https://easylist.to, GPL-3.0-or-later / CC BY-SA 3.0), Peter Lowe's Ad and tracking
 server list (https://pgl.yoyo.org/adservers/) and the URLhaus filter (https://gitlab.com/malware-filter, CC0 / MIT).
 The lists are not bundled in the APK; they are fetched from their publishers and cached on the phone.
+
+Page translation (v1.8.8)
+-------------------------
+hwallet/web/tr/hwtr.js is a fork of Mozilla's Firefox Translations engine:
+  - bergamot-translator.js, the Emscripten glue of the Bergamot translator v0.6.0+1de4a085d (https://github.com/mozilla/bergamot-translator),
+    taken unmodified from Firefox (toolkit/components/translations/bergamot-translator/, tag FIREFOX_143_0_RELEASE,
+    https://github.com/mozilla-firefox/firefox). Mozilla Public License 2.0, http://mozilla.org/MPL/2.0/.
+  - Hwallet's worker code, derived from Firefox's translations-engine.worker.js (same tag, MPL-2.0): model memory
+    alignment, the Marian configuration and the pivot-through-English translation. These files remain under the MPL-2.0;
+    their source is this file itself (not minified).
+  - The WebAssembly engine (bergamot-translator.wasm, MPL-2.0; it includes Marian NMT, MIT License, and its dependencies)
+    and the language models (Mozilla's translation models, published in Firefox's Remote Settings "translations-models"
+    collection under the Mozilla Public License 2.0) are not bundled in the APK: Hwallet downloads them on first use from
+    https://firefox-settings-attachments.cdn.mozilla.net/, checks each file's SHA-256 against Mozilla's record and keeps
+    them on the phone.
+

@@ -92,7 +92,7 @@ class HwActivity : FragmentActivity() {
         js = { s -> runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript(s, null) } catch (_: Throwable) {} } },
         onWc = { s -> wcLink(s) }).also { br = it }
 
-    companion object { const val KWALLET = "app.kwallet" }
+    companion object { const val KWALLET = "app.kwallet"; const val EXTRA_MAX = 120000 }
     private lateinit var root: FrameLayout
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     @Volatile var insetCss = "{\"t\":0,\"r\":0,\"b\":0,\"l\":0}"
@@ -103,9 +103,55 @@ class HwActivity : FragmentActivity() {
 
     /** Kwallet's sign page: one request at a time, answered only to this app. */
     private val kwSign = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
-        signing = false
-        val json = res.data?.getStringExtra("res") ?: "{\"status\":\"rejected\"}"
+        signing = false; kwSeq++
+        val d = res.data
+        val rid = kwRid
+        /* v1.8.8 (push 13, R11a): a large answer (signed Monero set) is in the answer file; the page reads it from /kwres/<id> */
+        val json = if (d?.getBooleanExtra("resf", false) == true && rid.isNotEmpty() && KwxProvider.file(this, "res", rid).length() > 0L)
+            "{\"status\":\"file\",\"f\":${JSONObject.quote(rid)}}"
+        else d?.getStringExtra("res") ?: "{\"status\":\"rejected\"}"
+        if (rid.isNotEmpty()) { try { KwxProvider.file(this, "req", rid).delete() } catch (_: Throwable) {} }
         web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote(json)})", null)
+    }
+    /* v1.8.8 (R9a / R11): the open request's id (handoff file names), a sequence for the open watchdog, and whether Hwallet
+       was paused since the launch (it is, as soon as Kwallet's sheet comes up over it) */
+    @Volatile private var kwRid = ""
+    @Volatile private var kwSeq = 0
+    @Volatile private var kwPaused = false
+    /** R9c: the token the Monero worker uses for its direct node path (/xmrq/<token>); new for every app start */
+    private val xmrToken: String = java.util.UUID.randomUUID().toString().replace("-", "") + java.util.UUID.randomUUID().toString().replace("-", "").take(8)
+    private fun signFail(why: String) {
+        signing = false; kwSeq++
+        web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote(JSONObject().put("status", "error").put("error", why).toString())})", null)
+    }
+    /** v1.8.8 (R11f): Kwallet's version code (0 = not installed) */
+    private fun kwCode(): Long = try { androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(packageManager.getPackageInfo(KWALLET, 0)) } catch (_: Exception) { 0L }
+    private fun launchSign(json: String, rid: String, file: Boolean) {
+        val code = kwCode()
+        if (code <= 0L) { web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote("{\"status\":\"missing\"}")})", null); return }
+        val big = json.length > EXTRA_MAX
+        /* a Kwallet before 3.98.8 only reads the request from the Intent extra: a large one cannot reach it */
+        if (big && code < 39808L) { signFail("This transaction is too large for Kwallet " + (try { packageManager.getPackageInfo(KWALLET, 0).versionName } catch (_: Exception) { "" }) + ". Update Kwallet to 3.98.8 or later, then try again"); return }
+        if (big && !file) { signFail("Hwallet could not hand this request to Kwallet (storage full?). Free some space and try again"); return }
+        val i = Intent().setClassName(KWALLET, "$KWALLET.SignActivity").putExtra("t0", android.os.SystemClock.uptimeMillis()).putExtra("rid", rid)
+        if (!big) i.putExtra("req", json)
+        if (file) {
+            val rq = KwxProvider.uri("req", rid); val rs = KwxProvider.uri("res", rid)
+            i.putExtra("reqUri", rq.toString()).putExtra("resUri", rs.toString())
+            i.clipData = android.content.ClipData.newRawUri("kwx", rq).apply { addItem(android.content.ClipData.Item(rs)) }
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        }
+        kwRid = rid
+        /* P2a (#97a): no window animation (Kwallet's page slides its own sheet up over this screen, which stays as it is) */
+        try {
+            signing = true; kwPaused = false; val seq = ++kwSeq
+            kwSign.launch(i, androidx.core.app.ActivityOptionsCompat.makeCustomAnimation(this@HwActivity, 0, 0))
+            /* R11 (never silent): if Kwallet's sheet has not come up over Hwallet within 12 s, say so and give Hwallet back */
+            ui.postDelayed({ if (signing && seq == kwSeq && !kwPaused) signFail("Kwallet did not open. Open Kwallet once, then try again") }, 12000L)
+        } catch (e: Exception) {
+            signing = false
+            signFail("Kwallet could not be opened (" + (e.javaClass.simpleName) + "). Try again")
+        }
     }
     /* v1.3 (#46): enough threads for every chain's history and balances at once (was 6, which queued the Activity tab) */
     private val net = java.util.concurrent.Executors.newFixedThreadPool(24)
@@ -118,17 +164,24 @@ class HwActivity : FragmentActivity() {
         /** Opens Kwallet's sign page with one request (sign or pair). The result comes back through window.hwSignDone. */
         @android.webkit.JavascriptInterface
         fun sign(json: String) {
-            runOnUiThread {
-                val i = Intent().setClassName(KWALLET, "$KWALLET.SignActivity").putExtra("req", json.take(400000)).putExtra("t0", android.os.SystemClock.uptimeMillis())
-                val ok = try { packageManager.getPackageInfo(KWALLET, 0); true } catch (_: Exception) { false }
-                if (!ok) { web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote("{\"status\":\"missing\"}")})", null); return@runOnUiThread }
-                /* P2a (#97a): no window animation (Kwallet's page slides its own sheet up over this screen, which stays as it is) */
-                try { signing = true; kwSign.launch(i, androidx.core.app.ActivityOptionsCompat.makeCustomAnimation(this@HwActivity, 0, 0)) } catch (_: Exception) {
-                    signing = false
-                    web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote("{\"status\":\"missing\"}")})", null)
-                }
+            /* v1.8.8 (push 13, R9a / R11a): every request is also written to a handoff file (off the UI thread) and passed as a
+             * content:// URI with a one-shot grant, so its size no longer matters; small ones still ride in the extra too
+             * (an older Kwallet reads only that). */
+            net.execute {
+                var rid = ""
+                try { rid = JSONObject(json).optString("id", "") } catch (_: Exception) {}
+                rid = rid.replace(Regex("[^A-Za-z0-9_-]"), "").take(48)
+                if (rid.length < 4) rid = java.util.UUID.randomUUID().toString().replace("-", "").take(24)
+                var file = false
+                try { KwxProvider.clean(this@HwActivity); KwxProvider.file(this@HwActivity, "res", rid).delete(); KwxProvider.file(this@HwActivity, "req", rid).writeText(json); file = true } catch (_: Throwable) {}
+                val r = rid; val f = file
+                runOnUiThread { launchSign(json, r, f) }
             }
         }
+
+        /** v1.8.8 (R9c): the Monero worker's direct node path token (this app run only) */
+        @android.webkit.JavascriptInterface
+        fun xmrTok(): String = xmrToken
 
         /** wave B (#97b): after a WalletConnect answer: back to the dApp when Hwallet was opened by its link (within 3 min).
          *  redirect = the dApp's metadata.redirect.native (a deep link), else the previous app comes back (task to back). */
@@ -335,6 +388,19 @@ class HwActivity : FragmentActivity() {
         fun brUaSet(on: Boolean, id: String, custom: String) { HwUa.init(this@HwActivity); HwUa.set(on, id.take(24), custom); br?.applyUa() }
         @android.webkit.JavascriptInterface
         fun brReply(id: String, json: String) { if (json.length < 2_000_000) br?.reply(id, json) }
+        /** v1.8.8 (R4): run one of Hwallet's own scripts in a tab's page (translation: read text, write translations, restore,
+         *  detect the language); the result comes back through window.hwBrEvalDone(id, seq, result) */
+        @android.webkit.JavascriptInterface
+        fun brEval(id: String, seq: Int, js: String) { if (js.length < 2_000_000) br?.evalIn(id, seq, js) }
+        /** v1.8.8 (R4b): desktop view for one tab (the Windows Chrome preset, reload) */
+        @android.webkit.JavascriptInterface
+        fun brDesk(id: String, on: Boolean) { br?.desk(id, on) }
+        /** v1.8.8 (R4a): bookmarks, kept natively (title + url list, newest first) */
+        @android.webkit.JavascriptInterface
+        fun brBm(): String = getSharedPreferences("hwbm", MODE_PRIVATE).getString("list", "[]") ?: "[]"
+        @android.webkit.JavascriptInterface
+        fun brBmSet(json: String) { if (json.length < 400_000) try { org.json.JSONArray(json); getSharedPreferences("hwbm", MODE_PRIVATE).edit().putString("list", json).apply() } catch (_: Exception) {} }
+
         @android.webkit.JavascriptInterface
         fun brEmit(origin: String, json: String) { if (json.length < 100_000) br?.emit(origin, json) }
 
@@ -633,6 +699,9 @@ class HwActivity : FragmentActivity() {
         web.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
                 if (request.url.host == "appassets.androidplatform.net" && (request.url.path ?: "").startsWith("/xmrnet/")) xmrServe((request.url.path ?: "").removePrefix("/xmrnet/"))
+                else if (request.url.host == "appassets.androidplatform.net" && (request.url.path ?: "").startsWith("/xmrq/")) xmrDirect(request.url)
+                else if (request.url.host == "appassets.androidplatform.net" && (request.url.path ?: "").startsWith("/kwres/")) kwResServe((request.url.path ?: "").removePrefix("/kwres/"))
+                else if (request.url.host == "appassets.androidplatform.net" && (request.url.path ?: "").startsWith("/hwdl/")) trDownload(request.url)
                 else if (request.url.host == "appassets.androidplatform.net") assets.shouldInterceptRequest(request.url)?.also { if (request.url.path?.endsWith(".js") == true) it.mimeType = "text/javascript" } else limited(request)
 
             override fun onPageFinished(view: WebView, url: String) { pushInsets(); pageReady = true; root.invalidate() }
@@ -917,6 +986,57 @@ class HwActivity : FragmentActivity() {
         } catch (e: Throwable) { android.util.Log.w("HwTx", "notify failed: $e") }
     }
     private val xmrPend = java.util.concurrent.ConcurrentHashMap<String, Array<String>>()
+    /** v1.8.8 (R9c): GET /xmrq/<token>?m=GET|POST&ct=b|j&u=<https url>&b=<base64url body>, fetched by the Monero worker itself.
+     *  Every answer carries X-Hw: 1 so the worker can tell this path works in this WebView. */
+    private fun xmrDirect(u: Uri): WebResourceResponse {
+        val hdr = mapOf("Cache-Control" to "no-store", "X-Hw" to "1")
+        val none = { code: Int, why: String -> WebResourceResponse("text/plain", "utf-8", code, why, hdr, java.io.ByteArrayInputStream(ByteArray(0))) }
+        val tok = (u.path ?: "").removePrefix("/xmrq/")
+        if (tok != xmrToken) return none(403, "Forbidden")
+        val url = u.getQueryParameter("u") ?: ""
+        if (!url.startsWith("https://")) return none(400, "Bad Request")
+        val m = if (u.getQueryParameter("m") == "GET") "GET" else "POST"
+        val ct = if (u.getQueryParameter("ct") == "b") "application/octet-stream" else "application/json"
+        return try {
+            val b64 = u.getQueryParameter("b") ?: ""
+            val bytes = if (b64.isEmpty()) ByteArray(0) else android.util.Base64.decode(b64, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING)
+            val rb = okhttp3.Request.Builder().url(url).header("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME)
+            if (m == "POST") rb.post(bytes.toRequestBody(ct.toMediaTypeOrNull()))
+            val r = HwNet.withTimeout(60000).newCall(rb.build()).execute()
+            val code = r.code
+            if (code < 200 || code > 599 || code in 300..399) { r.close(); return none(502, "Bad Gateway") }
+            val body = r.body ?: run { r.close(); return none(502, "Bad Gateway") }
+            WebResourceResponse((r.header("Content-Type") ?: "application/octet-stream").substringBefore(';').trim().ifEmpty { "application/octet-stream" }, null, code,
+                r.message.ifBlank { if (code == 200) "OK" else "Error" }, hdr, body.byteStream())
+        } catch (_: Throwable) { none(502, "Bad Gateway") }
+    }
+    /** v1.8.8 (R4): the translator's downloads (engine + language models) from Mozilla's public model registry, which sends
+     *  no CORS header. GET /hwdl/<token>?u=<https url>; only Mozilla's two translation hosts; streamed, never stored here. */
+    private fun trDownload(u: Uri): WebResourceResponse {
+        val hdr = mapOf("Cache-Control" to "no-store", "X-Hw" to "1")
+        val none = { code: Int -> WebResourceResponse("text/plain", "utf-8", code, if (code == 403) "Forbidden" else "Bad Gateway", hdr, java.io.ByteArrayInputStream(ByteArray(0))) }
+        if ((u.path ?: "").removePrefix("/hwdl/") != xmrToken) return none(403)
+        val url = u.getQueryParameter("u") ?: return none(403)
+        val host = try { Uri.parse(url).host ?: "" } catch (_: Exception) { "" }
+        if (!url.startsWith("https://") || (host != "firefox-settings-attachments.cdn.mozilla.net" && host != "firefox.settings.services.mozilla.com")) return none(403)
+        return try {
+            val r = HwNet.withTimeout(120000).newCall(okhttp3.Request.Builder().url(url).header("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME).build()).execute()
+            val body = r.body ?: run { r.close(); return none(502) }
+            if (r.code != 200) { r.close(); return none(502) }
+            val h = HashMap(hdr); r.header("Content-Length")?.let { h["Content-Length"] = it }
+            WebResourceResponse("application/octet-stream", null, 200, "OK", h, body.byteStream())
+        } catch (_: Throwable) { none(502) }
+    }
+    /** v1.8.8 (R11a): Kwallet's large answer, read once by the page and then deleted */
+    private fun kwResServe(id: String): WebResourceResponse {
+        val none = WebResourceResponse("text/plain", "utf-8", 404, "Not Found", mapOf("Cache-Control" to "no-store"), java.io.ByteArrayInputStream(ByteArray(0)))
+        if (!KwxProvider.ID.matches(id) || id != kwRid) return none
+        val f = KwxProvider.file(this, "res", id)
+        return try {
+            val bytes = f.readBytes(); f.delete()
+            WebResourceResponse("application/json", "utf-8", 200, "OK", mapOf("Cache-Control" to "no-store"), java.io.ByteArrayInputStream(bytes))
+        } catch (_: Throwable) { none }
+    }
     /** v1.8 (Monero): answers the page's GET /xmrnet/<id> with the node's reply to the request registered by xmrPrep (runs off the UI thread) */
     private fun xmrServe(id: String): WebResourceResponse {
         val none = { code: Int, why: String -> WebResourceResponse("text/plain", "utf-8", code, why, mapOf("Cache-Control" to "no-store"), java.io.ByteArrayInputStream(ByteArray(0))) }
@@ -953,7 +1073,7 @@ class HwActivity : FragmentActivity() {
         } catch (e: Throwable) { android.util.Log.w("HwIn", "notify failed: $e") }
     }
     /* P2a (#95): while Kwallet's sheet is over Hwallet the dApp tab stays live and visible behind it (no pause, no save) */
-    override fun onPause() { super.onPause(); fgNow = false; if (!signing) { web.onPause(); br?.pause() } }
+    override fun onPause() { super.onPause(); fgNow = false; kwPaused = true; if (!signing) { web.onPause(); br?.pause() } }
     @Volatile private var warmAt = 0L
     fun warmKwallet() {
         val now = android.os.SystemClock.uptimeMillis(); if (now - warmAt < 30000) return; warmAt = now

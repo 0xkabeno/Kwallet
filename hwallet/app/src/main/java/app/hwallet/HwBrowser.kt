@@ -77,6 +77,7 @@ class HwBrowser(
         var lastOrigin = ""
         val pending = HashMap<String, Pair<JavaScriptReplyProxy, String>>()
         var uaH: androidx.webkit.ScriptHandler? = null   // v1.8.7: navigator.* to match the chosen user agent
+        var desk = false   // v1.8.8 (R4b): desktop view for this tab
     }
 
     private val ui = Handler(Looper.getMainLooper())
@@ -385,6 +386,7 @@ class HwBrowser(
         if (isWeb(u)) t.url = u
         ev(JSONObject().put("t", "nav").put("id", t.id).put("url", t.url).put("title", w.title ?: "")
             .put("back", w.canGoBack()).put("fwd", w.canGoForward()).put("loading", loading).put("progress", progress).put("offline", t.offline)
+            .put("desk", t.desk)
             .put("blk", try { HwShield.count(Uri.parse(t.url).host?.lowercase() ?: "") } catch (_: Throwable) { 0 }).put("shield", HwShield.on() && !(try { HwShield.siteOff(Uri.parse(t.url).host?.lowercase() ?: "") } catch (_: Throwable) { false })))
     }
 
@@ -407,7 +409,7 @@ class HwBrowser(
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             if (Build.VERSION.SDK_INT >= 26) safeBrowsingEnabled = true
             if (baseUa == null) baseUa = userAgentString
-            userAgentString = HwUa.ua(baseUa ?: userAgentString)   // Off: the WebView's own minus "; wv" (some dApps refuse a "WebView" user agent)
+            userAgentString = if (t.desk) HwUa.DESK.ua else HwUa.ua(baseUa ?: userAgentString)   // Off: the WebView's own minus "; wv" (some dApps refuse a "WebView" user agent)
             cacheMode = mode(t)
         }
         w.isVerticalScrollBarEnabled = false
@@ -535,11 +537,30 @@ class HwBrowser(
     }
     private fun uaScript(t: Tab, w: WebView) {
         try { t.uaH?.remove() } catch (_: Throwable) {}; t.uaH = null
-        val s = HwUa.script() ?: return
+        val s = (if (t.desk) HwUa.scriptFor(HwUa.DESK) else HwUa.script()) ?: return
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) try { t.uaH = WebViewCompat.addDocumentStartJavaScript(w, s, setOf("*")) } catch (e: Throwable) { Log.w(TAG, "ua script", e) }
     }
     /** v1.8.7: a new user agent (Settings or the browser menu) applies to every open tab; the page on screen reloads */
-    fun applyUa() { post { tabs.values.forEach { t -> t.web?.let { w -> w.settings.userAgentString = HwUa.ua(baseUa ?: w.settings.userAgentString); uaScript(t, w); if (w.visibility == View.VISIBLE) w.reload() } } } }
+    fun applyUa() { post { tabs.values.forEach { t -> t.web?.let { w -> w.settings.userAgentString = if (t.desk) HwUa.DESK.ua else HwUa.ua(baseUa ?: w.settings.userAgentString); uaScript(t, w); if (w.visibility == View.VISIBLE) w.reload() } } } }
+    /** v1.8.8 (R4b): desktop view on/off for one tab: the desktop user agent + navigator hints, a wide viewport, reload */
+    fun desk(id: String, on: Boolean) {
+        post {
+            val t = tabs[id] ?: return@post; val w = t.web ?: return@post
+            if (t.desk == on) return@post
+            t.desk = on
+            w.settings.userAgentString = if (on) HwUa.DESK.ua else HwUa.ua(baseUa ?: w.settings.userAgentString)
+            w.settings.useWideViewPort = true; w.settings.loadWithOverviewMode = true
+            uaScript(t, w); live(t, w); w.reload(); navEv(t, w, true, 10)
+        }
+    }
+    /** v1.8.8 (R4): one of Hwallet's own scripts in the tab's page; the result goes back to Hwallet's page */
+    fun evalIn(id: String, seq: Int, code: String) {
+        post {
+            val t = tabs[id]; val w = t?.web
+            if (w == null) { js("window.hwBrEvalDone&&hwBrEvalDone(${q(id)},$seq,null)"); return@post }
+            w.evaluateJavascript(code) { r -> js("window.hwBrEvalDone&&hwBrEvalDone(${q(id)},$seq,${q(r ?: "null")})") }
+        }
+    }
     /** v1.8.7: blocker switched on/off, or this site's shield: reload the page on screen */
     fun reloadShown() { post { visible?.let { tabs[it]?.web?.reload() } } }
 
