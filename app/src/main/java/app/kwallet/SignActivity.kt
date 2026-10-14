@@ -32,6 +32,9 @@ import org.json.JSONObject
 class SignActivity : KwActivity() {
     private var req = ""
     private var reqId = ""
+    /** v3.98.8 (push 13, R9a / R11a): Hwallet's handoff files (content:// with a one-shot grant); null = an older Hwallet */
+    private var resUri: android.net.Uri? = null
+    private var rid = ""
     private var replied = false
     private var feedOn = false
     private var wv: WebView? = null
@@ -73,7 +76,7 @@ class SignActivity : KwActivity() {
         if (!BuildConfig.E2E) window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         if (Build.VERSION.SDK_INT >= 31) window.setHideOverlayWindows(true)
         val ok = callerOk(); callerChecked = ok
-        req = if (ok) (intent.getStringExtra("req") ?: "").take(400000) else ""   /* v3.98: a Monero request carries the unsigned set + exported outputs */
+        req = if (ok) readReq() else ""   /* v3.98: a Monero request carries the unsigned set + exported outputs; v3.98.8: from a file when large */
         reqId = try { JSONObject(req).optString("id", "") } catch (_: Exception) { "" }
         setResult(RESULT_CANCELED, Intent().putExtra("res", if (ok) "{\"status\":\"rejected\"}" else "{\"status\":\"refused\",\"error\":\"Only Hwallet signed with the Kwallet key can ask Kwallet to sign\"}"))
         super.onCreate(null)
@@ -114,10 +117,36 @@ class SignActivity : KwActivity() {
     }
     internal fun replyFromPage(json: String) = reply(json)
 
+    /** v3.98.8: the request from Hwallet's file when it sent one (no size cap), else the Intent extra as before */
+    private fun readReq(): String {
+        rid = (intent.getStringExtra("rid") ?: "").take(64)
+        val ru = intent.getStringExtra("resUri"); val qu = intent.getStringExtra("reqUri")
+        resUri = try { if (ru != null && ru.startsWith("content://app.hwallet.kwx/res/")) android.net.Uri.parse(ru) else null } catch (_: Exception) { null }
+        if (qu != null && qu.startsWith("content://app.hwallet.kwx/req/")) {
+            try {
+                contentResolver.openInputStream(android.net.Uri.parse(qu))?.use { st ->
+                    val b = st.readBytes()
+                    if (b.size in 2..(24 * 1024 * 1024)) return String(b, Charsets.UTF_8)
+                }
+            } catch (e: Exception) { Log.w("KwSign", "handoff read failed: $e") }
+        }
+        return (intent.getStringExtra("req") ?: "").take(400000)
+    }
+
     private fun reply(json: String) {
         if (replied) return
         replied = true
-        setResult(RESULT_OK, Intent().putExtra("res", json.take(400000)))
+        /* v3.98.8 (R11a): a large answer (signed Monero set) goes back through Hwallet's answer file; a small one in the extra */
+        var out = Intent().putExtra("res", "{\"status\":\"error\",\"error\":\"Kwallet could not hand the answer back. Try again\"}")
+        val ru = resUri
+        if (json.length <= 120000) out = Intent().putExtra("res", json)
+        else if (ru != null) {
+            try {
+                contentResolver.openOutputStream(ru, "wt")?.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+                out = Intent().putExtra("resf", true).putExtra("rid", rid)
+            } catch (e: Exception) { Log.w("KwSign", "handoff write failed: $e") }
+        } else if (json.length <= 400000) out = Intent().putExtra("res", json)
+        setResult(RESULT_OK, out)
         finish()
         @Suppress("DEPRECATION") overridePendingTransition(0, 0)
     }

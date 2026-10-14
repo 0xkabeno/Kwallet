@@ -1,5 +1,46 @@
 # Changelog
 
+## Kwallet v3.98.8 · Hwallet v1.8.8 (2026-10-14, pre-release)
+
+Pre-release for phone testing. Not tested on a device or emulator by the build: only static checks (inline JS syntax of both apps, CSS brace balance and parse, `node --check` of the Monero and translation engines and the browser provider) and the CI build.
+
+### Monero (snappy)
+- The scan watches only what Hwallet hands out: account 0, the primary address and subaddresses #1 and #2 (lookahead 3), down from 10 accounts x 200+ subaddresses. If Kwallet paired a higher subaddress, the scan grows to cover it (Settings > Monero > Wallet > Addresses scanned). This is a one-time rescan from the restore height; the old, larger caches are deleted.
+- Receive makes new addresses only up to what the scan watches.
+- Fast node path: the Monero worker now talks to Hwallet's native HTTP client directly (OkHttp, keep-alive), instead of every block request going worker -> page -> native. On a WebView that does not route worker requests to the app it falls back to the old path by itself.
+- Sending shows each phase ("Building · fetching decoys 3", "Packing for Kwallet") and has a Cancel button under Continue while Hwallet builds; Cancel restarts the engine from its saved cache, so the scan goes on. A build that runs too long stops with a plain error. After a cancel or an error the scan resumes right away (no 4-minute hold).
+
+### Hwallet <-> Kwallet connection
+- Large requests (a Monero unsigned set plus outputs, often far over 400 kB) and large answers (a signed set) now travel as files through a private content provider in Hwallet with a one-shot URI grant to Kwallet only. The old ~400 kB Intent cap is gone, and nothing is ever dropped silently.
+- If Kwallet's sheet does not come up within 12 s, Hwallet says so and gives the screen back (it used to sit hidden behind a sheet that never came).
+- A large request to a Kwallet older than 3.98.8 gets a one-line fix ("Update Kwallet to 3.98.8 or later"). Small requests still work with older Kwallet builds, and older Hwallet builds still work with this Kwallet.
+
+### Sheets
+- Swipe down to dismiss works on every bottom sheet in both apps (Kwallet's signer, Hwallet's Send, dApp, fee, info and settings sheets): drag the handle, header or content at the top; past 25% of its height or a quick flick = Cancel / close, otherwise it springs back. A sheet that is busy (signing, sending) springs back instead.
+- Send: the Network row is label left, chain icon + name right-aligned, like the Network fee row.
+- Network fee: one short label (Slow / Normal / Fast / Custom). "Custom · saved", "Custom · raised to network min" and the "Live · updated just now" line are gone; live data is a tiny dot. The saved-fee behaviour is unchanged.
+
+### Settings (OG style)
+- Every switch in OG has its real size again (it collapsed to a thin bar, with the knob outside it), in both apps and every theme.
+- OG Settings pages in Hwallet have a side margin, so the cards are inset with their rounded corners.
+
+### Hwallet browser
+- Toolbar: [address bar][Translate][Tabs][menu] with equal gaps; the menu button is no longer clipped.
+- Translation, on the phone, with no popups: the Translate icon flashes bright grey on a page that is not in your language. Tap = the page is translated in place (spinner while the model downloads or works) and new content keeps being translated; tap again = the original comes back and the icon flashes again. Long-press = the menu with the options inline: Translate to (language), Always translate this language, Never translate this site. "Translate pages to" is also in Browser settings and Settings > Browser (default: the phone's language).
+- The translator is a fork of Mozilla's Firefox Translations engine (Bergamot, MPL-2.0) running in a worker. The engine (about 5 MB) and one model per language pair (about 15-40 MB; pairs without English use two) are downloaded once from Mozilla's model registry, checked against their SHA-256 and cached. Page text never leaves the phone.
+- Menu: one nav row across the full width (back, forward, reload, new tab, bookmark star, desktop view), Bookmarks above History and Connected sites, translation options inline.
+- Bookmarks: star the page in the menu; the Bookmarks list opens or deletes them, and the newest show on the new-tab page. Kept by Hwallet itself.
+- Desktop view: one tap per tab (Windows Chrome user agent and hints, then reload), highlighted while on.
+- Compact browser sheets (menu, settings, user agent, bookmarks, connected sites): smaller handle gap, 44 px rows, smaller icon tiles, short 12.5 px footers; the switches have a real track width with the knob inside.
+
+### Known issues
+- Nothing in this release was run on a device or emulator before publishing; the user's phone test decides when it becomes the latest release.
+- Translation: the language is detected from the page's own text (script ranges and common words for about 20 Latin-script languages) and its `lang` attribute; Firefox's fastText detector is not bundled, so short or mixed-language pages may be missed or misread. Only text is translated (not images, `placeholder` / `title` attributes, or text inside iframes). The first use of a language pair needs a download (engine about 5 MB + model 15-40 MB) over the network; after that it works offline. Big pages are translated in batches, so long pages fill in over a few seconds.
+- The translation engine and its models come from Mozilla's public registry at first use; if Mozilla moves those files, the download fails and the icon simply returns to flashing (no popup by design).
+- Monero fast node path: it depends on the Android System WebView passing worker requests to the app; where it does not, the old (slower) path is used automatically.
+- Monero: the "Waiting for Kwallet" state does not survive Hwallet being killed while Kwallet's sheet is open; the request is then cancelled, never sent.
+- Desktop view uses one desktop preset (Windows Chrome); the global user agent setting still applies to the other tabs.
+
 ## Kwallet v3.98.7 · Hwallet v1.8.7 (2026-10-14)
 
 ### Fees

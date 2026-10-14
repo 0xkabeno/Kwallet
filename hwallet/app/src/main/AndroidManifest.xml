@@ -54,6 +54,13 @@
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|smallestScreenSize|uiMode|density"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- v1.8.8 (push 13): large Kwallet requests (Monero) travel as files with a one-shot URI grant, never as Intent extras -->
+        <provider
+            android:name=".KwxProvider"
+            android:authorities="app.hwallet.kwx"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
         <!-- v1.2: always-on prices / balances / incoming payments (watch only) -->
         <service
             android:name=".HwLiveService"

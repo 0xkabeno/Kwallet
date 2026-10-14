@@ -65,8 +65,10 @@ object HwUa {
     fun label(): String = if (!on()) "Off" else cur()?.label ?: "Off"
 
     /** document-start script so navigator.* agrees with the header; null = nothing to change */
-    fun script(): String? {
-        val p = cur() ?: return null
+    /** v1.8.8 (R4b): the one-tap desktop view of a tab (Windows Chrome) */
+    val DESK: P get() = PRESETS.first { it.id == "winchrome" }
+    fun script(): String? { val p = cur() ?: return null; return scriptFor(p) }
+    fun scriptFor(p: P): String {
         val sb = StringBuilder("(function(){try{var N=Navigator.prototype,d=function(k,v){try{Object.defineProperty(N,k,{get:function(){return v},configurable:true})}catch(e){}};")
         if (p.platform.isNotEmpty()) sb.append("d('platform',").append(JSONObject.quote(p.platform)).append(");")
         sb.append("d('maxTouchPoints',").append(if (p.mobile || p.id == "ipadpro") 5 else 0).append(");")
