@@ -1,5 +1,29 @@
 # Changelog
 
+## Kwallet v3.98.11 · Hwallet v1.8.11 (2026-10-14, pre-release)
+
+Pre-release for phone testing. Not tested on a device or emulator by the build: only static checks (`node --check` of every inline script in both apps and of the translation engine, the Monero engine and the browser provider, CSS brace balance and a full CSS parse of both apps), a scripted run of Hwallet's pull-to-refresh state machine in all three pull styles, and the CI build.
+
+### Pull to refresh (every style)
+- Reported: the refresh indicator could stay on screen and carry over to other tabs, pages and sheets. Cause: the indicator lives above the pages and its closing animation runs on animation frames, which a paused or hidden WebView never delivers, so the close never finished; nothing reset the pull when the page changed either.
+- The pull now belongs to the page it started on (screen + coin / network / token). Changing tab, page or route, opening a sheet, or hiding the app drops any pull or spin, removes the indicator and puts the old page's content back (no offset, normal overscroll). A late finish of an old refresh can no longer touch the new page.
+- A pull starts only when the page is scrolled to the top and the finger went down on the page itself: not on a sheet, the browser, a text field or a sideways scroller.
+- A cancelled gesture (touch or pointer cancel) never refreshes and always returns to rest.
+- The refresh closes when it settles; if the close animation cannot run, the indicator is removed after 1.5 s; whatever happens, nothing spins longer than 12 s.
+- One refresh at a time: a pull or the refresh button while a refresh is still running waits for that one instead of starting a second.
+
+### One typography and one row in every style
+- Wallet list, a network's token list, the networks list and search results: OG, Material UI, Material You and MIUIX now use the same font, sizes, weights and letter spacing for row names, prices, changes and balances (name and balance 16 px medium, price / change and fiat value 14 px, no extra letter spacing). OG's wider price line is gone, so the price and change stay on one line and every row has the same height. The balance column gives way first when space is tight; nothing wraps.
+
+### Browser menu (MIUIX)
+- The six toolbar tiles (back, forward, reload, new tab, bookmark, desktop view) are six equal tiles across the full width, as in the other styles (a menu width limit from MIUIX's pop-up menus was cutting them short).
+- Rows in the menu and in every sheet size to their content with the shared gap between them; they can never overlap.
+
+### Known issues
+- Nothing in this release was run on a device or emulator before publishing; the phone test decides when it becomes the latest release.
+- A pull while an earlier refresh (started on another page) is still running waits for that refresh rather than starting a new one for the current page.
+- Kwallet 3.98.11 only changes its version number.
+
 ## Kwallet v3.98.10 · Hwallet v1.8.10 (2026-10-14, pre-release)
 
 Pre-release for phone testing. Not tested on a device or emulator by the build: only static checks (`node --check` of every inline script in both apps and of the translation engine, the Monero engine and the browser provider, CSS brace balance and a full CSS parse of both apps), a scripted run of Hwallet's dApp request router in Node with stubbed Android bridges, and the CI build.
