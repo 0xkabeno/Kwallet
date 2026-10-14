@@ -13967,7 +13967,7 @@ window.hwCrashPrompt = crashPrompt;
   function natLogo(ch, net) {
     if (ch !== 'eth') return (CHBY[ch] || {}).logo || '';
     var n = EVMBY[net] || EVM[0], s = n.sym;
-    return s === 'ETH' ? 'ethereum' : s === 'BNB' ? 'smartchain' : s === 'POL' ? 'polygon' : n.logo || 'ethereum';
+    return s === 'ETH' ? 'ethereum' : s === 'BNB' ? 'smartchain' : s === 'POL' ? 'polygon' : s === 'USDC' ? 'usdc' : n.logo || 'ethereum';
   }
   function humanMethod(m) {
     m = String(m || '').split('(')[0].trim(); if (!m) return '';
