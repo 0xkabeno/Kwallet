@@ -320,6 +320,20 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun brIcon(host: String): String = if (host.length in 1..200) try { brw().iconData(host) } catch (_: Throwable) { "" } else ""
         @android.webkit.JavascriptInterface
+        fun brShield(): String = try { HwShield.init(this@HwActivity); HwShield.state() } catch (_: Throwable) { "{}" }
+        @android.webkit.JavascriptInterface
+        fun brShieldSet(on: Boolean) { HwShield.init(this@HwActivity); HwShield.setOn(on); br?.reloadShown() }
+        @android.webkit.JavascriptInterface
+        fun brShieldSite(host: String, on: Boolean) { if (host.length in 1..200) { HwShield.init(this@HwActivity); HwShield.setSite(host.lowercase(), on); br?.reloadShown() } }
+        @android.webkit.JavascriptInterface
+        fun brShieldList(k: String, on: Boolean) { HwShield.init(this@HwActivity); if (HwShield.LISTS.containsKey(k)) HwShield.setList(k, on) }
+        @android.webkit.JavascriptInterface
+        fun brShieldUpdate() { HwShield.init(this@HwActivity); HwShield.update() }
+        @android.webkit.JavascriptInterface
+        fun brUa(): String = try { HwUa.init(this@HwActivity); HwUa.state() } catch (_: Throwable) { "{}" }
+        @android.webkit.JavascriptInterface
+        fun brUaSet(on: Boolean, id: String, custom: String) { HwUa.init(this@HwActivity); HwUa.set(on, id.take(24), custom); br?.applyUa() }
+        @android.webkit.JavascriptInterface
         fun brReply(id: String, json: String) { if (json.length < 2_000_000) br?.reply(id, json) }
         @android.webkit.JavascriptInterface
         fun brEmit(origin: String, json: String) { if (json.length < 100_000) br?.emit(origin, json) }

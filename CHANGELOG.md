@@ -1,5 +1,30 @@
 # Changelog
 
+## Kwallet v3.98.7 · Hwallet v1.8.7 (2026-10-14)
+
+### Fees
+- A saved custom network fee now sticks on EVM dApp and WalletConnect requests, as it already did on Solana. It is applied over the app's own fee until you change it; only the fee fields change (never gas limit, nonce, amount or data).
+- If the network's base fee is above your saved fee, Kwallet raises it to the live minimum (+12%) instead of dropping it, and the sheet says so ("Custom · raised to network min"). Otherwise it reads "Custom · saved".
+
+### Popups and navigation bar
+- Every signing popup (Hwallet connect/sign/fee sheets and the Kwallet signer) uses one fixed Jupiter-style graphite sheet on every theme, with a stronger dim behind it.
+- The Kwallet signer's colour now runs under the Android navigation bar: the wallet behind no longer shows below Cancel / Confirm.
+- Kwallet and Hwallet: the navigation-bar area is a solid strip in the app's own colour; pages no longer scroll behind it.
+
+### Hwallet browser
+- Ad blocker using uBlock Origin's default lists (uBlock filters, privacy, badware, quick fixes, unbreak, EasyList, EasyPrivacy, Peter Lowe, URLhaus): network filters and element hiding, applied natively. Lists download in the background and refresh weekly. Wallet, RPC and dApp services are always allowed.
+- Per-site shield with a blocked count, in the browser menu.
+- User-agent manager: Off (Hwallet's own) or presets for current phones, tablets and desktops (Chrome, Safari, Firefox, Edge, Opera, Samsung Internet, Brave, DuckDuckGo) and Custom. navigator.platform / userAgentData match the chosen one.
+- Both switches in the browser menu, Browser settings and Settings > Browser.
+- Compact browser menu, tab switcher and address bar.
+- Android Back goes back inside single-page dApps (pushState routes) before leaving the browser.
+
+### Monero
+- Sending no longer freezes: the scan is paused (and waited for) before the transaction is built, then Kwallet opens. The button shows each step.
+- The scan saves its progress every ~2,000 blocks, so leaving the app no longer restarts it from the restore height.
+- Rescan really rescans from the restore height (it used to keep the old cache).
+- Settings > Monero cleaned up: Node, Wallet (restore height, rescan), Scan (status, spent status), Pairing.
+
 ## Kwallet v3.98.6 + Hwallet v1.8.6
 
 Quick fix for Hwallet Settings from the phone test of v3.98.5. Kwallet only changes its version number.

@@ -76,10 +76,13 @@ class HwBrowser(
         var lastProxy: JavaScriptReplyProxy? = null
         var lastOrigin = ""
         val pending = HashMap<String, Pair<JavaScriptReplyProxy, String>>()
+        var uaH: androidx.webkit.ScriptHandler? = null   // v1.8.7: navigator.* to match the chosen user agent
     }
 
     private val ui = Handler(Looper.getMainLooper())
     private val tabs = HashMap<String, Tab>()
+    private var baseUa: String? = null
+    init { try { HwShield.init(act); HwUa.init(act) } catch (e: Throwable) { Log.w(TAG, "shield/ua init", e) } }
     private val base = File(act.filesDir, "br")
     @Volatile private var script: String? = null
     private var visible: String? = null
@@ -253,8 +256,9 @@ class HwBrowser(
     fun back(): Boolean {
         val t = tabs[visible ?: return false] ?: return false
         val w = t.web ?: return false
-        if (w.visibility != View.VISIBLE || !w.canGoBack()) return false
-        live(t, w); w.goBack(); return true
+        // v1.8.7: dApps navigate with history.pushState (no page load), so ask the WebView itself every time
+        if (!w.canGoBack()) return false
+        live(t, w); w.goBack(); ui.postDelayed({ try { navEv(t, w, w.progress < 100, w.progress) } catch (_: Throwable) {} }, 120); return true
     }
 
     fun nav(id: String, a: String) {
@@ -380,7 +384,8 @@ class HwBrowser(
         val u = if (t.offline) t.url else (w.url ?: t.url)
         if (isWeb(u)) t.url = u
         ev(JSONObject().put("t", "nav").put("id", t.id).put("url", t.url).put("title", w.title ?: "")
-            .put("back", w.canGoBack()).put("fwd", w.canGoForward()).put("loading", loading).put("progress", progress).put("offline", t.offline))
+            .put("back", w.canGoBack()).put("fwd", w.canGoForward()).put("loading", loading).put("progress", progress).put("offline", t.offline)
+            .put("blk", try { HwShield.count(Uri.parse(t.url).host?.lowercase() ?: "") } catch (_: Throwable) { 0 }).put("shield", HwShield.on() && !(try { HwShield.siteOff(Uri.parse(t.url).host?.lowercase() ?: "") } catch (_: Throwable) { false })))
     }
 
     @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility", "RequiresFeature")
@@ -401,7 +406,8 @@ class HwBrowser(
             setSupportZoom(true); builtInZoomControls = true; displayZoomControls = false
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             if (Build.VERSION.SDK_INT >= 26) safeBrowsingEnabled = true
-            userAgentString = userAgentString.replace("; wv)", ")")   // some dApps refuse a "WebView" user agent
+            if (baseUa == null) baseUa = userAgentString
+            userAgentString = HwUa.ua(baseUa ?: userAgentString)   // Off: the WebView's own minus "; wv" (some dApps refuse a "WebView" user agent)
             cacheMode = mode(t)
         }
         w.isVerticalScrollBarEnabled = false
@@ -433,6 +439,7 @@ class HwBrowser(
             val s = script
             if (s != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(w, s, ORIGINS)
         } catch (e: Throwable) { Log.e(TAG, "wallet provider injection failed; the page loads without it", e) }
+        uaScript(t, w)
         w.setOnTouchListener { _, e -> if (!t.touched) live(t, w); pullTouch(t, w, e) }
         w.setOnScrollChangeListener { _, _, y, _, _ -> t.scroll = y; scrollEv(t) }
         w.setDownloadListener { url, _, _, _, _ -> try { act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE)) } catch (_: Throwable) {} }
@@ -449,11 +456,14 @@ class HwBrowser(
                 outside(u.toString(), s)
                 return true
             }
-            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { navEv(t, view, true, 10); lateInject(view) }
-            override fun onPageCommitVisible(view: WebView, url: String?) { lateInject(view) }
+            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { try { Uri.parse(url ?: "").host?.let { HwShield.resetCount(it.lowercase()) } } catch (_: Throwable) {}; navEv(t, view, true, 10); lateInject(view) }
+            override fun onPageCommitVisible(view: WebView, url: String?) { lateInject(view); hide(view, url) }
+            // v1.8.7: single-page dApps (pushState / hash routes) update Back / Forward too
+            override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) { navEv(t, view, view.progress < 100, view.progress) }
             override fun onPageFinished(view: WebView, url: String?) {
                 pullDone(t)
                 lateInject(view)
+                hide(view, url)
                 navEv(t, view, false, 100)
                 if (t.pendingScroll > 0) { val y = t.pendingScroll; t.pendingScroll = 0; ui.postDelayed({ try { view.evaluateJavascript("window.scrollTo(0,$y)", null) } catch (_: Throwable) {} }, 350) }
                 if (!t.offline && isWeb(view.url)) { save(t); snapshotSoon(t); siteIcon(t, view) }
@@ -461,7 +471,7 @@ class HwBrowser(
             override fun onReceivedError(view: WebView, req: WebResourceRequest, err: WebResourceError) {
                 if (req.isForMainFrame && !t.offline && File(dir(t.id), "page.mht").exists() && (t.restoring || !online())) loadSnapshot(t, view)
             }
-            override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? = capped(req)
+            override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? = (try { HwShield.check(req, t.url) } catch (_: Throwable) { null }) ?: capped(req)
             @android.annotation.TargetApi(26)
             override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
                 if (t.web === view) { root.removeView(view); view.destroy(); t.web = null; if (visible == t.id) visible = null; ev(JSONObject().put("t", "gone").put("id", t.id)) }
@@ -515,6 +525,24 @@ class HwBrowser(
 
     /** v1.4 (#53): while the mobile-data limit is on, the page's sub-resources (images, scripts, styles) are fetched
      *  through HwNet and share the same limit; the page document itself loads cache-first (see [mode]). */
+    /* v1.8.7: the blocker's element hiding (uBO cosmetic filters) for this page */
+    private fun hide(w: WebView, url: String?) {
+        if (!HwShield.on() || !isWeb(url)) return
+        Thread {
+            val css = try { HwShield.css(url) } catch (_: Throwable) { "" }
+            if (css.isNotEmpty()) ui.post { try { w.evaluateJavascript("(function(c){try{var s=document.getElementById('hw-shield-css');if(!s){s=document.createElement('style');s.id='hw-shield-css';(document.head||document.documentElement).appendChild(s)}s.textContent=c}catch(e){}})(" + q(css) + ")", null) } catch (_: Throwable) {} }
+        }.apply { isDaemon = true }.start()
+    }
+    private fun uaScript(t: Tab, w: WebView) {
+        try { t.uaH?.remove() } catch (_: Throwable) {}; t.uaH = null
+        val s = HwUa.script() ?: return
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) try { t.uaH = WebViewCompat.addDocumentStartJavaScript(w, s, setOf("*")) } catch (e: Throwable) { Log.w(TAG, "ua script", e) }
+    }
+    /** v1.8.7: a new user agent (Settings or the browser menu) applies to every open tab; the page on screen reloads */
+    fun applyUa() { post { tabs.values.forEach { t -> t.web?.let { w -> w.settings.userAgentString = HwUa.ua(baseUa ?: w.settings.userAgentString); uaScript(t, w); if (w.visibility == View.VISIBLE) w.reload() } } } }
+    /** v1.8.7: blocker switched on/off, or this site's shield: reload the page on screen */
+    fun reloadShown() { post { visible?.let { tabs[it]?.web?.reload() } } }
+
     private fun capped(req: WebResourceRequest): WebResourceResponse? {
         if (!HwNet.rate.on() || req.isForMainFrame || req.method != "GET" || req.url.scheme != "https") return null
         return try {
