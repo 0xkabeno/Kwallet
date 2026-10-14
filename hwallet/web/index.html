@@ -6258,17 +6258,27 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
     set(sh, '110%', true);
     setTimeout(function () { if (isOpen(ov) && (ov.classList.contains('in') || ov.classList.contains('show') || ov.id === 'kss')) { set(sh, '0px', true); setTimeout(function () { clear(sh); }, 240); } }, 90);
   }
+  /* the page itself never gets a blocking touch listener (scrolling stays on the compositor): only a sheet does, from its
+     first touch or as soon as it is added to the page */
+  function wire(sh) {
+    if (!sh || sh._hwdr) return; sh._hwdr = 1;
+    sh.addEventListener('touchmove', move, { capture: true, passive: false });
+    sh.addEventListener('touchend', function (e) { end(e, false); }, { capture: true, passive: true });
+    sh.addEventListener('touchcancel', function (e) { end(e, true); }, { capture: true, passive: true });
+  }
   window.addEventListener('touchstart', function (e) {
     G = null;
     if (!e.touches || e.touches.length !== 1 || !e.target || !e.target.closest) return;
-    var sh = e.target.closest(SHEET); if (!sh || e.target.closest(NO)) return;
+    var sh = e.target.closest(SHEET); if (!sh) return;
+    wire(sh);
+    if (e.target.closest(NO)) return;
     var ov = ovOf(sh); if (!isOpen(ov)) return;
     var sc = scroller(e.target, sh); if (sc && sc.scrollTop > 0) return;
     G = { sh: sh, y0: e.touches[0].clientY, x0: e.touches[0].clientX, t0: Date.now(), dy: 0, on: false, v: 0, ly: e.touches[0].clientY, lt: Date.now() };
     e.stopPropagation();
   }, { capture: true, passive: true });
-  window.addEventListener('touchmove', function (e) {
-    if (!G || !e.touches || !e.touches[0]) return;
+  function move(e) {
+    if (!G || G.sh !== this || !e.touches || !e.touches[0]) return;
     var y = e.touches[0].clientY, x = e.touches[0].clientX, dy = y - G.y0, dx = x - G.x0;
     if (!G.on) {
       if (Math.abs(dy) < 6 && Math.abs(dx) < 6) return;
@@ -6280,7 +6290,7 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
     set(G.sh, G.dy + 'px', false);
     if (e.cancelable) e.preventDefault();
     e.stopPropagation();
-  }, { capture: true, passive: false });
+  }
   function end(e, cancel) {
     if (!G) return; var g = G; G = null; if (!g.on) return;
     if (e) e.stopPropagation();
@@ -6288,8 +6298,11 @@ ${t.length}`,r=new TextEncoder().encode(e+t);return"0x"+oe(X8(r),"base16")}async
     if (!cancel && (g.dy > h * 0.25 || (g.v > 0.65 && g.dy > 24))) dismiss(g.sh);
     else { set(g.sh, '0px', true); setTimeout(function () { clear(g.sh); }, 240); }
   }
-  window.addEventListener('touchend', function (e) { end(e, false); }, { capture: true, passive: true });
-  window.addEventListener('touchcancel', function (e) { end(e, true); }, { capture: true, passive: true });
+  try {
+    var MO = new MutationObserver(function (ms) { ms.forEach(function (m) { for (var k = 0; k < m.addedNodes.length; k++) { var n = m.addedNodes[k]; if (n.nodeType === 1 && n.querySelectorAll) { if (n.matches && n.matches(SHEET)) wire(n); n.querySelectorAll(SHEET).forEach(wire); } } }); });
+    var go = function () { if (document.body) MO.observe(document.body, { childList: true }); };
+    if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
+  } catch (e) {}
 })();
 
 /* ===== Hwallet v1.3: watch-only, simple and quick =====
