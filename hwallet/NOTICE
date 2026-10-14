@@ -90,3 +90,12 @@ v1.8 / Kwallet v3.98 Monero engine (hwallet/web/xmr/hwxmr.js and web/xmr/hwxmr.j
 
 v1.8.2 / Kwallet v3.98.2 typeface: Inter 4.1, Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter),
   SIL Open Font License 1.1, inlined as a woff2 subset (face name "InterE"). The full license text is in the root NOTICE file.
+
+Content blocker filter lists (v1.8.7)
+-------------------------------------
+Hwallet's dApp browser downloads and applies, in their own filter syntax, the default lists of uBlock Origin
+(https://github.com/gorhill/uBlock, GPL-3.0-or-later, Copyright (C) Raymond Hill and contributors):
+uBlock filters, uBlock filters - Privacy, Badware risks, Quick fixes and Unbreak (uAssets, GPL-3.0),
+EasyList and EasyPrivacy (https://easylist.to, GPL-3.0-or-later / CC BY-SA 3.0), Peter Lowe's Ad and tracking
+server list (https://pgl.yoyo.org/adservers/) and the URLhaus filter (https://gitlab.com/malware-filter, CC0 / MIT).
+The lists are not bundled in the APK; they are fetched from their publishers and cached on the phone.
