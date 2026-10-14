@@ -13538,6 +13538,7 @@ window.hwCrashPrompt = crashPrompt;
         var m = e.data || {};
         if (m.ev === 'ready') { if (!done) { done = true; w.postMessage({ id: 0, op: 'init', a: { tok: (function () { try { return HwNative.xmrTok(); } catch (x) { return ''; } })() } }); res(true); } return; }
         if (m.ev === 'prog') { trProg(m.t); return; }
+        if (m.ev === 'dl') { var tk = ''; try { tk = HwNative.xmrTok(); } catch (x) {} fetch('/hwdl/' + tk + '?u=' + encodeURIComponent(m.url), { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('Download failed (' + r.status + ')'); return r.arrayBuffer(); }).then(function (b) { w.postMessage({ dl: m.dl, b: b }, [b]); }, function (er) { w.postMessage({ dl: m.dl, e: String(er && er.message || er) }); }); return; }
         var q = TRW.q[m.id]; if (!q) return; delete TRW.q[m.id]; clearTimeout(q.t);
         if (m.ok) q.res(m.r); else q.rej(new Error(m.e || 'Translator error'));
       };
@@ -13653,6 +13654,8 @@ window.hwCrashPrompt = crashPrompt;
   /* a page finished loading: read its language */
   function trCheck(id, url) {
     var s = trSt(id);
+    if (s.url === url && s.lang && s.chk && Date.now() - s.chk < 4000) return;   /* one read per page load, not per navigation event */
+    s.chk = Date.now();
     if (s.url !== url) { s.url = url; if (s.st === 'on' || s.st === 'busy') s.st = 'none'; s.lang = ''; s.job = (s.job || 0) + 1; }
     else if (s.st === 'on' || s.st === 'busy') return;
     if (!/^https?:/.test(url || '')) { s.st = 'none'; trPaint(); return; }

@@ -1013,7 +1013,7 @@ class HwActivity : FragmentActivity() {
     /** v1.8.8 (R4): the translator's downloads (engine + language models) from Mozilla's public model registry, which sends
      *  no CORS header. GET /hwdl/<token>?u=<https url>; only Mozilla's two translation hosts; streamed, never stored here. */
     private fun trDownload(u: Uri): WebResourceResponse {
-        val hdr = mapOf("Cache-Control" to "no-store")
+        val hdr = mapOf("Cache-Control" to "no-store", "X-Hw" to "1")
         val none = { code: Int -> WebResourceResponse("text/plain", "utf-8", code, if (code == 403) "Forbidden" else "Bad Gateway", hdr, java.io.ByteArrayInputStream(ByteArray(0))) }
         if ((u.path ?: "").removePrefix("/hwdl/") != xmrToken) return none(403)
         val url = u.getQueryParameter("u") ?: return none(403)

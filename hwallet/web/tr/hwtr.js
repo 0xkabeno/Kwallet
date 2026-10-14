@@ -3646,6 +3646,8 @@ var WASM = { loc: 'main-workspace/translations-wasm/05082c31-aee8-4249-9e01-c186
 var CDN = 'https://firefox-settings-attachments.cdn.mozilla.net/';
 var TOK = '', BERG = null, BERGP = null, ENG = { key: '', models: [], svc: null };
 function prog(t) { try { self.postMessage({ ev: 'prog', t: t }); } catch (e) {} }
+var DLQ = {}, DLN = 0;
+function viaPage(url) { return new Promise(function (res, rej) { var k = ++DLN; DLQ[k] = { res: res, rej: rej }; self.postMessage({ ev: 'dl', dl: k, url: url }); }); }
 
 /* ---------- cache (IndexedDB, keyed by the file's SHA-256) ---------- */
 var DBP = null;
@@ -3663,12 +3665,18 @@ function get(file, label) {
     if (hit && hit.byteLength) return hit;
     var url = CDN + file.loc, via = TOK ? 'https://appassets.androidplatform.net/hwdl/' + TOK + '?u=' + encodeURIComponent(url) : url;
     return fetch(via, { cache: 'no-store' }).then(function (r) {
+      if (r.headers.get('X-Hw') !== '1') throw Object.assign(new Error('nofast'), { nofast: true });
       if (!r.ok) throw new Error('Download failed (' + r.status + ')');
       var total = +(r.headers.get('Content-Length') || file.size || 0);
       if (!r.body || !r.body.getReader) return r.arrayBuffer();
       var rd = r.body.getReader(), parts = [], got = 0, last = 0;
       function pump() { return rd.read().then(function (x) { if (x.done) return; parts.push(x.value); got += x.value.byteLength; var now = Date.now(); if (now - last > 400) { last = now; prog(label + ' \u00b7 ' + mb(got) + (total ? ' / ' + mb(total) : '')); } return pump(); }); }
       return pump().then(function () { var out = new Uint8Array(got), o = 0; parts.forEach(function (p) { out.set(p, o); o += p.byteLength; }); return out.buffer; });
+    }).catch(function (e) {
+      /* a WebView that does not hand worker requests to the app: the page downloads it (same native path) and passes the bytes */
+      if (!(e && (e.nofast || e instanceof TypeError))) throw e;
+      prog(label + ' \u00b7 downloading');
+      return viaPage(url);
     }).then(function (buf) {
       return crypto.subtle.digest('SHA-256', buf).then(function (d) {
         if (hex(d) !== file.hash) throw new Error('A translation file did not match its checksum');
@@ -3737,7 +3745,9 @@ var OPS = { init: function (a) { TOK = /^[A-Za-z0-9]{16,64}$/.test(a.tok || '') 
   cached: function (a) { return Promise.all((a.hashes || []).map(function (h) { return idb('readonly', function (s) { return s.count(h); }).then(function (n) { return n > 0; }, function () { return false; }); })); } };
 var Q = Promise.resolve();
 self.onmessage = function (e) {
-  var m = e.data || {}, f = OPS[m.op];
+  var m = e.data || {};
+  if (m.dl) { var q = DLQ[m.dl]; delete DLQ[m.dl]; if (q) { if (m.b) q.res(m.b); else q.rej(new Error(m.e || 'Download failed')); } return; }
+  var f = OPS[m.op];
   if (!f) { self.postMessage({ id: m.id, ok: false, e: 'Unknown op' }); return; }
   Q = Q.then(function () { return Promise.resolve().then(function () { return f(m.a || {}); }).then(function (r) { self.postMessage({ id: m.id, ok: true, r: r }); }, function (err) { self.postMessage({ id: m.id, ok: false, e: String(err && err.message || err).slice(0, 300) }); }); });
 };
