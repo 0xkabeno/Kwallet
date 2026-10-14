@@ -364,6 +364,9 @@ class HwActivity : FragmentActivity() {
         fun brClose(id: String) { brw().close(id) }
         @android.webkit.JavascriptInterface
         fun brClearAll() { brw().clearAll() }
+        /** v1.8.9 (R16): Browser settings > Clear cached pages (HTTP caches + site icons; tabs, cookies and history stay) */
+        @android.webkit.JavascriptInterface
+        fun brClearCache() { brw().clearCache() }
         @android.webkit.JavascriptInterface
         fun brUsage(): String = try { brw().usage() } catch (_: Throwable) { "{}" }
         /** v1.7 (P1): {documentStartScript, webMessageListener, webview version} of this phone's WebView */
@@ -385,7 +388,7 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun brUa(): String = try { HwUa.init(this@HwActivity); HwUa.state() } catch (_: Throwable) { "{}" }
         @android.webkit.JavascriptInterface
-        fun brUaSet(on: Boolean, id: String, custom: String) { HwUa.init(this@HwActivity); HwUa.set(on, id.take(24), custom); br?.applyUa() }
+        fun brUaSet(on: Boolean, id: String, custom: String) { HwUa.init(this@HwActivity); HwUa.set(on, id.take(24), custom); HwUa.setDeskDef(HwUa.chosenIsDesktop()); br?.applyUa() }   // v1.8.9 (R18): a desktop user agent = Desktop view on
         @android.webkit.JavascriptInterface
         fun brReply(id: String, json: String) { if (json.length < 2_000_000) br?.reply(id, json) }
         /** v1.8.8 (R4): run one of Hwallet's own scripts in a tab's page (translation: read text, write translations, restore,
@@ -421,6 +424,14 @@ class HwActivity : FragmentActivity() {
                 } catch (_: Throwable) {}
             }
         }
+
+        /** v1.8.9 (R17): the page removed a local Pending entry (never broadcast or dropped): off disk and out of the shade */
+        @android.webkit.JavascriptInterface
+        fun actDrop(wid: String, ch: String, hash: String) { net.execute { try { HwActDb.get(this@HwActivity).dropPending(wid.take(80), ch.take(24), hash.take(160)) } catch (_: Throwable) {} } }
+        @android.webkit.JavascriptInterface
+        fun actPurge() { net.execute { try { HwActDb.get(this@HwActivity).purgeHashless() } catch (_: Throwable) {} } }
+        @android.webkit.JavascriptInterface
+        fun txCancel(id: String) { runOnUiThread { try { (getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager).cancel(7800 + (id.take(80).hashCode() and 0x3ff)) } catch (_: Throwable) {} } }
 
         /** when the live service last read the chains for this wallet (ms since 1970), 0 = never / not running */
         @android.webkit.JavascriptInterface

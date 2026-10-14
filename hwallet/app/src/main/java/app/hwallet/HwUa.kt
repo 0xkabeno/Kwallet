@@ -58,7 +58,36 @@ object HwUa {
         prefs.edit().putBoolean("on", on).putString("id", if (id == "custom" || PRESETS.any { it.id == id }) id else "pixel10")
             .putString("custom", custom.take(400).replace(Regex("[\\r\\n]"), " ")).apply()
     }
-    private fun cur(): P? = if (!on()) null else if (id() == "custom") custom().takeIf { it.length > 10 }?.let { P("custom", "Custom", "Custom", it, "", it.contains("Mobile"), "keep") } else PRESETS.firstOrNull { it.id == id() }
+    private fun cur(): P? = if (!on()) null else if (id() == "custom") custom().takeIf { it.length > 10 }?.let { fromString(it) } else PRESETS.firstOrNull { it.id == id() }
+
+    /** v1.8.9 (R18): a Custom string read like a preset, so navigator.platform / maxTouchPoints / userAgentData agree with it */
+    fun fromString(ua: String): P {
+        val plat = when {
+            ua.contains("Windows") -> "Win32"
+            ua.contains("iPhone") -> "iPhone"
+            ua.contains("iPad") -> "iPad"
+            ua.contains("Macintosh") || ua.contains("Mac OS X") -> "MacIntel"
+            ua.contains("Android") -> "Linux armv8l"
+            ua.contains("CrOS") -> "Linux x86_64"
+            ua.contains("X11") || ua.contains("Linux") -> "Linux x86_64"
+            else -> ""
+        }
+        val mobile = ua.contains("Mobile") || ua.contains("iPhone") || (ua.contains("Android") && !ua.contains("Tablet") && ua.contains("Mobile"))
+        val chromium = Regex("Chrome/\\d+").containsMatchIn(ua) && !ua.contains("Firefox/")
+        val hints = when { !chromium -> "none"; ua.contains("Edg") -> "edge"; ua.contains("OPR/") -> "opera"; ua.contains("SamsungBrowser") -> "samsung"; else -> "chrome" }
+        return P("custom", "Custom", "Custom", ua, plat, mobile, hints)
+    }
+    /** a desktop user agent: no Android / iPhone / iPad / "Mobile" in it */
+    fun isDesktop(ua: String): Boolean = !(ua.contains("Android") || ua.contains("iPhone") || ua.contains("iPad") || ua.contains("Mobile"))
+    /** v1.8.9 (R18): Desktop view as the default for new tabs (the last state the user chose in the menu or in Settings) */
+    fun deskDef(): Boolean = ::prefs.isInitialized && prefs.getBoolean("deskDef", false)
+    fun setDeskDef(on: Boolean) { if (::prefs.isInitialized) prefs.edit().putBoolean("deskDef", on).apply() }
+    /** the chosen user agent is itself a desktop one (Settings > User agent = a Desktop preset or a desktop Custom string) */
+    fun chosenIsDesktop(): Boolean = cur()?.let { isDesktop(it.ua) } ?: false
+    /** the preset a tab uses: desktop view = the chosen user agent if it is a desktop one, else Windows Chrome;
+     *  phone view = the chosen user agent if it is a phone / tablet one, else the WebView's own (null) */
+    fun presetFor(desk: Boolean): P? { val c = cur(); return if (desk) (if (c != null && isDesktop(c.ua)) c else DESK) else (if (c != null && !isDesktop(c.ua)) c else null) }
+    fun uaFor(desk: Boolean, base: String): String = presetFor(desk)?.ua ?: base.replace("; wv)", ")")
 
     /** the user agent for a new or updated tab (base = the WebView's default) */
     fun ua(base: String): String = cur()?.ua ?: base.replace("; wv)", ")")
@@ -71,7 +100,7 @@ object HwUa {
     fun scriptFor(p: P): String {
         val sb = StringBuilder("(function(){try{var N=Navigator.prototype,d=function(k,v){try{Object.defineProperty(N,k,{get:function(){return v},configurable:true})}catch(e){}};")
         if (p.platform.isNotEmpty()) sb.append("d('platform',").append(JSONObject.quote(p.platform)).append(");")
-        sb.append("d('maxTouchPoints',").append(if (p.mobile || p.id == "ipadpro") 5 else 0).append(");")
+        sb.append("d('maxTouchPoints',").append(if (p.mobile || p.id == "ipadpro" || p.platform == "iPad") 5 else 0).append(");")
         when (p.hints) {
             "none" -> sb.append("d('userAgentData',undefined);")
             "keep" -> {}
@@ -89,8 +118,18 @@ object HwUa {
         return sb.toString()
     }
 
+    /** v1.8.9 (R18): desktop layout. Sites size to a 1024 px wide viewport whatever their meta viewport says (it is
+     *  rewritten at document start and whenever the page changes it); the WebView's wide viewport + overview mode then
+     *  fit that width to the screen, like Chrome's "Desktop site". */
+    const val VIEWPORT_JS = "(function(){try{if(window.top!==window)return;var W='width=1024',fix=function(){var h=document.head||document.documentElement;if(!h)return;" +
+        "var ms=document.querySelectorAll('meta[name=viewport]');if(!ms.length){var m=document.createElement('meta');m.setAttribute('name','viewport');m.setAttribute('content',W);h.appendChild(m);return}" +
+        "for(var i=0;i<ms.length;i++)if(ms[i].getAttribute('content')!==W)ms[i].setAttribute('content',W)};fix();" +
+        "var mo=new MutationObserver(function(rs){for(var i=0;i<rs.length;i++){var r=rs[i];if(r.type==='attributes'){fix();return}for(var j=0;j<r.addedNodes.length;j++){var n=r.addedNodes[j];if(n.nodeName==='META'||n.nodeName==='HEAD'){fix();return}}}});" +
+        "mo.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['content']});" +
+        "document.addEventListener('DOMContentLoaded',function(){fix();setTimeout(function(){fix();mo.disconnect();mo.observe(document.head||document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['content']})},4000)})}catch(e){}})();"
+
     fun state(): String {
         val a = JSONArray(); PRESETS.forEach { a.put(JSONObject().put("id", it.id).put("g", it.group).put("l", it.label)) }
-        return JSONObject().put("on", on()).put("id", id()).put("custom", custom()).put("label", label()).put("presets", a).toString()
+        return JSONObject().put("on", on()).put("id", id()).put("custom", custom()).put("label", label()).put("deskDef", deskDef()).put("presets", a).toString()
     }
 }
