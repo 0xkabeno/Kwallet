@@ -77,7 +77,10 @@ class HwBrowser(
         var lastOrigin = ""
         val pending = HashMap<String, Pair<JavaScriptReplyProxy, String>>()
         var uaH: androidx.webkit.ScriptHandler? = null   // v1.8.7: navigator.* to match the chosen user agent
-        var desk = false   // v1.8.8 (R4b): desktop view for this tab
+        var desk = HwUa.deskDef()   // v1.8.8 (R4b): desktop view for this tab; v1.8.9 (R18): new tabs start from the last choice
+        var vpH: androidx.webkit.ScriptHandler? = null   // v1.8.9 (R18): the 1024 px desktop viewport (desktop view only)
+        var cover: android.widget.ImageView? = null       // v1.8.9 (R14): the hibernated tab's last picture, until its page paints
+        var reloadOnShow = false                          // v1.8.9 (R18): a hidden tab whose user agent changed reloads when shown
     }
 
     private val ui = Handler(Looper.getMainLooper())
@@ -85,6 +88,11 @@ class HwBrowser(
     private var baseUa: String? = null
     init { try { HwShield.init(act); HwUa.init(act) } catch (e: Throwable) { Log.w(TAG, "shield/ua init", e) } }
     private val base = File(act.filesDir, "br")
+    /** v1.8.9 (R16): one background thread for every browser file write / read / trim (never the UI thread, writes in order) */
+    private val ioEx = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "hw-br-io").apply { isDaemon = true; priority = Thread.NORM_PRIORITY - 1 } }
+    private fun fio(f: () -> Unit) { try { ioEx.execute { try { f() } catch (e: Throwable) { Log.w(TAG, "browser file op failed", e) } } } catch (_: Throwable) {} }
+    @Volatile private var trimAt = 0L
+    private fun trimSoon() { val n = System.currentTimeMillis(); if (n - trimAt > 60_000) { trimAt = n; trim() } }
     @Volatile private var script: String? = null
     private var visible: String? = null
     private var top = 0
@@ -213,11 +221,45 @@ class HwBrowser(
             val lp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             lp.topMargin = top; lp.bottomMargin = bottom
             root.addView(w, lp)
-            val st = File(dir(id), "state.bin")
-            if (st.exists() || File(dir(id), "page.mht").exists()) restore(t, w, url, scroll)
-            else if (isWeb(url)) { t.url = url; w.loadUrl(url); startEv(t) }
             evict()
+            // v1.8.9 (R14/R16): the saved state, desktop flag and last picture are read off the UI thread; the page starts
+            // as soon as they are in (a tab with nothing saved starts at once)
+            fio {
+                val d = dir(id)
+                val bytes = try { File(d, "state.bin").takeIf { it.exists() && it.length() <= 4_000_000 }?.readBytes() } catch (_: Throwable) { null }
+                val mht = try { File(d, "page.mht").exists() } catch (_: Throwable) { false }
+                val meta = try { File(d, "meta.json").takeIf { it.exists() && it.length() < 20_000 }?.readText()?.let { JSONObject(it) } } catch (_: Throwable) { null }
+                val pic = if (bytes != null || mht) try { File(d, "thumb.jpg").takeIf { it.exists() && it.length() < 400_000 }?.let { BitmapFactory.decodeFile(it.absolutePath) } } catch (_: Throwable) { null } else null
+                ui.post {
+                    try {
+                        if (t.web !== w) { pic?.recycle(); return@post }
+                        if (meta != null && meta.has("desk")) { val dk = meta.optBoolean("desk"); if (dk != t.desk) { t.desk = dk; applyUaTo(t, w) } }
+                        if (bytes != null || mht) { if (pic != null) cover(t, w, pic); restore(t, w, url, scroll, bytes, mht) }
+                        else if (isWeb(url)) { t.url = url; w.loadUrl(url); startEv(t) }
+                    } catch (e: Throwable) { Log.w(TAG, "open", e) }
+                }
+            }
         }
+    }
+
+    /** v1.8.9 (R14): a hibernated tab shows its last picture at once, over the WebView, until the page paints */
+    private fun cover(t: Tab, w: WebView, pic: Bitmap) {
+        uncover(t)
+        val iv = android.widget.ImageView(act)
+        iv.scaleType = android.widget.ImageView.ScaleType.MATRIX
+        iv.setBackgroundColor(android.graphics.Color.WHITE)
+        iv.setImageBitmap(pic)
+        iv.addOnLayoutChangeListener { v, l, _, r, _, _, _, _, _ -> try { val s = (r - l).toFloat() / pic.width; (v as android.widget.ImageView).imageMatrix = android.graphics.Matrix().apply { setScale(s, s) } } catch (_: Throwable) {} }
+        val lp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+        lp.topMargin = top; lp.bottomMargin = bottom
+        iv.visibility = w.visibility
+        root.addView(iv, lp)
+        t.cover = iv
+        ui.postDelayed({ if (t.cover === iv) uncover(t) }, 6000)   // never longer than a few seconds
+    }
+    private fun uncover(t: Tab) {
+        val iv = t.cover ?: return; t.cover = null
+        try { root.removeView(iv); iv.setImageDrawable(null) } catch (_: Throwable) {}
     }
 
     fun show(id: String, topCss: Int, botCss: Int) {
@@ -233,7 +275,10 @@ class HwBrowser(
             w.layoutParams = lp
             if (w.parent == null) root.addView(w, lp)
             w.visibility = View.VISIBLE; w.onResume(); w.bringToFront()
+            t.cover?.let { c -> c.layoutParams = FrameLayout.LayoutParams(lp.width, lp.height).apply { topMargin = top; bottomMargin = bottom }; c.visibility = View.VISIBLE; c.bringToFront() }
+            tabs.values.forEach { o -> if (o !== t) o.cover?.visibility = View.GONE }
             prio(w, true)
+            if (t.reloadOnShow) { t.reloadOnShow = false; reloadUa(t, w) }
             t.shown = System.currentTimeMillis(); visible = id
         }
     }
@@ -243,7 +288,7 @@ class HwBrowser(
             // v1.7 (P1): out of the way first (a sheet in Hwallet is waiting to be seen), then save; the switcher's thumbnail
             // comes from snap(), so the slow software draw of a thumbnail no longer delays the hide
             pullOff()
-            tabs.values.forEach { t -> t.web?.let { if (it.visibility == View.VISIBLE) { it.visibility = View.GONE; it.onPause(); prio(it, false); ui.post { save(t) } } } }
+            tabs.values.forEach { t -> t.cover?.visibility = View.GONE; t.web?.let { if (it.visibility == View.VISIBLE) { it.visibility = View.GONE; it.onPause(); prio(it, false); ui.post { save(t) } } } }
             visible = null
         }
     }
@@ -284,9 +329,9 @@ class HwBrowser(
     fun close(id: String) {
         if (!okId(id)) return
         post {
-            tabs.remove(id)?.let { t -> t.web?.let { w -> root.removeView(w); w.stopLoading(); w.destroy() } }
+            tabs.remove(id)?.let { t -> uncover(t); t.web?.let { w -> root.removeView(w); w.stopLoading(); w.destroy() } }
             if (visible == id) visible = null
-            Thread { dir(id).deleteRecursively() }.start()
+            fio { dir(id).deleteRecursively() }
         }
     }
 
@@ -294,9 +339,9 @@ class HwBrowser(
      *  Hwallet's own storage (appassets.androidplatform.net) is never touched. */
     fun clearAll() {
         post {
-            tabs.values.forEach { t -> t.web?.let { w -> root.removeView(w); w.stopLoading(); w.destroy() } }
+            tabs.values.forEach { t -> uncover(t); t.web?.let { w -> root.removeView(w); w.stopLoading(); w.destroy() } }
             tabs.clear(); visible = null
-            Thread { base.deleteRecursively(); icoDir.deleteRecursively() }.start()
+            fio { base.deleteRecursively(); icoDir.deleteRecursively(); try { brHttp.cache?.evictAll() } catch (_: Throwable) {} }
             try { host.clearCache(true) } catch (_: Throwable) {}
             try { CookieManager.getInstance().removeAllCookies(null); CookieManager.getInstance().flush() } catch (_: Throwable) {}
             try {
@@ -316,7 +361,34 @@ class HwBrowser(
         val c = File(act.cacheDir, "WebView").let { if (it.exists()) size(it) else 0L } +
             File(act.cacheDir, "org.chromium.android_webview").let { if (it.exists()) size(it) else 0L } +
             File(act.applicationInfo.dataDir, "app_webview").let { if (it.exists()) size(it) else 0L }
-        return "{\"tabs\":$tabsB,\"cache\":$c}"
+        val http = File(act.cacheDir, "br_http").let { if (it.exists()) size(it) else 0L }
+        val ico = if (icoDir.exists()) size(icoDir) else 0L
+        return "{\"tabs\":$tabsB,\"cache\":${c + http},\"icons\":$ico,\"capTabs\":$CAP_TABS}"
+    }
+
+    /** v1.8.9 (R16): Browser settings > Storage > Clear cached pages: the HTTP caches only (tabs, cookies and logins stay) */
+    fun clearCache() {
+        post { try { host.clearCache(true) } catch (_: Throwable) {} }
+        fio { try { brHttp.cache?.evictAll() } catch (_: Throwable) {}; icoDir.listFiles()?.forEach { it.delete() } }
+    }
+
+    /** v1.8.9 (R16): storage stays bounded however long the browser is used. Tab folders: saved pages (page.mht) of the
+     *  least recently used tabs go first until all tabs fit in [CAP_TABS]; their history (state.bin) stays, so they still
+     *  restore from the network. Site icons: at most [CAP_ICONS] files, oldest first. Runs on the io thread. */
+    private fun trim() {
+        try {
+            val dirs = (base.listFiles() ?: emptyArray()).filter { it.isDirectory }
+            var total = dirs.sumOf { size(it) }
+            if (total > CAP_TABS) {
+                for (d in dirs.sortedBy { File(it, "meta.json").lastModified() }) {
+                    if (total <= CAP_TABS * 8 / 10) break
+                    if (d.name == visible) continue
+                    for (n in arrayOf("page.mht", "thumb.jpg")) { val f = File(d, n); if (f.exists()) { total -= f.length(); f.delete() } }
+                }
+            }
+            val ics = icoDir.listFiles() ?: emptyArray()
+            if (ics.size > CAP_ICONS) ics.sortedBy { it.lastModified() }.take(ics.size - CAP_ICONS).forEach { it.delete() }
+        } catch (e: Throwable) { Log.w(TAG, "trim", e) }
     }
 
     fun thumbData(id: String): String {
@@ -354,7 +426,7 @@ class HwBrowser(
     fun pause() { post { tabs.values.forEach { t -> t.web?.let { save(t); it.onPause() } } ; CookieManager.getInstance().flush() } }
     fun resume() { post { visible?.let { tabs[it]?.web?.onResume() } } }
     /** called on the UI thread from HwActivity.onDestroy */
-    fun destroy() { try { ui.removeCallbacksAndMessages(null); tabs.values.forEach { t -> t.web?.let { save(t); root.removeView(it); it.destroy() } }; tabs.clear() } catch (_: Throwable) {} }
+    fun destroy() { try { ui.removeCallbacksAndMessages(null); tabs.values.forEach { t -> uncover(t); t.web?.let { save(t); root.removeView(it); it.destroy() } }; tabs.clear() } catch (_: Throwable) {} }
 
     // ---------------------------------------------------------------- internals
 
@@ -409,9 +481,10 @@ class HwBrowser(
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             if (Build.VERSION.SDK_INT >= 26) safeBrowsingEnabled = true
             if (baseUa == null) baseUa = userAgentString
-            userAgentString = if (t.desk) HwUa.DESK.ua else HwUa.ua(baseUa ?: userAgentString)   // Off: the WebView's own minus "; wv" (some dApps refuse a "WebView" user agent)
+            userAgentString = HwUa.uaFor(t.desk, baseUa ?: userAgentString)   // Off: the WebView's own minus "; wv" (some dApps refuse a "WebView" user agent); v1.8.9 (R18): desktop view = the chosen desktop UA or Windows Chrome
             cacheMode = mode(t)
         }
+        bfcache(w.settings)
         w.isVerticalScrollBarEnabled = false
         if (Build.VERSION.SDK_INT >= 26) w.defaultFocusHighlightEnabled = false
         prio(w, false)
@@ -459,7 +532,7 @@ class HwBrowser(
                 return true
             }
             override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { try { Uri.parse(url ?: "").host?.let { HwShield.resetCount(it.lowercase()) } } catch (_: Throwable) {}; navEv(t, view, true, 10); lateInject(view) }
-            override fun onPageCommitVisible(view: WebView, url: String?) { lateInject(view); hide(view, url) }
+            override fun onPageCommitVisible(view: WebView, url: String?) { lateInject(view); hide(view, url); uncover(t) }
             // v1.8.7: single-page dApps (pushState / hash routes) update Back / Forward too
             override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) { navEv(t, view, view.progress < 100, view.progress) }
             override fun onPageFinished(view: WebView, url: String?) {
@@ -476,7 +549,7 @@ class HwBrowser(
             override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? = (try { HwShield.check(req, t.url) } catch (_: Throwable) { null }) ?: capped(req)
             @android.annotation.TargetApi(26)
             override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
-                if (t.web === view) { root.removeView(view); view.destroy(); t.web = null; if (visible == t.id) visible = null; ev(JSONObject().put("t", "gone").put("id", t.id)) }
+                if (t.web === view) { uncover(t); root.removeView(view); view.destroy(); t.web = null; if (visible == t.id) visible = null; ev(JSONObject().put("t", "gone").put("id", t.id)) }
                 return true
             }
         }
@@ -535,23 +608,64 @@ class HwBrowser(
             if (css.isNotEmpty()) ui.post { try { w.evaluateJavascript("(function(c){try{var s=document.getElementById('hw-shield-css');if(!s){s=document.createElement('style');s.id='hw-shield-css';(document.head||document.documentElement).appendChild(s)}s.textContent=c}catch(e){}})(" + q(css) + ")", null) } catch (_: Throwable) {} }
         }.apply { isDaemon = true }.start()
     }
+    @SuppressLint("RequiresFeature")
     private fun uaScript(t: Tab, w: WebView) {
         try { t.uaH?.remove() } catch (_: Throwable) {}; t.uaH = null
-        val s = (if (t.desk) HwUa.scriptFor(HwUa.DESK) else HwUa.script()) ?: return
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) try { t.uaH = WebViewCompat.addDocumentStartJavaScript(w, s, setOf("*")) } catch (e: Throwable) { Log.w(TAG, "ua script", e) }
+        try { t.vpH?.remove() } catch (_: Throwable) {}; t.vpH = null
+        if (!dss) return
+        val p = HwUa.presetFor(t.desk)
+        if (p != null) try { t.uaH = WebViewCompat.addDocumentStartJavaScript(w, HwUa.scriptFor(p), setOf("*")) } catch (e: Throwable) { Log.w(TAG, "ua script", e) }
+        if (t.desk) try { t.vpH = WebViewCompat.addDocumentStartJavaScript(w, HwUa.VIEWPORT_JS, setOf("*")) } catch (e: Throwable) { Log.w(TAG, "viewport script", e) }
     }
-    /** v1.8.7: a new user agent (Settings or the browser menu) applies to every open tab; the page on screen reloads */
-    fun applyUa() { post { tabs.values.forEach { t -> t.web?.let { w -> w.settings.userAgentString = if (t.desk) HwUa.DESK.ua else HwUa.ua(baseUa ?: w.settings.userAgentString); uaScript(t, w); if (w.visibility == View.VISIBLE) w.reload() } } } }
-    /** v1.8.8 (R4b): desktop view on/off for one tab: the desktop user agent + navigator hints, a wide viewport, reload */
+    /** v1.8.9 (R18): the tab's user agent (settings.userAgentString), navigator.* hints and viewport, from its desktop flag */
+    private fun applyUaTo(t: Tab, w: WebView) {
+        w.settings.userAgentString = HwUa.uaFor(t.desk, baseUa ?: w.settings.userAgentString)
+        w.settings.useWideViewPort = true; w.settings.loadWithOverviewMode = true
+        uaScript(t, w)
+    }
+    /** a page load with the new user agent: loadUrl of the current address (a plain reload() can keep the old request headers) */
+    private fun reloadUa(t: Tab, w: WebView) {
+        live(t, w)
+        val u = w.url ?: t.url
+        if (t.offline) { leaveSnapshot(t, w); if (isWeb(t.url)) w.loadUrl(t.url) }
+        else if (isWeb(u)) w.loadUrl(u) else w.reload()
+        navEv(t, w, true, 10)
+    }
+    /** v1.8.7: a new user agent (Settings or the browser menu) applies to every open tab; the page on screen reloads.
+     *  v1.8.9 (R18): a desktop user agent puts every tab in desktop view, a phone one takes them out of it */
+    fun applyUa() {
+        post {
+            val dk = HwUa.deskDef()
+            tabs.values.forEach { t ->
+                t.desk = dk
+                t.web?.let { w -> applyUaTo(t, w); if (w.visibility == View.VISIBLE) reloadUa(t, w) else t.reloadOnShow = true }
+                saveMeta(t)
+            }
+        }
+    }
+    /** v1.8.8 (R4b): desktop view on/off for one tab. v1.8.9 (R18): works with any chosen user agent (a desktop preset or
+     *  Custom string is used as is, otherwise Windows Chrome), sets the 1024 px desktop viewport, is kept with the tab
+     *  (meta.json, also through hibernation) and becomes the default for new tabs */
     fun desk(id: String, on: Boolean) {
+        HwUa.setDeskDef(on)
         post {
             val t = tabs[id] ?: return@post; val w = t.web ?: return@post
-            if (t.desk == on) return@post
+            if (t.desk == on) { navEv(t, w, w.progress < 100, w.progress); return@post }
             t.desk = on
-            w.settings.userAgentString = if (on) HwUa.DESK.ua else HwUa.ua(baseUa ?: w.settings.userAgentString)
-            w.settings.useWideViewPort = true; w.settings.loadWithOverviewMode = true
-            uaScript(t, w); live(t, w); w.reload(); navEv(t, w, true, 10)
+            applyUaTo(t, w); reloadUa(t, w); saveMeta(t)
         }
+    }
+    private fun saveMeta(t: Tab) {
+        val d = dir(t.id); val meta = JSONObject().put("url", t.url).put("scroll", t.scroll).put("desk", t.desk).toString().toByteArray()
+        fio { try { d.mkdirs(); atomic(File(d, "meta.json"), meta) } catch (_: Throwable) {} }
+    }
+    /** v1.8.9 (R14): back / forward from the WebView's back-forward cache (no reload) where this WebView supports it.
+     *  Called by reflection so it compiles against any androidx.webkit; a WebView without the feature just skips it. */
+    private fun bfcache(s: WebSettings) {
+        try {
+            if (!WebViewFeature.isFeatureSupported("BACK_FORWARD_CACHE")) return
+            Class.forName("androidx.webkit.WebSettingsCompat").getMethod("setBackForwardCacheEnabled", WebSettings::class.java, java.lang.Boolean.TYPE).invoke(null, s, true)
+        } catch (_: Throwable) {}
     }
     /** v1.8.8 (R4): one of Hwallet's own scripts in the tab's page; the result goes back to Hwallet's page */
     fun evalIn(id: String, seq: Int, code: String) {
@@ -564,6 +678,9 @@ class HwBrowser(
     /** v1.8.7: blocker switched on/off, or this site's shield: reload the page on screen */
     fun reloadShown() { post { visible?.let { tabs[it]?.web?.reload() } } }
 
+    /** v1.8.9 (R14b): the capped path's client keeps an HTTP disk cache (LRU, 64 MB): unchanged resources are revalidated
+     *  with If-None-Match / If-Modified-Since and served from disk (a 304 costs a few hundred bytes of the data limit) */
+    private val brHttp: okhttp3.OkHttpClient by lazy { HwNet.withTimeout(30000).newBuilder().cache(okhttp3.Cache(File(act.cacheDir, "br_http"), 64L * 1024 * 1024)).build() }
     private fun capped(req: WebResourceRequest): WebResourceResponse? {
         if (!HwNet.rate.on() || req.isForMainFrame || req.method != "GET" || req.url.scheme != "https") return null
         return try {
@@ -571,7 +688,7 @@ class HwBrowser(
             val b = okhttp3.Request.Builder().url(url)
             req.requestHeaders?.forEach { (k, v) -> if (!k.equals("Accept-Encoding", true)) b.header(k, v) }
             CookieManager.getInstance().getCookie(url)?.let { b.header("Cookie", it) }
-            val r = HwNet.withTimeout(30000).newCall(b.build()).execute()
+            val r = brHttp.newCall(b.build()).execute()
             val body = r.body ?: run { r.close(); return null }
             val mt = body.contentType()
             val hdr = HashMap<String, String>()
@@ -581,13 +698,13 @@ class HwBrowser(
         } catch (_: Throwable) { null }
     }
 
-    private fun restore(t: Tab, w: WebView, url: String, scroll: Int) {
+    private fun restore(t: Tab, w: WebView, url: String, scroll: Int, bytes: ByteArray?, mht: Boolean) {
         t.restoring = true; t.touched = false; t.pendingScroll = scroll; t.url = url
         w.settings.cacheMode = mode(t)
-        val mht = File(dir(t.id), "page.mht")
-        if (!online() && mht.exists()) { loadSnapshot(t, w); return }
-        val b = readState(File(dir(t.id), "state.bin"))
+        if (!online() && mht) { loadSnapshot(t, w); return }
+        val b = bytes?.let { unState(it) }
         if (b != null && w.restoreState(b) != null) return
+        uncover(t)
         if (isWeb(url)) w.loadUrl(url)
     }
 
@@ -609,15 +726,14 @@ class HwBrowser(
             val bytes = try { b.writeToParcel(p, 0); p.marshall() } finally { p.recycle() }
             if (bytes.size > 4_000_000) return
             val d = dir(t.id); d.mkdirs()
-            val meta = JSONObject().put("url", t.url).put("scroll", t.scroll).toString().toByteArray()
-            Thread { try { atomic(File(d, "state.bin"), bytes); atomic(File(d, "meta.json"), meta) } catch (_: Throwable) {} }.start()
+            val meta = JSONObject().put("url", t.url).put("scroll", t.scroll).put("desk", t.desk).toString().toByteArray()
+            fio { try { atomic(File(d, "state.bin"), bytes); atomic(File(d, "meta.json"), meta) } catch (_: Throwable) {}; trimSoon() }
         } catch (_: Throwable) {}
     }
 
-    private fun readState(f: File): Bundle? {
-        if (!f.exists() || f.length() > 4_000_000) return null
+    private fun unState(a: ByteArray): Bundle? {
         val p = Parcel.obtain()
-        return try { val a = f.readBytes(); p.unmarshall(a, 0, a.size); p.setDataPosition(0); p.readBundle(HwBrowser::class.java.classLoader) } catch (_: Throwable) { null } finally { p.recycle() }
+        return try { p.unmarshall(a, 0, a.size); p.setDataPosition(0); p.readBundle(HwBrowser::class.java.classLoader) } catch (_: Throwable) { null } finally { p.recycle() }
     }
 
     private val snapT = HashMap<String, Runnable>()
@@ -626,8 +742,8 @@ class HwBrowser(
         val r = Runnable {
             val w = t.web ?: return@Runnable
             if (t.offline || !isWeb(w.url)) return@Runnable
-            val d = dir(t.id); d.mkdirs()
-            try { w.saveWebArchive(File(d, "page.mht").absolutePath, false, null) } catch (_: Throwable) {}
+            val d = dir(t.id)
+            fio { d.mkdirs(); ui.post { try { if (t.web === w && !t.offline) w.saveWebArchive(File(d, "page.mht").absolutePath, false, null) } catch (_: Throwable) {} } }
         }
         snapT[t.id] = r; ui.postDelayed(r, 2500)
     }
@@ -640,7 +756,7 @@ class HwBrowser(
             val bmp = Bitmap.createBitmap(360, (w.height * s).toInt().coerceAtLeast(1), Bitmap.Config.RGB_565)
             val c = Canvas(bmp); c.scale(s, s); c.translate(-w.scrollX.toFloat(), -w.scrollY.toFloat()); w.draw(c)
             val d = dir(t.id)
-            io { val o = ByteArrayOutputStream(); bmp.compress(Bitmap.CompressFormat.JPEG, 70, o); bmp.recycle(); d.mkdirs(); atomic(File(d, "thumb.jpg"), o.toByteArray()) }
+            fio { val o = ByteArrayOutputStream(); bmp.compress(Bitmap.CompressFormat.JPEG, 70, o); bmp.recycle(); d.mkdirs(); atomic(File(d, "thumb.jpg"), o.toByteArray()) }
         } catch (_: Throwable) {}
     }
 
@@ -690,7 +806,8 @@ class HwBrowser(
     private val icoBusy = java.util.Collections.synchronizedSet(HashSet<String>())
     private fun icoKey(h: String?): String = (h ?: "").lowercase().removePrefix("www.").replace(Regex("[^a-z0-9.-]"), "_").take(120)
     private fun icoFile(h: String?): File = File(icoDir, icoKey(h) + ".png")
-    private fun io(f: () -> Unit) { Thread { try { f() } catch (e: Throwable) { Log.w(TAG, "browser io failed", e) } }.start() }
+    /** network work (site icons) on its own thread, so it never holds up the file queue ([ioEx]) */
+    private fun io(f: () -> Unit) { Thread { try { f() } catch (e: Throwable) { Log.w(TAG, "browser io failed", e) } }.apply { isDaemon = true }.start() }
 
     fun iconData(host: String): String {
         val f = icoFile(host)
@@ -766,7 +883,9 @@ class HwBrowser(
     companion object {
         /** v1.7.4 (#108): "og" | "m3" | "miuix", optionally ":dark"; set by the page (HwNative.brPtrUi) */
         @Volatile var ptrUiPref: String = "og"
-        const val MAX_LIVE = 4
+        const val MAX_LIVE = 3   // v1.8.9 (R14): the last 3 tabs stay live; older ones hibernate (saved state + picture)
+        const val CAP_TABS = 160L * 1024 * 1024
+        const val CAP_ICONS = 400
         private const val TAG = "HwBrowser"
         // every origin: Chromium accepts only a bare star or scheme://host rules whose host wildcard is a "*." prefix (an https-star rule is invalid)
         private val ORIGINS = setOf("*")

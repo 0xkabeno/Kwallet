@@ -127,7 +127,9 @@ Both apps must come from the same release (same signing key). Kwallet refuses an
 - **Sticky custom fees, one popup design, ad blocker and user agents** *(new in 1.8.7 / 3.98.7)* — a saved custom fee now holds on EVM dApps and WalletConnect too; every signing popup is one graphite sheet; the dApp browser blocks ads and trackers with uBlock Origin's lists and can present itself as another phone, tablet or desktop browser; Monero sends no longer freeze.
 - **Snappy Monero, no size cap between the apps, on-phone page translation** *(new in 1.8.8 / 3.98.8, pre-release)* — Monero scans only the primary address + 2 subaddresses and talks to the node through Hwallet's native client; large Kwallet requests travel as files (no 400 kB cap); every sheet swipes down to close; the browser translates pages on the phone with Mozilla's Bergamot engine through one flashing toolbar icon, and has bookmarks and a one-tap desktop view.
 
-### Known limits (v3.98.8 / v1.8.8)
+- **No phantom Pending rows, instant translation, a browser that remembers, one layout for every style** *(new in 1.8.9 / 3.98.9, pre-release)* — a transaction shows as Pending only after Kwallet signed it and a node returned its id (abandoned dApp requests leave nothing, and old hashless rows are cleaned up once); dApp rows show the network's own coin and the decoded action; translation starts on tap for the whole page (viewport first) with the engine warmed early and a per-page cache; the last 3 tabs stay live and older ones reopen from a saved picture; capped, clearable browser storage; desktop view works with any user agent; every card and list has the same width and margins in OG, Material and MIUIX; Kwallet's dApp sheet gets a late preview in place instead of opening half-empty.
+
+### Known limits (v3.98.9 / v1.8.9)
 
 - Monero: the scan runs inside Hwallet (WebView worker); it continues in the background while Hwallet's always-on service keeps the app alive, and resumes from its saved cache when Hwallet is opened again after Android closed it. Nodes must be HTTPS (Android blocks plain http). The node learns your IP and which blocks you download, never your view key. The scan watches account 0: the primary address and subaddresses #1-#2 (or up to the paired index); funds sent to other accounts or higher subaddresses made elsewhere are not seen. Large Kwallet requests need Kwallet 3.98.8 or later. Monero needs Android System WebView 97 or later. The browser HTML builds have no Monero engine (it ships as `xmr/hwxmr.js` inside the APKs).
 - Approve → Swap is two Kwallet sheets with Hwallet's stepper between them (no Permit2 / EIP-2612 signature path yet). Approvals are always for the exact amount and skipped when the allowance is already enough.
@@ -182,8 +184,8 @@ Get the latest files from **[Releases](https://github.com/0xkabeno/Kwallet/relea
 # put the downloads and SHA256SUMS.txt in one folder, then
 sha256sum -c SHA256SUMS.txt --ignore-missing      # every line must say OK
 # Android: both APKs must carry the same signing certificate
-apksigner verify --print-certs Kwallet-v3.98.8.apk | grep SHA-256
-apksigner verify --print-certs Hwallet-v1.8.6.apk  | grep SHA-256
+apksigner verify --print-certs Kwallet-v3.98.9.apk | grep SHA-256
+apksigner verify --print-certs Hwallet-v1.8.9.apk  | grep SHA-256
 ```
 
 On Android, open the APK and allow *Install unknown apps* once. Updates install over the previous version (same permanent key).

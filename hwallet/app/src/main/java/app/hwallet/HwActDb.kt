@@ -23,6 +23,7 @@ class HwActDb private constructor(c: Context) : SQLiteOpenHelper(c.applicationCo
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+    override fun onOpen(db: SQLiteDatabase) { super.onOpen(db); if (!db.isReadOnly) purgeHashless(db) }
 
     override fun onConfigure(db: SQLiteDatabase) {
         super.onConfigure(db)
@@ -35,6 +36,7 @@ class HwActDb private constructor(c: Context) : SQLiteOpenHelper(c.applicationCo
         /** set by the open activity: (wallet id, JSON array of new or changed rows) -> patch the Activity list in place */
         @Volatile var listener: ((String, String) -> Unit)? = null
         const val KEEP = 3000
+        fun hashOk(h: String?): Boolean { val s = h?.trim() ?: return false; return s.length in 16..160 && s != "undefined" && s != "null" && !s.contains(' ') }
     }
 
     /** newest rows first, as one JSON array string (read straight into the page) */
@@ -61,6 +63,7 @@ class HwActDb private constructor(c: Context) : SQLiteOpenHelper(c.applicationCo
                 for (o in items) {
                     val k = o.optString("k"); if (k.isEmpty()) continue
                     val st = o.optString("st"); val hash = o.optString("hash"); val ch = o.optString("ch")
+                    if (st == "pending" && !hashOk(hash)) continue   // v1.8.9 (R17): never a Pending row without a tx id
                     val j = o.toString()
                     var oldSt: String? = null; var oldJ: String? = null
                     db.rawQuery("SELECT st, j FROM act WHERE wid=? AND k=?", arrayOf(wid, k)).use { c -> if (c.moveToFirst()) { oldSt = c.getString(0); oldJ = c.getString(1) } }
@@ -84,6 +87,18 @@ class HwActDb private constructor(c: Context) : SQLiteOpenHelper(c.applicationCo
         if (notify && changed.length() > 0) try { listener?.invoke(wid, changed.toString()) } catch (_: Throwable) {}
         return changed
     }
+
+    /** v1.8.9 (R17): a local Pending entry the page removed (never broadcast, or dropped by the network) */
+    fun dropPending(wid: String, ch: String, hash: String) {
+        try {
+            if (hash.isEmpty()) writableDatabase.delete("act", "wid=? AND ch=? AND st='pending' AND (hash IS NULL OR hash='' OR hash='undefined' OR hash='null')", arrayOf(wid, ch))
+            else writableDatabase.delete("act", "wid=? AND ch=? AND hash=? AND st='pending'", arrayOf(wid, ch, hash))
+        } catch (_: Throwable) {}
+    }
+    /** v1.8.9 (R17): every Pending row without a tx id, in every wallet (one-time cleanup and on each open) */
+    fun purgeHashless(db: SQLiteDatabase = writableDatabase): Int = try {
+        db.delete("act", "st='pending' AND (hash IS NULL OR length(hash) < 16 OR hash='undefined' OR hash='null')", null)
+    } catch (_: Throwable) { 0 }
 
     /** chains that still have a pending send from Hwallet (the service then checks them every few seconds) */
     fun pendingChains(wid: String): Set<String> {

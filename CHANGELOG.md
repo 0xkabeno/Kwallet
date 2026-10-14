@@ -1,5 +1,42 @@
 # Changelog
 
+## Kwallet v3.98.9 · Hwallet v1.8.9 (2026-10-14, pre-release)
+
+Pre-release for phone testing. Not tested on a device or emulator by the build: only static checks (`node --check` of every inline script in both apps and of the translation and Monero engines, CSS brace balance and a full CSS parse of both apps) and the CI build.
+
+### Activity: no Pending without a signed, broadcast transaction
+- A local Activity entry is written only after Kwallet signed the transaction and a node returned its transaction id, for every source (Send, Stake, Swap, dApps in the browser, WalletConnect) and every chain. Cancel, reject in Kwallet, swipe-down, an expired request or a dApp that gives up writes nothing, anywhere (Activity, the coin's history, notifications, the background service).
+- An EVM broadcast counts only when the node answers with a real 32-byte transaction id ("already known" = this exact signed transaction is in the node's pool).
+- One-time cleanup on upgrade (and a cheap check at every start): Pending rows without a transaction id are deleted in every paired wallet, in the activity cache on disk and in the notification shade. Rows that do have an id but that the chain never saw (a node accepted and dropped it, or another transaction with the same nonce replaced it) are removed after 10 minutes, once two checks at least 90 s apart both find nothing (Bitcoin: after 72 hours).
+- dApp rows show the network's own coin (BNB on BNB Chain, POL on Polygon) and the decoded action ("Approve USDT", "Swap USDT → BNB", the contract method, else "App interaction"), with the network and the app's full name underneath.
+- Audit: Solana, Tron, Bitcoin and Monero already wrote their entry only after a broadcast returned an id; they now go through the same check (a Monero send without an id leaves the row to the Monero engine's own pool listing).
+
+### Kwallet's dApp sheet opens complete
+- Hwallet shows "Preparing…" while the preview (balance changes, decoded method, contract and token names) runs in parallel with the fee, gas and nonce reads; it now gets up to 8 s (was 5 s). If it answers later, the result is pushed to Kwallet's open sheet over the live feed and the sheet redraws with it (no more cancel-and-retry). The site icon loads alongside instead of before.
+- Decoded method names and verified contract names are kept on the phone (not just for the session), so a second attempt is never needed; token metadata was already kept.
+- Identical read requests in flight at the same moment share one network call.
+
+### Hwallet browser
+- Translation starts on tap for the whole page: text in and just below the viewport first, then the rest in batches of up to 150 strings, without scrolling. New content is collected as it appears and translated in batches. The engine and the language model start loading as soon as a foreign page is seen (not while the mobile-data limit is on), stay in memory between pages, and the next pages of a tab you translated are translated by themselves. Translations are cached per page (URL + language pair + text hash) on the phone, so Back and revisits are translated at once.
+- Page memory: the last 3 tabs stay live; older tabs hibernate and come back showing their last picture at once while the page restores. Back / forward use the WebView's back-forward cache where the phone's WebView supports it. With the mobile-data limit on, sub-resources go through an HTTP disk cache (64 MB) with conditional revalidation, so unchanged files are not downloaded again.
+- Storage stays bounded: saved pages of the least recently used tabs are dropped first above 160 MB (their history stays), at most 400 site icons, 300 translated pages; file reads and writes run on one background thread (tab state is no longer read on the UI thread); history is written when the page is idle and keeps the newest 400 pages. Browser settings shows saved tabs, cache, site icons and translations, with "Clear cached pages" next to Clear all.
+- Desktop view works with any user agent: the tab gets the chosen user agent if it is a desktop one (preset or Custom), otherwise Windows Chrome, set through the WebView's user agent, with a 1024 px desktop viewport (wide viewport + overview mode + the page's meta viewport rewritten at document start), and navigator.platform / maxTouchPoints / userAgentData to match (a Custom string is read for its platform and browser). It is kept per tab (also through hibernation and restarts), becomes the default for new tabs, and the menu button shows the tab's real state. Choosing a desktop user agent in Settings turns desktop view on for the tabs; a phone one turns it off.
+
+### One layout for every style
+- Shared layout tokens: every page, card and list has the same 16 px side margin, row padding and 40 px icon column in OG, Material UI (and Material You colours) and MIUIX, light and dark; the styles change colour, corner radius and shadow only. MIUIX no longer pulls cards 4 px wider; Settings cards and the Support card line up with the Wallet list.
+- Material and MIUIX: the Wallet list, a network's token list, the networks list and search results get the same row cards as Activity (card surface, 2 px gap, the style's corners). OG keeps its flat list.
+- The price / change line wraps before the balance column takes its space (no more "-3.1…"); the Monero icon is the same size and in the same column as the others.
+
+### Known issues
+- Nothing in this release was run on a device or emulator before publishing; the user's phone test decides when it becomes the latest release.
+- The dropped-transaction sweep needs the network: a row whose id the chain never saw stays Pending until two checks find nothing (10+ minutes after sending). A public node that loses track of a real transaction for two checks would remove its local row early; the confirmed transaction still appears from the chain's history.
+- Back-forward cache: switched on through androidx.webkit when the installed Android System WebView offers it; on WebViews without it, Back reloads from the HTTP cache as before.
+- Hibernated tabs show their last picture only if one was saved (the tab switcher saves it); a tab without one restores as before.
+- Translation warm-up downloads the engine and the language model (up to about 45 MB) when a foreign page is first seen, before any tap, unless the mobile-data limit is on.
+- Desktop view: sites that detect touch support or screen size in script may still serve their mobile layout.
+- Kwallet's sheet takes a late preview only from Kwallet 3.98.9; older Kwallet builds ignore it (they open as before).
+- Partly done from the performance request: Hwallet already rendered balances, tokens, prices and Activity from its caches on open and kept HTTP connections alive and RPC calls batched; this release adds in-flight de-duplication and persistent decode caches, but does not yet gate balance and history refreshes on per-chain block or latest-signature checks, nor move those caches to IndexedDB.
+
 ## Kwallet v3.98.8 · Hwallet v1.8.8 (2026-10-14, pre-release)
 
 Pre-release for phone testing. Not tested on a device or emulator by the build: only static checks (inline JS syntax of both apps, CSS brace balance and parse, `node --check` of the Monero and translation engines and the browser provider) and the CI build.

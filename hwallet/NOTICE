@@ -78,6 +78,7 @@ no affiliation or endorsement. Sources (fetched 2026-10-11):
   Drift: https://app.drift.trade/android-chrome-192x192.png
 Other sites' icons are fetched by the phone from the site itself on the first visit and cached locally.
 
+Monero logo (since v1.8.9): the bundled Monero mark is cropped to its own edges (the transparent border removed) so it is the same size as the other round chain icons; no other change.
 Base network logo (official Base square): https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png (Trust Wallet assets, MIT), placed on a white circle for round chips.
 
 v1.8 / Kwallet v3.98 Monero engine (hwallet/web/xmr/hwxmr.js and web/xmr/hwxmr.js, one identical file, bundled offline):
