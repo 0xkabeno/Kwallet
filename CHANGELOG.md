@@ -1,5 +1,38 @@
 # Changelog
 
+## Kwallet v3.98.10 · Hwallet v1.8.10 (2026-10-14, pre-release)
+
+Pre-release for phone testing. Not tested on a device or emulator by the build: only static checks (`node --check` of every inline script in both apps and of the translation engine, the Monero engine and the browser provider, CSS brace balance and a full CSS parse of both apps), a scripted run of Hwallet's dApp request router in Node with stubbed Android bridges, and the CI build.
+
+### dApps in the Hwallet browser (EVM, Solana, Tron)
+- Reported: since 1.8.9, dApps show an error instead of opening Kwallet. Hwallet's request router was run against the shipped page with a paired wallet and a connected site: connect, switch chain, `eth_signTypedData_v4` (Permit2), `personal_sign`, `eth_sendTransaction`, `solana_signMessage`, `solana_signTransaction`, `tron_signMessage` and `tron_signTransaction` all open Kwallet and hand its answer back with the page's own request id. The cause could not be reproduced without the phone, so the 1.8.9 changes that can stop it on a real phone are fixed:
+  - Full browser storage: a full localStorage made a new site connection fail to save, so every signing request was refused with "Connect to this site first" before Kwallet opened, on every chain. Hwallet now drops its rebuildable caches (decoded method names and contract names added in 1.8.9, browsing history) and saves again; the connected-sites list is also kept in memory, and site icons stored with it are https links only (an inline image could take up to 90 KB per site).
+  - Shared node reads (1.8.9): filters, subscriptions, nonce, account and signing calls are never shared between callers any more, and a shared answer is copied for each caller.
+  - Translation never rewrites a page by itself when the site is connected to the wallet (React apps can break when their text changes under them). Tap Translate to translate such a page.
+
+### Round action buttons in every style
+- Send, Receive, Swap, Stake and Trust line are full circles of one size (54 px, 22 px icon) on Home, the coin pages and everywhere else, in OG, Material UI, Material You and MIUIX, light and dark. Only the colour changes with the style (Material UI no longer draws rounded squares).
+
+### The same cards and spacing everywhere
+- OG gets the same row cards as the other styles for the Wallet list, a network's token list, the networks list and search results (Activity, Settings and the coin info card already had them).
+- New shared spacing tokens used by every container: one 8 px gap between cards, tiles and panels, 2 px between rows of one card, the 16 px screen gutter (also the side padding of every sheet and picker), 14 px tile corners. Grids of tiles (browser menu, bookmarks, tab switcher) keep equal widths whatever the labels say. Sheets start closer to their handle, section titles take less height.
+
+### Mobile data: Adaptive
+- Settings › Network has **Adaptive** next to the speed limit and Unlimited. With Adaptive on there is no fixed speed cap; on mobile or metered data Hwallet refreshes half as often, and on a slow link (2G/3G, under about 1.5 Mbit/s, or Data Saver) a quarter as often, loads no new remote token icons and does not start the translation model download. Wi-Fi is never adapted. The Network row shows "Mobile data: Adaptive". Turning it off brings back the speed you had set.
+
+### Browser
+- The orange **Data limit** pill in the address bar is a switch: tap to turn the limit off (the pill stays, dimmed, reading "Data limit off"), tap again to turn your speed back on. It looks the same as before.
+
+### Monero
+- The Monero coin page has a pause / resume button at the top right of the header. Pausing stops the scan right away (it saves where it got to) and also holds any rescan; the status line reads "Paused · N blocks left". Resume continues from the saved height, never from the start. The pause is kept per wallet across restarts. Balances and sending keep working from what was already scanned.
+
+### Known issues
+- Nothing in this release was run on a device or emulator before publishing; the phone test decides when it becomes the latest release.
+- The dApp error from 1.8.9 was not reproduced: if it still happens, the exact message the dApp shows (or a screenshot) is what pins it down. Possible remaining causes that need the phone: the Android WebView back-forward cache (switched on in 1.8.9 where offered) and desktop view becoming the default for new tabs once it was used.
+- "Paused · N blocks left" counts from the last known chain height; right after a restart while paused it uses an estimate from the date until the node is asked again (on resume).
+- Adaptive reads connection speed from the WebView's network information; on WebViews that do not report it, only the mobile/metered state is used.
+- Kwallet 3.98.10 only changes its version number; its signing sheet is the same as 3.98.9.
+
 ## Kwallet v3.98.9 · Hwallet v1.8.9 (2026-10-14, pre-release)
 
 Pre-release for phone testing. Not tested on a device or emulator by the build: only static checks (`node --check` of every inline script in both apps and of the translation and Monero engines, CSS brace balance and a full CSS parse of both apps) and the CI build.

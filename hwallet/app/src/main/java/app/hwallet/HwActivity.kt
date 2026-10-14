@@ -340,6 +340,10 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun capActive(): Boolean = HwNet.rate.on()
 
+        /** v1.8.10 (push 15, R3): the default network is mobile data or metered (Wi-Fi / Ethernet never), for Adaptive mode */
+        @android.webkit.JavascriptInterface
+        fun netMobile(): Boolean = HwNet.mobile
+
         /* v1.6 (#59/#83): Browser tab (HwBrowser.kt). Tab ids are t[0-9a-z]+; positions are CSS px of the page's #br-v box. */
         @android.webkit.JavascriptInterface
         fun brInit(script: String) { brw().init(script) }
