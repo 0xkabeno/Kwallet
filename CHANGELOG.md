@@ -1,5 +1,31 @@
 # Changelog
 
+## Kwallet v3.98.13 · Hwallet v1.8.13 (2026-10-15, work in progress)
+
+Working build on the `wip-3.98.13` branch for phone testing. Not tested on a device or emulator: only static checks (`node --check` of every inline script and of the injected Browser scripts, an ESLint no-undef comparison against v3.98.12 / v1.8.12) and the CI build.
+
+### Kwallet
+- Bottom of the main screen (3.98.12 report): the empty band above the navigation bar and the cut-off last rows are gone. The page already ends above the bar and the bar is painted solid in the page colour; a second fixed strip of the same height sat inside the page (the page box contains its fixed children) and covered the bottom rows. It is removed, the solid bar stays (no transparent bar, nothing drawn behind it). The same extra band on the full-screen Settings page is removed too.
+- Monero signing: a Monero engine that cannot start now shows its real reason on the sheet at once (it used to be swallowed, then Confirm waited for the 110 s limit), and an engine that stops while working fails every waiting request immediately.
+- XRP Ledger: the signed transaction fields go back to Hwallet with the signature (for WalletConnect `xrpl_signTransaction`).
+- Shorter Monero sheet texts.
+
+### Hwallet
+- Settings › Chains: an on/off switch per chain and per EVM network. Off means no request at all for it (balances, history, prices, nodes, explorers, WebSockets, the live service, WalletConnect, Browser wallet requests, Monero sync: the native engine closes and its service stops) and it disappears from every list and picker. Only Settings › Chains still lists it. Saved; turning it on resumes normally. Present in every UI style.
+- WalletConnect: Sui (`sui:mainnet`: signPersonalMessage, signTransaction, signAndExecuteTransaction and the *TransactionBlock forms), Cardano (`cip34:1-764824073`: signTx, signData, submitTx, getBalance, getUtxos, getCollateral, getNetworkId, addresses), XRP Ledger (`xrpl:0`: xrpl_signTransaction with tx_json, autofill and submit) and Bitcoin (`bip122:000000000019d6689c085ae165831e93`: getAccountAddresses, sendTransfer). Signing goes through the same Kwallet sheets as the Browser's providers.
+- Monero: a request to Kwallet that gets no sheet within 45 s ends with "Kwallet didn't answer. Open Kwallet once and try again" instead of waiting up to 5 minutes; once Kwallet's sheet is up, you have the normal time to approve.
+- Monero (native engine): Sync spent status exports the outputs with wallet2's refresh paused (like a send) and always releases it, also on errors; a failed build / submit / export never leaves the wallet held.
+- Monero: outputs whose key images Kwallet returned in Sync spent status are remembered as checked, so "received outputs are not checked for spends" clears (spent ones are still frozen; a view-only wallet2 cannot import key images without wallet2's encrypted key-image file).
+- Browser: incognito tabs (tab switcher and menu). No history, no saved tab state, snapshot, thumbnail or site icon; on WebViews with profile support they run in their own profile (cookies, storage, cache) which is deleted when the last incognito tab closes. Marked in the address bar and the tab switcher.
+- Browser: Settings › Saved inputs. Offers to save logins (password sealed with an Android Keystore AES-GCM key), emails, other form fields and pasted chain addresses; a "Saved" chip on a field opens Hwallet's own picker to fill it. View, copy, edit and delete by type (Passwords, Emails, Inputs, Addresses by chain). Never from incognito tabs.
+- Shorter Monero texts.
+
+### Known issues
+- Nothing in this build was run on a device or emulator.
+- WalletConnect Bitcoin: signMessage and signPsbt are not supported (Kwallet has no Bitcoin message or PSBT signer); sendTransfer has no memo and always returns change to your address. XRPL: xrpl_signTransactionFor (multi-sign) is not supported. Cardano: Kwallet signs with the payment key only.
+- Incognito on a WebView without profile support (older than about version 123): cookies and site storage of the visited sites are deleted when the tab closes, but they were shared with normal tabs while it was open. Wallet connections approved in an incognito tab are kept in Connected sites.
+- Saved inputs: the "Saved" chip and the save offer work on ordinary HTML forms; sites that build their own login widgets may not trigger them.
+
 ## Kwallet v3.98.12 · Hwallet v1.8.12 (2026-10-14, pre-release)
 
 Pre-release for phone testing. Not tested on a device or emulator: only static checks (`node --check` of every inline script in both apps and of the JS modules, CSS brace balance and a full CSS parse of both apps), Node tests of Kwallet's new signers against the official libraries, mock dApps that drive Hwallet's injected providers with the dApp-side libraries, a scripted run of Kwallet's approval sheet in headless Chromium, and the CI build.

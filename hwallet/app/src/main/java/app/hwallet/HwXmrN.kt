@@ -212,7 +212,14 @@ object HwXmrN {
     } catch (_: Throwable) { "" }
 
     private fun prefs(c: Context) = c.getSharedPreferences(PREF, Context.MODE_PRIVATE)
-    fun wanted(c: Context): Boolean = try { prefs(c).getBoolean("want", false) && !prefs(c).getBoolean("paused", false) && prefs(c).getString("cfg", null) != null } catch (_: Throwable) { false }
+    /** v1.8.13: Settings > Chains > Monero off: the wallet is closed (saved), the service stops, nothing reaches a node, and
+     *  nothing restarts it (boot, service restart, page) until Monero is turned on again */
+    fun isOff(c: Context): Boolean = try { prefs(c).getBoolean("off", false) } catch (_: Throwable) { false }
+    fun setOff(c: Context, off: Boolean) {
+        try { prefs(c).edit().putBoolean("off", off).apply() } catch (_: Throwable) {}
+        if (off) ex.execute { try { close(true) } catch (_: Throwable) {}; h = 0; dh = 0; synced = false; err = ""; try { onTick?.invoke() } catch (_: Throwable) {} }
+    }
+    fun wanted(c: Context): Boolean = try { !prefs(c).getBoolean("off", false) && prefs(c).getBoolean("want", false) && !prefs(c).getBoolean("paused", false) && prefs(c).getString("cfg", null) != null } catch (_: Throwable) { false }
 
     private fun saveCfg(c: Context, cfg: JSONObject) {
         val o = JSONObject(cfg.toString()); o.put("view", seal(cfg.optString("view")))
@@ -241,8 +248,10 @@ object HwXmrN {
                     "label" -> { lw().MONERO_Wallet_setSubaddressLabel(wp(), 0, a.optInt("i"), a.optString("label").take(40)); store(true); true }
                     "build" -> build(c, a)
                     "submit" -> submit(c, a)
-                    "importKI" -> importKI(a)
-                    "outputs" -> JSONObject().put("outputs", outputsHex(c))
+                    "importKI" -> held { importKI(a) }
+                    /* v1.8.13: Sync spent status exports the outputs with wallet2's refresh paused (as build() does), so it never
+                       waits behind a slow refresh on this thread; released afterwards, also when it fails */
+                    "outputs" -> held { JSONObject().put("outputs", outputsHex(c)) }
                     "release" -> { hold = 0; arm(); true }
                     "save" -> { store(true); true }
                     "close" -> { close(true); true }
@@ -251,9 +260,40 @@ object HwXmrN {
                 }
                 done(true, if (r is JSONObject) r.toString() else if (r == null) "null" else r.toString())
             } catch (e: Throwable) {
+                /* v1.8.13: a failed build / submit / export never leaves the wallet held (refresh paused) */
+                if (op == "build" || op == "submit" || op == "outputs" || op == "importKI") releaseHold()
                 done(false, JSONObject().put("e", (e.message ?: e.toString()).take(400)).toString())
             }
         }
+    }
+
+    /** v1.8.13: run [f] with wallet2's refresh paused and the hold set; the hold is released afterwards, whatever happens */
+    private fun <T> held(f: () -> T): T {
+        val L = lw(); val p = wp()
+        hold = System.currentTimeMillis() + 240000
+        try { L.MONERO_Wallet_pauseRefresh(p) } catch (_: Throwable) {}
+        try { return f() } finally { releaseHold() }
+    }
+    private fun releaseHold() { hold = 0; try { arm() } catch (_: Throwable) {} }
+
+    /* v1.8.13: outputs whose key image Kwallet returned in a "Sync spent status" (by output public key). A view-only wallet2
+       cannot import key images without the encrypted wallet2 key-image file, so the spent ones are frozen (as before) and
+       every checked one is remembered here, which clears the "not checked for spends" count for it. Kept in the wallet's
+       folder, so it goes with a rescan / forget. */
+    private val checked = HashSet<String>()
+    @Volatile private var checkedDir: String = ""
+    private fun checkedFile(): File? = dir?.let { File(it, "ki_checked") }
+    private fun loadChecked() {
+        val d = dir?.absolutePath ?: return
+        if (checkedDir == d) return
+        synchronized(checked) {
+            checked.clear(); checkedDir = d
+            try { checkedFile()?.takeIf { it.exists() && it.length() < 8_000_000 }?.readLines()?.forEach { l -> val k = l.trim(); if (Regex("^[0-9a-f]{64}$").matches(k)) checked.add(k) } } catch (_: Throwable) {}
+        }
+    }
+    private fun saveChecked() {
+        val f = checkedFile() ?: return
+        try { val tmp = File(f.parentFile, f.name + ".tmp"); synchronized(checked) { tmp.writeText(checked.joinToString("\n")) }; if (!tmp.renameTo(f)) { f.delete(); tmp.renameTo(f) } } catch (_: Throwable) {}
     }
 
     /** cheap status for the page's 1 s poll: cached values only, never a library call */
@@ -282,6 +322,7 @@ object HwXmrN {
 
     private fun open(c: Context, a: JSONObject): JSONObject? {
         val L = lib(c) ?: throw IllegalStateException("The native Monero engine is not available: $loadErr")
+        if (isOff(c)) throw IllegalStateException("Monero is turned off in Settings > Chains")
         val addr = a.optString("address"); val view = a.optString("view").lowercase()
         if (!Regex("^4[1-9A-HJ-NP-Za-km-z]{94}$").matches(addr)) throw IllegalArgumentException("Need the primary Monero address (starts with 4)")
         if (!Regex("^[0-9a-f]{64}$").matches(view)) throw IllegalArgumentException("Need the private view key")
@@ -330,7 +371,7 @@ object HwXmrN {
         val cfg = loadCfg(c) ?: throw IllegalStateException("Monero wallet is not open")
         open(c, cfg)
     }
-    fun resumeAsync(c: Context) { ex.execute { try { if (lib(c) != null && loadCfg(c) != null) resume(c) } catch (e: Throwable) { err = (e.message ?: "").take(200) } } }
+    fun resumeAsync(c: Context) { ex.execute { try { if (!isOff(c) && lib(c) != null && loadCfg(c) != null) resume(c) } catch (e: Throwable) { err = (e.message ?: "").take(200) } } }
 
     /** refresh on unless the user paused or a send holds the wallet */
     private fun arm() {
@@ -405,6 +446,7 @@ object HwXmrN {
         val L = lib ?: return null; val p = w ?: return null
         val coins = L.MONERO_Wallet_coins(p); val per = HashMap<String, Array<BigInteger>>(); val used = HashSet<String>(); var kiMissing = 0
         val accs = sortedSetOf(0)
+        loadChecked()
         if (coins != null) {
             L.MONERO_Coins_refresh(coins)
             for (i in 0 until L.MONERO_Coins_count(coins)) {
@@ -415,7 +457,7 @@ object HwXmrN {
                 val amt = BigInteger(java.lang.Long.toUnsignedString(L.MONERO_CoinsInfo_amount(ci)))
                 val e = per.getOrPut(k) { arrayOf(BigInteger.ZERO, BigInteger.ZERO) }
                 e[0] = e[0].add(amt); if (b(L.MONERO_CoinsInfo_unlocked(ci))) e[1] = e[1].add(amt)
-                if (!b(L.MONERO_CoinsInfo_keyImageKnown(ci))) kiMissing++
+                if (!b(L.MONERO_CoinsInfo_keyImageKnown(ci))) { val pk = (L.MONERO_CoinsInfo_pubKey(ci) ?: "").lowercase(); if (synchronized(checked) { !checked.contains(pk) }) kiMissing++ }
             }
         }
         fun u(v: Long) = java.lang.Long.toUnsignedString(v)
@@ -533,6 +575,7 @@ object HwXmrN {
             ask.add(hx to ci)
         }
         var spent = BigInteger.ZERO; var unspent = BigInteger.ZERO
+        loadChecked()
         for (chunk in ask.chunked(100)) {
             val body = JSONObject().put("key_images", JSONArray(chunk.map { it.first })).toString().toByteArray()
             val (st, out, _) = Relay.forward("POST", "/is_key_image_spent", "application/json", body)
@@ -540,9 +583,12 @@ object HwXmrN {
             val arr = JSONObject(String(out)).optJSONArray("spent_status") ?: throw IllegalStateException("The Monero node gave no spent status")
             for (j in chunk.indices) {
                 val ci = chunk[j].second; val amt = BigInteger(java.lang.Long.toUnsignedString(L.MONERO_CoinsInfo_amount(ci)))
-                if (arr.optInt(j, 0) != 0) { L.MONERO_Coins_setFrozenByPublicKey(coins, L.MONERO_CoinsInfo_pubKey(ci) ?: continue); spent = spent.add(amt) } else unspent = unspent.add(amt)
+                val pk = L.MONERO_CoinsInfo_pubKey(ci) ?: continue
+                if (arr.optInt(j, 0) != 0) { L.MONERO_Coins_setFrozenByPublicKey(coins, pk); spent = spent.add(amt) } else unspent = unspent.add(amt)
+                synchronized(checked) { checked.add(pk.lowercase()) }
             }
         }
+        saveChecked()
         store(true)
         return JSONObject().put("spent", spent.toString()).put("unspent", unspent.toString()).put("state", state())
     }

@@ -4078,9 +4078,10 @@ html:not(#p12a):not(#p12b):not(#p12c):not(#p12d):not(#p12e):not(#p12f):not(#p12g
 
 html.hwa:not(#p12a):not(#p12b):not(#p12c):not(#p12d):not(#p12e):not(#p12f):not(#p12g):not(#p12h) body::after { content: ''; position: fixed; left: 0; right: 0; bottom: 0; height: var(--sab, 0px); background: var(--navbg, var(--bg)); z-index: 29; pointer-events: none; }
 html.hwa:not(#p12a):not(#p12b):not(#p12c):not(#p12d):not(#p12e):not(#p12f):not(#p12g):not(#p12h) .kws-page.hw-subpg, html.hwa:not(#p12a):not(#p12b):not(#p12c):not(#p12d):not(#p12e):not(#p12f):not(#p12g):not(#p12h) .hw-subpg { border-bottom: var(--sab, 0px) solid var(--bg) !important; box-sizing: border-box !important; }
-html.kwa:not(#p12a):not(#p12b):not(#p12c):not(#p12d):not(#p12e):not(#p12f):not(#p12g):not(#p12h) body::after { content: ''; position: fixed; left: 0; right: 0; bottom: 0; height: var(--kw-sab, 0px); background: var(--bg); z-index: 9; pointer-events: none; }
+/* v3.98.13: the body already ends above the navigation bar (html.kw-e2e body: bottom = --kw-sab) and the html background paints the bar solid in the page colour (--kw-bot). body is position: fixed + contain: layout, so this fixed strip sat INSIDE the body, a second --kw-sab band above the bar that covered the last rows. Removed (no transparent bar, no content behind it). */
+html.kwa:not(#p12a):not(#p12b):not(#p12c):not(#p12d):not(#p12e):not(#p12f):not(#p12g):not(#p12h) body::after { content: none !important; display: none !important; }
 html.kwa:not(#p12a):not(#p12b):not(#p12c):not(#p12d):not(#p12e):not(#p12f):not(#p12g):not(#p12h).kw-sign body::after { display: none !important; }
-html.kwa:not(#p12a):not(#p12b):not(#p12c):not(#p12d):not(#p12e):not(#p12f):not(#p12g):not(#p12h) #settings-overlay.kws-full .kws { border-bottom: var(--kw-sab, 0px) solid var(--bg) !important; }
+/* v3.98.13: same double band on the full-screen Settings page (it lives inside the inset body): removed */
 
 html.hwa:not(#p12a):not(#p12b):not(#p12c):not(#p12d):not(#p12e):not(#p12f):not(#p12g):not(#p12h) .br-mn { display: flex !important; justify-content: space-between !important; margin: 2px 0 10px !important; }
 html.hwa:not(#p12a):not(#p12b):not(#p12c):not(#p12d):not(#p12e):not(#p12f):not(#p12g):not(#p12h) .br-mn button { flex: 1 1 0 !important; width: auto !important; height: 44px !important; border-radius: 14px !important; margin: 0 4px !important; }
@@ -12406,8 +12407,8 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98.12';
-const APP_BUILD = '2026-10-14';
+const APP_VERSION = '3.98.13';
+const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
 let clickOrder = {}; // key -> order number (1,2,3...)
@@ -20004,6 +20005,15 @@ window.kwBack = function () {
     for (var i = layers.length - 1; i >= 0; i--) { var c = layers[i], a = c[3]; out = [out[0] * (1 - a) + c[0] * a, out[1] * (1 - a) + c[1] * a, out[2] * (1 - a) + c[2] * a, 1]; }
     return hex(out);
   }
+  /* v3.98.13: the navigation bar takes the page colour (as when the old in-body strip covered the bottom rows), or the
+     colour of a sheet / overlay that sits above that strip's level (z-index > 9) at the bottom edge */
+  function navAt(x, y, base) {
+    var el = document.elementFromPoint(x, y);
+    for (var e = el; e && e.nodeType === 1 && e !== document.body && e !== document.documentElement; e = e.parentElement) {
+      var cs = getComputedStyle(e); if (cs.position !== 'static' && (parseInt(cs.zIndex, 10) || 0) > 9) return bgAt(x, y, base);
+    }
+    return hex(base);
+  }
   function push() {
     var top, bot, kl = document.getElementById('kl-root');
     if (kl && kl.style.display !== 'none' && !kl.classList.contains('kl-out')) { var kc = parse(getComputedStyle(kl).backgroundColor); top = bot = kc ? hex(kc) : '#ddf869'; }
@@ -20011,7 +20021,7 @@ window.kwBack = function () {
       var base = parse(getComputedStyle(document.body).backgroundColor) || [255, 255, 255, 1];
       if (base[3] < 0.99) base = [255, 255, 255, 1];
       var r = document.body.getBoundingClientRect(), x = Math.max(1, r.left + r.width / 2);
-      top = bgAt(x, r.top + 1, base); bot = bgAt(x, r.bottom - 2, base);
+      top = bgAt(x, r.top + 1, base); bot = navAt(x, r.bottom - 2, base);
     }
     var k = top + bot; if (k === last) return; last = k;
     de.style.setProperty('--kw-top', top); de.style.setProperty('--kw-bot', bot);
@@ -22243,7 +22253,14 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           var q = KX.q[m.id]; if (!q) return; delete KX.q[m.id]; clearTimeout(q.t);
           if (m.ok) q.res(m.r); else q.rej(new Error(m.e || 'Monero engine error'));
         };
-        w.onerror = function (ev) { try { ev.preventDefault(); } catch (x) {} if (!settled && !blobbed) { try { w.terminate(); } catch (x) {} blob(); } else if (!settled) { settled = true; rej(new Error('The Monero engine could not start')); } };
+        w.onerror = function (ev) {
+          try { ev.preventDefault(); } catch (x) {}
+          var why = String(ev && ev.message || '').replace(/^Uncaught\s*/, '').slice(0, 200);
+          if (!settled && !blobbed) { try { w.terminate(); } catch (x) {} blob(); }
+          else if (!settled) { settled = true; rej(new Error('The Monero engine could not start' + (why ? ': ' + why : ''))); }
+          else if (KX.w === w) kxDead('The Monero engine stopped' + (why ? ': ' + why : ''));   /* v3.98.13: it died after it started: fail every waiting request now, not after 110 s */
+        };
+        w.onmessageerror = function () { if (settled && KX.w === w) kxDead('The Monero engine sent an unreadable answer'); };
       }
       function blob() {
         fetch('xmr/hwxmr.js').then(function (r) { if (!r.ok) throw new Error('missing'); return r.text(); }).then(function (t) {
@@ -22264,6 +22281,11 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     });
   }
   function kxStop() { try { if (KX.w) KX.w.terminate(); } catch (e) {} KX.w = null; KX.ready = null; KX.q = {}; }
+  /* v3.98.13: the worker died: every waiting request fails at once with the reason, and the next request starts a fresh engine */
+  function kxDead(msg) {
+    var q = KX.q; KX.q = {}; try { if (KX.w) KX.w.terminate(); } catch (e) {} KX.w = null; KX.ready = null; KX.err = msg;
+    Object.keys(q).forEach(function (k) { clearTimeout(q[k].t); try { q[k].rej(new Error(msg)); } catch (e) {} });
+  }
   /* Monero base58 (8-byte blocks -> 11 chars); the address body = prefix byte + public spend key + public view key */
   var XA58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz', XBS = [0, 2, 3, 5, 6, 7, 9, 10, 11];
   function xmrB58(s) {
@@ -22294,19 +22316,24 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (kind === 'transfer' && R.amount !== 'max' && !(U(R.amount) > 0n)) return fail('Bad amount.');
     var rec = xmrRecFor(R.from);
     try { if (!rec && window.KwE2E && KwE2E.on()) rec = { id: 'e2e', label: 'E2E test wallet', index: 0, e2e: true }; } catch (e) {}
-    if (!rec) return fail('No paired seed owns ' + short(R.from) + '.', 'Open Kwallet, go to <b>Settings &gt; Hwallet signer</b> and pair the seed that owns this Monero wallet, then pair again in Hwallet.');
+    if (!rec) return fail('No paired seed owns ' + short(R.from) + '.', 'Pair this seed in <b>Settings &gt; Hwallet signer</b>, then pair again in Hwallet.');
     var fee = U(X.fee) || 0n, amt = kind === 'transfer' ? (R.amount === 'max' ? U(X.amount) : U(R.amount)) : 0n;
     S = { xmr: true, R: R, c: 'xmr', kind: kind, info: { name: 'Monero', sym: 'XMR', dec: 12, logo: 'monero' }, net: 'xmr', rec: rec, tok: null, dec: 12, gdec: 12, sym: 'XMR', gsym: 'XMR', armed: false,
       level: (R.fee && R.fee.level) || 'medium', last: { amount: amt, fee: fee, err: null }, total: Math.max(1000, R.expires - Date.now()) };
     lastFeed = Date.now();
     xmrDraw(); mount(); arm(700);
     setInterval(tickExp, 250);
-    kxStart().then(function () { return kx('boot', {}, 60000); }).catch(function () {});   /* warm the engine while the user reads */
+    /* warm the engine while the user reads. v3.98.13: a start failure shows at once with its real reason (it used to be
+       swallowed here, and Confirm then waited for the 110 s limit) */
+    kxStart().then(function () { return kx('boot', {}, 60000); }).catch(function (e) {
+      if (done || busy) return; kxStop();
+      fail('The Monero engine could not start: ' + String(e && e.message || e).replace(/^The Monero engine could not start:?\s*/, '').slice(0, 200), 'Nothing was signed. Close Kwallet, open it again, then retry in Hwallet.');
+    });
   }
   function xmrDraw() {
     var R = S.R, P = R.prices || {}, px = +P.gasUsd || 0, cic = LOGO.monero || '', c = S.last, X = R.xmr || {}, det = '', main = '';
     if (S.kind === 'xmr-ki') {
-      main += HWP.card(HWP.perms([['ok', 'Mark the Monero this wallet already spent, so Hwallet shows the right balance'], ['ok', 'Uses key images: they prove spends, nothing else'], ['no', 'Can\u2019t move funds or sign a payment']]));
+      main += HWP.card(HWP.perms([['ok', 'Shows Hwallet which Monero is already spent'], ['ok', 'Shares key images only'], ['no', 'Can\u2019t move funds']]));
       main += HWP.card(HWP.walletRow(S.rec.label + ' \u00b7 #' + S.rec.index, R.from, cic));
     } else {
       var lvlTxt = { slow: 'Slow', medium: 'Normal', fast: 'Fast', fastest: 'Fastest' }[S.level] || 'Normal';
@@ -22316,7 +22343,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       main += HWP.card(HWP.walletRow(S.rec.label + ' \u00b7 #' + S.rec.index, R.from, cic));
       det += dAddrRow('From', esc(S.rec.label) + ' \u00b7 #' + S.rec.index, R.from) + dAddrRow('To', R.firstTime ? 'New address' : '', R.to);
       det += kv('Transactions', String(X.n || 1), 'Ring size 16 \u00b7 CLSAG + Bulletproofs+');
-      det += kv('Network', 'Monero', 'Checked against what is signed: recipient, amount and fee');
+      det += kv('Network', 'Monero', 'Recipient, amount and fee are checked before signing');
     }
     var body = HWP.headOwn('Request from Hwallet \u00b7 Monero') + HWP.title(KINDS[S.kind] || 'Send') + main + HWP.trust('ok', 'Signed offline in Kwallet') + (det ? HWP.details(det, false, 'kss-det') : '');
     page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ no: 'Cancel', ok: 'Confirm', okId: 'kss-go', noId: 'kss-no', disabled: true, hint: '' })) + '</div>';
@@ -23520,7 +23547,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     else if (m === 'sui_signPersonalMessage') { r = D.suiSignMsg(pk, String(P.message || ''), from); r.publicKey = D.util.b64e(D.suiKey(pk).pub); }
     else if (m === 'cardano_signTx') { var a = D.adaSignTx(pk, String(P.tx || ''), from); r = { witness: a.witness, txHash: a.txHash }; }
     else if (m === 'cardano_signData') r = D.adaSignData(pk, String(P.address || ''), String(P.payload || ''), from);
-    else if (m === 'xrpl_signTransaction') { var x = D.xrpSignTx(pk, P.tx, from); r = { tx_blob: x.tx_blob, hash: x.hash, publicKey: x.tx.SigningPubKey }; }
+    else if (m === 'xrpl_signTransaction') { var x = D.xrpSignTx(pk, P.tx, from); r = { tx_blob: x.tx_blob, hash: x.hash, publicKey: x.tx.SigningPubKey, tx: x.tx }; }   /* v3.98.13: tx = the signed fields (WalletConnect xrpl_signTransaction answers with tx_json) */
     else if (m === 'xrpl_signMessage') r = D.xrpSignMsg(pk, String(P.message || ''), from);
     else if (m === 'xrpl_getPublicKey') { var h = String(pk).replace(/^0x/i, ''); if (h.length === 66 && /^00/.test(h)) h = h.slice(2); r = { publicKey: ethers.SigningKey.computePublicKey('0x' + h, true).slice(2).toUpperCase() }; }
     else throw new Error('Unsupported request');

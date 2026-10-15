@@ -290,6 +290,8 @@ class HwLiveService : Service() {
         val next = ArrayList<Slot>()
         for (k in 0 until 4) {
             val o = a?.optJSONObject(k)
+            /* v1.8.13: a slot whose chain is turned off in Settings > Chains: no price is fetched for it */
+            if (o != null && o.optBoolean("off")) { next.add(Slot("\u2014", "", "", "", "", "")); continue }
             next.add(if (o == null || o.optString("s").isEmpty()) DEF_SLOTS[k] else Slot(o.optString("s").take(10), o.optString("cg"), o.optString("plat"), o.optString("a"), o.optString("ic"), o.optString("icon")))
         }
         val old = slots

@@ -131,6 +131,26 @@ jobs:
           name: Kwallet-v${{ steps.ver.outputs.version }}
           path: dist/*
 
+      # Work branches (manual run, not main, not a tag): the APKs and pages are force-pushed to the orphan branch ci-dist,
+      # so a test build can be fetched without the artifact API. Files of 95 MB or more are split in 90 MB parts (SPLIT.txt).
+      - name: Publish build to ci-dist (work branches only)
+        if: github.event_name != 'pull_request' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          D="$RUNNER_TEMP/ci-dist"; rm -rf "$D"; mkdir -p "$D"; cd "$D"
+          git init -q; git checkout -q --orphan ci-dist
+          for f in "$GITHUB_WORKSPACE"/dist/*; do
+            n=$(basename "$f"); sz=$(stat -c %s "$f")
+            if [ "$sz" -ge 95000000 ]; then split -b 90m -d "$f" "$n.part"; echo "$n $sz split into 90 MB parts" >> SPLIT.txt; else cp "$f" .; fi
+          done
+          echo "$GITHUB_REF_NAME $GITHUB_SHA run $GITHUB_RUN_ID" > BUILD.txt
+          ls -la
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com add -A
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "ci-dist: $GITHUB_REF_NAME ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/ci-dist
+
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2

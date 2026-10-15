@@ -187,6 +187,10 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun xmrNStatus(): String = HwXmrN.status()
 
+        /** v1.8.13: Settings > Chains: Monero off closes the native wallet and keeps it (and its service) stopped */
+        @android.webkit.JavascriptInterface
+        fun xmrNOff(off: Boolean) { try { HwXmrN.setOff(this@HwActivity, off); if (off) stopService(android.content.Intent(this@HwActivity, HwXmrService::class.java)) } catch (_: Throwable) {} }
+
         @android.webkit.JavascriptInterface
         fun xmrN(op: String, args: String, cb: String) {
             val id = cb.replace(Regex("[^A-Za-z0-9_-]"), "").take(32)
@@ -365,6 +369,20 @@ class HwActivity : FragmentActivity() {
         fun brInit(script: String) { brw().init(script) }
         @android.webkit.JavascriptInterface
         fun brOpen(id: String, url: String, scroll: Int) { brw().open(id, url, scroll) }
+
+        /** v1.8.13: the next brOpen of this tab is an incognito tab; brAfInit: the saved-inputs page script (not in incognito) */
+        @android.webkit.JavascriptInterface
+        fun brInc(id: String) { brw().markInc(id) }
+
+        @android.webkit.JavascriptInterface
+        fun brAfInit(script: String) { brw().afInit(script) }
+
+        /** v1.8.13: Settings > Saved inputs: passwords are sealed with an Android Keystore AES-GCM key (never stored in clear) */
+        @android.webkit.JavascriptInterface
+        fun afSeal(plain: String): String = if (plain.length > 4096) "" else HwVault.seal(plain)
+
+        @android.webkit.JavascriptInterface
+        fun afOpen(sealed: String): String = if (sealed.length > 20000) "" else HwVault.open(sealed)
         @android.webkit.JavascriptInterface
         fun brShow(id: String, top: Int, bottom: Int) { brw().show(id, top, bottom) }
         /** v1.7.4 (#108): UI style for the Browser's native pull to refresh: og | m3 | miuix, optional ":dark" */
@@ -1104,7 +1122,12 @@ class HwActivity : FragmentActivity() {
         } catch (e: Throwable) { android.util.Log.w("HwIn", "notify failed: $e") }
     }
     /* P2a (#95): while Kwallet's sheet is over Hwallet the dApp tab stays live and visible behind it (no pause, no save) */
-    override fun onPause() { super.onPause(); fgNow = false; kwPaused = true; if (!signing) { web.onPause(); br?.pause() } }
+    override fun onPause() {
+        super.onPause(); fgNow = false; kwPaused = true
+        if (!signing) { web.onPause(); br?.pause() }
+        /* v1.8.13: Kwallet's sheet came up over Hwallet: the page's Monero no-answer limit (45 s) stops here */
+        else if (pageReady && ::web.isInitialized) try { web.evaluateJavascript("window.hwKShown&&hwKShown()", null) } catch (_: Throwable) {}
+    }
     @Volatile private var warmAt = 0L
     fun warmKwallet() {
         val now = android.os.SystemClock.uptimeMillis(); if (now - warmAt < 30000) return; warmAt = now

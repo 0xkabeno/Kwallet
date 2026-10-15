@@ -2811,6 +2811,27 @@ html.hwa:not(#p11a):not(#p11b):not(#p11c):not(#p11d):not(#p11e):not(#p11f):not(#
 html.hwa:not(#p11a):not(#p11b):not(#p11c):not(#p11d):not(#p11e):not(#p11f):not(#p11g) .kws-don-fit .kws-don-r { flex: 1 1 0 !important; height: auto !important; min-height: 44px !important; max-height: 72px !important; }
 html.hwa:not(#p11a):not(#p11b):not(#p11c):not(#p11d):not(#p11e):not(#p11f):not(#p11g) .kws-don-fit .kws-don-a { color: inherit !important; opacity: 1 !important; }
 
+/* v1.8.13: Settings > Chains and Saved inputs, Browser incognito */
+.kws-row .kws-chl{flex:0 0 28px;width:28px;height:28px}
+.kws-row .kws-chl img,.kws-row .kws-chl .lg{width:28px!important;height:28px!important;border-radius:50%;display:block}
+.kws-row.kws-chn-sub{padding-left:40px}
+.kws-row.kws-dim{opacity:.45}
+.kws-chn-h{margin:4px 24px 8px}
+.br-bar.br-inc{background:#202124!important;color:#e8eaed}
+.br-bar.br-inc .br-u{background:#3c4043!important;color:#e8eaed}
+.br-bar.br-inc #br-in{color:#e8eaed}
+.br-incb{display:inline-grid;place-items:center;width:22px;height:22px;margin-right:4px;color:#8ab4f8;flex:0 0 22px}
+.br-incb .ic{width:20px;height:20px}
+.br-card.br-inc{outline:2px solid #8ab4f8;outline-offset:-2px}
+.br-inct{font-style:normal;font-weight:600;color:#8ab4f8}
+.br-pill.br-incp .ic{width:16px;height:16px}
+.sin-r{gap:8px}
+.sin-a{display:flex;gap:6px;flex:0 0 auto}
+.sin-b{border:0;border-radius:12px;padding:6px 10px;font:500 13px/18px inherit;background:var(--card2,rgba(127,127,127,.15));color:var(--text)}
+.sin-seg{margin:8px 16px}
+.af-r{display:flex;align-items:center;gap:12px}
+.af-r input{width:20px;height:20px;flex:0 0 20px}
+.af-p{width:100%;text-align:left}
 </style>
 </head>
 <body data-theme="light">
@@ -3003,6 +3024,123 @@ window.hwPlayOpening();
 </script>
 <main id="app" class="app"></main>
 <div class="toast" id="toast" role="status"></div>
+<script type="text/plain" id="hw-af">/* Hwallet v1.8.13: saved inputs in the Browser (never injected into incognito tabs). Offers to save logins, emails, other
+   form fields and pasted chain addresses, and shows a small "Saved" chip on a field Hwallet has something for. Hwallet's
+   own sheet (not this page) lists what is saved and fills only what you pick there; passwords stay sealed by the Android
+   Keystore until then. https top pages only. */
+(function () {
+  'use strict';
+  if (window.__hwAf || location.protocol !== 'https:' || window.top !== window) return;
+  var B = window.hwBridge;
+  if (!B || typeof B.postMessage !== 'function' || typeof B.addEventListener !== 'function') return;
+  Object.defineProperty(window, '__hwAf', { value: 1 });
+  var seq = 0, pend = {};
+  function call(m, p) {
+    return new Promise(function (res, rej) {
+      var id = 'af' + (++seq) + '.' + Date.now().toString(36);
+      pend[id] = { res: res, rej: rej };
+      try { B.postMessage(JSON.stringify({ id: id, ns: 'hwaf', method: m, params: p || null })); } catch (e) { delete pend[id]; rej(e); }
+    });
+  }
+  B.addEventListener('message', function (ev) {
+    var m; try { m = JSON.parse(typeof ev.data === 'string' ? ev.data : String(ev.data)); } catch (e) { return; }
+    if (!m || typeof m.id !== 'string' || m.id.indexOf('af') !== 0) return;
+    var p = pend[m.id]; if (!p) return; delete pend[m.id];
+    if (m.error) p.rej(m.error); else p.res(m.result);
+  });
+  var SKIP = /^(hidden|submit|button|checkbox|radio|file|image|reset|range|color|date|datetime-local|month|week|time|number|search)$/;
+  var SENS = /one-time|otp|2fa|totp|cc-|card|cvc|cvv|csc|pin\b|iban|ssn|seed|mnemonic|private|secret|recovery|passphrase/;
+  function meta(el) { return ((el.name || '') + ' ' + (el.id || '') + ' ' + (el.getAttribute('aria-label') || '') + ' ' + (el.placeholder || '') + ' ' + (el.autocomplete || '')).toLowerCase(); }
+  function kind(el) {
+    if (!el || el.tagName !== 'INPUT' || el.disabled || el.readOnly) return '';
+    var t = String(el.type || 'text').toLowerCase(), m = meta(el);
+    if (t === 'password') return /new-password/.test(m) && /confirm|repeat|again/.test(m) ? '' : (SENS.test(m) && !/password/.test(m) ? '' : 'password');
+    if (SKIP.test(t) || SENS.test(m)) return '';
+    if (t === 'email' || /e-?mail/.test(m)) return 'email';
+    if (/address|recipient|wallet|receiver|destination|\bto\b/.test(m)) return 'addr';
+    return 'text';
+  }
+  function fname(el) { return String(el.name || el.id || el.getAttribute('aria-label') || el.placeholder || '').slice(0, 60); }
+  function setVal(el, v) {
+    try {
+      var d = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+      if (d && d.set) d.set.call(el, v); else el.value = v;
+      el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) {}
+  }
+  function userFieldFor(pw) {
+    var root = pw.form || document, ins = Array.prototype.slice.call(root.querySelectorAll('input')), i = ins.indexOf(pw), u = null;
+    for (var j = i - 1; j >= 0; j--) { var k = kind(ins[j]); if (k === 'email' || k === 'text') { u = ins[j]; break; } }
+    return u;
+  }
+  /* ---------- offer to save, when a form is sent ---------- */
+  var lastSent = 0;
+  function collect(root, pwHint) {
+    var ins = Array.prototype.slice.call((root || document).querySelectorAll('input')), pw = pwHint || null, out = { user: '', pass: '', email: '', fields: [] };
+    ins.forEach(function (el) {
+      var k = kind(el), v = String(el.value || ''); if (!k || !v || v.length > 400) return;
+      if (k === 'password') { if (!pw) pw = el; return; }
+      if (k === 'email') { if (!out.email) out.email = v; }
+      else if (k === 'text' && out.fields.length < 12) out.fields.push({ f: fname(el), v: v });
+    });
+    if (pw && pw.value) { out.pass = String(pw.value).slice(0, 400); var u = userFieldFor(pw); if (u && u.value) out.user = String(u.value).slice(0, 200); }
+    return out;
+  }
+  function sent(root, pw) {
+    var now = Date.now(); if (now - lastSent < 2500) return; 
+    var o = collect(root, pw); if (!o.pass && !o.email && !o.fields.length) return;
+    lastSent = now; call('af_offer', o).catch(function () {});
+  }
+  document.addEventListener('submit', function (e) { try { sent(e.target); } catch (x) {} }, true);
+  document.addEventListener('click', function (e) {
+    try {
+      var b = e.target && e.target.closest && e.target.closest('button,input[type=submit],[role=button]'); if (!b) return;
+      var f = b.form || b.closest('form'), root = f || document, pw = root.querySelector('input[type=password]');
+      if (pw && pw.value) setTimeout(function () { sent(root, pw); }, 0);
+    } catch (x) {}
+  }, true);
+  document.addEventListener('keydown', function (e) { try { if (e.key === 'Enter' && e.target && e.target.type === 'password' && e.target.value) sent(e.target.form || document, e.target); } catch (x) {} }, true);
+  /* ---------- a pasted chain address ---------- */
+  document.addEventListener('paste', function (e) {
+    var el = e.target; if (!el || el.tagName !== 'INPUT' || String(el.type || '').toLowerCase() === 'password') return;
+    var t = ''; try { t = (e.clipboardData && e.clipboardData.getData('text')) || ''; } catch (x) {}
+    t = String(t).trim(); if (!t || t.length > 120 || /\s/.test(t)) return;
+    call('af_addr', { a: t }).catch(function () {});
+  }, true);
+  /* ---------- the "Saved" chip on a field Hwallet has something for ---------- */
+  var chip = null, chipFor = null, askSeq = 0;
+  function chipOff() { if (chip && chip.parentNode) chip.parentNode.removeChild(chip); chip = null; chipFor = null; }
+  function place() {
+    if (!chip || !chipFor || !chipFor.isConnected) { chipOff(); return; }
+    var r = chipFor.getBoundingClientRect(); if (!r.width) { chipOff(); return; }
+    chip.style.top = Math.round(window.scrollY + r.bottom + 4) + 'px'; chip.style.left = Math.round(window.scrollX + Math.max(4, r.right - 96)) + 'px';
+  }
+  function showChip(el, k) {
+    chipOff(); chipFor = el;
+    chip = document.createElement('button'); chip.type = 'button'; chip.setAttribute('data-hw-af', '1');
+    chip.textContent = k === 'password' ? '\u{1F511} Saved login' : k === 'addr' ? 'Saved address' : 'Saved';
+    chip.style.cssText = 'position:absolute;z-index:2147483647;font:500 13px/18px system-ui,sans-serif;padding:6px 10px;border-radius:14px;border:0;background:#1C1D21;color:#DDF869;box-shadow:0 2px 10px rgba(0,0,0,.35);cursor:pointer;max-width:120px;white-space:nowrap';
+    chip.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    chip.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation(); var tgt = chipFor, kk = k; chipOff();
+      call('af_pick', { kind: kk, f: fname(tgt) }).then(function (r) {
+        if (!r) return;
+        if (kk === 'password' && r.pass != null) { setVal(tgt, r.pass); var u = userFieldFor(tgt); if (u && r.user && !u.value) setVal(u, r.user); }
+        else if (r.user != null && kk !== 'password') { setVal(tgt, r.user); var pw = (tgt.form || document).querySelector('input[type=password]'); if (pw && r.pass != null && !pw.value) setVal(pw, r.pass); }
+        else if (r.value != null) setVal(tgt, r.value);
+      }).catch(function () {});
+    });
+    (document.body || document.documentElement).appendChild(chip); place();
+  }
+  document.addEventListener('focusin', function (e) {
+    var el = e.target, k = kind(el); if (!k) { if (!(el && el.getAttribute && el.getAttribute('data-hw-af'))) chipOff(); return; }
+    var my = ++askSeq;
+    call('af_has', { kind: k, f: fname(el) }).then(function (r) { if (my === askSeq && document.activeElement === el && r && r.n > 0) showChip(el, k); }).catch(function () {});
+  }, true);
+  document.addEventListener('focusout', function () { setTimeout(function () { var a = document.activeElement; if (!a || a !== chipFor) chipOff(); }, 200); }, true);
+  window.addEventListener('scroll', place, true); window.addEventListener('resize', place);
+})();
+</script>
 <script type="text/plain" id="hw-prov">/* Hwallet v1.7.4 (#108): Browser pull to refresh is native now (HwPull.kt, every page incl. http, in the selected UI
    style); the v1.7.2 in-page pull handler that lived here is removed. */
 /* Hwallet v1.6 (#59): wallet providers injected into every https page of the Browser tab at document start
@@ -6569,7 +6707,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.12';
+var APP_VERSION = '1.8.13';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -6703,6 +6841,31 @@ var APP_VERSION = '1.8.12';
   ];
   var CHBY = {}; CH.forEach(function (c) { CHBY[c.id] = c; });
   var CG = ['ethereum', 'bitcoin', 'solana', 'tron', 'sui', 'ripple', 'cardano', 'monero', 'binancecoin', 'polygon-ecosystem-token', 'usd-coin', 'tether', 'global-dollar'];
+  /* ===== v1.8.13: Settings > Chains, a kill switch per chain (and per EVM network) =====
+     Off = the chain is gone from Hwallet: its address is left out of the active wallet view (A), so no balance, history,
+     price, node, explorer, WebSocket, WalletConnect or Browser request is made for it, and it is in no list or picker.
+     CH / EVM / CG are filtered in place (CHBY / EVMBY keep every chain, so old references never break). Only
+     Settings > Chains lists every chain so it can be turned back on. Saved in localStorage (hw-chains-off). */
+  var CHOFF = (function () { var o = jget('hw-chains-off', {}); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; })();
+  var CH_ALL = CH.slice(), EVM_ALL = EVM.slice(), CG_ALL = CG.slice(), CG_TOK = { 'usd-coin': 1, tether: 1, 'global-dollar': 1 };
+  function chainOn(id) { if (!id) return true; if (/^evm:/.test(id)) return !CHOFF.eth && !CHOFF[id]; return !CHOFF[id]; }
+  function chainOnFor(ch, net) { return chainOn(ch) && (ch !== 'eth' || !net || chainOn('evm:' + net)); }
+  /* the address keys a chain owns in a wallet's address set */
+  function chainOfKey(k) { if (/^xmr/.test(k)) return 'xmr'; return CHBY[k] ? k : ''; }
+  function chainView(a) {
+    a = a || {}; var o = {}, evmAny = EVM_ALL.some(function (n) { return chainOn('evm:' + n.id); });
+    Object.keys(a).forEach(function (k) { var c = chainOfKey(k); if (c && (!chainOn(c) || (c === 'eth' && !evmAny))) return; o[k] = a[k]; });
+    return o;
+  }
+  function chainsFilter() {
+    CH.length = 0; CH_ALL.forEach(function (c) { if (chainOn(c.id)) CH.push(c); });
+    EVM.length = 0; EVM_ALL.forEach(function (n) { if (chainOn('evm:' + n.id)) EVM.push(n); });
+    var on = {}; CH.forEach(function (c) { if (c.cg && c.id !== 'eth') on[c.cg] = 1; }); EVM.forEach(function (n) { if (n.cg) on[n.cg] = 1; });
+    var any = CH.length > 0; CG.length = 0; CG_ALL.forEach(function (k) { if (on[k] || (any && CG_TOK[k])) CG.push(k); });
+  }
+  function cgOn(k) { return !k || CG.indexOf(k) >= 0 || !CG_ALL.some(function (x) { return x === k; }); }
+  chainsFilter();
+  try { if (window.HwNative && HwNative.xmrNOff) HwNative.xmrNOff(!chainOn('xmr')); } catch (e) {}
   var CBS = { ethereum: 'ETH', bitcoin: 'BTC', solana: 'SOL', tron: 'TRX', sui: 'SUI', ripple: 'XRP', cardano: 'ADA', monero: 'XMR', binancecoin: 'BNB', 'polygon-ecosystem-token': 'POL' };
   var LOGO = {}, TOKLOGO = { USDC: 'usdc', USDT: 'usdt', USDG: 'usdg' };
 
@@ -6721,7 +6884,7 @@ var APP_VERSION = '1.8.12';
   }
   function curW() { for (var i = 0; i < W.length; i++) if (W[i].id === WID) return W[i]; return null; }
   function useWallet(id) {
-    WID = id; var w = curW(); A = w ? w.A : {}; if (w) A.label = w.label;
+    WID = id; var w = curW(); A = w ? chainView(w.A) : {}; if (w) A.label = w.label;   /* v1.8.13: chains turned off are left out */
     C.b = jget('hw-bal:' + id, {}) || {}; C.res = {}; ACT = jget('hw-acts:' + id, []) || []; HIST = {}; jset('hw-wid', id);
     try { if (window.hwXmrWalletChanged) hwXmrWalletChanged(); } catch (e) {}
   }
@@ -6855,8 +7018,9 @@ var APP_VERSION = '1.8.12';
   function fetchPrices(fast) {
     if (fast && Date.now() - cgAt < 60000) return krakenPx().then(function (x) { Object.keys(x[0]).forEach(function (k) { C.px[k] = x[0][k]; }); C.pt = Date.now(); saveCache(); return C.px; });
     cgAt = Date.now();
+    if (!CG.length) return Promise.resolve(C.px);   /* v1.8.13: every chain is off */
     return http('https://api.coingecko.com/api/v3/simple/price?ids=' + CG.join(',') + '&vs_currencies=usd&include_24hr_change=true', { timeout: 5000 }).then(function (j) {
-      var o = {}, ch = {}; CG.forEach(function (k) { if (j[k] && j[k].usd > 0) { o[k] = j[k].usd; if (j[k].usd_24h_change != null) ch[k] = j[k].usd_24h_change; } }); if (!o.ethereum) throw new Error('no prices'); return [o, ch];
+      var o = {}, ch = {}; CG.forEach(function (k) { if (j[k] && j[k].usd > 0) { o[k] = j[k].usd; if (j[k].usd_24h_change != null) ch[k] = j[k].usd_24h_change; } }); if (!Object.keys(o).length && CG.length) throw new Error('no prices'); return [o, ch];
     }).catch(function () { cgAt = 0; return krakenPx(); }).then(function (x) {
       Object.keys(x[0]).forEach(function (k) { C.px[k] = x[0][k]; }); Object.keys(x[1]).forEach(function (k) { C.ch[k] = x[1][k]; });
       C.px['usd-coin'] = C.px['usd-coin'] || 1; C.px.tether = C.px.tether || 1; C.px['global-dollar'] = C.px['global-dollar'] || 1; C.pt = Date.now(); saveCache(); return C.px;
@@ -6865,11 +7029,13 @@ var APP_VERSION = '1.8.12';
   function krakenPx() {
     {
       var keys = { XXBTZUSD: 'bitcoin', XETHZUSD: 'ethereum', SOLUSD: 'solana', TRXUSD: 'tron', SUIUSD: 'sui', XXRPZUSD: 'ripple', ADAUSD: 'cardano', XXMRZUSD: 'monero', POLUSD: 'polygon-ecosystem-token', USDCUSD: 'usd-coin', USDTZUSD: 'tether' };
-      var q = ['XBTUSD', 'ETHUSD', 'SOLUSD', 'TRXUSD', 'SUIUSD', 'XRPUSD', 'ADAUSD', 'XMRUSD', 'POLUSD', 'USDCUSD', 'USDTUSD'];
+      var q0 = { XBTUSD: 'bitcoin', ETHUSD: 'ethereum', SOLUSD: 'solana', TRXUSD: 'tron', SUIUSD: 'sui', XRPUSD: 'ripple', ADAUSD: 'cardano', XMRUSD: 'monero', POLUSD: 'polygon-ecosystem-token', USDCUSD: 'usd-coin', USDTUSD: 'tether' };
+      var q = Object.keys(q0).filter(function (k) { return cgOn(q0[k]); });   /* v1.8.13: no price for a chain that is off */
+      if (!q.length) return Promise.resolve([{}, {}]);
       return http('https://api.kraken.com/0/public/Ticker?pair=' + q.join(','), { timeout: 5000 }).then(function (j) {
         var o = {}, ch = {}, r = j.result || {};
         Object.keys(r).forEach(function (k) { var id = keys[k]; if (id && r[k].c) { o[id] = +r[k].c[0]; if (+r[k].o > 0) ch[id] = (+r[k].c[0] / +r[k].o - 1) * 100; } });
-        if (!o.ethereum) throw new Error('no prices'); return [o, ch];
+        if (!Object.keys(o).length) throw new Error('no prices'); return [o, ch];
       });
     }
   }
@@ -7470,7 +7636,7 @@ var APP_VERSION = '1.8.12';
     if (a === 'send') {
       if (V.v === 'home') { go({ v: 'pick', mode: 'send' }); return; }
       if (V.v === 'nets') { pickNet(function (net) { go({ v: 'send', ch: 'eth', net: net, tk: 'native' }); }, 'Send ETH on'); return; }
-      if (el.getAttribute('data-off')) { toast(V.ch === 'xmr' ? (!(A.paired && A.paired.xmr) ? 'Watch only. Pair Monero from Kwallet to send' : 'Wait for the first Monero scan to finish') : !(A.paired && A.paired[V.ch]) ? 'Watch only. Pair with Kwallet to send' : 'Add the trust line first'); buzz([30, 40, 30]); return; }
+      if (el.getAttribute('data-off')) { toast(V.ch === 'xmr' ? (!(A.paired && A.paired.xmr) ? 'Watch only. Pair Monero from Kwallet to send' : 'Wait for the first Monero scan') : !(A.paired && A.paired[V.ch]) ? 'Watch only. Pair with Kwallet to send' : 'Add the trust line first'); buzz([30, 40, 30]); return; }
       go({ v: 'send', ch: V.ch, net: V.net, tk: V.tk || 'native' }); return;
     }
     if (a === 'recv') {
@@ -7617,8 +7783,8 @@ var APP_VERSION = '1.8.12';
   }
   function manHtml(src, open) {
     return '<details class="box man pr-more"' + (open ? ' open' : '') + '><summary>Watch addresses only' + sv('expand') + '</summary>' +
-      MAN.map(function (m) { return '<div class="lbl">' + m[1] + '</div><div class="inp"><input class="mi" data-k="' + m[0] + '" value="' + esc(src[m[0]] || '') + '" placeholder="' + m[2] + '" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="pb" data-pk="' + m[0] + '" aria-label="Paste">' + sv('paste') + '</button></div>'; }).join('') +
-      '<div class="lbl">Monero private view key (optional)</div><div class="inp"><input class="mi" data-k="xmrView" value="' + esc(src.xmrView || '') + '" autocomplete="off" spellcheck="false"><button class="pb" data-pk="xmrView" aria-label="Paste">' + sv('paste') + '</button></div>' +
+      MAN.filter(function (m) { return chainOn(m[0]); }).map(function (m) { return '<div class="lbl">' + m[1] + '</div><div class="inp"><input class="mi" data-k="' + m[0] + '" value="' + esc(src[m[0]] || '') + '" placeholder="' + m[2] + '" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="pb" data-pk="' + m[0] + '" aria-label="Paste">' + sv('paste') + '</button></div>'; }).join('') +
+      (chainOn('xmr') ? '<div class="lbl">Monero private view key (optional)</div><div class="inp"><input class="mi" data-k="xmrView" value="' + esc(src.xmrView || '') + '" autocomplete="off" spellcheck="false"><button class="pb" data-pk="xmrView" aria-label="Paste">' + sv('paste') + '</button></div>' : '') +
       '<p class="hint">Watch only. Sending needs a Kwallet pairing.</p><button class="btn pri wide" data-msave>Save addresses</button></details>';
   }
   /* fix = [label, fn]: one button that fixes it. Outside the pairing page the same message opens in a small sheet */
@@ -7703,6 +7869,8 @@ var APP_VERSION = '1.8.12';
   }
   function saveManual() {
     var na = { paired: {} }, bad = [];
+    /* v1.8.13: an edit keeps the addresses of chains that are turned off (they are not on the form) */
+    if (V.edit && curW()) { var full = curW().A || {}; Object.keys(full).forEach(function (k) { var c = chainOfKey(k); if (c && !chainOn(c) && k !== 'paired') { na[k] = full[k]; if (full.paired && full.paired[k]) na.paired[k] = true; } }); }
     document.querySelectorAll('.mi').forEach(function (i) {
       var k = i.getAttribute('data-k'), v = i.value.trim(); if (!v) return;
       if (!OKRE[k].test(v)) { bad.push(k === 'xmrView' ? 'Monero view key' : k.toUpperCase()); return; }
@@ -7835,13 +8003,18 @@ var APP_VERSION = '1.8.12';
   function hwTheme() { var o = { dark: document.body.getAttribute('data-theme') === 'dark', v: {}, ui: (window.hwUiGet ? hwUiGet() : 'og') }; try { var cs = getComputedStyle(document.body); THV.forEach(function (k) { var v = cs.getPropertyValue('--' + k).trim(); if (v) o.v[k] = v; }); } catch (e) {} return o; }
   /* v1.7.2 (S19): one Kwallet request at a time can never wedge the queue: a request still waiting when a new one starts
      is closed as rejected, and an answer that never comes ends as expired after 300 s (Kwallet's own request limit is 115-120 s) */
-  var SIGNT = 0;
+  var SIGNT = 0, SIGNX = 0, KSH = null;
+  window.hwKShown = function () { if (KSH) KSH.shown = true; clearTimeout(SIGNX); };
   function callK(req) {
     req.theme = req.theme || hwTheme();
     if (SIGN) { var old = SIGN; SIGN = null; try { old({ status: 'rejected' }); } catch (e) {} }
     return new Promise(function (res) {
-      var done = false, fin = function (o) { if (done) return; done = true; kUp(false); clearTimeout(SIGNT); try { if (o && o.feePick) fpFromK(req, o.feePick); } catch (e) {} res(o); };
+      var done = false, fin = function (o) { if (done) return; done = true; kUp(false); clearTimeout(SIGNT); clearTimeout(SIGNX); if (KSH && KSH.fin === fin) KSH = null; try { if (o && o.feePick) fpFromK(req, o.feePick); } catch (e) {} res(o); };
       SIGN = fin; clearTimeout(SIGNT); SIGNT = setTimeout(function () { if (SIGN === fin) SIGN = null; fin({ status: 'expired' }); }, 300000);
+      /* v1.8.13: a Monero request gets 45 s for Kwallet's sheet to come up (Hwallet is paused under it: HwActivity calls
+         hwKShown). Once the sheet is up, the user has the normal limit to read and approve. */
+      clearTimeout(SIGNX); KSH = null;
+      if (req.chain === 'xmr') { KSH = { fin: fin, shown: false }; SIGNX = setTimeout(function () { if (SIGN === fin && KSH && KSH.fin === fin && !KSH.shown) { SIGN = null; fin({ status: 'error', error: 'Kwallet didn\u2019t answer. Open Kwallet once and try again' }); } }, 45000); }
       var body; try { body = JSON.stringify(req, function (k, v) { return typeof v === 'bigint' ? v.toString() : v; }); } catch (e) { SIGN = null; fin({ status: 'error', message: 'Could not prepare the request' }); return; }
       kUp(true);
       try { HwNative.sign(body); } catch (e) { SIGN = null; fin({ status: 'missing' }); }
@@ -8463,7 +8636,7 @@ var APP_VERSION = '1.8.12';
     return '';
   }
   function watchTx(ch, net, hash, k) {
-    k = k || 0; if (!txHashOk(ch, hash) || k > 90) return;
+    k = k || 0; if (!txHashOk(ch, hash) || k > 90 || !chainOnFor(ch, net)) return;
     if (!k) txNote(ch, net, hash, 'pending');
     setTimeout(function () {
       var p;
@@ -9392,6 +9565,48 @@ var APP_VERSION = '1.8.12';
     ['xmr', 'Monero', 'M12 2a10 10 0 0 0-9.5 13.1h3V7.6L12 14l6.5-6.4v7.5h3A10 10 0 0 0 12 2zm-1.5 14.2-2.8-2.8v5.3H3.6A10 10 0 0 0 12 22a10 10 0 0 0 8.4-4.3h-4.1v-5.3l-2.8 2.8L12 16.7z'],
     ['sec', 'Security & privacy', KI.shield], ['bg', 'Notifications & background', KI.bell], ['abt', 'About', KI.info]
   ];
+  /* v1.8.13: Chains (kill switch) and Saved inputs, in every UI style (they are ordinary Settings sub-pages) */
+  KCAT.splice(1, 0, ['chn', 'Chains', 'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z']);
+  KCAT.splice(KCAT.length - 3, 0, ['inp', 'Saved inputs', 'M12.65 10A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z']);
+  function chnRow(id, lg, name, sub, cls) {
+    return '<button type="button" class="kws-row kws-tl kws-chn' + (cls ? ' ' + cls : '') + '" id="kws-ch-' + id + '" data-chn="' + esc(id) + '"><span class="kws-ic kws-chl">' + logo(lg, name, '', 'sm') + '</span><span class="kws-t">' + esc(name) +
+      '<span class="kws-s" id="kws-ch-' + id + '-s">' + esc(sub || '') + '</span></span>' + KSW + '</button>';
+  }
+  function chnHtml() {
+    var main = CH_ALL.map(function (c) { return chnRow(c.id, c.logo, c.id === 'eth' ? 'Ethereum & EVM networks' : c.name, ''); }).join('');
+    var evm = EVM_ALL.map(function (n) { return chnRow('evm-' + n.id, n.logo, n.name, '', 'kws-chn-sub'); }).join('');
+    return '<p class="hw-kp kws-chn-h">Turn a chain off to stop all its network activity (balances, prices, nodes, WalletConnect, Monero sync) and hide it everywhere. Turn it on again any time.</p>' +
+      '<div class="kws-grp">' + main + '</div><div class="kws-sec">EVM networks</div><div class="kws-grp">' + evm + '</div>';
+  }
+  function chnId(id) { return /^evm-/.test(id) ? 'evm:' + id.slice(4) : id; }
+  function chnSync() {
+    CH_ALL.concat(EVM_ALL.map(function (n) { return { id: 'evm-' + n.id, evm: 1 }; })).forEach(function (c) {
+      var k = chnId(c.id), own = !CHOFF[k], on = chainOn(k);
+      kflag('kws-ch-' + c.id, own); ksub('kws-ch-' + c.id, own ? (on ? 'On' : 'On \u00b7 Ethereum & EVM networks is off') : 'Off \u00b7 no network, hidden');
+      var b = kov && kq('#kws-ch-' + c.id); if (b && c.evm) b.classList.toggle('kws-dim', !chainOn('eth'));
+    });
+  }
+  function chnSum() { var off = CH_ALL.filter(function (c) { return !chainOn(c.id); }).length + EVM_ALL.filter(function (n) { return chainOn('eth') && !chainOn('evm:' + n.id); }).length; return off ? off + ' off' : 'All on'; }
+  /* apply a change at once: filtered lists, the wallet view, sockets, the live service, WalletConnect, the Browser, Monero */
+  function chainsApply(changed) {
+    try { saveCache(); } catch (e) {}
+    chainsFilter(); try { Object.keys(EVMID).forEach(function (k) { delete EVMID[k]; }); EVM.forEach(function (n) { EVMID[n.chainId] = n; }); } catch (e) {}
+    try { stopWs(); } catch (e) {}
+    try { if (window.HwNative && HwNative.xmrNOff) HwNative.xmrNOff(!chainOn('xmr')); } catch (e) {}
+    var w0 = curW(); A = w0 ? chainView(w0.A) : {}; if (w0) A.label = w0.label;   /* the wallet view again, without touching a running Monero send unless Monero itself changed */
+    if (changed === 'xmr') { try { if (!chainOn('xmr')) xeStop(); if (window.hwXmrWalletChanged) hwXmrWalletChanged(); } catch (e) {} }
+    try { wcWalletChanged(); } catch (e) {}
+    try { brWalletChanged(); } catch (e) {}
+    try { NCFG = null; } catch (e) {}
+    refreshAll(); liveConfig(); try { wsStart(); } catch (e) {}
+  }
+  function chainsToggle(id) {
+    var k = chnId(id), off = !CHOFF[k];
+    if (off) CHOFF[k] = true; else delete CHOFF[k];
+    jset('hw-chains-off', CHOFF);
+    chainsApply(k);
+    toast((k === 'eth' ? 'Ethereum & EVM networks' : /^evm:/.test(k) ? (EVMBY[k.slice(4)] || {}).name : (CHBY[k] || {}).name) + (off ? ' off' : ' on'));
+  }
   var kcats = {};
   function kcatHtml(id, title, inner) {
     return '<div class="kws hw-catb" aria-label="' + esc(title) + '"><header class="bar"><button class="ib" data-kcb aria-label="Back">' + ksv('M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z') + '</button><div class="bt">' + esc(title) + '</div></header>' + inner + '</div>';
@@ -9410,7 +9625,7 @@ var APP_VERSION = '1.8.12';
   function xmrCatHtml() {
     var rows = typeof xmrSettingsHtml === 'function' ? xmrSettingsHtml('cat') : '';
     var need = !!(A && A.xmr) && !(typeof xmrReady === 'function' && xmrReady());
-    if (need) return '<div class="kws-grp kws-note"><div class="kws-nt"><b>Pair again to enable Monero</b><span>Hwallet needs the view key from Kwallet 3.98.4 or newer. Same wallet, nothing is duplicated.</span></div>' + (nat('sign') ? krow('kws-xpair', KI.link, 'Pair again from Kwallet', null) : '') + '</div>';
+    if (need) return '<div class="kws-grp kws-note"><div class="kws-nt"><b>Pair again to enable Monero</b><span>Hwallet needs the view key. Update Kwallet (3.98.4+), then pair again. Same wallet.</span></div>' + (nat('sign') ? krow('kws-xpair', KI.link, 'Pair again from Kwallet', null) : '') + '</div>';
     if (!rows) return '<div class="kws-grp kws-note"><div class="kws-nt"><b>No Monero in this wallet</b><span>Pair a wallet from Kwallet that includes Monero.</span></div></div>';
     return rows;
   }
@@ -9445,6 +9660,8 @@ var APP_VERSION = '1.8.12';
           '<div class="kws-sec">Notifications</div><div class="kws-grp">' + krow('kws-notif', KI.bell, 'Live price notification', '', KSW) + krow('kws-ncoins', KI.wallet, 'Notification coins', nSlots().map(function (x) { return x.s; }).join(' \u00b7 ')) +
           krow('kws-sbar', KI.hglyph, 'Show H in status bar', '', KSW) + krow('kws-alerts', KI.bell, 'Incoming payment alerts', null, KSW) + '</div>' : '') +
         '<div class="kws-sec">On screen</div><div class="kws-grp">' + krow('kws-rf', KI.timer, 'Refresh on screen', '') + '</div>',
+      chn: chnHtml(),
+      inp: (typeof sinHtml === 'function' ? sinHtml() : ''),
       abt: '<div class="kws-grp">' + (nat('crashLog') ? krow('kws-crash', KI.warn, 'Crash log', '') : '') + krow('kws-lic', KI.code, 'Open-source licenses', 'GPL-3.0') +
         krow('kws-src', KI.info, 'Source code', 'GitHub') + krow('kws-ver', KI.hglyph, 'Version', 'Hwallet ' + APP_VERSION) + '</div>'
     };
@@ -9457,7 +9674,7 @@ var APP_VERSION = '1.8.12';
     });
     kov.innerHTML = '<div class="kws kws-main" aria-label="Settings">' +
       '<header class="bar"><div class="bt l">Settings</div></header>' +
-      '<div class="kws-grp kws-cats">' + KCAT.map(function (c) { return '<button type="button" class="kws-row kws-cat" id="kws-c-' + c[0] + '" data-kc="' + c[0] + '"><span class="kws-ic">' + ksv(c[2]) + '</span><span class="kws-t">' + esc(c[1]) + '<span class="kws-s" id="kws-c-' + c[0] + '-s"></span></span>' + sv('chev', 'ic chev') + '</button>'; }).join('') + '</div>' +
+      '<div class="kws-grp kws-cats">' + KCAT.filter(function (c) { return c[0] !== 'xmr' || chainOn('xmr'); }).map(function (c) { return '<button type="button" class="kws-row kws-cat" id="kws-c-' + c[0] + '" data-kc="' + c[0] + '"><span class="kws-ic">' + ksv(c[2]) + '</span><span class="kws-t">' + esc(c[1]) + '<span class="kws-s" id="kws-c-' + c[0] + '-s"></span></span>' + sv('chev', 'ic chev') + '</button>'; }).join('') + '</div>' +
       donateCard() + '</div>';
     kov.querySelectorAll('[data-kc]').forEach(function (b) { b.onclick = function () { ktick(); kcatOpen(b.getAttribute('data-kc')); }; });
     kov.querySelectorAll('[data-don]').forEach(function (b) {
@@ -9522,6 +9739,8 @@ var APP_VERSION = '1.8.12';
     on('kws-src', function () { ktick(); openExt('https://github.com/0xkabeno/Kwallet'); });
     on('kws-ver', function () { ktick(); });
     capBind(kcats.net); kov.__capPaint = kcats.net.__capPaint;
+    kqa('[data-chn]').forEach(function (b) { b.onclick = function () { ktick(); chainsToggle(b.getAttribute('data-chn')); chnSync(); ksub('kws-c-chn', chnSum()); }; });
+    try { if (typeof sinBind === 'function') sinBind(kcats.inp); } catch (e) {}
     on('kws-capad', function () { ktick(); capAdSet(!capAdOn()); capAdPaint(); if (!capAdOn() && kov.__capPaint) kov.__capPaint(); });
     try { capAdPaint(); } catch (e) {}
   }
@@ -9529,7 +9748,7 @@ var APP_VERSION = '1.8.12';
   function kroots() { var r = kov ? [kov] : []; Object.keys(kcats).forEach(function (k) { r.push(kcats[k]); }); return r; }
   function kq(sel) { var r = kroots(); for (var i = 0; i < r.length; i++) { var e = r[i].querySelector(sel); if (e) return e; } return null; }
   function kqa(sel) { var out = []; kroots().forEach(function (r) { Array.prototype.push.apply(out, r.querySelectorAll(sel)); }); return out; }
-  function ksig() { var p = ''; try { p = (A && A.xmr || '') + '|' + (typeof xmrReady === 'function' && xmrReady() ? 1 : 0); } catch (e) {} return String(WID) + '|' + p + '|' + (typeof feeAcctsVisible === 'function' && feeAcctsVisible() ? 1 : 0); }
+  function ksig() { var p = ''; try { p = (A && A.xmr || '') + '|' + (typeof xmrReady === 'function' && xmrReady() ? 1 : 0); } catch (e) {} return String(WID) + '|' + p + '|' + (typeof feeAcctsVisible === 'function' && feeAcctsVisible() ? 1 : 0) + '|' + JSON.stringify(CHOFF); }
   /* v1.8.6: "1 wallet · <name>" on the main page and on Wallets & pairing alike */
   function kwalSum() { var l = String((curW() || {}).label || '').trim(); return W.length + (W.length === 1 ? ' wallet' : ' wallets') + (l ? ' \u00b7 ' + l : ''); }
   function kflag(id, v) { var b = kov && kq('#' + id); if (!b) return; b.classList.toggle('on', !!v); b.setAttribute('aria-pressed', v ? 'true' : 'false'); }
@@ -9572,6 +9791,8 @@ var APP_VERSION = '1.8.12';
     ksub('kws-c-sec', 'Approvals \u00b7 Hide balances ' + (hidden() ? 'on' : 'off'));
     ksub('kws-c-bg', nat('setLive') ? (bg > 0 ? 'Live on \u00b7 ' + rfLabel(bg, BG) : 'Live off') + ' \u00b7 alerts ' + (jget('hw-alerts', true) !== false ? 'on' : 'off') : 'Refresh ' + rfLabel(+jget('hw-refresh', 5), RF));
     ksub('kws-c-abt', 'Hwallet ' + APP_VERSION);
+    ksub('kws-c-chn', chnSum()); chnSync();
+    try { if (typeof sinSum === 'function') { ksub('kws-c-inp', sinSum()); sinPaint(); } } catch (e) {}
   }
   /* Kwallet's theme change motion: one compositor cross-fade (view transition), plain swap without it */
   function kswap(fn) {
@@ -9925,10 +10146,10 @@ window.hwCrashPrompt = crashPrompt;
   function siteSrc(site) { var i = site && site.icon; return i && (/^https:\/\//.test(i) || /^data:image\//.test(i) || /^dapps\//.test(i)) ? i : ''; }
   function hpConnect(o) {
     var site = o.site || {}, tr = o.trust || { cls: 'unk' }, lv = tr.cls === 'ok' ? 'ok' : tr.cls === 'bad' ? 'bad' : 'unk';
-    var need = o.ns || [], wl = W.filter(function (w) { return need.every(function (n) { return n === 'eip155' ? w.A.eth : n === 'solana' ? w.A.sol : n === 'tron' ? w.A.trx : n === 'sui' ? w.A.sui : n === 'cardano' ? w.A.ada : n === 'xrpl' ? w.A.xrp : true; }); });
+    var need = o.ns || [], wl = W.filter(function (w) { return need.every(function (n) { var a = wcNsAddr(w.A, n); return a === null ? true : !!a && chainOn(n === 'eip155' ? 'eth' : n === 'solana' ? 'sol' : n === 'tron' ? 'trx' : n === 'sui' ? 'sui' : (n === 'cip34' || n === 'cardano') ? 'ada' : n === 'xrpl' ? 'xrp' : 'btc'); }); });
     var a0 = (o.accs || [])[0] || {}, wname = (A.label || 'Wallet') + (o.accs && o.accs.length > 1 ? ' \u00b7 ' + o.accs.length + ' accounts' : '');
     var wrow = HWP.walletRow(wname, a0.addr, '', { tap: wl.length > 1, chev: wl.length > 1, id: 'hp-wr' });
-    var wlist = wl.length > 1 ? '<div class="hp-wl" id="hp-wl" hidden>' + wl.map(function (w) { var ad = need[0] === 'solana' ? w.A.sol : need[0] === 'tron' ? w.A.trx : need[0] === 'sui' ? w.A.sui : need[0] === 'cardano' ? w.A.ada : need[0] === 'xrpl' ? w.A.xrp : w.A.eth; return '<button type="button" class="hp-wo' + (w.id === WID ? ' on' : '') + '" data-wid="' + esc(w.id) + '"><i></i><span>' + esc(w.label) + '</span><em>' + esc(HWP.shortA(ad)) + '</em></button>'; }).join('') + '</div>' : '';
+    var wlist = wl.length > 1 ? '<div class="hp-wl" id="hp-wl" hidden>' + wl.map(function (w) { var ad = wcNsAddr(w.A, need[0] || 'eip155') || w.A.eth; return '<button type="button" class="hp-wo' + (w.id === WID ? ' on' : '') + '" data-wid="' + esc(w.id) + '"><i></i><span>' + esc(w.label) + '</span><em>' + esc(HWP.shortA(ad)) + '</em></button>'; }).join('') + '</div>' : '';
     var accRows = (o.accs || []).length > 1 ? o.accs.map(function (x) { return HWP.kv('<span class="hp-acc">' + (x.logo || '') + '<span>' + esc(x.name) + '</span></span>', '<span class="hp-mono">' + esc(HWP.shortA(x.addr)) + '</span>', '', { sm: true }); }).join('') : '';
     var chips = (o.chains || []).map(function (c) { return '<span class="hp-chip">' + c.logo + esc(c.name) + '</span>'; }).join('');
     var inner = HWP.head({ icon: siteSrc(site), name: HWP.siteName(site.name, site.origin || site.host), url: String(site.origin || ('https://' + site.host)).replace(/\/+$/, '') });
@@ -10222,7 +10443,10 @@ window.hwCrashPrompt = crashPrompt;
   function hexBytes(h) { h = String(h || '').replace(/^0x/, ''); var u = new Uint8Array(h.length / 2); for (var i = 0; i < u.length; i++) u[i] = parseInt(h.substr(i * 2, 2), 16); return u; }
   function qHex(v) { if (v == null || v === '') return v; try { if (typeof v === 'string' && /^0x[0-9a-f]*$/i.test(v)) return v === '0x' ? '0x0' : v.toLowerCase(); var b = BI(typeof v === 'number' ? Math.trunc(v) : String(v).trim()); return '0x' + b.toString(16); } catch (e) { return v; } }
   function txHex(tx) { var o = Object.assign({}, tx); ['value', 'gas', 'gasLimit', 'gasPrice', 'maxFeePerGas', 'maxPriorityFeePerGas', 'nonce'].forEach(function (k) { if (o[k] != null) o[k] = qHex(o[k]); }); if (o.input && !o.data) o.data = o.input; if (!o.value) o.value = '0x0'; return o; }
+  /* v1.8.13: a dApp namespace whose chain is turned off in Settings > Chains */
+  function nsOff(ns) { var c = { eip155: 'eth', solana: 'sol', tron: 'trx', sui: 'sui', cardano: 'ada', cip34: 'ada', xrpl: 'xrp', bip122: 'btc' }[ns]; return !!c && (!chainOn(c) || (c === 'eth' && !EVM.length)); }
   function dappRoute(c) {
+    if (nsOff(c.ns)) return Promise.reject(dErr(4100, 'This network is turned off in Hwallet'));
     var site = c.site, ns = c.ns, cid = c.cid, m = c.method, p = c.params, cs = c.cs || (ns + (cid != null ? ':' + cid : ''));
     var run = function (method, params, extra) { return dappRun(Object.assign({ site: site, via: c.via, ns: ns, cid: cid, method: method, params: params }, extra || {})); };
     var job;
@@ -10348,7 +10572,19 @@ window.hwCrashPrompt = crashPrompt;
   var WC_TRX_M = ['tron_signMessage', 'tron_signTransaction'];
   var WC_MNAME = { eth_sendTransaction: 'Send transactions', personal_sign: 'Sign messages', eth_signTypedData: 'Sign typed data', eth_signTypedData_v4: 'Sign typed data', eth_signTypedData_v3: 'Sign typed data',
     wallet_switchEthereumChain: 'Switch network', wallet_addEthereumChain: 'Switch network', solana_signMessage: 'Sign messages', solana_signTransaction: 'Sign transactions', solana_signAndSendTransaction: 'Send transactions',
-    tron_signMessage: 'Sign messages', tron_signTransaction: 'Sign transactions' };
+    tron_signMessage: 'Sign messages', tron_signTransaction: 'Sign transactions',
+    sui_signPersonalMessage: 'Sign messages', sui_signTransaction: 'Sign transactions', sui_signAndExecuteTransaction: 'Send transactions', sui_signTransactionBlock: 'Sign transactions', sui_signAndExecuteTransactionBlock: 'Send transactions',
+    cardano_signTx: 'Sign transactions', cardano_signData: 'Sign messages', cardano_submitTx: 'Send transactions',
+    xrpl_signTransaction: 'Sign transactions', getAccountAddresses: 'See your address', sendTransfer: 'Send transactions' };
+  /* v1.8.13: WalletConnect for Sui, Cardano, the XRP Ledger and Bitcoin. Each request runs through the same code as the
+     Browser's providers (push 17): Hwallet prepares, Kwallet decodes and signs on its approval sheet, Hwallet broadcasts. */
+  var SUI_CH = 'sui:mainnet', ADA_CH = 'cip34:1-764824073', XRPL_CH = 'xrpl:0', BTC_CH = 'bip122:000000000019d6689c085ae165831e93';
+  var WC_SUI_M = ['sui_signPersonalMessage', 'sui_signTransaction', 'sui_signAndExecuteTransaction', 'sui_signTransactionBlock', 'sui_signAndExecuteTransactionBlock'];
+  var WC_ADA_M = ['cardano_signTx', 'cardano_signData', 'cardano_submitTx', 'cardano_getBalance', 'cardano_getUtxos', 'cardano_getCollateral', 'cardano_getNetworkId', 'cardano_getUsedAddresses', 'cardano_getUnusedAddresses', 'cardano_getChangeAddress', 'cardano_getRewardAddress', 'cardano_getRewardAddresses'];
+  var WC_XRPL_M = ['xrpl_signTransaction'];
+  var WC_BTC_M = ['getAccountAddresses', 'sendTransfer'];
+  /* the address a session namespace (or a dApp namespace) uses in a wallet's address set */
+  function wcNsAddr(a, k) { a = a || {}; return k === 'eip155' ? a.eth : k === 'solana' ? a.sol : k === 'tron' ? a.trx : k === 'sui' ? a.sui : (k === 'cip34' || k === 'cardano') ? a.ada : k === 'xrpl' ? a.xrp : k === 'bip122' ? a.btc : null; }
 
   function wcLib() { if (!WC.lib) { if (!window.HwWCInit) throw new Error('WalletConnect is not in this build'); WC.lib = window.HwWCInit(); } return WC.lib; }
   function wcErr(k) { try { return wcLib().getSdkError(k); } catch (e) { return { code: 5000, message: k }; } }
@@ -10393,7 +10629,7 @@ window.hwCrashPrompt = crashPrompt;
       buzz([20, 40, 20]); return false;
     });
   }
-  function hasPairedAny() { var p = A.paired || {}; return !!((A.eth && p.eth) || (A.sol && p.sol) || (A.trx && p.trx)); }
+  function hasPairedAny() { var p = A.paired || {}; return !!((A.eth && p.eth) || (A.sol && p.sol) || (A.trx && p.trx) || (A.sui && p.sui) || (A.ada && p.ada) || (A.xrp && p.xrp) || (A.btc && p.btc)); }
   window.hwWcLink = function (uri) { setTimeout(function () { wcPair(uri); }, V && V.v === 'setup' ? 0 : 50); return true; };
 
   /* ---------- session proposal ---------- */
@@ -10402,6 +10638,10 @@ window.hwCrashPrompt = crashPrompt;
     if (A.eth && p.eth) { var ch = EVM.map(function (n) { return 'eip155:' + n.chainId; }); o.eip155 = { chains: ch, methods: WC_EVM_M, events: ['accountsChanged', 'chainChanged'], accounts: ch.map(function (c) { return c + ':' + A.eth; }) }; }
     if (A.sol && p.sol) { var sc = [SOL_CH, SOL_CH_OLD]; o.solana = { chains: sc, methods: WC_SOL_M, events: [], accounts: sc.map(function (c) { return c + ':' + A.sol; }) }; }
     if (A.trx && p.trx) o.tron = { chains: [TRX_CH], methods: WC_TRX_M, events: [], accounts: [TRX_CH + ':' + A.trx] };
+    if (A.sui && p.sui) o.sui = { chains: [SUI_CH], methods: WC_SUI_M, events: [], accounts: [SUI_CH + ':' + A.sui] };
+    if (A.ada && p.ada) o.cip34 = { chains: [ADA_CH], methods: WC_ADA_M, events: [], accounts: [ADA_CH + ':' + A.ada] };
+    if (A.xrp && p.xrp) o.xrpl = { chains: [XRPL_CH], methods: WC_XRPL_M, events: [], accounts: [XRPL_CH + ':' + A.xrp] };
+    if (A.btc && p.btc) o.bip122 = { chains: [BTC_CH], methods: WC_BTC_M, events: ['bip122_addressesChanged'], accounts: [BTC_CH + ':' + A.btc] };
     return o;
   }
   function wcChainsOf(ns) {
@@ -10409,8 +10649,8 @@ window.hwCrashPrompt = crashPrompt;
     Object.keys(ns || {}).forEach(function (k) { (ns[k].chains || (ns[k].accounts || []).map(function (a) { return a.split(':').slice(0, 2).join(':'); })).forEach(function (c) { if (out.indexOf(c) < 0) out.push(c); }); });
     return out;
   }
-  function wcChainName(c) { var p = c.split(':'); if (p[0] === 'eip155') return EVMID[+p[1]] ? EVMID[+p[1]].name : 'Chain ' + p[1]; if (p[0] === 'solana') return c === SOL_CH_OLD ? '' : 'Solana'; if (p[0] === 'tron') return 'Tron'; return c; }
-  function wcChainLogo(c) { var p = c.split(':'); return p[0] === 'eip155' ? chainLogo('eip155', +p[1]) : chainLogo(p[0]); }
+  function wcChainName(c) { var p = c.split(':'); if (p[0] === 'eip155') return EVMID[+p[1]] ? EVMID[+p[1]].name : 'Chain ' + p[1]; if (p[0] === 'solana') return c === SOL_CH_OLD ? '' : 'Solana'; if (p[0] === 'tron') return 'Tron'; if (c === SUI_CH) return 'Sui'; if (c === ADA_CH) return 'Cardano'; if (c === XRPL_CH) return 'XRP Ledger'; if (c === BTC_CH) return 'Bitcoin'; return c; }
+  function wcChainLogo(c) { var p = c.split(':'); if (p[0] === 'cip34') return chainLogo('cardano'); if (p[0] === 'bip122') return logo('bitcoin', 'B', '', 'sm'); return p[0] === 'eip155' ? chainLogo('eip155', +p[1]) : chainLogo(p[0]); }
   function wcVerify(vc) {
     var v = vc && vc.verified || {};
     if (v.isScam) return { cls: 'bad', t: 'Known scam site. Do not connect.' };
@@ -10438,9 +10678,10 @@ window.hwCrashPrompt = crashPrompt;
     var chains = ns ? wcChainsOf(ns).filter(wcChainName) : [], meth = [];
     if (ns) Object.keys(ns).forEach(function (k) { (ns[k].methods || []).forEach(function (m) { var t = WC_MNAME[m]; if (t && meth.indexOf(t) < 0) meth.push(t); }); });
     var accs = [];
-    if (ns) { if (ns.eip155) accs.push(['EVM', A.eth, logo('ethereum', 'E', '', 'sm')]); if (ns.solana) accs.push(['Solana', A.sol, logo('solana', 'S', '', 'sm')]); if (ns.tron) accs.push(['Tron', A.trx, logo('tron', 'T', '', 'sm')]); }
+    if (ns) { if (ns.eip155) accs.push(['EVM', A.eth, logo('ethereum', 'E', '', 'sm')]); if (ns.solana) accs.push(['Solana', A.sol, logo('solana', 'S', '', 'sm')]); if (ns.tron) accs.push(['Tron', A.trx, logo('tron', 'T', '', 'sm')]);
+      if (ns.sui) accs.push(['Sui', A.sui, logo('sui', 'S', '', 'sm')]); if (ns.cip34) accs.push(['Cardano', A.ada, logo('cardano', 'C', '', 'sm')]); if (ns.xrpl) accs.push(['XRP', A.xrp, logo('ripple', 'X', '', 'sm')]); if (ns.bip122) accs.push(['Bitcoin', A.btc, logo('bitcoin', 'B', '', 'sm')]); }
     /* P2a (#94a): the shared connect popup */
-    return hpConnect({ site: site, trust: ver, ns: ns ? Object.keys(ns) : [], err: ns ? '' : 'Hwallet cannot connect to this app: ' + (why.replace(/^.*?:\s*/, '') || 'it needs networks this wallet does not have') + '. Hwallet supports EVM networks, Solana and Tron on paired wallets.',
+    return hpConnect({ site: site, trust: ver, ns: ns ? Object.keys(ns) : [], err: ns ? '' : 'Hwallet cannot connect to this app: ' + (why.replace(/^.*?:\s*/, '') || 'it needs networks this wallet does not have') + '. Hwallet supports EVM networks, Solana, Tron, Sui, Cardano, the XRP Ledger and Bitcoin on paired wallets.',
       accs: accs.map(function (x) { return { name: x[0], addr: x[1], logo: x[2] }; }), chains: chains.map(function (c) { return { name: wcChainName(c), logo: wcChainLogo(c) }; }) }).then(function (yes) {
       var wk = WC.wk;
       if (yes && yes.wallet) { switchWallet(yes.wallet, true); return wcProposal(ev); }
@@ -10475,7 +10716,9 @@ window.hwCrashPrompt = crashPrompt;
   window.hwFront = function () { try { if (window.HwNative && HwNative.wcClear) HwNative.wcClear(); } catch (e) {} var q = FGQ; FGQ = []; q.forEach(function (f, i) { setTimeout(f, 120 + i * 50); }); };
   function wcBgSync() { try { if (window.HwNative && HwNative.wcBg) HwNative.wcBg(Object.keys(wcSessions()).length > 0); } catch (e) {} }
   var WC_VERB = { eth_sendTransaction: 'wants you to send a transaction', personal_sign: 'wants you to sign a message', eth_signTypedData_v4: 'wants a signature', eth_signTypedData: 'wants a signature', eth_signTypedData_v3: 'wants a signature',
-    solana_signTransaction: 'wants you to sign a transaction', solana_signAndSendTransaction: 'wants you to send a transaction', solana_signMessage: 'wants you to sign a message', tron_signTransaction: 'wants you to sign a transaction', tron_signMessage: 'wants you to sign a message' };
+    solana_signTransaction: 'wants you to sign a transaction', solana_signAndSendTransaction: 'wants you to send a transaction', solana_signMessage: 'wants you to sign a message', tron_signTransaction: 'wants you to sign a transaction', tron_signMessage: 'wants you to sign a message',
+    sui_signPersonalMessage: 'wants you to sign a message', sui_signTransaction: 'wants you to sign a transaction', sui_signAndExecuteTransaction: 'wants you to send a transaction', sui_signTransactionBlock: 'wants you to sign a transaction', sui_signAndExecuteTransactionBlock: 'wants you to send a transaction',
+    cardano_signTx: 'wants you to sign a transaction', cardano_signData: 'wants you to sign a message', xrpl_signTransaction: 'wants you to sign a transaction', sendTransfer: 'wants you to send bitcoin' };
   function wcRequest(ev) {
     var ses0 = wcSessions()[ev.topic], s0 = wcSite(ses0 && ses0.peer && ses0.peer.metadata), m0 = ((ev.params || {}).request || {}).method;
     if (!isFg() && WC_VERB[m0]) return whenFg('sign', s0.name + ' ' + WC_VERB[m0], 'Tap to review and sign in Kwallet').then(function () { return wcRequest0(ev); });
@@ -10485,12 +10728,115 @@ window.hwCrashPrompt = crashPrompt;
     var topic = ev.topic, id = ev.id, P = ev.params || {}, rq = P.request || {}, m = rq.method, p = rq.params, cs = String(P.chainId || ''), ses = wcSessions()[topic];
     var site = wcSite(ses && ses.peer && ses.peer.metadata), ns = cs.split(':')[0], cid = ns === 'eip155' ? +cs.split(':')[1] : null;
     var vr = wcVerify(ev.verifyContext); site.trust = vr;
-    var job = dappRoute({ site: site, via: 'walletconnect', ns: ns, cid: cid, cs: cs, method: m, params: p,
+    var job = nsOff(ns) ? Promise.reject(dErr(4100, 'This network is turned off in Hwallet')) : (ns === 'sui' || ns === 'cip34' || ns === 'xrpl' || ns === 'bip122') ? wcRoute17(site, ns, cs, m, p) : dappRoute({ site: site, via: 'walletconnect', ns: ns, cid: cid, cs: cs, method: m, params: p,
       chainId: function () { return +(WC.chain[topic] || cid); }, switchChain: function (a, mm) { return wcSwitch(topic, ses, a, mm); } });
     return job.then(function (r) { return wcReply(topic, id, r); }, function (e) {
       var c = e && e.code; if (c == null || c === 5000) c = /reject|cancel/i.test(String(e && e.message)) ? 4001 : (c || -32000);
       return wcReply(topic, id, null, { code: c, message: e && e.message || String(e) });
     }).then(function (x) { wcBack(ses); return x; });
+  }
+  /* v1.8.13: Sui / Cardano / XRP Ledger / Bitcoin requests from a WalletConnect session */
+  function wcB64ish(v) { return typeof v === 'string' && v.length % 4 === 0 && /^[A-Za-z0-9+\/]+={0,2}$/.test(v); }
+  function wcObj(p, keys) { if (Array.isArray(p)) { var o = {}; keys.forEach(function (k, i) { o[k] = p[i]; }); return o; } return p && typeof p === 'object' ? p : {}; }
+  function wcRoute17(site, ns, cs, m, p) {
+    try {
+      var want = ns === 'sui' ? SUI_CH : ns === 'cip34' ? ADA_CH : ns === 'xrpl' ? XRPL_CH : BTC_CH;
+      if (cs && cs !== want) return Promise.reject(dErr(4901, 'Hwallet supports only ' + wcChainName(want) + ' mainnet'));
+      if (ns === 'sui') {
+        if (!A.sui) return Promise.reject(dErr(4100, 'This wallet has no Sui address'));
+        var sp = wcObj(p, ['transaction', 'address']);
+        if (sp.address && String(sp.address).toLowerCase() !== String(A.sui).toLowerCase()) return Promise.reject(dErr(4100, 'Unknown account'));
+        if (m === 'sui_signPersonalMessage') {
+          var msg = sp.message; if (msg && typeof msg === 'object') msg = b64e(Uint8Array.from(Object.keys(msg).map(function (k) { return msg[k] & 255; })));
+          else if (!wcB64ish(msg)) msg = b64e(new TextEncoder().encode(String(msg == null ? '' : msg)));
+          return suiRun(site, m, { message: msg }).then(function (r) { return { signature: r.signature, bytes: r.bytes }; });
+        }
+        var tx = sp.transaction || sp.transactionBlock || sp.transactionBlockSerialized; if (tx && typeof tx === 'object') tx = JSON.stringify(tx);
+        if (!tx) return Promise.reject(dErr(-32602, 'Missing transaction'));
+        if (m === 'sui_signTransaction' || m === 'sui_signTransactionBlock') return suiRun(site, 'sui_signTransaction', { transaction: String(tx) }).then(function (r) { return { signature: r.signature, transactionBytes: r.bytes, bytes: r.bytes, transactionBlockBytes: r.bytes }; });
+        if (m === 'sui_signAndExecuteTransaction' || m === 'sui_signAndExecuteTransactionBlock') return suiRun(site, 'sui_signAndExecuteTransaction', { transaction: String(tx) }).then(function (r) { return { digest: r.digest, effects: r.effects, rawEffects: r.effects, bytes: r.bytes, signature: r.signature }; });
+        return Promise.reject(dErr(4200, 'Hwallet does not support ' + m));
+      }
+      if (ns === 'cip34') {
+        if (!A.ada) return Promise.reject(dErr(4100, 'This wallet has no Cardano address'));
+        if (m === 'cardano_getNetworkId') return Promise.resolve(1);
+        if (m === 'cardano_getUnusedAddresses') return Promise.resolve([]);
+        if (m === 'cardano_getRewardAddress') return adaRun(site, 'cardano_getRewardAddresses', {}).then(function (a) { return a[0] || null; });
+        var ap = m === 'cardano_signTx' ? wcObj(p, ['tx', 'partialSign']) : m === 'cardano_signData' ? wcObj(p, ['address', 'payload']) : m === 'cardano_submitTx' ? wcObj(p, ['tx']) : m === 'cardano_getUtxos' ? wcObj(p, ['amount', 'paginate']) : wcObj(p, []);
+        if (m === 'cardano_signTx' && !ap.tx) ap.tx = ap.txCbor || ap.transaction || ap.cbor;
+        if (WC_ADA_M.indexOf(m) < 0) return Promise.reject(dErr(4200, 'Hwallet does not support ' + m));
+        return adaRun(site, m, ap);
+      }
+      if (ns === 'xrpl') {
+        if (!A.xrp) return Promise.reject(dErr(4100, 'This wallet has no XRP address'));
+        if (m === 'xrpl_signTransactionFor') return Promise.reject(dErr(4200, 'Multi-signing is not supported'));
+        if (m !== 'xrpl_signTransaction') return Promise.reject(dErr(4200, 'Hwallet does not support ' + m));
+        var xp = wcObj(p, ['tx_json']), tj = xp.tx_json || xp.transaction;
+        if (!tj || typeof tj !== 'object') return Promise.reject(dErr(-32602, 'Missing tx_json'));
+        var filled = null;
+        toast('Preparing\u2026');
+        return xrpFill(tj).then(function (t) { filled = t; return p17K(site, 'xrpl', 'xrpl_signTransaction', { tx: t }); }).then(function (r) {
+          if (r.publicKey) jset('hw-xrppk:' + A.xrp, r.publicKey);
+          var out = Object.assign({}, r.tx || filled, { hash: r.hash }); if (!r.tx && r.publicKey) out.SigningPubKey = r.publicKey;
+          if (!xp.submit) return { tx_json: out, tx_blob: r.tx_blob };
+          return xrpc('submit', { tx_blob: r.tx_blob }).then(function (sb) {
+            var e = sb.engine_result || '';
+            if (!(/^tes/.test(e) || e === 'terQUEUED')) throw dErr(-32603, 'Rejected by the XRP Ledger: ' + e + ' ' + String(sb.engine_result_message || '').slice(0, 120));
+            try { dappLog('xrp', r.hash, site); } catch (x) {} return { tx_json: out, tx_blob: r.tx_blob };
+          });
+        });
+      }
+      /* bip122 */
+      if (!A.btc) return Promise.reject(dErr(4100, 'This wallet has no Bitcoin address'));
+      var bp = wcObj(p, []);
+      if (m === 'getAccountAddresses') {
+        if (bp.account && bp.account !== A.btc) return Promise.reject(dErr(4100, 'Unknown account'));
+        var it = Array.isArray(bp.intentions) ? bp.intentions : null;
+        return Promise.resolve(!it || it.indexOf('payment') >= 0 ? [{ address: A.btc, intention: 'payment' }] : []);
+      }
+      if (m === 'sendTransfer') return wcBtcSend(site, bp);
+      if (m === 'signMessage' || m === 'signPsbt') return Promise.reject(dErr(4200, 'Bitcoin ' + (m === 'signPsbt' ? 'PSBT' : 'message') + ' signing is not supported yet'));
+      return Promise.reject(dErr(4200, 'Hwallet does not support ' + m));
+    } catch (e) { return Promise.reject(e && e.code ? e : dErr(-32603, String(e && e.message || e))); }
+  }
+  /* bip122 sendTransfer: Hwallet asks first (who wants how much where), then the normal Bitcoin send: UTXOs and fee rates
+     from the node, Kwallet's send sheet signs, Hwallet broadcasts and returns the txid */
+  function wcBtcSend(site, p) {
+    if (!(A.paired && A.paired.btc)) return Promise.reject(dErr(4100, 'This wallet is watch only for Bitcoin. Pair it with Kwallet first'));
+    if (p.account && p.account !== A.btc) return Promise.reject(dErr(4100, 'Unknown account'));
+    if (p.changeAddress && p.changeAddress !== A.btc) return Promise.reject(dErr(4200, 'Change always goes back to your own address'));
+    if (p.memo) return Promise.reject(dErr(4200, 'Bitcoin memos (OP_RETURN) are not supported'));
+    var to = String(p.recipientAddress || '').trim(), amt;
+    if (!validAddr('btc', to)) return Promise.reject(dErr(-32602, 'Invalid recipient address'));
+    try { amt = BI(String(p.amount)); } catch (e) { amt = -1n; }
+    if (!(amt >= 546n)) return Promise.reject(dErr(-32602, 'Invalid amount'));
+    if (!(window.HwNative && HwNative.sign)) return Promise.reject(dErr(5000, 'Signing needs the Hwallet app with Kwallet on the same phone'));
+    var r = assets('btc')[0];
+    return new Promise(function (ok, no) {
+      var answered = false;
+      sheet('<h3>' + esc(String(site.name || site.host || 'An app').slice(0, 40)) + ' wants to send bitcoin</h3><div class="lst"><div class="kv"><span>Amount</span><span>' + esc(fmtU(amt, 8, 8)) + ' BTC</span></div><div class="kv"><span>To</span><span class="mono">' + esc(short(to, 8)) + '</span></div></div>' +
+        '<p class="sp">Kwallet shows the fee and asks you to confirm.</p><div class="row2"><button class="btn" data-no>Reject</button><button class="btn pri" data-ok>Continue</button></div>', function (ov, close) {
+        ov.querySelector('[data-no]').onclick = function () { answered = true; close(); no(dErr(4001, 'Rejected')); };
+        ov.querySelector('[data-ok]').onclick = function () { answered = true; close(); ok(); };
+        var obs = new MutationObserver(function () { if (!ov.isConnected) { obs.disconnect(); if (!answered) no(dErr(4001, 'Rejected')); } }); obs.observe(document.body, { childList: true });
+      });
+    }).then(function () {
+      toast('Preparing\u2026');
+      return PREP.btc({ r: r, to: to, d: null });
+    }).then(function (d) {
+      if (amt > d.gbal) throw dErr(-32603, 'Not enough BTC');
+      var now = Date.now();
+      return callK(Object.assign({ v: 2, id: rid(16), action: 'sign', chain: 'btc', from: A.btc, to: to, token: 'native', tokenSym: 'BTC', tokenDec: 8, amount: amt.toString(),
+        balance: { token: String(d.gbal), gas: String(d.gbal) }, fee: { level: 'medium', levels: d.levels }, prices: { gasUsd: px('bitcoin'), tokenUsd: px('bitcoin'), ts: C.pt },
+        firstTime: RCP.indexOf(to.toLowerCase()) < 0, live: false, created: now, expires: now + 120000 }, d.req()));
+    }).then(function (res) {
+      if (!res || res.status !== 'signed' || !res.raw) throw dErr(res && res.status === 'rejected' ? 4001 : -32603, { rejected: 'Cancelled in Kwallet', expired: 'The request expired' }[res && res.status] || (res && res.error) || 'Not signed');
+      return broadcast('btc', res).then(function (hash) {
+        try { actAdd({ t: Date.now(), ch: 'btc', net: null, key: r.key, s: 'BTC', amt: fmtU(res.amount || amt, 8, 8), to: to, hash: hash, st: 'pending', kind: 'transfer' }); watchTx('btc', null, hash); } catch (e) {}
+        try { dappLog('btc', hash, site); } catch (e) {}
+        return { txid: hash };
+      }, function (e) { throw dErr(-32603, 'Broadcast failed: ' + String(e && e.message || e).slice(0, 140)); });
+    });
   }
   function wcSolOpts(o) { o = o || {}; var r = {}; if (o.skipPreflight != null) r.skipPreflight = !!o.skipPreflight; if (o.preflightCommitment) r.preflightCommitment = String(o.preflightCommitment); if (o.maxRetries != null) r.maxRetries = +o.maxRetries; return r; }
   /* wallet_switchEthereumChain / wallet_addEthereumChain: any chain Hwallet has is fine (it is in the session already) */
@@ -10517,7 +10863,7 @@ window.hwCrashPrompt = crashPrompt;
       var s = S[t], n = JSON.parse(JSON.stringify(s.namespaces)), ok = true;
       Object.keys(n).forEach(function (k) {
         if (!sup[k]) { ok = false; return; }
-        var addr = k === 'eip155' ? A.eth : k === 'solana' ? A.sol : A.trx;
+        var addr = wcNsAddr(A, k);
         n[k].accounts = (n[k].accounts || []).map(function (a) { return a.split(':').slice(0, 2).join(':') + ':' + addr; });
       });
       if (!ok) { WC.wk.disconnectSession({ topic: t, reason: wcErr('USER_DISCONNECTED') }).catch(function () {}); return; }
@@ -10601,9 +10947,10 @@ window.hwCrashPrompt = crashPrompt;
       S.seq = +S.seq || S.tabs.length; return S;
     },
     get: function (S, id) { for (var i = 0; i < S.tabs.length; i++) if (S.tabs[i].id === id) return S.tabs[i]; return null; },
-    add: function (S, url) {
+    add: function (S, url, inc) {
       var id = 't' + (++S.seq).toString(36) + Math.floor(Math.random() * 1296).toString(36);
-      S.tabs.push({ id: id, url: String(url || '').slice(0, 4096), title: '', icon: '', scroll: 0, ts: Date.now() }); S.act = id; return id;
+      var t = { id: id, url: String(url || '').slice(0, 4096), title: '', icon: '', scroll: 0, ts: Date.now() }; if (inc) t.inc = true;   /* v1.8.13: incognito, never saved */
+      S.tabs.push(t); S.act = id; return id;
     },
     close: function (S, id) {
       var i = -1; S.tabs.forEach(function (t, k) { if (t.id === id) i = k; });
@@ -10664,7 +11011,9 @@ window.hwCrashPrompt = crashPrompt;
   /* v1.8.9 (R16): history is written when the page is idle, at most every 1.5 s (it was every 300 ms on the main thread) */
   function brHSave() { clearTimeout(brHSaveT); brHSaveT = setTimeout(function () { var w = function () { jset('hw-br-hist', BRHI); jset('hw-br-mv', BRMV); }; if (window.requestIdleCallback) requestIdleCallback(w, { timeout: 3000 }); else w(); }, 1500); }
   function brHClear() { BRHI = []; BRMV = {}; clearTimeout(brHSaveT); jset('hw-br-hist', BRHI); jset('hw-br-mv', BRMV); }
-  function brSave(now) { clearTimeout(brSaveT); if (now) jset('hw-br', BR); else brSaveT = setTimeout(function () { jset('hw-br', BR); }, 400); }
+  /* v1.8.13: incognito tabs are never written to storage (they are gone after a restart) */
+  function brKeep() { var tabs = BR.tabs.filter(function (t) { return !t.inc; }), act = BR.act; if (!tabs.some(function (t) { return t.id === act; })) act = tabs.length ? tabs[tabs.length - 1].id : null; return { tabs: tabs, act: act, seq: BR.seq }; }
+  function brSave(now) { clearTimeout(brSaveT); if (now) jset('hw-br', brKeep()); else brSaveT = setTimeout(function () { jset('hw-br', brKeep()); }, 400); }
   function brN() { return !!(window.HwNative && HwNative.brOpen); }
   function brNat(f) { try { if (window.HwNative && HwNative[f]) return HwNative[f].apply(HwNative, Array.prototype.slice.call(arguments, 1)); } catch (e) { console.error(e); } return null; }
   function brEng() { return jget('hw-br-eng', 'ddg'); }
@@ -10672,6 +11021,7 @@ window.hwCrashPrompt = crashPrompt;
   function brInit() {
     if (brInited || !brN()) return; brInited = true;
     var p = document.getElementById('hw-prov'); if (p) brNat('brInit', p.textContent);
+    var af = document.getElementById('hw-af'); if (af) brNat('brAfInit', af.textContent);   /* v1.8.13: saved inputs (never in incognito tabs) */
   }
 
   /* ---------- the chrome ---------- */
@@ -10733,8 +11083,8 @@ window.hwCrashPrompt = crashPrompt;
   function brFav(t, cls) { return brIco(t ? t.url : '', t && t.title, cls || 'br-fav', t && t.icon); }
   function brBarHtml() {
     var t = brCur(), L = t ? BRL[t.id] || {} : {}, sec = t && /^https:/.test(t.url), n = BR.tabs.length;
-    return '<header class="br-bar"><form class="br-u" id="br-f" autocomplete="off"><span class="br-lk' + (sec ? ' s' : '') + '">' + sv(sec ? 'lock' : 'globe') + '</span>' +
-      '<input id="br-in" type="text" inputmode="url" enterkeyhint="go" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="Search or type a site" value="' + esc(t ? brHostOf(t.url) || t.url : '') + '" aria-label="Address">' +
+    return '<header class="br-bar' + (t && t.inc ? ' br-inc' : '') + '"><form class="br-u" id="br-f" autocomplete="off">' + (t && t.inc ? '<span class="br-incb" title="Incognito tab" aria-label="Incognito tab">' + brSvg(INCI) + '</span>' : '') + '<span class="br-lk' + (sec ? ' s' : '') + '">' + sv(sec ? 'lock' : 'globe') + '</span>' +
+      '<input id="br-in" type="text" inputmode="url" enterkeyhint="go" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="' + (t && t.inc ? 'Incognito \u00b7 search or type a site' : 'Search or type a site') + '" value="' + esc(t ? brHostOf(t.url) || t.url : '') + '" aria-label="Address">' +
       /* v1.8.10 (push 15, R4): the same pill, now a switch: tap = data limit off / on again (the speed you set is kept) */
       capPillHtml() + '</form>' +
       /* v1.8.8 (push 13, R4f): [URL bar][Translate][Tabs][menu], equal gaps; the icon flashes on a page that is not in your language */
@@ -10802,10 +11152,10 @@ window.hwCrashPrompt = crashPrompt;
   }
   function brSwHtml() {
     var n = BR.tabs.length;
-    return '<header class="br-swh"><b>' + n + ' tab' + (n === 1 ? '' : 's') + '</b><button class="br-pill" data-br="new">' + sv('plus') + ' New tab</button>' + (n ? '<button class="br-txt" data-br="closeall">Close all</button>' : '') + '<button class="br-txt pri" data-br="done">Done</button></header>' +
+    return '<header class="br-swh"><b>' + n + ' tab' + (n === 1 ? '' : 's') + '</b><button class="br-pill" data-br="new">' + sv('plus') + ' New tab</button><button class="br-pill br-incp" data-br="newinc">' + brSvg(INCI) + ' Incognito</button>' + (n ? '<button class="br-txt" data-br="closeall">Close all</button>' : '') + '<button class="br-txt pri" data-br="done">Done</button></header>' +
       '<div class="br-grid">' + (n ? BR.tabs.slice().reverse().map(function (t) {
         var th = brNat('brThumb', t.id) || '';
-        return '<div class="br-card' + (t.id === BR.act ? ' on' : '') + '" data-tab-id="' + esc(t.id) + '"><div class="br-ch">' + brFav(t) + '<span class="br-ct">' + esc(t.title || brHostOf(t.url) || 'New tab') + '</span>' +
+        return '<div class="br-card' + (t.id === BR.act ? ' on' : '') + (t.inc ? ' br-inc' : '') + '" data-tab-id="' + esc(t.id) + '"><div class="br-ch">' + (t.inc ? '<span class="br-incb" title="Incognito">' + brSvg(INCI) + '</span>' : brFav(t)) + '<span class="br-ct">' + (t.inc ? '<em class="br-inct">Incognito</em> ' : '') + esc(t.title || brHostOf(t.url) || (t.inc ? 'New incognito tab' : 'New tab')) + '</span>' +
           '<button class="br-cx" data-close="' + esc(t.id) + '" aria-label="Close tab">' + sv('close') + '</button></div>' +
           '<div class="br-th">' + (th ? '<img alt="" src="' + esc(th) + '">' : '<span class="br-thf">' + brFav(t, 'br-favb') + '<span>' + esc(brHostOf(t.url)) + '</span></span>') + '</div></div>';
       }).join('') : '<div class="wc-empty br-none"><b>No open tabs</b><span>Open a site from the address bar.</span></div>') + '</div>';
@@ -10842,6 +11192,7 @@ window.hwCrashPrompt = crashPrompt;
   }
   function brOpenNative(t) {
     brInit(); BRL[t.id] = Object.assign(BRL[t.id] || {}, { open: 1 });
+    if (t.inc) brNat('brInc', t.id);
     brNat('brOpen', t.id, t.url || '', t.scroll || 0);
   }
   function brMount() { var el = brEl(); if (el.hidden) { el.hidden = false; } BRU.edit = false; BRU.mv = false; brPaint(); }
@@ -10861,7 +11212,7 @@ window.hwCrashPrompt = crashPrompt;
     if (BRL[t.id] && BRL[t.id].open) brNat('brLoad', t.id, url); else brOpenNative(t);
     brPaint(); return t.id;
   }
-  function brNew(url) { var id = BRM.add(BR, url ? brUrl(url, brEng()) : ''); brSave(true); BRU.sw = false; BRU.edit = !url; brPaint(); if (!url) setTimeout(function () { var i = document.getElementById('br-in'); if (i) i.focus(); }, 60); return id; }
+  function brNew(url, inc) { if (inc === undefined) { var c0 = brCur(); inc = !!(url && c0 && c0.inc); } var id = BRM.add(BR, url ? brUrl(url, brEng()) : '', inc); brSave(true); BRU.sw = false; BRU.edit = !url; brPaint(); if (!url) setTimeout(function () { var i = document.getElementById('br-in'); if (i) i.focus(); }, 60); return id; }
   function brSelect(id) { if (!BRM.select(BR, id)) return; brSave(); BRU.sw = false; BRU.edit = false; brShown = ''; brPaint(); }
   function brClose(id) {
     BRM.close(BR, id); delete BRL[id]; brNat('brClose', id); brSave(true); brShown = ''; brPaint();
@@ -10937,7 +11288,8 @@ window.hwCrashPrompt = crashPrompt;
       if (b.classList.contains('br-card')) { buzz(4); brSelect(b.getAttribute('data-tab-id')); return; }
       if (k === 'tabs') { buzz(4); var t = brCur(); if (t && BRL[t.id] && BRL[t.id].open) brNat('brSnap', t.id); BRU.sw = true; BRU.edit = false; brPaint(); }
       else if (k === 'done') { BRU.sw = false; brPaint(); }
-      else if (k === 'new') { buzz(4); brNew(); }
+      else if (k === 'new') { buzz(4); brNew('', false); }
+      else if (k === 'newinc') { buzz(4); brNew('', true); toast('Incognito tab: no history, cookies or site data are kept after you close it'); }
       else if (k === 'closeall') { if (b.dataset.sure) { buzz([10, 30, 10]); brCloseAll(); } else { b.dataset.sure = '1'; b.textContent = 'Close all?'; setTimeout(function () { if (b.isConnected) { delete b.dataset.sure; b.textContent = 'Close all'; } }, 2500); } }
       else if (k === 'menu') brMenu();
       else if (k === 'cap') { e.preventDefault(); buzz(6); capToggle(); var nh = capPillHtml(); if (nh) b.outerHTML = nh; else b.remove(); }
@@ -10948,6 +11300,7 @@ window.hwCrashPrompt = crashPrompt;
   }
   /* v1.8.8 (push 13, R4a): bookmarks, kept natively (HwNative.brBm), newest first */
   var STAR = 'M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z', STARO = 'M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z';
+  var INCI = 'M17.06 13c-1.86 0-3.42 1.33-3.82 3.1-.95-.41-1.82-.3-2.48-.01C10.35 14.31 8.79 13 6.94 13 4.77 13 3 14.79 3 17s1.77 4 3.94 4c2.06 0 3.74-1.62 3.9-3.68.34-.24 1.23-.69 2.32.02.18 2.05 1.84 3.66 3.9 3.66 2.17 0 3.94-1.79 3.94-4s-1.77-4-3.94-4zM6.94 19.86c-1.56 0-2.81-1.28-2.81-2.86s1.26-2.86 2.81-2.86c1.56 0 2.81 1.28 2.81 2.86s-1.25 2.86-2.81 2.86zm10.12 0c-1.56 0-2.81-1.28-2.81-2.86s1.25-2.86 2.81-2.86 2.82 1.28 2.82 2.86-1.27 2.86-2.82 2.86zM22 10.5H2V12h20v-1.5zm-6.47-7.87c-.22-.49-.78-.75-1.31-.58L12 2.79l-2.23-.74-.05-.01c-.53-.15-1.09.13-1.29.64L6 9h12l-2.44-6.32-.03-.05z';   /* v1.8.13: incognito */
   var DESK = 'M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z', BMI = 'M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z';
   var brTrLp = 0;
   /* v1.8.8 (R2/R3): every browser sheet gets the compact layout (br-sh) */
@@ -10977,6 +11330,7 @@ window.hwCrashPrompt = crashPrompt;
       '<button data-m="desk"' + (web && window.HwNative && HwNative.brDesk ? '' : ' disabled') + ' class="' + (L.desk ? 'on' : '') + '" aria-pressed="' + !!L.desk + '" aria-label="Desktop view">' + brSvg(DESK) + '</button></div>' +
       brTgl(t, L) + (window.hwTr ? hwTr.menuHtml(t) : '') + '<div class="lst">' + (t ? '<button class="br-row" data-m="copy"><span class="br-ri">' + sv('copy') + '</span><span class="am"><span class="an">Copy link</span><span class="ap">' + esc(short(t.url, 18)) + '</span></span></button>' +
       '<button class="br-row" data-m="ext"><span class="br-ri">' + sv('ext') + '</span><span class="am"><span class="an">Open in another browser</span></span></button>' : '') +
+      '<button class="br-row" data-m="newinc"><span class="br-ri">' + brSvg(INCI) + '</span><span class="am"><span class="an">New incognito tab</span><span class="ap">No history, cookies or site data kept</span></span></button>' +
       '<button class="br-row" data-m="bms"><span class="br-ri">' + brSvg(BMI) + '</span><span class="am"><span class="an">Bookmarks</span></span><span class="br-rv">' + (function () { var n = brBm().length; return n ? n : ''; })() + '</span></button>' +
       '<button class="br-row" data-m="hist"><span class="br-ri">' + sv('hist') + '</span><span class="am"><span class="an">History</span></span></button>' +
       '<button class="br-row" data-m="sites"><span class="br-ri">' + sv('link') + '</span><span class="am"><span class="an">Connected sites</span></span></button>' +
@@ -10994,7 +11348,8 @@ window.hwCrashPrompt = crashPrompt;
         close();
         if (m === 'ua') { setTimeout(function () { uaPick(); }, 200); return; }
         if (m === 'back' || m === 'fwd' || m === 'reload') brNat('brNav', t.id, m);
-        else if (m === 'new') setTimeout(function () { brNew(); }, 200);
+        else if (m === 'new') setTimeout(function () { brNew('', false); }, 200);
+        else if (m === 'newinc') setTimeout(function () { brNew('', true); toast('Incognito tab: no history, cookies or site data are kept after you close it'); }, 200);
         else if (m === 'copy') copy(t.url).then(function () { toast('Link copied'); });
         else if (m === 'ext') openExt(t.url);
         else if (m === 'sites') setTimeout(brSitesSheet, 200);
@@ -11208,6 +11563,7 @@ window.hwCrashPrompt = crashPrompt;
         /* v1.8.12 (push 17): Sui / Cardano / XRP Ledger connections */
         sui: brIs(o, 'sui') && A.sui ? { address: A.sui, publicKey: jget('hw-suipk:' + A.sui, '') || null } : null, ada: brIs(o, 'cardano') && !!A.ada, xrp: brIs(o, 'xrpl') && A.xrp ? { address: A.xrp } : null });
     }
+    if (nsOff(ns)) return Promise.reject(dErr(4100, 'This network is turned off in Hwallet'));
     if (ns === 'eip155') {
       var c = brCid(o), on = brIs(o, 'eip155') && !!A.eth;
       if (m === 'eth_chainId') return Promise.resolve('0x' + c.toString(16));
@@ -11259,11 +11615,159 @@ window.hwCrashPrompt = crashPrompt;
     var out = e ? { id: id, error: { code: e.code, message: String(e.message || e).slice(0, 200) } } : { id: id, result: r === undefined ? null : r };
     brNat('brReply', tab, JSON.stringify(out));
   }
+  /* ===================== v1.8.13: Saved inputs (Browser autofill) =====================
+     The page script (#hw-af, injected natively into every https tab EXCEPT incognito tabs) asks here: af_offer (a form was
+     sent: login / email / other fields), af_addr (a chain address was pasted), af_has (does Hwallet have something for this
+     field?) and af_pick (the user tapped the "Saved" chip: Hwallet's own sheet lists the entries and returns only the one
+     picked). Kept in localStorage 'hw-af'; passwords only as Android Keystore AES-GCM ciphertext (HwNative.afSeal / afOpen),
+     never in clear. Nothing from an incognito tab is accepted (checked here by tab and natively). */
+  var AFK = 'hw-af';
+  function afGet() { var o = jget(AFK, null); if (!o || typeof o !== 'object') o = {}; ['logins', 'emails', 'inputs', 'addrs'].forEach(function (k) { if (!Array.isArray(o[k])) o[k] = []; }); if (!o.never || typeof o.never !== 'object') o.never = {}; if (o.on == null) o.on = true; return o; }
+  function afPut(o) { jset(AFK, o); try { if (window.hwSettings) hwSettings.sync(); } catch (e) {} }
+  function afSealOk() { return !!(window.HwNative && HwNative.afSeal && HwNative.afOpen); }
+  function afSeal(p) { try { return String(HwNative.afSeal(String(p)) || ''); } catch (e) { return ''; } }
+  function afOpen(x) { try { return String(HwNative.afOpen(String(x)) || ''); } catch (e) { return ''; } }
+  function afHostOf(o) { try { return new URL(o).host.replace(/^www\./, ''); } catch (e) { return ''; } }
+  /* which enabled chain a pasted string is an address of ('' = none) */
+  function afChainOf(a) {
+    var order = ['xmr', 'ada', 'sui', 'eth', 'trx', 'xrp', 'btc', 'sol'];
+    for (var i = 0; i < order.length; i++) { var c = order[i]; if (OKRE[c] && OKRE[c].test(a) && chainOn(c)) return c; }
+    return '';
+  }
+  function afMine(a) { a = String(a).toLowerCase(); return (W || []).some(function (w) { var x = w.A || {}; return Object.keys(x).some(function (k) { return typeof x[k] === 'string' && x[k].toLowerCase() === a; }); }); }
+  function afChName(c) { return c === 'eth' ? 'Ethereum & EVM' : (CHBY[c] || {}).name || c; }
+  function afIncTab(tab) { var t = BRM.get(BR, tab); return !t || !!t.inc; }
+  var afBusy = false;
+  function afHandle(tab, o, q) {
+    var m = String(q.method || ''), p = q.params || {}, host = afHostOf(o), S = afGet();
+    if (afIncTab(tab)) return Promise.reject(dErr(4100, 'Not in incognito tabs'));
+    if (!host) return Promise.reject(dErr(4100, 'Bad origin'));
+    if (m === 'af_has') {
+      var k = String(p.kind || ''), f = String(p.f || '').slice(0, 60), n = 0;
+      if (k === 'password') n = S.logins.filter(function (x) { return x.host === host; }).length;
+      else if (k === 'email') n = S.emails.length + S.logins.filter(function (x) { return x.host === host && /@/.test(x.user || ''); }).length;
+      else if (k === 'addr') n = S.addrs.filter(function (x) { return chainOn(x.ch); }).length;
+      else if (k === 'text') n = S.inputs.filter(function (x) { return x.host === host && x.f === f; }).length + S.logins.filter(function (x) { return x.host === host && x.user; }).length;
+      return Promise.resolve({ n: n });
+    }
+    if (m === 'af_pick') return afPick(host, String(p.kind || ''), String(p.f || '').slice(0, 60));
+    if (!S.on || S.never[host]) return Promise.resolve(null);
+    if (m === 'af_addr') {
+      var a = String(p.a || '').trim(), c = afChainOf(a);
+      if (!c || afMine(a) || S.addrs.some(function (x) { return x.a === a; }) || afBusy) return Promise.resolve(null);
+      afBusy = true;
+      sheet('<h3>Save this ' + esc(afChName(c)) + ' address?</h3><p class="sp mono">' + esc(short(a, 10)) + '</p><div class="inp"><input id="af-an" maxlength="40" placeholder="Name (optional)" autocomplete="off"></div>' +
+        '<div class="row2"><button class="btn" data-x>Not now</button><button class="btn pri" data-afs>Save</button></div><p class="hint">Saved addresses are in Settings \u203a Saved inputs.</p>', function (ov, close) {
+        ov.querySelector('[data-afs]').onclick = function () { var S2 = afGet(); S2.addrs.unshift({ ch: c, a: a, name: ov.querySelector('#af-an').value.trim().slice(0, 40), t: Date.now() }); S2.addrs = S2.addrs.slice(0, 300); afPut(S2); close(); toast('Address saved'); buzz(8); };
+        var obs = new MutationObserver(function () { if (!ov.isConnected) { obs.disconnect(); afBusy = false; } }); obs.observe(document.body, { childList: true });
+      });
+      return Promise.resolve(null);
+    }
+    if (m === 'af_offer') {
+      var user = String(p.user || '').slice(0, 200), pass = String(p.pass || '').slice(0, 400), email = String(p.email || '').slice(0, 200), fields = Array.isArray(p.fields) ? p.fields.slice(0, 12) : [];
+      var have = S.logins.filter(function (x) { return x.host === host && x.user === user; })[0], items = [];
+      if (pass && afSealOk() && !(have && afOpen(have.enc) === pass)) items.push({ k: 'login', t: (have ? 'Update password' : 'Password') + (user ? ' for ' + user : ''), s: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' });
+      if (email && !S.emails.some(function (x) { return x.v === email; })) items.push({ k: 'email', t: 'Email', s: email });
+      fields.forEach(function (x, i) { var f = String(x && x.f || '').slice(0, 60), v = String(x && x.v || '').slice(0, 400); if (!f || !v || v === user || v === email) return; if (S.inputs.some(function (y) { return y.host === host && y.f === f && y.v === v; })) return; items.push({ k: 'in', i: i, f: f, v: v, t: f, s: v }); });
+      if (!items.length || afBusy) return Promise.resolve(null);
+      afBusy = true;
+      sheet('<h3>Save for ' + esc(host) + '?</h3><div class="lst af-l">' + items.map(function (x, i) { return '<label class="kv af-r"><input type="checkbox" data-afi="' + i + '" checked><span class="am"><b>' + esc(x.t) + '</b><small class="mono">' + esc(short(x.s, 14)) + '</small></span></label>'; }).join('') + '</div>' +
+        '<div class="row2"><button class="btn" data-afn>Never for this site</button><button class="btn pri" data-afs>Save</button></div><button class="btn wide" data-x>Not now</button><p class="hint">Passwords are encrypted with your phone\u2019s keystore. Manage them in Settings \u203a Saved inputs.</p>', function (ov, close) {
+        ov.querySelector('[data-afs]').onclick = function () {
+          var S2 = afGet(), n = 0;
+          ov.querySelectorAll('[data-afi]').forEach(function (cb) {
+            if (!cb.checked) return; var x = items[+cb.getAttribute('data-afi')]; if (!x) return;
+            if (x.k === 'login') { var enc = afSeal(pass); if (!enc) return; S2.logins = S2.logins.filter(function (y) { return !(y.host === host && y.user === user); }); S2.logins.unshift({ id: rid(6), host: host, user: user, enc: enc, t: Date.now() }); n++; }
+            else if (x.k === 'email') { S2.emails.unshift({ v: email, t: Date.now() }); n++; }
+            else if (x.k === 'in') { S2.inputs.unshift({ host: host, f: x.f, v: x.v, t: Date.now() }); n++; }
+          });
+          S2.logins = S2.logins.slice(0, 500); S2.emails = S2.emails.slice(0, 100); S2.inputs = S2.inputs.slice(0, 500);
+          afPut(S2); close(); if (n) { toast('Saved'); buzz(8); }
+        };
+        ov.querySelector('[data-afn]').onclick = function () { var S2 = afGet(); S2.never[host] = 1; afPut(S2); close(); toast('Hwallet won\u2019t offer to save on ' + host); };
+        var obs = new MutationObserver(function () { if (!ov.isConnected) { obs.disconnect(); afBusy = false; } }); obs.observe(document.body, { childList: true });
+      });
+      return Promise.resolve(null);
+    }
+    return Promise.reject(dErr(4200, 'Unknown request'));
+  }
+  /* the trusted picker: Hwallet's own sheet; only the entry the user taps goes back to the page */
+  function afPick(host, k, f) {
+    var S = afGet(), rows = [];
+    if (k === 'password' || k === 'text' || k === 'email') S.logins.filter(function (x) { return x.host === host; }).forEach(function (x) { rows.push({ t: x.user || '(no username)', s: 'Login \u00b7 ' + host, login: x }); });
+    if (k === 'email') S.emails.forEach(function (x) { rows.push({ t: x.v, s: 'Email', value: x.v }); });
+    if (k === 'text') S.inputs.filter(function (x) { return x.host === host && x.f === f; }).forEach(function (x) { rows.push({ t: x.v, s: x.f, value: x.v }); });
+    if (k === 'addr') S.addrs.filter(function (x) { return chainOn(x.ch); }).forEach(function (x) { rows.push({ t: x.name || short(x.a, 8), s: afChName(x.ch) + (x.name ? ' \u00b7 ' + short(x.a, 6) : ''), value: x.a }); });
+    if (!rows.length) return Promise.resolve(null);
+    return new Promise(function (res) {
+      var done = false;
+      sheet('<h3>Fill on ' + esc(host) + '</h3><div class="lst">' + rows.map(function (r, i) { return '<button class="kv tap af-p" data-afp="' + i + '"><span class="am"><b>' + esc(String(r.t).slice(0, 60)) + '</b><small>' + esc(r.s) + '</small></span></button>'; }).join('') + '</div><button class="btn wide" data-x>Cancel</button>', function (ov, close) {
+        ov.querySelectorAll('[data-afp]').forEach(function (b) { b.onclick = function () {
+          var r = rows[+b.getAttribute('data-afp')]; done = true; close(); buzz(6);
+          if (r.login) { var pw = afOpen(r.login.enc); if (!pw && r.login.enc) { toast('This password can\u2019t be read on this phone any more'); res(null); return; } res(k === 'password' ? { pass: pw, user: r.login.user } : { user: r.login.user, pass: pw }); }
+          else res({ value: r.value });
+        }; });
+        var obs = new MutationObserver(function () { if (!ov.isConnected) { obs.disconnect(); if (!done) res(null); } }); obs.observe(document.body, { childList: true });
+      });
+    });
+  }
+  /* ---------- Settings > Saved inputs ---------- */
+  var SIN_TAB = 'pw';
+  function sinSum() { var S = afGet(), n = S.logins.length + S.emails.length + S.inputs.length + S.addrs.length; return (S.on ? '' : 'Off \u00b7 ') + (n ? n + ' saved' : 'Nothing saved'); }
+  function sinHtml() { return '<div id="sin-body"></div>'; }
+  function sinRow(i, t, s, acts) { return '<div class="kws-row sin-r"><span class="kws-t">' + esc(String(t).slice(0, 80)) + '<span class="kws-s">' + esc(String(s).slice(0, 80)) + '</span></span><span class="sin-a">' + acts.map(function (a) { return '<button type="button" class="sin-b" data-sa="' + a + '" data-si="' + i + '">' + ({ c: 'Copy', e: 'Edit', d: 'Delete' })[a] + '</button>'; }).join('') + '</span></div>'; }
+  function sinPaint() {
+    var el = (typeof kq === 'function' ? kq('#sin-body') : null) || document.getElementById('sin-body'); if (!el) return;
+    var S = afGet(), body = '';
+    var tabs = [['pw', 'Passwords', S.logins.length], ['em', 'Emails', S.emails.length], ['in', 'Inputs', S.inputs.length], ['ad', 'Addresses', S.addrs.length]];
+    var hd = '<div class="kws-grp"><button type="button" class="kws-row kws-tl' + (S.on ? ' on' : '') + '" id="sin-on" aria-pressed="' + !!S.on + '"><span class="kws-t">Offer to save<span class="kws-s">' + (S.on ? 'On \u00b7 never in incognito tabs' : 'Off') + '</span></span>' + KSW + '</button>' +
+      (Object.keys(S.never).length ? '<button type="button" class="kws-row" id="sin-nv"><span class="kws-t">Never-save sites<span class="kws-s">' + esc(Object.keys(S.never).slice(0, 4).join(', ')) + ' \u00b7 tap to clear</span></span></button>' : '') + '</div>' +
+      '<div class="seg wide sin-seg">' + tabs.map(function (x) { return '<button type="button" data-st="' + x[0] + '" class="' + (SIN_TAB === x[0] ? 'on' : '') + '">' + x[1] + (x[2] ? ' ' + x[2] : '') + '</button>'; }).join('') + '</div>';
+    if (SIN_TAB === 'pw') body = S.logins.map(function (x, i) { return sinRow(i, x.host, x.user || '(no username)', ['c', 'e', 'd']); }).join('');
+    else if (SIN_TAB === 'em') body = S.emails.map(function (x, i) { return sinRow(i, x.v, 'Email', ['c', 'e', 'd']); }).join('');
+    else if (SIN_TAB === 'in') body = S.inputs.map(function (x, i) { return sinRow(i, x.v, x.host + ' \u00b7 ' + x.f, ['c', 'e', 'd']); }).join('');
+    else {
+      var by = {}; S.addrs.forEach(function (x, i) { if (!chainOn(x.ch)) return; (by[x.ch] = by[x.ch] || []).push(sinRow(i, x.name || short(x.a, 10), x.name ? short(x.a, 10) : afChName(x.ch), ['c', 'e', 'd'])); });
+      body = Object.keys(by).map(function (c) { return '<div class="kws-sec">' + esc(afChName(c)) + '</div><div class="kws-grp">' + by[c].join('') + '</div>'; }).join('');
+    }
+    el.innerHTML = hd + (body ? (SIN_TAB === 'ad' ? body : '<div class="kws-grp">' + body + '</div>') : '<p class="hw-kp">Nothing saved here yet. The Browser offers to save when you sign in, send a form or paste an address (never in incognito tabs).</p>');
+  }
+  function sinEdit(title, fields, done) {
+    sheet('<h3>' + esc(title) + '</h3>' + fields.map(function (f, i) { return '<div class="lbl">' + esc(f.l) + '</div><div class="inp"><input data-sf="' + i + '" type="' + (f.pw ? 'password' : 'text') + '" value="' + esc(f.v || '') + '" maxlength="' + (f.max || 200) + '" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'; }).join('') +
+      '<div class="row2"><button class="btn" data-x>Cancel</button><button class="btn pri" data-ss>Save</button></div>', function (ov, close) {
+      ov.querySelector('[data-ss]').onclick = function () { var v = []; ov.querySelectorAll('[data-sf]').forEach(function (x) { v[+x.getAttribute('data-sf')] = x.value; }); if (done(v) !== false) { close(); toast('Saved'); } };
+    });
+  }
+  function sinBind(pg) {
+    if (!pg) return;
+    pg.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('button'); if (!b || !pg.contains(b)) return;
+      var S = afGet();
+      if (b.id === 'sin-on') { ktick(); S.on = !S.on; afPut(S); sinPaint(); return; }
+      if (b.id === 'sin-nv') { ktick(); S.never = {}; afPut(S); sinPaint(); toast('Hwallet offers to save on every site again'); return; }
+      if (b.hasAttribute('data-st')) { ktick(); SIN_TAB = b.getAttribute('data-st'); sinPaint(); return; }
+      var a = b.getAttribute('data-sa'), i = +b.getAttribute('data-si'); if (!a) return;
+      var L = SIN_TAB === 'pw' ? S.logins : SIN_TAB === 'em' ? S.emails : SIN_TAB === 'in' ? S.inputs : S.addrs, x = L[i]; if (!x) return;
+      buzz(6);
+      if (a === 'd') { if (b.dataset.sure) { L.splice(i, 1); afPut(S); sinPaint(); toast('Deleted'); } else { b.dataset.sure = '1'; b.textContent = 'Sure?'; setTimeout(function () { if (b.isConnected) { delete b.dataset.sure; b.textContent = 'Delete'; } }, 2500); } return; }
+      if (a === 'c') { var t = SIN_TAB === 'pw' ? afOpen(x.enc) : SIN_TAB === 'ad' ? x.a : x.v; if (!t) { toast('Can\u2019t read this one on this phone'); return; } copy(t).then(function () { toast(SIN_TAB === 'pw' ? 'Password copied' : 'Copied'); }); return; }
+      if (SIN_TAB === 'pw') sinEdit('Edit login', [{ l: 'Site', v: x.host, max: 120 }, { l: 'Username', v: x.user }, { l: 'Password', v: afOpen(x.enc), pw: 1, max: 400 }], function (v) {
+        var enc = afSeal(v[2] || ''); if (!enc) { toast('The keystore is not available'); return false; }
+        var S2 = afGet(), y = S2.logins[i]; if (!y) return; y.host = String(v[0] || '').trim().slice(0, 120); y.user = String(v[1] || '').slice(0, 200); y.enc = enc; y.t = Date.now(); afPut(S2); sinPaint();
+      });
+      else if (SIN_TAB === 'em') sinEdit('Edit email', [{ l: 'Email', v: x.v }], function (v) { var S2 = afGet(); if (S2.emails[i]) S2.emails[i].v = String(v[0] || '').trim().slice(0, 200); afPut(S2); sinPaint(); });
+      else if (SIN_TAB === 'in') sinEdit('Edit input', [{ l: 'Site', v: x.host, max: 120 }, { l: 'Field', v: x.f, max: 60 }, { l: 'Value', v: x.v, max: 400 }], function (v) { var S2 = afGet(), y = S2.inputs[i]; if (!y) return; y.host = String(v[0] || '').trim(); y.f = String(v[1] || '').slice(0, 60); y.v = String(v[2] || '').slice(0, 400); afPut(S2); sinPaint(); });
+      else sinEdit('Edit address', [{ l: 'Name', v: x.name, max: 40 }, { l: afChName(x.ch) + ' address', v: x.a, max: 120 }], function (v) {
+        var na = String(v[1] || '').trim(); if (!(OKRE[x.ch] && OKRE[x.ch].test(na))) { toast('That is not a valid ' + afChName(x.ch) + ' address'); return false; }
+        var S2 = afGet(), y = S2.addrs[i]; if (!y) return; y.name = String(v[0] || '').trim().slice(0, 40); y.a = na; afPut(S2); sinPaint();
+      });
+    });
+  }
   window.hwBrReq = function (tab, origin, json) {
     var q; try { q = JSON.parse(json); } catch (e) { return; }
     if (!q || typeof q.id !== 'string') return;
     var o = brOrigin(origin);
-    var job = o ? brHandle(o, q) : Promise.reject(dErr(4100, 'Only https sites can use the wallet'));
+    var job = !o ? Promise.reject(dErr(4100, 'Only https sites can use the wallet')) : q.ns === 'hwaf' ? afHandle(tab, o, q) : brHandle(o, q);
     job.then(function (r) { brReply(tab, q.id, r); }, function (e) {
       /* EIP-1193: 4001 only for a user rejection; everything else that has no code of its own is -32603 */
       var c = e && e.code; if (c == null || c === 5000 || typeof c !== 'number') c = /reject|cancel/i.test(String(e && e.message)) ? 4001 : -32603;
@@ -11280,13 +11784,13 @@ window.hwCrashPrompt = crashPrompt;
     if (e.t === 'nav') {
       BRM.update(BR, e.id, { url: e.url, title: e.title }); BRL[e.id] = Object.assign(BRL[e.id] || {}, { back: !!e.back, fwd: !!e.fwd, loading: !!e.loading, progress: +e.progress || 0, offline: !!e.offline, blk: +e.blk || 0, shield: !!e.shield });
       if (/^https:/.test(e.url || '')) { try { brWarm(new URL(e.url).origin); } catch (x) {} }
-      if (!e.loading && !e.offline && /^https?:/.test(e.url || '')) {
+      if (!e.loading && !e.offline && !t.inc && /^https?:/.test(e.url || '')) {
         if (BRL[e.id].hu !== e.url) { BRL[e.id].hu = e.url; if (BRH.add(BRHI, BRMV, e.url, e.title)) brHSave(); }
         else if (e.title && BRH.title(BRHI, BRMV, e.url, e.title)) brHSave();
       }
       BRL[e.id].desk = !!e.desk;
       /* v1.8.9 (R13): the language is read as soon as the page has painted most of its text (warms the translator early) */
-      if (window.hwTr && !e.offline && (!e.loading || +e.progress >= 70)) hwTr.check(e.id, e.url || '');
+      if (window.hwTr && !e.offline && !t.inc && (!e.loading || +e.progress >= 70)) hwTr.check(e.id, e.url || '');
       brSave(); if (e.id === BR.act && V.v === 'browser') brPaintBar();
       if (e.offline && e.id === BR.act && !e.loading) toast('Offline copy. Pull down or reload to refresh');
     } else if (e.t === 'icon') {
@@ -12787,9 +13291,9 @@ window.hwCrashPrompt = crashPrompt;
   /* what the live service gets (cfg.ncoins) */
   var NCFG = null;
   function ncoinsCfg() {
-    var sl = nSlots();
-    if (!NCFG || NCFG.sig !== JSON.stringify(sl.map(function (x) { return [x.s, x.cg, x.a]; }))) {
-      NCFG = { sig: JSON.stringify(sl.map(function (x) { return [x.s, x.cg, x.a]; })), v: sl.map(function (x) { return { s: x.s, cg: x.cg || '', plat: x.plat || '', a: x.a || '', ic: '', icon: x.icon || '' }; }) };
+    var sl = nSlots().map(function (x) { return chainOnFor(x.ch, x.net) ? x : { s: '\u2014', cg: '', a: '', off: true }; });   /* v1.8.13: no price for a chain that is off */
+    if (!NCFG || NCFG.sig !== JSON.stringify(sl.map(function (x) { return [x.s, x.cg, x.a, !!x.off]; }))) {
+      NCFG = { sig: JSON.stringify(sl.map(function (x) { return [x.s, x.cg, x.a, !!x.off]; })), v: sl.map(function (x) { return x.off ? { s: '\u2014', cg: '', plat: '', a: '', ic: '', icon: '', off: true } : { s: x.s, cg: x.cg || '', plat: x.plat || '', a: x.a || '', ic: '', icon: x.icon || '' }; }) };
       var me = NCFG;
       Promise.all(sl.map(function (x) { return nShrink(x.ic); })).then(function (ics) { if (NCFG !== me) return; ics.forEach(function (ic, i) { me.v[i].ic = ic; }); me.ready = true; try { liveConfig(); } catch (e) {} });
     }
@@ -13515,13 +14019,13 @@ window.hwCrashPrompt = crashPrompt;
   function xmrNeedsPair() { return !!(A.xmr && !xmrReady()); }
   function xmrPairCard() {
     var nat = !!(window.HwNative && HwNative.sign);
-    return '<div class="xs-card xs-pair"><b>Pair again to enable Monero</b><span>Hwallet needs this wallet\u2019s view key to find your Monero. Update Kwallet to 3.98.4, then pair again. Same wallet, nothing is duplicated.</span>' +
+    return '<div class="xs-card xs-pair"><b>Pair again to enable Monero</b><span>Hwallet needs the view key. Update Kwallet (3.98.4+), then pair again. Same wallet.</span>' +
       (nat ? '<button class="btn pri" data-xpair>Pair again from Kwallet</button>' : '<span>Open Hwallet on the phone with Kwallet to pair.</span>') + '</div>';
   }
   window.hwXmrPairCard = function () { return xmrNeedsPair() ? xmrPairCard() : ''; };
   function xmrSyncInner() {
     if (!xmrReady()) return xmrNeedsPair() ? xmrPairCard() : '';
-    if (xmrHeight() < 0 && !XS.st) return '<div class="xs-card"><b>Choose where the Monero scan starts</b><span>Monero balances are found by scanning blocks with your view key on this phone. Tell Hwallet when this wallet was made so the scan is quick.</span><button class="btn pri" data-xh>Set start</button></div>';
+    if (xmrHeight() < 0 && !XS.st) return '<div class="xs-card"><b>Set the Monero scan start</b><span>Hwallet scans blocks on this phone with your view key. Pick when the wallet was made to keep it quick.</span><button class="btn pri" data-xh>Set start</button></div>';
     var p = XS.prog, err = XS.err;
     /* v1.8.10 (push 15, R5): paused by the user: no scan, no rescan; the saved height is kept and resume goes on from it */
     if (xmrPaused()) { var lf = xmrLeft(); return '<div class="xs-l xs-pz"><span>Paused' + (lf != null ? ' \u00b7 ' + lf.toLocaleString('en-US') + ' block' + (lf === 1 ? '' : 's') + ' left' : '') + (XS.busy ? ' \u00b7 saving\u2026' : '') + '</span></div>' + (p && !p.done && p.pct > 0 && p.pct < 1 ? '<div class="xs-bar"><i style="width:' + Math.floor(p.pct * 100) + '%"></i></div>' : ''); }
@@ -13530,7 +14034,7 @@ window.hwCrashPrompt = crashPrompt;
       var st = XS.st; if (!st) return XS.busy ? '<div class="xs-l"><span class="spin"></span><span>Starting the Monero scan\u2026</span></div>' : '';
       var ago = Math.max(0, Math.round((Date.now() - (st.at || 0)) / 60000));
       return '<div class="xs-l ok"><span>Synced to block ' + (st.height || 0).toLocaleString('en-US') + (ago ? ' \u00b7 ' + ago + ' min ago' : ' \u00b7 just now') + ' \u00b7 ' + esc(xmrNodeName()) + '</span>' + (XS.busy ? '<span class="spin"></span>' : '') + '</div>' +
-        (st.kiMissing ? '<div class="xs-l"><span>' + st.kiMissing + ' received output' + (st.kiMissing > 1 ? 's are' : ' is') + ' not checked for spends yet. The next send (or Settings \u203a Monero \u203a Sync spent status) fixes it.</span></div>' : '');
+        (st.kiMissing ? '<div class="xs-l"><span>' + st.kiMissing + ' received output' + (st.kiMissing > 1 ? 's are' : ' is') + ' not checked for spends. Run Settings \u203a Monero \u203a Sync spent status.</span></div>' : '');
     }
     var pct = Math.max(0, Math.min(100, Math.floor((p.pct || 0) * 100)));
     var eta = p.eta > 0 ? (p.eta >= 3600 ? Math.floor(p.eta / 3600) + ' h ' + Math.round((p.eta % 3600) / 60) + ' min' : p.eta >= 60 ? Math.round(p.eta / 60) + ' min' : p.eta + ' s') : '';
@@ -13538,7 +14042,7 @@ window.hwCrashPrompt = crashPrompt;
     var hl = p.h > 0 && p.end > 0 ? ' \u00b7 block ' + Number(p.h).toLocaleString('en-US') + ' of ' + Number(p.end).toLocaleString('en-US') : '';
     return '<div class="xs-l"><span>' + (p.nat ? 'Syncing' : 'Scanning') + ' \u00b7 ' + pct + '%' + hl + ' \u00b7 ' + (p.left || 0).toLocaleString('en-US') + ' blocks left' + (p.bps > 0 ? ' \u00b7 ' + p.bps.toLocaleString('en-US') + ' blocks/s' : '') + (eta ? ' \u00b7 about ' + eta : '') + '</span></div><div class="xs-bar"><i style="width:' + pct + '%"></i></div>' +
       (p.err ? '<div class="xs-l"><span>' + esc(String(p.err).slice(0, 120)) + '</span></div>' : '') +
-      '<div class="xs-l xs-lo"><span>Listen-only until synced: incoming payments show as they are found, sending unlocks at the chain tip.' + (p.nat ? ' The sync keeps going with the screen off.' : '') + '</span></div>';
+      '<div class="xs-l xs-lo"><span>Receiving works now. Sending unlocks when the sync is done.' + (p.nat ? ' It keeps going with the screen off.' : '') + '</span></div>';
   }
   function xmrRowSub() { if (!xmrReady()) return ''; var p = XS.prog; if (XS.busy && p && !p.done && p.pct < 1) return 'Scanning ' + Math.floor((p.pct || 0) * 100) + '%'; return ''; }
   function xmrApply(st, fresh) {
@@ -13687,11 +14191,11 @@ window.hwCrashPrompt = crashPrompt;
   /* ---------- restore height: set once, editable in Settings ---------- */
   function xmrHeightSheet(after) {
     var cur = xmrHeight(), tip = XS.st ? XS.st.daemon || XS.st.height : xmrHeightAt(Date.now());
-    sheet('<h3>Monero scan start</h3><p class="sp">The scan reads every block from this point on with your view key, on this phone. Earlier is safer, later is faster. Nothing is sent anywhere.</p>' +
+    sheet('<h3>Monero scan start</h3><p class="sp">Hwallet scans every block from here, on this phone. Earlier is safer, later is faster.</p>' +
       '<div class="xh-o"><button class="opt tap" data-xo="new"><span><b>This wallet is new</b><small>Start about one day ago (block ' + Math.max(0, tip - 720).toLocaleString('en-US') + ')</small></span></button>' +
-      '<div class="xh-f"><b>From a date</b><small>The day the wallet was made, or the first day it got Monero. One month earlier is used to be safe.</small><input type="date" id="xh-d" max="' + new Date().toISOString().slice(0, 10) + '" min="2014-04-18"><button class="btn" data-xo="date">Use this date</button></div>' +
+      '<div class="xh-f"><b>From a date</b><small>When the wallet was made or first got Monero. Hwallet starts a month earlier.</small><input type="date" id="xh-d" max="' + new Date().toISOString().slice(0, 10) + '" min="2014-04-18"><button class="btn" data-xo="date">Use this date</button></div>' +
       '<div class="xh-f"><b>From a block height</b><small>' + (cur >= 0 ? 'Now: ' + cur.toLocaleString('en-US') : 'Not set yet') + '</small><input inputmode="numeric" id="xh-h" placeholder="e.g. 3200000" value="' + (cur >= 0 ? cur : '') + '"><button class="btn" data-xo="h">Use this height</button></div>' +
-      '<button class="opt tap" data-xo="all"><span><b>Scan everything</b><small>From 2014. Finds every payment ever, takes a long time on a phone</small></span></button></div>', function (ov, close) {
+      '<button class="opt tap" data-xo="all"><span><b>Scan everything</b><small>From 2014. Finds everything, but slow</small></span></button></div>', function (ov, close) {
       function set(h) {
         h = Math.max(0, h | 0); xmrSet('h', h); XS.opened = ''; XS.st = null; XS.prog = null; XS.err = ''; jset(xmrStKey(), null); delete C.b.xmr;
         xe('forget', { key: 'v1:' + xmrPrimary() + ':' + h }).catch(function () {});
@@ -13762,10 +14266,10 @@ window.hwCrashPrompt = crashPrompt;
   };
   function xmrReview() {
     var r = SND.r, to = SND.to, now = Date.now(), lvl = SND.lv === 'custom' ? 'medium' : SND.lv;
-    if (!xmrCanSend()) { toast(XS.st ? 'Pair Monero with Kwallet to send' : 'Wait for the first Monero scan to finish'); return; }
-    if (xmrSyncing()) { toast('Monero is syncing (' + xmrLeftTxt() + '). Listen-only until it reaches the chain tip'); buzz([30, 40, 30]); return; }
+    if (!xmrCanSend()) { toast(XS.st ? 'Pair Monero with Kwallet to send' : 'Wait for the first Monero scan'); return; }
+    if (xmrSyncing()) { toast('Monero is syncing (' + xmrLeftTxt() + '). Sending unlocks when it\u2019s done'); buzz([30, 40, 30]); return; }
     var st = XS.st || {}, unl = BI(st.unl || 0);
-    if (!SND.max && SND.amt != null && SND.amt + SND.d.feeFor(lvl) > unl) { toast(unl < BI(st.bal || 0) ? 'Part of your XMR is still locked (10 blocks, about 20 min after it arrives)' : 'Not enough XMR for this amount plus the network fee'); buzz([30, 40, 30]); return; }
+    if (!SND.max && SND.amt != null && SND.amt + SND.d.feeFor(lvl) > unl) { toast(unl < BI(st.bal || 0) ? 'Some XMR is still locked (about 20 min after it arrives)' : 'Not enough XMR for this amount plus the fee'); buzz([30, 40, 30]); return; }
     SND.busy = true; validate(); $('go').textContent = 'Preparing\u2026';
     var built = null, me = SND;
     /* v1.8.8 (push 13, R9d): the build can always be cancelled (the engine is stopped and restarted from its saved cache, so the
@@ -13773,7 +14277,7 @@ window.hwCrashPrompt = crashPrompt;
     xmrCancelBtn(true, function () { me.xcancel = true; xeStop(); });
     xe('build', { to: to, amount: SND.max ? '0' : SND.amt.toString(), max: !!SND.max, level: lvl }, 150000).catch(function (e) {
       if (me.xcancel) throw Object.assign(new Error('Cancelled'), { quiet: true, xc: true });
-      if (/timed out/i.test(String(e && e.message))) { xeStop(); throw new Error('The Monero node took too long to prepare this transaction. Pick a faster node in Settings > Monero and try again'); }
+      if (/timed out/i.test(String(e && e.message))) { xeStop(); throw new Error('The Monero node was too slow. Pick another node in Settings > Monero and try again'); }
       throw e;
     }).then(function (b) {
       xmrCancelBtn(false);
@@ -13816,7 +14320,7 @@ window.hwCrashPrompt = crashPrompt;
       xmrCancelBtn(false);
       SND.busy = false; if ($('go')) $('go').textContent = 'Continue';
       var m = String(e && e.message || e);
-      if (/double spend|already spent|key image/i.test(m)) m = 'The node says an output was already spent. Run Settings \u203a Monero \u203a Sync spent status, then try again';
+      if (/double spend|already spent|key image/i.test(m)) m = 'An output is already spent. Run Settings \u203a Monero \u203a Sync spent status, then retry';
       toast((e && e.quiet ? '' : 'Not sent: ') + m.slice(0, 160)); validate();
       /* R9d: nothing was submitted: the scan may run again now (not after the 4-minute hold) */
       if (XS.w || xnOn()) xe('release', {}, 5000).catch(function () {});
@@ -13839,15 +14343,15 @@ window.hwCrashPrompt = crashPrompt;
   function xmrKiSync() {
     if (!xmrReady() || !(A.paired && A.paired.xmr)) { toast('Pair Monero with Kwallet first'); return; }
     if (!(window.HwNative && HwNative.sign)) { toast('Works in the Hwallet app with Kwallet on the same phone'); return; }
-    if (xmrSyncing()) { toast('Monero is syncing (' + xmrLeftTxt() + '). Try again when it reaches the chain tip'); return; }
+    if (xmrSyncing()) { toast('Monero is syncing (' + xmrLeftTxt() + '). Try again when it\u2019s done'); return; }
     toast('Preparing\u2026');
     xe('outputs', {}, 120000).then(function (o) {
       var now = Date.now();
       return callK({ v: 2, id: rid(16), action: 'sign', chain: 'xmr', kind: 'xmr-ki', from: xmrPrimary(), to: xmrPrimary(), token: 'native', tokenSym: 'XMR', tokenDec: 12, amount: '0', fee: { level: 'medium', levels: { medium: { fee: '0' } } }, xmr: { outputs: o.outputs }, live: false, created: now, expires: now + 120000 });
     }).then(function (res) {
-      if (!res || res.status !== 'signed' || !res.ki) throw new Error({ rejected: 'Cancelled in Kwallet', expired: 'The request expired' }[res && res.status] || (res && res.error) || 'Kwallet did not answer');
+      if (!res || res.status !== 'signed' || !res.ki) throw new Error({ rejected: 'Cancelled in Kwallet', expired: 'The request expired. Try again' }[res && res.status] || (res && res.error) || 'Kwallet didn\u2019t answer');
       return xe('importKI', { ki: res.ki, offset: res.kiOffset | 0 }, 180000);
-    }).then(function (k) { if (k && k.state) xmrApply(k.state, false); toast('Spent status synced'); buzz([10, 40, 10]); }, function (e) { toast(String(e && e.message || e).slice(0, 140)); });
+    }).then(function (k) { if (k && k.state) xmrApply(k.state, false); toast('Spent status up to date'); buzz([10, 40, 10]); }, function (e) { toast(String(e && e.message || e).slice(0, 140)); });
   }
   /* v1.8.4 (push 10): compact single-line rows in one card, a radio on the selected one, live latency per node; a custom node
      that answers is saved as its own row (host as name, x to remove), selected, and the input clears for the next one */
@@ -13869,7 +14373,7 @@ window.hwCrashPrompt = crashPrompt;
         XMRN.map(function (n) { return row(n.u, n.n, '', false); }).join('') +
         xmrCustom().filter(function (u) { return !XMRN.some(function (n) { return n.u === u; }); }).map(function (u) { return row(u, u.replace(/^https:\/\//, ''), 'Your node', true); }).join('');
     }
-    sheet('<h3>Monero node</h3><p class="sp">Hwallet asks this node for blocks and scans them on the phone. The node never gets your view key. HTTPS nodes only.</p>' +
+    sheet('<h3>Monero node</h3><p class="sp">Blocks come from this node; the scan runs on your phone. The node never sees your view key. HTTPS only.</p>' +
       '<div class="xn-l xn-card" id="xn-l">' + listHtml() + '</div>' +
       '<div class="xh-f xn-add"><b>Add your own node</b><small>https://host:port of a node you run or trust</small><input id="xn-c" placeholder="https://node.example.com:18089" autocapitalize="off" spellcheck="false" inputmode="url"><button class="btn pri wide xn-use" data-xc>Use this node</button></div>', function (ov, close) {
       function paint() { var L = ov.querySelector('#xn-l'); if (L) { L.innerHTML = listHtml(); bind(); } }
@@ -14343,7 +14847,7 @@ window.hwCrashPrompt = crashPrompt;
     ACT = ACT.filter(function (a) { return !(a.hash === o.hash && a.ch === o.ch); });
     ACT.unshift(o); ACT = ACT.slice(0, 300); saveActs(); return true;
   }
-  function actShown(a) { return !!a && (a.st !== 'pending' || txHashOk(a.ch, a.hash)); }
+  function actShown(a) { return !!a && chainOnFor(a.ch, a.net) && (a.st !== 'pending' || txHashOk(a.ch, a.hash)); }
   /* the native coin's own logo for a row on any EVM network (BNB Chain shows BNB, Polygon POL, the rest ETH) */
   function natLogo(ch, net) {
     if (ch !== 'eth') return (CHBY[ch] || {}).logo || '';
@@ -14420,7 +14924,7 @@ window.hwCrashPrompt = crashPrompt;
   function pendSweep() {
     if (!WID) return;
     var now = Date.now(), wid = WID;
-    ACT.filter(function (a) { return a.st === 'pending' && txHashOk(a.ch, a.hash) && now - (a.t || 0) > (a.ch === 'btc' ? 72 * 3600000 : 600000); }).slice(0, 12).forEach(function (a) {
+    ACT.filter(function (a) { return a.st === 'pending' && chainOnFor(a.ch, a.net) && txHashOk(a.ch, a.hash) && now - (a.t || 0) > (a.ch === 'btc' ? 72 * 3600000 : 600000); }).slice(0, 12).forEach(function (a) {
       var key = a.ch + ':' + a.hash, s = P14S[key] || (P14S[key] = { miss: 0, at: 0 });
       if (now - s.at < 90000) return; s.at = now;
       Promise.resolve().then(function () { return txSeen(a); }).then(function (seen) {
