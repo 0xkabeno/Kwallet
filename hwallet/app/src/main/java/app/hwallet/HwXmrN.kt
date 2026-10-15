@@ -614,7 +614,7 @@ object HwXmrN {
         /* v1.8.14: the real import. Kwallet's key images + signatures go into wallet2 itself (the Trezor KI JSON path of
            monero_c), so every output's key image becomes known: sends can be built (no more "No enotes available to
            spend") and later spends are seen while syncing. The old freeze-only path stays as the fallback. */
-        var realErr = ""
+        var realErr = if (ki.length() == 0) "Kwallet returned no key images" else if (off != 0) "Kwallet answered at offset $off, expected 0" else ""
         if (off == 0 && ki.length() > 0) {
             try { return importReal(L, p, ki) } catch (e: Throwable) { realErr = (e.message ?: e.toString()).take(200); Log.w("HwXmr", "ki import: real path failed: $realErr") }
         }

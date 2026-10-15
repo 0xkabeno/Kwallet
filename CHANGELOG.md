@@ -1,5 +1,11 @@
 # Changelog
 
+## Kwallet v3.98.17 · Hwallet v1.8.19 (2026-10-15, work in progress)
+
+- Monero: Kwallet's engine no longer swallows an output-import failure. monero-ts resolved importOutputs() with the error text instead of rejecting, so Kwallet returned zero key images and Hwallet fell back silently ("sending may still fail:" with no reason). Kwallet now fails the request with the real reason ("Kwallet could not read Hwallet's Monero outputs: …"), both for Sync spent status and for Send; Hwallet names an empty or offset answer and shows the raw engine error next to its hint when a send fails. Diagnostic step; Monero send still unconfirmed on device.
+- Hwallet › Settings: the Support card is the 1.8.12 card again exactly (four stacked rows ETH / SOL / BTC / XMR with coin badge, short address and copy icon, stretched down to just above the bottom bar); the 1.8.16 row shrinking and the 1.8.18 2×2 grid are gone. The bottom padding for the bottom bar stays.
+- Hwallet browser: Sui is also announced as "Slush" (Wallet Standard, sui:mainnet) for apps with a fixed list such as Cetus, like the Cardano eternl alias. Same Hwallet Sui account; every signature still goes to Kwallet with its review sheet.
+
 ## Hwallet v1.8.18 (2026-10-15, work in progress; Kwallet stays 3.98.16)
 
 - Hwallet › Settings: the Support card is compact and takes its natural height: one header line ("Support Hwallet · Free and open source"), then ETH, SOL / BTC, XMR as a 2×2 grid of chips (coin icon, short address, copy icon; tap a chip to copy, with the copy toast). Lime card with dark text in OG, M3 and MIUIX, light and dark. The 1.8.17 stretch-to-fill / height-measuring logic and the row tightening are gone; the Settings page now pads its bottom by the fixed bottom bar's real height (gesture inset included) + 8 px, so nothing sits under the bar and a short screen simply scrolls. versionName 1.8.18 / versionCode 10818 (from APP_VERSION).
