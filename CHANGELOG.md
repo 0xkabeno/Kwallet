@@ -1,5 +1,11 @@
 # Changelog
 
+## Kwallet v3.98.18 + Hwallet v1.8.21 (2026-10-16)
+
+- Monero confirmed working end to end on device (Hwallet signs nothing; Kwallet signs every send after review).
+- Hwallet: the Transaction sheet shows Monero confirmations as 10 blocks with a count; the chip reads Waiting for a block / Confirming until the 10th confirmation.
+- Kwallet: the Monero S|V key button is a split pill with exactly the PK button's shape, size and red in every theme.
+
 ## Hwallet v1.8.20 (2026-10-15, work in progress; Kwallet stays 3.98.17)
 
 - Monero: Kwallet's "Failed to authenticate ciphertext" means the outputs it got were exported by a wallet whose view key is not the paired one. Every Monero op Kwallet signs for (outputs export for key images, transaction build) now carries the paired primary address; Hwallet's native engine refuses to run it on any other open wallet (WALLET_MISMATCH), Hwallet reopens the paired wallet and retries once, and the export reports which wallet it came from so a wrong one never reaches Kwallet. Still unconfirmed on device.

@@ -2882,6 +2882,7 @@ html.hwa:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#
 /* v1.8.18: compact Support card on Settings (natural height, 2x2 chips); the Settings page pads its bottom by the fixed
    bottom bar's measured height (--hw-navh, gesture inset included) + 8px, falling back to --nav + --sab */
 html.hwa:not(#v18a):not(#v18b):not(#v18c):not(#v18d):not(#v18e):not(#v18f):not(#v18g):not(#v18h):not(#v18i):not(#v18j):not(#v18k):not(#v18l):not(#v18m):not(#v18n):not(#v18o):not(#v18p) .app:has(#kset-host){padding-bottom:calc(max(var(--hw-navh, 0px), var(--nav, 76px) + var(--sab, 0px)) + 8px)!important}
+.td-bk{display:inline-flex;gap:3px;margin-right:8px;vertical-align:middle}.td-bk i{width:9px;height:14px;border-radius:3px;background:rgba(255,255,255,.14)}.td-bk i.on{background:#f26822}.td-cf .dv{display:inline-flex;align-items:center}
 </style>
 </head>
 <body data-theme="light">
@@ -3814,7 +3815,7 @@ window.hwPlayOpening();
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
       var c = String(d.command), dt = d.data || {}, job;
-      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.20' });
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.21' });
       else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
       else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
       else if (c === 'network') job = Promise.resolve({ network: XNET });
@@ -3879,7 +3880,7 @@ window.hwPlayOpening();
       isHwallet: true,
       request: function (method, params) {
         var id = 'hw' + Date.now().toString(36), p = params || {}, job;
-        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.20', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.21', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
         else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
           job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
         else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
@@ -6972,7 +6973,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.20';
+var APP_VERSION = '1.8.21';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -9582,14 +9583,18 @@ var APP_VERSION = '1.8.20';
     var netName = x.ch === 'eth' ? (EVMBY[x.net] || {}).name : CHBY[x.ch].name, nat = dtNat(x), url = expFor(x.ch, x.net, x.hash);
     function body(D, loading) {
       var rows = dtRows(x, D), st = D ? (D.ok ? 'ok' : 'fail') : x.st === 'pending' ? 'pending' : x.st === 'fail' ? 'fail' : 'ok';
-      var chip = st === 'pending' ? '<span class="td-chip pend">Pending</span>' : st === 'fail' ? '<span class="td-chip fail">Failed</span>' : '<span class="td-chip ok">Completed</span>';
+      /* v1.8.21: Monero confirmations as 10 blocks; the chip says Confirming until the 10th (outputs unlock then) */
+      var xc = x.ch === 'xmr' ? (x.st === 'pending' ? 0 : x.conf != null ? Math.max(0, Math.min(10, x.conf | 0)) : 10) : -1;
+      var conf = xc < 0 ? '' : '<div class="dr td-cf"><span>Confirmations</span><span class="dv"><span class="td-bk">' + (function () { var b = ''; for (var i = 0; i < 10; i++) b += '<i' + (i < xc ? ' class="on"' : '') + '></i>'; return b; })() + '</span>' + (xc >= 10 ? '10+' : xc + '/10') + '</span></div>';
+      if (xc >= 0 && xc < 10 && st !== 'fail') st = 'conf';
+      var chip = st === 'conf' ? '<span class="td-chip pend">' + (xc ? 'Confirming' : 'Waiting for a block') + '</span>' : st === 'pending' ? '<span class="td-chip pend">Pending</span>' : st === 'fail' ? '<span class="td-chip fail">Failed</span>' : '<span class="td-chip ok">Completed</span>';
       var ch = rows.map(function (r) { var up = r.raw > 0n; return '<div class="td-r">' + r.lg + '<span class="td-s">' + esc(r.s) + '</span><span class="td-v"><b class="' + (up ? 'up' : 'dn') + '" data-money>' + money((up ? '+' : '\u2212') + esc(fmtA(r.raw < 0n ? -r.raw : r.raw, r.d))) + '</b><small data-money>' + money(dtUsd(r.raw, r.d, r.p)) + '</small></span></div>'; }).join('');
       var t = (D && D.time) || x.t, dt = t ? new Date(t).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
       var fee = D && D.fee != null && D.fee > 0n ? fmtA(D.fee, nat.d) + ' ' + nat.s + (px(nat.cg) ? ' \u00b7 ' + dtUsd(D.fee, nat.d, px(nat.cg)) : '') : D && D.fee === 0n ? 'None for you' : loading ? 'Checking\u2026' : '\u2014';
       return '<div class="sh-h"><span class="sh-sp"></span><h3>Transaction</h3><button class="sh-rb" data-x aria-label="Close">' + si('x') + '</button></div>' +
         '<div class="td-hd"><div class="td-t">' + esc(dtHead(x, D, rows)) + '</div>' + chip + '</div>' +
         (ch ? '<div class="sw-l">Balance changes</div><div class="dg td-ch">' + ch + '</div>' : loading ? '<div class="dg td-ch"><div class="td-r td-ld"><span class="spin"></span><span class="td-s">Reading the chain\u2026</span></div></div>' : '') +
-        '<div class="dg">' + '<div class="dr"><span>Network</span><span class="dv">' + esc(netName || '') + '</span></div>' + '<div class="dr"><span>Network fee</span><span class="dv">' + esc(fee) + '</span></div>' +
+        '<div class="dg">' + '<div class="dr"><span>Network</span><span class="dv">' + esc(netName || '') + '</span></div>' + '<div class="dr"><span>Network fee</span><span class="dv">' + esc(fee) + '</span></div>' + conf +
         (dt ? '<div class="dr"><span>Date</span><span class="dv">' + esc(dt) + '</span></div>' : '') + (x.cp ? '<div class="dr"><span>' + (x.dir === 'in' ? 'From' : 'To') + '</span><span class="dv mono">' + esc(short(x.cp, 6)) + '</span></div>' : '') + '</div>' +
         '<details class="td-det"><summary>Details</summary><div class="td-hash mono">' + esc(x.hash) + '</div></details>' +
         (url ? '<button class="btn pri td-ex" data-ex>' + sv('ext') + ' View on explorer</button>' : '');
