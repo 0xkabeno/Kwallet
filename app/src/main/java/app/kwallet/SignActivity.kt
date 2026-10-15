@@ -42,6 +42,18 @@ class SignActivity : KwActivity() {
     /** P2a: when Hwallet asked (its uptime clock, same as ours), for the "sheet visible" timing in logcat */
     private var tAsk = 0L
     private var tCreate = 0L
+    /* v3.98.14: the window stays transparent until the sheet draws. If it never draws, the invisible window used to swallow
+       every touch over Hwallet ("frozen" until Back). Now it is revealed after 10 s, and after 30 s the request is answered
+       with an error so Hwallet shows the reason. */
+    @Volatile private var sheetShown = false
+    private val dogH = android.os.Handler(android.os.Looper.getMainLooper())
+    private val dogReveal = Runnable { if (!sheetShown && !replied && !isFinishing) { Log.w("KwSign", "sheet not ready after 10 s, revealing"); revealSign() } }
+    private val dogFail = Runnable {
+        if (!sheetShown && !replied && !isFinishing) {
+            Log.w("KwSign", "sheet not ready after 30 s, answering with an error")
+            reply("{\"status\":\"error\",\"error\":\"Kwallet could not open the signing screen. Close Kwallet, open it once, then retry\"}")
+        }
+    }
 
     override val signPage: Boolean = true
     override fun bootColor(c: Int): Int {
@@ -82,6 +94,7 @@ class SignActivity : KwActivity() {
         super.onCreate(null)
         @Suppress("DEPRECATION") overridePendingTransition(0, 0)
         if (!ok) { replied = true; finish(); return }
+        dogH.postDelayed(dogReveal, 10000); dogH.postDelayed(dogFail, 30000)
         try {
             ContextCompat.registerReceiver(this, feedRx, IntentFilter(FEED_ACTION), FEED_PERM, null, ContextCompat.RECEIVER_EXPORTED)
             feedOn = true
@@ -105,6 +118,7 @@ class SignActivity : KwActivity() {
     }
     /** v3.92: the transaction is on screen; reveal the window (it stays transparent until then). */
     internal fun onSheetReady() {
+        sheetShown = true; dogH.removeCallbacks(dogReveal); dogH.removeCallbacks(dogFail)
         revealSign()
         val now = SystemClock.uptimeMillis()
         Log.i("KwSign", "sheet ready create+${now - tCreate}ms" + (if (tAsk > 0) " ask+${now - tAsk}ms" else "") + (if (adopted) " warm" else " cold"))
@@ -152,6 +166,7 @@ class SignActivity : KwActivity() {
     }
 
     override fun onDestroy() {
+        dogH.removeCallbacksAndMessages(null)
         if (feedOn) { try { unregisterReceiver(feedRx) } catch (_: Exception) {}; feedOn = false }
         wv = null
         KwWarm.release(this)

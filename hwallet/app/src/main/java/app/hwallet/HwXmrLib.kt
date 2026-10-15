@@ -26,6 +26,9 @@ interface HwXmrLib : Library {
     fun MONERO_Wallet_address(w: Pointer, account: Long, index: Long): String?
     fun MONERO_Wallet_init(w: Pointer, daemon: String, upperTxSizeLimit: Long, user: String, pass: String, useSsl: Byte, lightWallet: Byte, proxy: String): Byte
     fun MONERO_Wallet_setTrustedDaemon(w: Pointer, on: Byte)
+    fun MONERO_Wallet_trustedDaemon(w: Pointer): Byte
+    /** v1.8.14: wallet2::import_key_images from Trezor-style JSON (ChaCha20-Poly1305 IETF blobs of key image || sig.c || sig.r) */
+    fun MONERO_Wallet_importTrezorEncryptedKeyImagesJson(w: Pointer, json: String): Byte
     fun MONERO_Wallet_setSubaddressLookahead(w: Pointer, major: Int, minor: Int)
     fun MONERO_Wallet_setRefreshFromBlockHeight(w: Pointer, h: Long)
     fun MONERO_Wallet_getRefreshFromBlockHeight(w: Pointer): Long

@@ -1740,6 +1740,30 @@
   .bk-lb { display: block; font: 400 11px/1.4 'RobotoE','Roboto',system-ui,sans-serif; color: var(--text-muted); margin: 0 0 4px; }
   #bk-save input[type=password] { width: 100%; margin-bottom: 8px; }
   #bk-rpass { width: 100%; margin: 0 0 8px; }
+  /* v3.98.14: Export / Backup / Restore, one clear path */
+  .bk-lb small { font-weight: 400; opacity: .7; margin-left: 4px; }
+  .bk-in { width: 100%; margin: 0 0 8px; }
+  .bk-in[hidden], .bk-src[hidden], .bk-chip[hidden], .bk-pastebox[hidden] { display: none !important; }
+  .modal p.bk-warnl { color: var(--danger); font-weight: 500; }
+  .bk-src { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 2px 0 10px; }
+  .bk-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 84px; padding: 12px 8px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-input); color: var(--text); font: 600 13px/1.25 inherit; text-align: center; cursor: pointer; }
+  .bk-tile svg { width: 26px; height: 26px; opacity: .85; }
+  .bk-tile:active { transform: scale(.98); }
+  .bk-chip { display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 12px; margin: 2px 0 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-input); }
+  .bk-chip svg { width: 20px; height: 20px; flex: none; opacity: .8; }
+  .bk-chip-n { flex: 1; min-width: 0; font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bk-chip-s { font-size: 11.5px; color: var(--text-muted); flex: none; }
+  .bk-chip-x { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 0; background: transparent; color: var(--text-muted); font-size: 20px; line-height: 1; cursor: pointer; }
+  .bk-pastebox { margin: 2px 0 10px; }
+  .bk-pastebox .bk-paste { min-height: 84px; margin: 0 0 6px; }
+  .bk-clip { width: 100%; }
+  .modal .bk-status { font-size: 12.5px; margin: 0 0 8px; color: var(--text-muted); }
+  .modal .bk-status:empty { display: none; }
+  .modal .bk-status.bad { color: var(--danger); }
+  .modal .bk-status.ok { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text); }
+  .bk-prev-h { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+  .bk-prev-s { color: var(--text-muted); font-size: 12px; }
+  #bk-hold-hint:empty { display: none; }
   #bk-rpass[hidden], #bk-final-btn[hidden], #bk-restore[hidden], #bk-save[hidden], #bk-export[hidden] { display: none !important; }
   .bk-pick { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
   .bk-fname { font: 400 11.5px/1.3 'RobotoMonoE','Roboto Mono',monospace; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -5500,10 +5524,8 @@ window.FX = (function(){
 <div class="modal-overlay" id="export-modal" onclick="if (event.target === this) closeExportModal()">
   <div class="modal">
     <h2>Export</h2>
-    <p class="m-lead">Saves one ZIP with your seed and addresses.</p>
-    <ul class="m-pts"><li>Add a password to encrypt it with AES-256</li><li>Your seed is saved as an image, never as text</li></ul>
-    <details class="m-more"><summary>Learn more</summary><p>The password protects every file in the ZIP at once: PDF, CSV, seed image, QR and JSON. It opens in ZArchiver, MiXplorer, RAR, 7-Zip, WinZip and macOS.</p></details>
-    <label style="display:block;font-size:11px;color:var(--text-muted);margin:0 0 4px">Format</label>
+    <p class="m-lead">One ZIP with your seed (as an image) and addresses. A password encrypts it with AES-256.</p>
+    <label class="bk-lb">Format</label>
     <select id="export-format" style="width:100%;height:30px;margin-bottom:8px;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px;font-family:inherit">
       <option value="pdf" selected>PDF report</option>
       <option value="bundle">Separate files (CSV + images)</option>
@@ -5512,10 +5534,9 @@ window.FX = (function(){
     <select hidden id="export-enc" style="width:100%;height:30px;margin-bottom:8px;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px;font-family:inherit">
       <option value="aes" selected>Strong — WinZip AES-256 (7-Zip, WinZip, macOS)</option>
     </select>
-    <label style="display:block;font-size:11px;color:var(--text-muted);margin:0 0 4px">Password (optional)</label>
-    <input type="password" id="export-pass" placeholder="At least 8 characters, or leave empty" autocomplete="new-password" style="margin-bottom:8px">
-    <label style="display:block;font-size:11px;color:var(--text-muted);margin:0 0 4px">Confirm password</label>
-    <input type="password" id="export-pass2" placeholder="Repeat password" autocomplete="new-password" style="margin-bottom:10px">
+    <label class="bk-lb">Password <small>optional</small></label>
+    <input type="password" id="export-pass" class="bk-in" placeholder="At least 8 characters" autocomplete="new-password" oninput="bkPass2(this,'export-pass2')">
+    <input type="password" id="export-pass2" class="bk-in bk-p2" placeholder="Repeat password" autocomplete="new-password" hidden>
     <label class="wipe-row" for="export-wipe">
       <input type="checkbox" id="export-wipe" class="wipe-check">
       <span class="wipe-switch" aria-hidden="true"><span class="wipe-knob"></span></span>
@@ -5544,33 +5565,31 @@ window.FX = (function(){
     </div>
     <div id="bk-export" hidden></div>
     <div id="bk-save">
-      <p class="m-lead">Saves everything in one .txt file you can restore later.</p>
-      <ul class="m-pts"><li>Seed, passphrase, history, marks, logs and settings</li><li>Add a password to encrypt it with AES-256</li></ul>
-      <label class="bk-lb">Password (optional)</label>
-      <input type="password" id="bk-pass" placeholder="At least 8 characters, or leave empty" autocomplete="new-password">
-      <label class="bk-lb">Confirm password</label>
-      <input type="password" id="bk-pass2" placeholder="Repeat password" autocomplete="new-password">
+      <p class="m-lead">Everything (seed, passphrase, history, logs, settings) in one .txt file you can restore later. A password encrypts it with AES-256.</p>
+      <label class="bk-lb">Password <small>optional</small></label>
+      <input type="password" id="bk-pass" class="bk-in" placeholder="At least 8 characters" autocomplete="new-password" oninput="bkPass2(this,'bk-pass2')">
+      <input type="password" id="bk-pass2" class="bk-in bk-p2" placeholder="Repeat password" autocomplete="new-password" hidden>
       <div class="mrow">
         <button class="btn" onclick="closeBackupModal()">Cancel</button>
         <button class="btn btn-copy" id="bk-save-btn" onclick="saveBackup()">Save .txt</button>
       </div>
     </div>
     <div id="bk-restore" hidden>
-      <p class="m-lead">Replaces all current data with a backup file.</p>
-      <ul class="m-pts warn"><li>Everything on this device now is erased first</li></ul>
+      <p class="m-lead bk-warnl">Restoring erases everything on this device first.</p>
       <input type="file" id="bk-file" accept=".txt,text/plain" hidden>
-      <div class="bk-pick">
-        <button type="button" class="btn" onclick="document.getElementById('bk-file').click()">Choose file</button>
-        <span class="bk-fname" id="bk-fname">No file chosen</span>
+      <div class="bk-src" id="bk-src">
+        <button type="button" class="bk-tile" id="bk-pick-file"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15.01l1.41 1.41L11 14.84V19h2v-4.16l1.59 1.59L16 15.01 12.01 11z"/></svg><span>Choose backup file</span></button>
+        <button type="button" class="bk-tile" id="bk-pick-paste"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 2h-4.18C14.4.84 13.3 0 12 0S9.6.84 9.18 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg><span>Paste backup text</span></button>
       </div>
-      <details class="m-more"><summary>Paste instead</summary><textarea id="bk-paste" class="bk-paste" placeholder="Paste backup text" spellcheck="false" autocomplete="off"></textarea></details>
-      <input type="password" id="bk-rpass" placeholder="Backup password" autocomplete="off" hidden>
-      <p class="bk-status" id="bk-status"></p>
+      <div class="bk-chip" id="bk-chip" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg><span class="bk-chip-n" id="bk-fname"></span><span class="bk-chip-s" id="bk-fsize"></span><button type="button" class="bk-chip-x" id="bk-clear" aria-label="Remove">&times;</button></div>
+      <div class="bk-pastebox" id="bk-pastebox" hidden><textarea id="bk-paste" class="bk-paste" placeholder="Paste the backup text here" spellcheck="false" autocomplete="off"></textarea><button type="button" class="btn bk-clip" id="bk-clip">Paste from clipboard</button></div>
+      <input type="password" id="bk-rpass" class="bk-in" placeholder="Backup password" autocomplete="off" hidden>
+      <div class="bk-status" id="bk-status"></div>
       <p class="hold-hint" id="bk-hold-hint"></p>
       <input type="text" id="bk-confirm-input" class="clear-yes" hidden placeholder='Type "yes" to confirm' autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       <div class="mrow">
         <button class="btn" onclick="closeBackupModal()">Cancel</button>
-        <button class="btn btn-d hold-btn" id="bk-hold-btn" type="button" aria-label="Press and hold to restore"><span class="hold-fill" aria-hidden="true"></span><span class="hold-lb">Hold to restore</span></button>
+        <button class="btn btn-d hold-btn" id="bk-hold-btn" type="button" disabled aria-label="Press and hold to erase and restore"><span class="hold-fill" aria-hidden="true"></span><span class="hold-lb">Hold to erase &amp; restore</span></button>
         <button class="btn btn-d" id="bk-final-btn" type="button" hidden disabled>Erase &amp; restore</button>
       </div>
     </div>
@@ -6247,7 +6266,9 @@ function __fastCoreFactory(G) {
       if (full) r.privateKey = bytesToHex(n.kb).toUpperCase();
     } else if (net === 'sui') {
       n = ctx.walk(path);
-      r.address = suiAddr(edPub(n.k));
+      var sp = edPub(n.k); r.address = suiAddr(sp);
+      /* v3.98.14: the public key (base64, 32 bytes) goes to Hwallet with the pairing; Sui dApps ask for it before any signature */
+      r.pub = btoa(String.fromCharCode.apply(null, Array.prototype.slice.call(sp)));
       if (full) r.privateKey = suiPriv(n.k);
     } else if (net === 'ada') {
       n = ctx.walk(path);
@@ -12407,7 +12428,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98.13';
+const APP_VERSION = '3.98.14';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -14695,7 +14716,7 @@ function openExportModal() {
   var f = document.getElementById('export-format');
   var b = document.getElementById('export-go-btn');
   if (p1) p1.value = '';
-  if (p2) p2.value = '';
+  if (p2) { p2.value = ''; p2.hidden = true; }
   if (w) w.checked = false;
   if (f) f.value = (window.jspdf && window.jspdf.jsPDF) ? 'pdf' : 'bundle';
   if (b) { b.disabled = false; b.textContent = 'Download'; }
@@ -19552,13 +19573,15 @@ window.makeHoldConfirm = function(o){
   function stopTicks(){ clearInterval(tk); tk = 0; }
   function reset(){
     clearTimeout(t); stopTicks(); done = false; start = 0;
-    b.classList.remove('holding'); if (lb) lb.textContent = o.holdLabel;
+    b.classList.remove('holding'); b.hidden = false; if (lb) lb.textContent = o.holdLabel;
     if (fb) { fb.hidden = true; fb.disabled = true; }
     if (inp) { inp.hidden = true; inp.value = ''; }
     setHint(o.step1);
   }
   function step2(){
     if (o.precheck && !o.precheck()) { reset(); return; }
+    /* v3.98.14: one confirmation (the hold) when the caller asks for it */
+    if (o.onDone) { done = true; stopTicks(); b.classList.remove('holding'); if (lb) lb.textContent = o.holdLabel; try { FX.buzz([20, 40, 20]); } catch (x) {} o.onDone(); return; }
     done = true; stopTicks(); b.classList.remove('holding'); b.hidden = true;
     if (fb) { fb.hidden = false; fb.disabled = true; }
     if (inp) { inp.hidden = false; inp.value = ''; setTimeout(function(){ try { inp.focus(); } catch (e) {} }, 60); }
@@ -19707,7 +19730,25 @@ function togglePathFind(force){
     } catch (e) { toast('Backup failed: ' + (e && e.message ? e.message : e)); }
     finally { btn.disabled = false; btn.textContent = 'Save .txt'; }
   };
-  function setStatus(t, cls){ var el = $('bk-status'); el.textContent = t || ''; el.className = 'bk-status' + (cls ? ' ' + cls : ''); }
+  function setStatus(t, cls){ var el = $('bk-status'); el.textContent = t || ''; el.className = 'bk-status' + (cls ? ' ' + cls : ''); var hb = $('bk-hold-btn'); if (hb) hb.disabled = !parsed; }
+  /* v3.98.14: the backup that was read, as a small preview card, before anything is erased */
+  function setPreview(d){
+    var el = $('bk-status'), st = d.state || {}, m = String(st.mnemonic || '').trim(), n = m ? m.split(/\s+/).length : 0, when = '';
+    try { when = new Date(d.created).toLocaleString(); } catch (e) {}
+    var bits = []; if (st.passphrase) bits.push('passphrase'); if (Array.isArray(st.history) && st.history.length) bits.push(st.history.length + ' in history');
+    var logs = (st.activityLog || []).length + (st.seedCopyLog || []).length; if (logs) bits.push(logs + (logs === 1 ? ' log entry' : ' log entries'));
+    el.className = 'bk-status ok';
+    el.innerHTML = '<div class="bk-prev-h">' + (n ? n + '-word seed' : 'No active seed') + '</div><div class="bk-prev-s">' + escH((when ? 'Saved ' + when : '') + (bits.length ? (when ? ' \u00b7 ' : '') + bits.join(' \u00b7 ') : '')) + '</div>';
+    var hb = $('bk-hold-btn'); if (hb) hb.disabled = false;
+  }
+  function escH(x){ return String(x).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function fsz(n){ return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
+  /* source: tiles -> a file chip or the paste box */
+  function srcReset(){
+    $('bk-src').hidden = false; $('bk-chip').hidden = true; $('bk-pastebox').hidden = true;
+    $('bk-paste').value = ''; $('bk-file').value = ''; window.__bkText = ''; $('bk-fname').textContent = ''; $('bk-fsize').textContent = '';
+    $('bk-rpass').value = ''; $('bk-rpass').hidden = true; parsed = null; setStatus(''); if (hold) hold.reset();
+  }
   async function decode(){
     var seq = ++decodeSeq; parsed = null; if (hold) hold.reset();
     var txt = window.__bkText || $('bk-paste').value || '';
@@ -19728,7 +19769,7 @@ function togglePathFind(force){
       if (seq !== decodeSeq) return;
       var d = JSON.parse(out);
       if (!d || d.format !== 'owg-backup' || typeof d.state !== 'object') throw new Error('bad');
-      parsed = d; setStatus(summary(d), 'ok'); FX.tick(1200);
+      parsed = d; setPreview(d); FX.tick(1200);
     } catch (e) {
       if (seq !== decodeSeq) return;
       setStatus($('bk-rpass').hidden ? 'File is damaged' : 'Wrong password', 'bad'); FX.buzz([40, 30, 40]);
@@ -19756,25 +19797,33 @@ function togglePathFind(force){
   };
   window.openBackupModal = function(){
     $('bk-pass').value = ''; $('bk-pass2').value = ''; $('bk-rpass').value = ''; $('bk-rpass').hidden = true;
-    $('bk-paste').value = ''; $('bk-file').value = ''; window.__bkText = ''; $('bk-fname').textContent = 'No file chosen';
-    parsed = null; setStatus(''); if (hold) hold.reset();
+    $('bk-pass2').hidden = true; srcReset();
     try { if (window.__origOpenExport) { window.__origOpenExport(); $('export-modal').classList.remove('show'); } } catch (e) {}
     bkTab(window.__bkStartTab || 'export'); window.__bkStartTab = '';
     $('backup-modal').classList.add('show');
   };
+  /* v3.98.14: the "Repeat password" field shows only once a password is typed */
+  window.bkPass2 = function(inp, id){ var p2 = $(id); if (!p2) return; var on = !!inp.value; if (p2.hidden === on) { p2.hidden = !on; if (!on) p2.value = ''; } };
   window.closeBackupModal = function(){ $('backup-modal').classList.remove('show'); $('bk-pass').value = ''; $('bk-pass2').value = ''; $('bk-rpass').value = ''; window.__bkText = ''; parsed = null; };
   function init(){
     if (!$('bk-hold-btn')) return;
     hold = makeHoldConfirm({ holdBtn: $('bk-hold-btn'), finalBtn: $('bk-final-btn'), input: $('bk-confirm-input'), hint: $('bk-hold-hint'),
-      holdLabel: 'Hold to restore', step1: 'Step 1 of 2 · press and hold for 2 seconds', step2: 'Step 2 of 2 · type yes to erase and restore',
+      holdLabel: 'Hold to erase & restore', step1: '', step2: '', onDone: function(){ restore(); },
       precheck: function(){ if (!parsed) { toast('Choose a valid backup first'); FX.buzz([40, 30, 40]); return false; } return true; } });
     $('bk-final-btn').addEventListener('click', function(){ if (!this.disabled) restore(); });
     $('bk-file').addEventListener('change', function(){
       var f = this.files && this.files[0]; if (!f) return;
-      $('bk-fname').textContent = f.name;
+      $('bk-fname').textContent = f.name; $('bk-fsize').textContent = fsz(f.size || 0);
+      $('bk-src').hidden = true; $('bk-pastebox').hidden = true; $('bk-chip').hidden = false;
       var r = new FileReader(); r.onload = function(){ window.__bkText = String(r.result || ''); decodeSoon(0); }; r.readAsText(f);
     });
-    $('bk-paste').addEventListener('input', function(){ window.__bkText = ''; $('bk-fname').textContent = 'No file chosen'; decodeSoon(250); });
+    $('bk-pick-file').addEventListener('click', function(){ FX.tick(900); $('bk-file').click(); });
+    $('bk-pick-paste').addEventListener('click', function(){ FX.tick(900); $('bk-src').hidden = true; $('bk-pastebox').hidden = false; setTimeout(function(){ try { $('bk-paste').focus(); } catch (e) {} }, 60); });
+    $('bk-clear').addEventListener('click', function(){ FX.tick(700); srcReset(); });
+    $('bk-clip').addEventListener('click', function(){
+      try { navigator.clipboard.readText().then(function(t){ $('bk-paste').value = String(t || ''); window.__bkText = ''; decodeSoon(0); }, function(){ toast('Long-press the box and choose Paste'); }); } catch (e) { toast('Long-press the box and choose Paste'); }
+    });
+    $('bk-paste').addEventListener('input', function(){ window.__bkText = ''; decodeSoon(250); });
     $('bk-rpass').addEventListener('input', function(){ decodeSoon(600); });
     $('bk-rpass').addEventListener('keydown', function(e){ if (e.key === 'Enter') decodeSoon(0); });
     try { if (sessionStorage.getItem('bk-restored')) { sessionStorage.removeItem('bk-restored'); setTimeout(function(){ toast('Backup restored'); try { pushActivity('import', 'Backup restored (previous data erased)'); } catch (e) {} }, 600); } } catch (e) {}
@@ -21793,7 +21842,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   function writePub(all) {
     try {
-      localStorage.setItem(PUB, JSON.stringify(all.map(function (r) { return { id: r.id, label: r.label, index: r.index, addrs: r.addrs, seedType: r.seedType, created: r.created, xmrView: r.xmrView || '', xmrPrimary: r.xmrPrimary || '', xmrHeight: r.xmrHeight | 0 }; })));
+      localStorage.setItem(PUB, JSON.stringify(all.map(function (r) { return { id: r.id, label: r.label, index: r.index, addrs: r.addrs, seedType: r.seedType, created: r.created, xmrView: r.xmrView || '', xmrPrimary: r.xmrPrimary || '', xmrHeight: r.xmrHeight | 0 , suiPk: r.suiPk || ''}; })));
       localStorage.setItem(PUBV, String(PUBVER));
     } catch (e) {}
   }
@@ -21879,7 +21928,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           try { if (st === 'poly' && typeof polyDecodePhrase === 'function' && typeof POLY !== 'undefined') { var pd = await polyDecodePhrase(m); var bts = POLY.EPOCH + (pd.birthday | 0) * POLY.TIME_STEP; rec.xmrHeight = Math.max(0, xmrHeightAt(bts * 1000) - 21600); } } catch (e) {}
         } else {
           var ctx = FastCore.makeCtx({ net: net, pathTpl: DEFAULT_PATH[net], seedHex: getBip39SeedHex(m, p), adaEnt: net === 'ada' ? adaEntropyHex() : null, pass: p, seedType: st });
-          rec.addrs[net] = FastCore.derive(ctx, index, false).address;
+          var dd = FastCore.derive(ctx, index, false); rec.addrs[net] = dd.address;
+          if (net === 'sui' && dd.pub) rec.suiPk = dd.pub;
         }
       } catch (e) { try { console.warn('pair', net, e); } catch (x) {} }
       await new Promise(function (r) { setTimeout(r, 0); });
@@ -21893,7 +21943,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   function publicExport(r) {
     /* v3.98: + the primary address (a subaddress pairing still scans the whole wallet) and the restore height when known */
-    return { v: 1, src: 'kwallet', label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null };
+    return { v: 1, src: 'kwallet', label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null, pks: r.suiPk ? { sui: r.suiPk } : undefined };
   }
   function exportText(r) { return 'kwallet-pair:' + btoa(unescape(encodeURIComponent(JSON.stringify(publicExport(r))))); }
   /* v3.98: block height for a date, offline (60 s blocks to the v2 fork 1009827, 120 s after; anchor 3,783,000 = 1791875075) */
@@ -23676,6 +23726,10 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     return out;
   }
   function opTitle(m, v, ae) {
+    /* v3.98.14: a Sui transaction gets the same plain title as EVM / Solana / Tron, read from Hwallet's simulation */
+    if (m === 'sui_signTransaction') { var sd = DS.R.sim && Array.isArray(DS.R.sim.deltas) ? DS.R.sim.deltas : [], gb = v && v.fee != null ? U(v.fee) || 0n : 0n;
+      var sn = sd.some(function (x) { return x.s === '-' && (!x.nat || (U(x.v) || 0n) > gb); }), rc = sd.some(function (x) { return x.s === '+'; });
+      if (sn && rc) return 'Swap'; if (sn) return 'Send'; if (rc) return 'Receive'; }
     if (P17M[m]) return v && v.title ? v.title : P17M[m][1];
     if (/sign(Message)?$/.test(m) && m !== 'eth_signTypedData_v4') return DS.siwe ? 'Sign-in' : 'Sign message';
     if (m === 'personal_sign' || m === 'solana_signMessage' || m === 'tron_signMessage') return DS.siwe ? 'Sign-in' : 'Sign message';

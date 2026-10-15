@@ -99,6 +99,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-a
 .au{font-size:15px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .aa.mute{color:var(--soft);font-weight:400;font-size:15px}
 .chev{width:20px;height:20px;color:var(--soft)}
+.chh{display:flex;align-items:center;gap:8px;margin:18px 6px 6px;padding:6px 2px;font-size:17px;font-weight:700;color:var(--text);background:none;border:0;letter-spacing:-.01em}
+.chh-i{width:18px;height:18px;opacity:.85}.chh-c{width:18px;height:18px;opacity:.7;margin-left:-2px}
 .sech{display:flex;align-items:center;justify-content:space-between;font-size:15px;color:var(--muted);font-weight:600;margin:20px 6px 8px}
 .sech button{color:var(--accT);font-weight:600;font-size:14px;padding:4px 2px}body[data-theme="light"] .sech button{color:var(--acc)}
 .more{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:52px;font-size:15px;font-weight:600;color:var(--muted)}
@@ -3605,6 +3607,10 @@ window.hwPlayOpening();
   window.addEventListener('wallet-standard:app-ready', function (ev) { if (ev && ev.detail) suiReg(ev.detail); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', suiAnnounce, { once: true }); else setTimeout(suiAnnounce, 0);
   window.addEventListener('load', suiAnnounce, { once: true });
+  /* v1.8.14: Sui apps whose wallet list mounts late (Cetus and other single-page apps) get it again, and the legacy
+     navigator.wallets queue some Sui kits still read is filled too */
+  setTimeout(suiAnnounce, 1500); setTimeout(suiAnnounce, 4000);
+  try { var nw = window.navigator.wallets; if (!Array.isArray(nw) && !(nw && typeof nw.push === 'function')) { nw = []; Object.defineProperty(window.navigator, 'wallets', { value: nw, configurable: true, writable: true }); } nw.push(suiReg); } catch (e) {}
   onNs('sui', function (e, d) { if (e === 'disconnect') suiSet(null); else if (e === 'accountsChanged') suiSet(d || null); });
 
   /* ---------- v1.8.12 (push 17, R2): Cardano CIP-30 at window.cardano.hwallet ----------
@@ -6707,7 +6713,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.13';
+var APP_VERSION = '1.8.14';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -7476,6 +7482,8 @@ var APP_VERSION = '1.8.13';
       '<button class="wsw tap" data-act="wsheet" aria-label="Switch wallet">' + hmark() + '<span class="wn">' + esc(w ? w.label : 'Wallet') + '</span>' + sv('gdown', 'ic dn2') + '</button>' +
       '<button class="ib" data-act="search" aria-label="Search">' + sv('gsearch') + '</button></header>' +
       '<section class="hero"><button class="tot" data-act="hide" data-money data-v="total" aria-label="Total balance. Tap to hide"></button><div class="chg" data-v="chg"></div></section>' + actions() +
+      /* v1.8.14: Chains lives here now (Trust Wallet style header over the coin list), not in Settings */
+      '<button type="button" class="chh tap" data-act="chains" aria-label="Chains"><svg class="chh-i" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg><span>Chains</span><svg class="chh-c" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8.6 16.6 13.2 12 8.6 7.4 10 6l6 6-6 6z"/></svg></button>' +
       '<div class="lst" id="alist">' + listInner() + '</div>' +
       (A.paired && Object.keys(A.paired).length ? '' : '<p class="hint">Watch only. Pair with Kwallet to send: Settings &gt; Pair with Kwallet.</p>');
   }
@@ -7633,6 +7641,7 @@ var APP_VERSION = '1.8.13';
     if (a === 'search') { go({ v: 'search', mode: 'browse' }); setTimeout(function () { var q = $('q'); if (q) try { q.focus(); } catch (e) {} }, 280); return; }
     if (a === 'scan') { scanQr(); return; }
     if (a === 'wsheet') { walletSheet(); return; }
+    if (a === 'chains') { try { window.hwChainsOpen(); } catch (e) {} return; }
     if (a === 'send') {
       if (V.v === 'home') { go({ v: 'pick', mode: 'send' }); return; }
       if (V.v === 'nets') { pickNet(function (net) { go({ v: 'send', ch: 'eth', net: net, tk: 'native' }); }, 'Send ETH on'); return; }
@@ -7848,6 +7857,8 @@ var APP_VERSION = '1.8.13';
     Object.keys(OKRE).forEach(function (k) { if (k === 'xmrView') return; var v = String(p.addrs[k] || ''); if (v && OKRE[k].test(v)) { na[k] = v; na.paired[k] = true; } });
     if (p.xmr && /^[0-9a-f]{64}$/.test(p.xmr.view || '')) { na.xmrView = p.xmr.view; na.xmrHeight = p.xmr.height | 0; if (/^4[1-9A-HJ-NP-Za-km-z]{94}$/.test(p.xmr.primary || '')) na.xmrPrimary = p.xmr.primary; }
     if (!na.eth && !na.xmr) { pairErr('No valid addresses in that pairing. Pair again from Kwallet.'); return false; }
+    /* v1.8.14: Kwallet sends the Sui public key with the pairing (Sui dApps ask for it before any signature) */
+    try { var spk = p.pks && String(p.pks.sui || ''); if (na.sui && /^[A-Za-z0-9+/]{43}=$/.test(spk)) jset('hw-suipk:' + na.sui, spk); } catch (e) {}
     var w = putWallet(na, wname(), String(p.label || '').slice(0, 24)), upd = !!w._upd; delete w._upd;
     buzz([15, 40, 15]); snd('seed');
     stack = []; V = { v: 'home' }; render('in'); refreshAll(); liveConfig();
@@ -9674,7 +9685,7 @@ var APP_VERSION = '1.8.13';
     });
     kov.innerHTML = '<div class="kws kws-main" aria-label="Settings">' +
       '<header class="bar"><div class="bt l">Settings</div></header>' +
-      '<div class="kws-grp kws-cats">' + KCAT.filter(function (c) { return c[0] !== 'xmr' || chainOn('xmr'); }).map(function (c) { return '<button type="button" class="kws-row kws-cat" id="kws-c-' + c[0] + '" data-kc="' + c[0] + '"><span class="kws-ic">' + ksv(c[2]) + '</span><span class="kws-t">' + esc(c[1]) + '<span class="kws-s" id="kws-c-' + c[0] + '-s"></span></span>' + sv('chev', 'ic chev') + '</button>'; }).join('') + '</div>' +
+      '<div class="kws-grp kws-cats">' + KCAT.filter(function (c) { return c[0] !== 'chn' && (c[0] !== 'xmr' || chainOn('xmr')); }).map(function (c) { return '<button type="button" class="kws-row kws-cat" id="kws-c-' + c[0] + '" data-kc="' + c[0] + '"><span class="kws-ic">' + ksv(c[2]) + '</span><span class="kws-t">' + esc(c[1]) + '<span class="kws-s" id="kws-c-' + c[0] + '-s"></span></span>' + sv('chev', 'ic chev') + '</button>'; }).join('') + '</div>' +
       donateCard() + '</div>';
     kov.querySelectorAll('[data-kc]').forEach(function (b) { b.onclick = function () { ktick(); kcatOpen(b.getAttribute('data-kc')); }; });
     kov.querySelectorAll('[data-don]').forEach(function (b) {
@@ -9862,6 +9873,12 @@ var APP_VERSION = '1.8.13';
     try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(kdonLater); } catch (e) {}
   }
   window.hwSettings = { open: kopen, close: kclose, isOpen: kopenNow, sync: ksync };
+  /* v1.8.14: the Chains page opens straight from Home's "Chains" row */
+  window.hwChainsOpen = function () {
+    if (kov && kov._sig !== ksig()) { kcatsClose(true); kov = null; }
+    if (!kov) kbuild();
+    buzz(6); kcatOpen('chn');
+  };
 
 
   /* ---------- v1.5 (#61/#65): Hwallet's own scanner, Gem's layout (Gem Wallet, GPL-3.0) ----------
@@ -10579,7 +10596,7 @@ window.hwCrashPrompt = crashPrompt;
   /* v1.8.13: WalletConnect for Sui, Cardano, the XRP Ledger and Bitcoin. Each request runs through the same code as the
      Browser's providers (push 17): Hwallet prepares, Kwallet decodes and signs on its approval sheet, Hwallet broadcasts. */
   var SUI_CH = 'sui:mainnet', ADA_CH = 'cip34:1-764824073', XRPL_CH = 'xrpl:0', BTC_CH = 'bip122:000000000019d6689c085ae165831e93';
-  var WC_SUI_M = ['sui_signPersonalMessage', 'sui_signTransaction', 'sui_signAndExecuteTransaction', 'sui_signTransactionBlock', 'sui_signAndExecuteTransactionBlock'];
+  var WC_SUI_M = ['sui_getAccounts', 'sui_signPersonalMessage', 'sui_signTransaction', 'sui_signAndExecuteTransaction', 'sui_signTransactionBlock', 'sui_signAndExecuteTransactionBlock'];
   var WC_ADA_M = ['cardano_signTx', 'cardano_signData', 'cardano_submitTx', 'cardano_getBalance', 'cardano_getUtxos', 'cardano_getCollateral', 'cardano_getNetworkId', 'cardano_getUsedAddresses', 'cardano_getUnusedAddresses', 'cardano_getChangeAddress', 'cardano_getRewardAddress', 'cardano_getRewardAddresses'];
   var WC_XRPL_M = ['xrpl_signTransaction'];
   var WC_BTC_M = ['getAccountAddresses', 'sendTransfer'];
@@ -10686,7 +10703,11 @@ window.hwCrashPrompt = crashPrompt;
       var wk = WC.wk;
       if (yes && yes.wallet) { switchWallet(yes.wallet, true); return wcProposal(ev); }
       if (!yes || !ns) return wk.rejectSession({ id: ev.id, reason: wcErr(ns ? 'USER_REJECTED' : 'UNSUPPORTED_NAMESPACE_KEY') }).catch(function () {});
-      return wk.approveSession({ id: ev.id, namespaces: ns }).then(function (s) {
+      return (ns.sui && A.sui ? suiPk(A.sui) : Promise.resolve('')).then(function (spk) {
+        var ap = { id: ev.id, namespaces: ns };
+        if (ns.sui && A.sui) ap.sessionProperties = { sui_getAccounts: JSON.stringify([{ address: A.sui, pubkey: suiPkFlag(spk) || spk || '' }]) };
+        return wk.approveSession(ap);
+      }).then(function (s) {
         wcSaved(); wcListSync(); snd('ok'); toast('Connected to ' + site.name); buzz([10, 40, 14]);
         wcBack({ peer: { metadata: P.proposer && P.proposer.metadata } });
         return s;
@@ -10733,7 +10754,7 @@ window.hwCrashPrompt = crashPrompt;
     return job.then(function (r) { return wcReply(topic, id, r); }, function (e) {
       var c = e && e.code; if (c == null || c === 5000) c = /reject|cancel/i.test(String(e && e.message)) ? 4001 : (c || -32000);
       return wcReply(topic, id, null, { code: c, message: e && e.message || String(e) });
-    }).then(function (x) { wcBack(ses); return x; });
+    }).then(function (x) { if (m !== 'sui_getAccounts') wcBack(ses); return x; });
   }
   /* v1.8.13: Sui / Cardano / XRP Ledger / Bitcoin requests from a WalletConnect session */
   function wcB64ish(v) { return typeof v === 'string' && v.length % 4 === 0 && /^[A-Za-z0-9+\/]+={0,2}$/.test(v); }
@@ -10744,6 +10765,8 @@ window.hwCrashPrompt = crashPrompt;
       if (cs && cs !== want) return Promise.reject(dErr(4901, 'Hwallet supports only ' + wcChainName(want) + ' mainnet'));
       if (ns === 'sui') {
         if (!A.sui) return Promise.reject(dErr(4100, 'This wallet has no Sui address'));
+        /* v1.8.14: Sui dApp Kit asks for the accounts (address + public key) first; without it the dApp never shows the wallet */
+        if (m === 'sui_getAccounts') return suiPk(A.sui).then(function (pk) { return [{ address: A.sui, pubkey: suiPkFlag(pk) || pk || '' }]; });
         var sp = wcObj(p, ['transaction', 'address']);
         if (sp.address && String(sp.address).toLowerCase() !== String(A.sui).toLowerCase()) return Promise.reject(dErr(4100, 'Unknown account'));
         if (m === 'sui_signPersonalMessage') {
@@ -14320,7 +14343,8 @@ window.hwCrashPrompt = crashPrompt;
       xmrCancelBtn(false);
       SND.busy = false; if ($('go')) $('go').textContent = 'Continue';
       var m = String(e && e.message || e);
-      if (/double spend|already spent|key image/i.test(m)) m = 'An output is already spent. Run Settings \u203a Monero \u203a Sync spent status, then retry';
+      if (/No enotes available|not enough unlocked|unknown key image|key images? (are|is) (not|un)known/i.test(m)) m = 'Hwallet doesn\u2019t know which Monero it can spend yet. Run Settings \u203a Monero \u203a Sync spent status once, then retry';
+      else if (/double spend|already spent|key image/i.test(m)) m = 'An output is already spent. Run Settings \u203a Monero \u203a Sync spent status, then retry';
       toast((e && e.quiet ? '' : 'Not sent: ') + m.slice(0, 160)); validate();
       /* R9d: nothing was submitted: the scan may run again now (not after the 4-minute hold) */
       if (XS.w || xnOn()) xe('release', {}, 5000).catch(function () {});
@@ -14351,7 +14375,7 @@ window.hwCrashPrompt = crashPrompt;
     }).then(function (res) {
       if (!res || res.status !== 'signed' || !res.ki) throw new Error({ rejected: 'Cancelled in Kwallet', expired: 'The request expired. Try again' }[res && res.status] || (res && res.error) || 'Kwallet didn\u2019t answer');
       return xe('importKI', { ki: res.ki, offset: res.kiOffset | 0 }, 180000);
-    }).then(function (k) { if (k && k.state) xmrApply(k.state, false); toast('Spent status up to date'); buzz([10, 40, 10]); }, function (e) { toast(String(e && e.message || e).slice(0, 140)); });
+    }).then(function (k) { if (k && k.state) xmrApply(k.state, false); toast(k && k.real === false ? 'Spent outputs hidden, but sending may still fail: ' + String(k.realErr || '').slice(0, 90) : 'Spent status synced. Monero is ready to send'); buzz([10, 40, 10]); }, function (e) { toast(String(e && e.message || e).slice(0, 140)); });
   }
   /* v1.8.4 (push 10): compact single-line rows in one card, a radio on the selected one, live latency per node; a custom node
      that answers is saved as its own row (host as name, x to remove), selected, and the input clears for the next one */
@@ -15057,11 +15081,24 @@ window.hwCrashPrompt = crashPrompt;
 
   /* ---------- Sui ---------- */
   var SUIC = 'https://sui-rpc.publicnode.com';
+  /* v1.8.14: the Sui public key (base64, 32 bytes): from the pairing, from a signature, or read once from the address's
+     last transaction on chain (its sender signature is flag 0x00 || 64-byte signature || 32-byte key) */
+  function suiPk(addr) {
+    var c = jget('hw-suipk:' + addr, ''); if (c) return Promise.resolve(c);
+    return http(SUIC, { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'suix_queryTransactionBlocks', params: [{ filter: { FromAddress: addr }, options: { showInput: true } }, null, 1, true] }), ctype: 'application/json', timeout: 8000 })
+      .then(function (j) {
+        var d = j && j.result && j.result.data && j.result.data[0], sg = d && d.transaction && d.transaction.txSignatures || [];
+        for (var i = 0; i < sg.length; i++) { var b = b64d(sg[i]); if (b.length === 97 && b[0] === 0) { var pk = b64e(b.slice(65)); jset('hw-suipk:' + addr, pk); return pk; } }
+        return '';
+      }, function () { return ''; });
+  }
+  window.hwSuiPk = suiPk;
+  function suiPkFlag(pk) { try { var b = b64d(pk); if (b.length !== 32) return ''; var o = new Uint8Array(33); o.set(b, 1); return b64e(o); } catch (e) { return ''; } }
   function suiDeltas(dr) {
     var me = String(A.sui || '').toLowerCase(), out = [], metas = [];
     (dr.balanceChanges || []).forEach(function (b) { var ow = b.owner && (b.owner.AddressOwner || b.owner.ObjectOwner); if (String(ow || '').toLowerCase() !== me) return; var v = BI(b.amount || 0); if (!v) return;
       var nat = b.coinType === '0x2::sui::SUI' || /^0x0*2::sui::SUI$/.test(b.coinType); out.push({ s: v < 0n ? '-' : '+', v: String(v < 0n ? -v : v), nat: nat ? 1 : undefined, t: nat ? undefined : b.coinType, est: 1 }); if (!nat) metas.push(out[out.length - 1]); });
-    return Promise.all(metas.map(function (d) { return HwSui.coinMeta(d.t, SUIC).then(function (m) { if (m) { d.dec = m.decimals; d.sym = m.symbol; } else d.dec = 9; }); })).then(function () { return out; });
+    return Promise.all(metas.map(function (d) { return HwSui.coinMeta(d.t, SUIC).then(function (m) { if (m) { d.dec = m.decimals; d.sym = m.symbol; if (/^(w|sui)?(USDC|USDT|AUSD|FDUSD|BUCK|USDY)$/i.test(String(m.symbol || ''))) d.px = 1; } else d.dec = 9; }); })).then(function () { return out; });
   }
   function suiRun(site, m, p) {
     if (typeof HwSui === 'undefined') return Promise.reject(dErr(-32603, 'The Sui builder is missing from this build'));
@@ -15143,7 +15180,7 @@ window.hwCrashPrompt = crashPrompt;
   var P17_SIGN = { sui_signTransaction: 1, sui_signAndExecuteTransaction: 1, sui_signPersonalMessage: 1, cardano_signTx: 1, cardano_signData: 1, cardano_submitTx: 1, cardano_getUtxos: 1, cardano_getBalance: 1, cardano_getCollateral: 1, cardano_getUsedAddresses: 1, cardano_getChangeAddress: 1, cardano_getRewardAddresses: 1, xrpl_signTransaction: 1, xrpl_signMessage: 1, xrpl_getPublicKey: 1 };
   function brHandle17(o, q, site) {
     var ns = q.ns, m = String(q.method || ''), p = q.params || {}, addr = p17Addr(ns);
-    if (ns === 'sui' && m === 'sui_connect') { if (brIs(o, 'sui') && addr) return Promise.resolve({ address: addr, publicKey: jget('hw-suipk:' + addr, '') || null }); if (p.silent) return Promise.reject(dErr(4100, 'Not connected')); return brConnect(o, site, 'sui').then(function (a) { return { address: a, publicKey: jget('hw-suipk:' + a, '') || null }; }); }
+    if (ns === 'sui' && m === 'sui_connect') { if (brIs(o, 'sui') && addr) return suiPk(addr).then(function (pk) { return { address: addr, publicKey: pk || null }; }); if (p.silent) return Promise.reject(dErr(4100, 'Not connected')); return brConnect(o, site, 'sui').then(function (a) { return suiPk(a).then(function (pk) { return { address: a, publicKey: pk || null }; }); }); }
     if (ns === 'sui' && m === 'sui_disconnect') { brRevoke(o, 'sui'); return Promise.resolve(null); }
     if (ns === 'cardano' && m === 'cardano_isEnabled') return Promise.resolve(brIs(o, 'cardano') && !!addr);
     if (ns === 'cardano' && m === 'cardano_enable') return brConnect(o, site, 'cardano').then(function () { return true; });

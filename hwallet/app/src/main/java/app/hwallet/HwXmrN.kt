@@ -391,7 +391,7 @@ object HwXmrN {
 
     private fun store(force: Boolean) {
         val L = lib ?: return; val p = w ?: return
-        if (!force && System.currentTimeMillis() - lastStore < 90000) return
+        if (!force && System.currentTimeMillis() - lastStore < 300000) return   /* v1.8.14: 5 min while syncing (was 90 s); each save stalls the scan
         lastStore = System.currentTimeMillis()
         try { L.MONERO_Wallet_store(p, "") } catch (_: Throwable) {}
     }
@@ -431,10 +431,13 @@ object HwXmrN {
         synced = dh > 0 && h >= dh && b(L.MONERO_Wallet_synchronized(p))
         if (synced && !wasSynced) { store(true); err = "" }
         else if (!synced) store(false)
-        if (!paused && hold <= now && !synced && now - lastMove > 45000) {
+        /* v1.8.14: a slow node is not a dead one. Re-arm only after 90 s without a block (was 45 s), and switch nodes only
+           when the node is actually failing, so a long scan is no longer restarted over and over */
+        if (!paused && hold <= now && !synced && now - lastMove > 90000) {
             kicks++; lastMove = now
-            err = if (Relay.lastErr.isNotEmpty()) "Node not answering (" + Relay.node().removePrefix("https://") + "), retrying" else "Waiting for the node, retrying"
-            if (kicks % 2 == 0) Relay.rotate()
+            val failing = Relay.lastErr.isNotEmpty()
+            err = if (failing) "Node not answering (" + Relay.node().removePrefix("https://") + "), retrying" else "Waiting for the node, retrying"
+            if (failing && kicks % 2 == 0) Relay.rotate()
             arm()
         }
         if (hold in 1..now) { hold = 0; arm() }
@@ -562,6 +565,13 @@ object HwXmrN {
     private fun importKI(a: JSONObject): JSONObject {
         val L = lw(); val p = wp()
         val ki = a.optJSONArray("ki") ?: JSONArray(); val off = a.optInt("offset", 0)
+        /* v1.8.14: the real import. Kwallet's key images + signatures go into wallet2 itself (the Trezor KI JSON path of
+           monero_c), so every output's key image becomes known: sends can be built (no more "No enotes available to
+           spend") and later spends are seen while syncing. The old freeze-only path stays as the fallback. */
+        var realErr = ""
+        if (off == 0 && ki.length() > 0) {
+            try { return importReal(L, p, ki) } catch (e: Throwable) { realErr = (e.message ?: e.toString()).take(200) }
+        }
         val coins = L.MONERO_Wallet_coins(p) ?: throw IllegalStateException("No outputs")
         L.MONERO_Coins_refresh(coins)
         val byIdx = HashMap<Long, Pointer>()
@@ -590,6 +600,47 @@ object HwXmrN {
         }
         saveChecked()
         store(true)
-        return JSONObject().put("spent", spent.toString()).put("unspent", unspent.toString()).put("state", state())
+        return JSONObject().put("spent", spent.toString()).put("unspent", unspent.toString()).put("real", false).put("realErr", realErr).put("state", state())
+    }
+
+    private fun aead(key: ByteArray, iv: ByteArray, pt: ByteArray): ByteArray {
+        val c = javax.crypto.Cipher.getInstance("ChaCha20-Poly1305")
+        c.init(javax.crypto.Cipher.ENCRYPT_MODE, javax.crypto.spec.SecretKeySpec(key, "ChaCha20"), javax.crypto.spec.IvParameterSpec(iv))
+        return c.doFinal(pt)   /* ciphertext || 16-byte tag, as libsodium's chacha20poly1305_ietf */
+    }
+
+    private fun importReal(L: HwXmrLib, p: Pointer, ki: JSONArray): JSONObject {
+        if (android.os.Build.VERSION.SDK_INT < 28) throw IllegalStateException("Android 9 or newer is needed for key-image import")
+        val rnd = java.security.SecureRandom(); val key = ByteArray(32).also { rnd.nextBytes(it) }
+        val arr = JSONArray()
+        for (i in 0 until ki.length()) {
+            val o = ki.optJSONObject(i) ?: throw IllegalStateException("Kwallet sent no signatures. Update Kwallet")
+            val hx = o.optString("hex").lowercase(); val sg = o.optString("sig").lowercase()
+            if (!Regex("^[0-9a-f]{64}$").matches(hx) || !Regex("^[0-9a-f]{128}$").matches(sg)) throw IllegalStateException("Bad key image $i from Kwallet")
+            val iv = ByteArray(12).also { rnd.nextBytes(it) }
+            val pt = unhex(hx + sg)
+            arr.put(JSONObject().put("iv", hex(iv)).put("key_image", hex(aead(key, iv, pt))))
+            java.util.Arrays.fill(pt, 0)
+        }
+        val json = JSONObject().put("key_images", arr).put("enc_key", hex(key)).toString()
+        java.util.Arrays.fill(key, 0)
+        val wasTrusted = try { b(L.MONERO_Wallet_trustedDaemon(p)) } catch (_: Throwable) { false }
+        val ok: Boolean
+        try {
+            if (!wasTrusted) L.MONERO_Wallet_setTrustedDaemon(p, 1)
+            ok = b(L.MONERO_Wallet_importTrezorEncryptedKeyImagesJson(p, json))
+        } finally { if (!wasTrusted) try { L.MONERO_Wallet_setTrustedDaemon(p, 0) } catch (_: Throwable) {} }
+        if (!ok) throw IllegalStateException(werr())
+        /* spent / unspent totals as wallet2 now sees them */
+        var spent = BigInteger.ZERO; var unspent = BigInteger.ZERO
+        val coins = L.MONERO_Wallet_coins(p)
+        if (coins != null) { L.MONERO_Coins_refresh(coins); loadChecked()
+            for (i in 0 until L.MONERO_Coins_count(coins)) { val ci = L.MONERO_Coins_coin(coins, i) ?: continue
+                val amt = BigInteger(java.lang.Long.toUnsignedString(L.MONERO_CoinsInfo_amount(ci)))
+                if (b(L.MONERO_CoinsInfo_spent(ci))) spent = spent.add(amt) else unspent = unspent.add(amt)
+                L.MONERO_CoinsInfo_pubKey(ci)?.let { pk -> synchronized(checked) { checked.add(pk.lowercase()) } } }
+            saveChecked() }
+        store(true)
+        return JSONObject().put("spent", spent.toString()).put("unspent", unspent.toString()).put("real", true).put("state", state())
     }
 }

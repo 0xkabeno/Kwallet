@@ -1,5 +1,26 @@
 # Changelog
 
+## Kwallet v3.98.14 · Hwallet v1.8.14 (2026-10-15, work in progress)
+
+Working build for phone testing. Not tested on a device or emulator: static checks (`node --check` of every inline and injected script, a stubbed run of the Browser providers) and the CI build. The bundled monero_c library was checked to export `MONERO_Wallet_importTrezorEncryptedKeyImagesJson` and `MONERO_Wallet_trustedDaemon`.
+
+### Monero
+- Sending works from Hwallet's view-only wallet: Sync spent status now imports Kwallet's real key images (with their signatures) into wallet2, through monero_c's encrypted key-image import (ChaCha20-Poly1305, a fresh key each time, node trusted only for the import). Every output's key image becomes known, so wallet2 can build a send (the "No enotes available to spend" error) and sees later spends while syncing. Needs Android 9+; older phones keep the previous check-and-freeze path. Run Sync spent status once after updating.
+- A send that fails because key images are missing says to run Sync spent status.
+- Sync spent status no longer leaves an invisible Kwallet window over Hwallet: Kwallet shows itself after 10 s if its sheet has not drawn, and after 30 s answers with an error Hwallet shows.
+- Faster native sync: the scan is re-armed only after 90 s without a new block (was 45 s) and the node is switched only when it is actually failing; the wallet is saved every 5 min while syncing (was 90 s).
+
+### Sui and dApps
+- WalletConnect: `sui_getAccounts` (address + public key) and the same answer in the session properties, which Sui dApp Kit apps (Cetus and others) need before they show a wallet as connected.
+- Kwallet sends the Sui public key with the pairing (pair again to send it); for older pairings Hwallet reads it once from the address's last transaction, or learns it from the first signature.
+- Browser: the Sui wallet is announced again for apps whose wallet list mounts late, and through the legacy `navigator.wallets` queue.
+- Kwallet's Sui signing sheet gets the same title as EVM / Solana / Tron (Swap, Send, Receive) from Hwallet's simulation; stablecoin amounts show their dollar value.
+
+### Design
+- Hwallet: Chains moved from Settings to a "Chains ›" row above the coin list on Home (every UI style).
+- Kwallet Restore: two tiles (Choose backup file, Paste backup text), a file chip with name, size and remove, Paste from clipboard, the password field only for an encrypted backup, a preview card of the backup, and one confirmation: Hold to erase & restore.
+- Kwallet Export and Backup: one short line each, "Repeat password" appears only once a password is typed.
+
 ## Kwallet v3.98.13 · Hwallet v1.8.13 (2026-10-15, work in progress)
 
 Working build on the `wip-3.98.13` branch for phone testing. Not tested on a device or emulator: only static checks (`node --check` of every inline script and of the injected Browser scripts, an ESLint no-undef comparison against v3.98.12 / v1.8.12) and the CI build.
