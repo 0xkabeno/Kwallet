@@ -1,5 +1,9 @@
 # Changelog
 
+## Kwallet v3.98.20 + Hwallet v1.8.23 (2026-10-16)
+
+- Hwallet: tighter, cleaner USD/Max chips on the send sheet. (Max on Monero fills the spendable amount; change from a recent send stays locked for 10 blocks.)
+
 ## Kwallet v3.98.19 + Hwallet v1.8.22 (2026-10-16)
 
 - Hwallet: Monero confirmation blocks turn green with a green 10+ once complete; slimmer blocks with the count on the same line.
