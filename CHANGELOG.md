@@ -1,5 +1,9 @@
 # Changelog
 
+## Kwallet v3.98.19 (2026-10-16)
+
+- Monero S|V key button now takes the PK button's exact shape, size, font and red in the active theme (measured live, so it follows every theme switch), and copying S or V no longer greys the button; only the copied key text is struck.
+
 ## Kwallet v3.98.18 + Hwallet v1.8.21 (2026-10-16)
 
 - Monero confirmed working end to end on device (Hwallet signs nothing; Kwallet signs every send after review).

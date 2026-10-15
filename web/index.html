@@ -3012,7 +3012,7 @@ html[data-ui="m3"] .toast{font-family:var(--u-font)!important}
 html[data-ui="m3"] .panel > .row > #word-count{font-family:var(--u-font)!important}
 html[data-ui="m3"] .imp-wrap .btn,html[data-ui="m3"] .imp-wrap button{border-radius:999px!important}
 html[data-ui="m3"] .lb-pager{border-radius:12px!important}
-html[data-ui="m3"] .btn-a,html[data-ui="m3"] .btn-k,html[data-ui="m3"] .btn-sv{border-radius:999px!important}
+html[data-ui="m3"] .btn-a,html[data-ui="m3"] .btn-k{border-radius:999px!important}
 html[data-ui="m3"] .item .qr-btn,html[data-ui="m3"] .item button[title*="QR" i]{border-radius:8px!important}
 html[data-ui="m3"] .bk-tabs{border-radius:12px!important}
 html[data-ui="m3"] .bk-tabs::before{border-radius:12px!important}
@@ -3271,7 +3271,7 @@ html[data-ui="miuix"] .toast{border-radius:12px!important;font-family:var(--u-fo
 html[data-ui="miuix"] .panel > .row > #word-count{font-family:var(--u-font)!important}
 html[data-ui="miuix"] .imp-wrap .btn,html[data-ui="miuix"] .imp-wrap button{border-radius:16px!important}
 html[data-ui="miuix"] .lb-pager{border-radius:16px!important}
-html[data-ui="miuix"] .btn-a,html[data-ui="miuix"] .btn-k,html[data-ui="miuix"] .btn-sv{border-radius:16px!important}
+html[data-ui="miuix"] .btn-a,html[data-ui="miuix"] .btn-k{border-radius:16px!important}
 html[data-ui="miuix"] .item .qr-btn,html[data-ui="miuix"] .item button[title*="QR" i]{border-radius:12px!important}
 html[data-ui="miuix"] .bk-tabs{border-radius:16px!important}
 html[data-ui="miuix"] .bk-tabs::before{border-radius:16px!important}
@@ -4269,7 +4269,34 @@ html.kwa:not(#p14a):not(#p14b):not(#p14c):not(#p14d):not(#p14e):not(#p14f):not(#
 html:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#v16g):not(#v16h):not(#v16i):not(#v16j) .btn-sv{width:54px!important;height:30px!important;min-height:30px!important;overflow:hidden!important;background:var(--btn-pk-bg)!important;box-shadow:none!important;align-self:center!important}
 html:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#v16g):not(#v16h):not(#v16i):not(#v16j) .btn-sv .btn-s,html:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#v16g):not(#v16h):not(#v16i):not(#v16j) .btn-sv .btn-v{width:27px!important;flex:1 1 27px!important;height:30px!important;line-height:30px!important;font-size:12px!important;font-weight:600!important;letter-spacing:.2px!important;border-radius:0!important;background:transparent!important;color:#fff!important}
 html:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#v16g):not(#v16h):not(#v16i):not(#v16j) .btn-sv .btn-s{border-right:1px solid rgba(255,255,255,.22)!important}
+
+/* v3.98.19: the Monero S|V pill takes the PK button's exact box (radius, size, red) as measured live in the current theme,
+   and copying a key never dims it (only the key text is struck) */
+html:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#v16g):not(#v16h):not(#v16i):not(#v16j).kw-pkm .btn-sv{border-radius:var(--pk-r)!important;width:var(--pk-w)!important;height:var(--pk-h)!important;min-height:var(--pk-h)!important;background:var(--btn-pk-bg)!important}
+html:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#v16g):not(#v16h):not(#v16i):not(#v16j).kw-pkm .btn-sv .btn-s,html:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#v16g):not(#v16h):not(#v16i):not(#v16j).kw-pkm .btn-sv .btn-v{height:var(--pk-h)!important;line-height:var(--pk-h)!important;font-size:var(--pk-f)!important;font-weight:var(--pk-fw)!important}
+html:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#v16g):not(#v16h):not(#v16i):not(#v16j) .btn-sv .btn-s.done,html:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#v16g):not(#v16h):not(#v16i):not(#v16j) .btn-sv .btn-v.done{opacity:1!important;filter:none!important}
 </style>
+<script>
+/* v3.98.19: measure a real PK button in the active theme and give the S|V pill the same box */
+(function () {
+  function sync() {
+    try {
+      var host = document.querySelector('.item') || document.body, b = document.createElement('button');
+      b.className = 'btn btn-k'; b.textContent = 'PK'; b.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;left:-9999px';
+      host.appendChild(b); var c = getComputedStyle(b), r = document.documentElement.style;
+      r.setProperty('--pk-r', c.borderTopLeftRadius); r.setProperty('--pk-w', c.width); r.setProperty('--pk-h', c.height);
+      r.setProperty('--pk-f', c.fontSize); r.setProperty('--pk-fw', c.fontWeight); b.remove();
+      document.documentElement.classList.add('kw-pkm');
+    } catch (e) {}
+  }
+  var t = 0; function later() { clearTimeout(t); t = setTimeout(sync, 60); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync); else sync();
+  try { var o = { attributes: true, attributeFilter: ['data-ui', 'data-theme', 'class', 'style'] };
+    new MutationObserver(function (m) { for (var i = 0; i < m.length; i++) if (!(m[i].attributeName === 'class' && m[i].target === document.documentElement) && m[i].attributeName !== 'style') return later(); }).observe(document.documentElement, o);
+    if (document.body) new MutationObserver(later).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-ui', 'data-theme'] }); } catch (e) {}
+  addEventListener('resize', later);
+})();
+</script>
 </head>
 <body data-theme="light">
 <script>
@@ -12434,7 +12461,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98.18';
+const APP_VERSION = '3.98.19';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
