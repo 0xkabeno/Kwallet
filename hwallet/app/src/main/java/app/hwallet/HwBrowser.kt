@@ -254,7 +254,8 @@ class HwBrowser(
 
     // ---------------------------------------------------------------- page -> native (via HwNative)
 
-    fun init(s: String) { if (s.length in 100..400_000 && script == null) script = s }
+    /* v1.8.15: the page sends the script again when Chains change (switched-off chains are not announced); new tabs use the latest */
+    fun init(s: String) { if (s.length in 100..400_000) script = s }
 
     fun open(id: String, url: String, scroll: Int) {
         if (!okId(id)) return

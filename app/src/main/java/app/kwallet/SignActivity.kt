@@ -48,11 +48,19 @@ class SignActivity : KwActivity() {
     @Volatile private var sheetShown = false
     private val dogH = android.os.Handler(android.os.Looper.getMainLooper())
     private val dogReveal = Runnable { if (!sheetShown && !replied && !isFinishing) { Log.w("KwSign", "sheet not ready after 10 s, revealing"); revealSign() } }
+    /* v3.98.15 (Monero 4.1 A): the last stage the sign page reported (KwSign.stage); the watchdog's error names it */
+    @Volatile private var lastStage = ""
     private val dogFail = Runnable {
         if (!sheetShown && !replied && !isFinishing) {
-            Log.w("KwSign", "sheet not ready after 30 s, answering with an error")
-            reply("{\"status\":\"error\",\"error\":\"Kwallet could not open the signing screen. Close Kwallet, open it once, then retry\"}")
+            val at = lastStage.ifEmpty { "the sign page never started (request ${req.length / 1024} KB)" }
+            Log.w("KwSign", "sheet not ready after 30 s, answering with an error; last stage: $at")
+            val msg = "Kwallet could not open the signing screen (stopped at: $at). Close Kwallet, open it once, then retry"
+            reply(JSONObject().put("status", "error").put("error", msg).put("stage", at).toString())
         }
+    }
+    internal fun onStage(s: String) {
+        lastStage = s.take(160)
+        Log.i("KwSign", "stage +${SystemClock.uptimeMillis() - tCreate}ms $lastStage")
     }
 
     override val signPage: Boolean = true
@@ -189,5 +197,7 @@ class KwSignBridge(private val host: () -> SignActivity?) {
     @JavascriptInterface fun done(json: String) { val a = host() ?: return; a.runOnUiThread { a.replyFromPage(json) } }
     @JavascriptInterface fun ready() { val a = host() ?: return; a.runOnUiThread { a.onSheetReady() } }
     @JavascriptInterface fun sheet() { val a = host() ?: return; a.runOnUiThread { a.onSheetMode() } }
+    /** v3.98.15: the page reports the stage it reached (plain text, kept for the watchdog's error) */
+    @JavascriptInterface fun stage(s: String) { val a = host() ?: return; a.onStage(s) }
 }
 class KwE2EFlag { @JavascriptInterface fun on(): Boolean = true }

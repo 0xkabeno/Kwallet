@@ -1,5 +1,28 @@
 # Changelog
 
+## Kwallet v3.98.15 · Hwallet v1.8.15 (2026-10-15, work in progress)
+
+Working build for phone testing. Not tested on a device or emulator: static checks (`node --check` of every inline and injected script, a stubbed run of the Browser providers) and the CI build. The Monero changes are ready to test on a device, not confirmed.
+
+### Monero (K↔H key-image link)
+- Kwallet's sign page reports each stage it reaches (request read + size, route, Monero checks, record lookup, draw, ready, engine boot). If the sheet never draws, the 30 s watchdog error names the last stage instead of "could not open the signing screen".
+- Any exception while opening a request is caught and shown on the sheet with the stage it happened in (it used to leave the sheet undrawn until the watchdog).
+- The Monero engine (worker + WebAssembly) starts only after the sheet has drawn and `KwSign.ready()` fired; the multi-MB outputs are shape-checked cheaply before the first paint and fully checked after the tap.
+- No manual Sync spent status: when a send fails because key images are unknown (monero_c builds only from outputs with a known key image: "No enotes available to spend"), Hwallet asks Kwallet for them right there, imports them and builds again. Every Monero send also returns key images for all outputs. Sync spent status stays as a repair tool.
+- Output-order contract made explicit (HwXmrN.kt): Hwallet exports all outputs with their public keys in the same order; wallet2's import checks each signature against output i; the fallback now matches by output public key (1.8.14 matched by the output's index inside its transaction, which pointed at the wrong outputs). A partial export (only new outputs) is not possible while Kwallet signs in a throwaway wallet (wallet2 refuses an offset beyond the outputs it knows).
+- The bundled monero_c v0.18.4.6-RC2 exports `MONERO_Wallet_importKeyImages`, but its file needs wallet2's chacha key derived through cn_slow_hash; the Trezor-JSON import (the same `wallet2::import_key_images` underneath) is kept.
+
+### dApps
+- Browser: Solana and Sui are ONE Wallet Standard wallet "Hwallet" (both chain and feature sets, `id` app.hwallet); one approval sheet connects both; Sui accounts carry the public key. Re-announce kept.
+- Chains switched off in Chains are not announced to pages (EVM, Solana, Tron, Sui, Cardano, XRP); new tabs pick up a change.
+- Cardano CIP-30: `getExtensions` / `supportedExtensions` and `enable({ extensions })`; CIP-95 is listed as unsupported until Kwallet can review governance signatures.
+- Incognito: a wallet connection approved in an incognito tab is dropped when the tab closes.
+
+### Design (Hwallet)
+- Tab switcher header: "N tabs" on one line, icon buttons for new tab and incognito, Close all in the ⋮ menu, Done on the right.
+- Saved inputs moved from Settings to Browser ⋮ › Browser settings › Saved inputs: Offer to save on top, then four rows (Passwords, Emails, Inputs, Addresses) with counts, each opening its list.
+- Chains: one-line intro, normal row height and type, smaller icons; on a Monero-only wallet only Monero is active, the others are greyed out with "Monero seed: other chains need a 12/24-word wallet", and the EVM networks section is hidden.
+
 ## Kwallet v3.98.14 · Hwallet v1.8.14 (2026-10-15, work in progress)
 
 Working build for phone testing. Not tested on a device or emulator: static checks (`node --check` of every inline and injected script, a stubbed run of the Browser providers) and the CI build. The bundled monero_c library was checked to export `MONERO_Wallet_importTrezorEncryptedKeyImagesJson` and `MONERO_Wallet_trustedDaemon`.

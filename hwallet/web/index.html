@@ -662,6 +662,9 @@ body.md3 .scn-pl { background: var(--md-primary, var(--acc)); }
 .br-sw{flex:1;min-height:0;display:flex;flex-direction:column}
 .br-swh{display:flex;align-items:center;gap:8px;padding:10px 12px 10px 18px;flex:0 0 auto}
 .br-swh b{flex:1;font-size:20px;font-weight:700}
+.br-swh2{gap:2px}.br-swh .br-swn{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.br-swh .br-swi{flex:0 0 auto;width:40px!important;height:40px!important;display:grid;place-items:center;border-radius:50%;color:var(--text)}.br-swh .br-swi svg,.br-swh .br-swi .ic{width:22px;height:22px}
+.br-swh .br-swd{flex:0 0 auto;margin-left:4px;white-space:nowrap}
 .br-pill{display:flex;align-items:center;gap:4px;height:38px;padding:0 14px 0 10px;border-radius:999px;background:var(--acc);color:var(--accI);font-weight:700;font-size:14px}
 .br-pill .ic{width:20px;height:20px}
 .br-txt{height:38px;padding:0 10px;border-radius:999px;font-weight:600;font-size:14px;color:var(--muted)}
@@ -2819,6 +2822,24 @@ html.hwa:not(#p11a):not(#p11b):not(#p11c):not(#p11d):not(#p11e):not(#p11f):not(#
 .kws-row.kws-chn-sub{padding-left:40px}
 .kws-row.kws-dim{opacity:.45}
 .kws-chn-h{margin:4px 24px 8px}
+/* v1.8.15 (4.5): Chains rows at normal height and type size with smaller icons, in every Hwallet style (the style layers
+   use :not(#id) chains for weight, so this does too); greyed rows on a Monero-only wallet */
+html:not(#c15a):not(#c15b):not(#c15c):not(#c15d):not(#c15e):not(#c15f):not(#c15g):not(#c15h):not(#c15i) .kws-row.kws-chn{min-height:52px!important;height:auto!important;padding-top:6px!important;padding-bottom:6px!important;gap:12px!important}
+html:not(#c15a):not(#c15b):not(#c15c):not(#c15d):not(#c15e):not(#c15f):not(#c15g):not(#c15h):not(#c15i) .kws-row.kws-chn .kws-t{font-size:15px!important;line-height:20px!important}
+html:not(#c15a):not(#c15b):not(#c15c):not(#c15d):not(#c15e):not(#c15f):not(#c15g):not(#c15h):not(#c15i) .kws-row.kws-chn .kws-t .kws-s{font-size:12.5px!important;line-height:16px!important}
+html:not(#c15a):not(#c15b):not(#c15c):not(#c15d):not(#c15e):not(#c15f):not(#c15g):not(#c15h):not(#c15i) .kws-row.kws-chn .kws-chl{flex:0 0 24px!important;width:24px!important;height:24px!important}
+html:not(#c15a):not(#c15b):not(#c15c):not(#c15d):not(#c15e):not(#c15f):not(#c15g):not(#c15h):not(#c15i) .kws-row.kws-chn .kws-chl img,html:not(#c15a):not(#c15b):not(#c15c):not(#c15d):not(#c15e):not(#c15f):not(#c15g):not(#c15h):not(#c15i) .kws-row.kws-chn .kws-chl .lg{width:24px!important;height:24px!important}
+html:not(#c15a):not(#c15b):not(#c15c):not(#c15d):not(#c15e):not(#c15f):not(#c15g):not(#c15h):not(#c15i) .kws-chn-h{margin:2px 20px 6px!important;font-size:13px!important;line-height:18px!important}
+.kws-row.kws-chn-na,.kws-row.kws-chn-na:disabled{opacity:.42;pointer-events:none}
+.kws-chn-hint{margin:10px 20px 4px!important;font-size:12.5px!important;line-height:16px!important;opacity:.8}
+/* v1.8.15 (4.4): Saved inputs overview rows (count + chevron) and the back row */
+.sin-cat{display:flex;align-items:center;gap:12px;width:100%;text-align:left}
+.sin-cat .kws-ic svg{width:22px;height:22px}
+.sin-cat .kws-t{flex:1 1 auto;min-width:0}
+.sin-n{flex:0 0 auto;font-size:14px;opacity:.7;font-variant-numeric:tabular-nums}
+.sin-chev{flex:0 0 auto;font-size:20px;line-height:1;opacity:.5;margin-left:2px}
+.sin-back{display:block;border:0;background:none;color:var(--text);font:600 15px/20px inherit;padding:6px 4px 2px;margin:0 0 2px}
+.sin-sh .sin-r .kws-t{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .br-bar.br-inc{background:#202124!important;color:#e8eaed}
 .br-bar.br-inc .br-u{background:#3c4043!important;color:#e8eaed}
 .br-bar.br-inc #br-in{color:#e8eaed}
@@ -3161,6 +3182,9 @@ window.hwPlayOpening();
   Object.defineProperty(window, '__hwProv', { value: 1 });
   var ICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5NiA5NiI+PHJlY3Qgd2lkdGg9Ijk2IiBoZWlnaHQ9Ijk2IiByeD0iMjgiIGZpbGw9IiNEREY4NjkiLz48cGF0aCBmaWxsPSIjMTAxNDBhIiBkPSJNMzAgMjRoMTB2MjBoMTZWMjRoMTB2NDhINTZWNTNINDB2MTlIMzB6Ii8+PC9zdmc+';
   var NAME = 'Hwallet', RDNS = 'app.hwallet';
+  /* v1.8.15 (4.2): chains switched off in Hwallet > Chains are never announced to the page. Hwallet fills this in when it
+     hands the script to the Browser (brProvPush); a new tab picks up a change. */
+  var OFF = {}; /*@HWOFF*/
 
   /* ---------- bridge ---------- */
   var seq = 0, pend = {}, subs = {};
@@ -3280,11 +3304,14 @@ window.hwPlayOpening();
   var info = Object.freeze({ uuid: (crypto.randomUUID ? crypto.randomUUID() : 'hw-' + Date.now().toString(16) + '-' + Math.random().toString(16).slice(2)), name: NAME, icon: ICON, rdns: RDNS });
   var detail = Object.freeze({ info: info, provider: eth });
   function announce() { window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail: detail })); }
-  window.addEventListener('eip6963:requestProvider', announce);
-  if (!window.ethereum) { try { Object.defineProperty(window, 'ethereum', { value: eth, configurable: true, writable: false }); } catch (e) {} }
-  window.hwallet = Object.freeze({ ethereum: eth });
-  announce();
-  window.dispatchEvent(new Event('ethereum#initialized'));
+  if (OFF.eth) announce = function () {};
+  else {
+    window.addEventListener('eip6963:requestProvider', announce);
+    if (!window.ethereum) { try { Object.defineProperty(window, 'ethereum', { value: eth, configurable: true, writable: false }); } catch (e) {} }
+    window.hwallet = Object.freeze({ ethereum: eth });
+    announce();
+    window.dispatchEvent(new Event('ethereum#initialized'));
+  }
 
   /* ---------- Solana: Wallet Standard ---------- */
   /* v1.7 (#105): mainnet by name and by its CAIP-2 id (AppKit / Reown), so every adapter's chain filter matches */
@@ -3326,14 +3353,9 @@ window.hwPlayOpening();
       } }
     }
   };
-  Object.defineProperty(wallet, 'accounts', { get: function () { return solAcc ? [solAcc] : []; }, enumerable: true });
-  /* @wallet-standard/wallet registerWallet(): announce now, and again to an app that loads later */
-  var regCb = function (api) { try { api.register(wallet); } catch (e) {} };
-  try { window.dispatchEvent(new CustomEvent('wallet-standard:register-wallet', { detail: regCb })); } catch (e) {}
-  window.addEventListener('wallet-standard:app-ready', function (ev) { if (ev && ev.detail) regCb(ev.detail); });
-  /* v1.7 (#105): apps whose wallet list mounts later (Jupiter, Raydium, AppKit) get the wallet again once the page is
-     parsed and loaded; @wallet-standard/app ignores a wallet it already has, so repeats are harmless */
-  function reAnnounce() { try { window.dispatchEvent(new CustomEvent('wallet-standard:register-wallet', { detail: regCb })); } catch (e) {} try { announce(); } catch (e) {} }
+  /* v1.8.15 (4.2): the Wallet Standard object is registered once, further down, as ONE multi-chain "Hwallet" (Solana + Sui).
+     Two wallets with the same name made Sui kits (dApp Kit keys wallets by name) keep only the Solana one. */
+  function reAnnounce() { try { if (window.__hwWsAnnounce) window.__hwWsAnnounce(); } catch (e) {} try { announce(); } catch (e) {} }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', reAnnounce, { once: true }); else setTimeout(reAnnounce, 0);
   window.addEventListener('load', reAnnounce, { once: true });
 
@@ -3358,7 +3380,7 @@ window.hwPlayOpening();
     return Promise.reject(perr({ code: 4200, message: 'Unsupported method ' + m }));
   };
   onNs('solana', function (e) { if (e === 'disconnect') solSet(null); });
-  if (!window.solana) { try { Object.defineProperty(window, 'solana', { value: phantom, configurable: true }); } catch (e) {} }
+  if (!window.solana && !OFF.sol) { try { Object.defineProperty(window, 'solana', { value: phantom, configurable: true }); } catch (e) {} }
 
   /* ---------- Tron: TronLink-style ---------- */
   /* v1.7.2 (S19): a working TronWeb surface (TronLink's injected instance is a full TronWeb; SunSwap, JustLend, SUN.io and
@@ -3557,9 +3579,11 @@ window.hwPlayOpening();
       function (e) { if (m === 'eth_requestAccounts') throw e; return e.code === 4001 ? { code: 4001, message: 'User rejected' } : { code: e.code || 4000, message: e.message }; });
   };
   onNs('tron', function (e, d) { if (e === 'accountsChanged') trxSet(d || null); else if (e === 'disconnect') trxSet(null); });
-  if (!window.tronLink) { try { Object.defineProperty(window, 'tronLink', { value: tronLink, configurable: true }); } catch (e) {} }
-  if (!window.tronWeb) { try { Object.defineProperty(window, 'tronWeb', { value: tronWeb, configurable: true }); } catch (e) {} }
-  window.dispatchEvent(new Event('tronLink#initialized'));
+  if (!OFF.trx) {
+    if (!window.tronLink) { try { Object.defineProperty(window, 'tronLink', { value: tronLink, configurable: true }); } catch (e) {} }
+    if (!window.tronWeb) { try { Object.defineProperty(window, 'tronWeb', { value: tronWeb, configurable: true }); } catch (e) {} }
+    window.dispatchEvent(new Event('tronLink#initialized'));
+  }
 
   /* ---------- v1.8.12 (push 17, R2): Sui Wallet Standard ----------
      Registered like the Solana wallet, with sui:mainnet. Transactions arrive as the app's Transaction (toJSON / serialize)
@@ -3568,7 +3592,7 @@ window.hwPlayOpening();
   var SUIF = ['sui:signTransaction', 'sui:signAndExecuteTransaction', 'sui:signPersonalMessage', 'sui:signTransactionBlock', 'sui:signAndExecuteTransactionBlock', 'sui:signMessage', 'sui:reportTransactionEffects'];
   var suiAcc = null, suiChange = [];
   function suiMk(a, pk) { return Object.freeze({ address: a, publicKey: pk ? b64d(pk) : new Uint8Array(0), chains: SUI_CHAINS.slice(), features: SUIF.slice(), label: NAME, icon: ICON }); }
-  function suiSet(a, pk) { var was = suiAcc && suiAcc.address; suiAcc = a ? suiMk(a, pk) : null; if ((suiAcc && suiAcc.address) === was && !pk) return; suiChange.forEach(function (f) { try { f({ accounts: suiWallet.accounts }); } catch (e) {} }); }
+  function suiSet(a, pk) { var was = suiAcc && suiAcc.address; suiAcc = a ? suiMk(a, pk) : null; if ((suiAcc && suiAcc.address) === was && !pk) return; wsChanged(); }
   function suiNeed(a) { if (!suiAcc || (a && a.address && a.address !== suiAcc.address)) throw perr({ code: 4100, message: 'The account is not connected' }); }
   function suiChain(c) { if (c && c !== 'sui:mainnet') throw perr({ code: 4901, message: 'Hwallet supports Sui mainnet only' }); }
   /* the transaction as the app hands it over: JSON (v1/v2) or bytes; Hwallet's builder reads both */
@@ -3582,15 +3606,36 @@ window.hwPlayOpening();
   }
   function suiSign(i, exec) { suiNeed(i.account); suiChain(i.chain); return suiTxIn(i.transaction || i.transactionBlock).then(function (tx) { return call('sui', exec ? 'sui_signAndExecuteTransaction' : 'sui_signTransaction', { address: suiAcc.address, transaction: tx, options: i.options || null }); }).then(function (r) { if (r && r.publicKey) suiSet(suiAcc.address, r.publicKey); return r; }); }
   function suiMsg(i) { suiNeed(i.account); return call('sui', 'sui_signPersonalMessage', { address: suiAcc.address, message: b64e(u8(i.message)) }).then(function (r) { if (r && r.publicKey) suiSet(suiAcc.address, r.publicKey); return r; }); }
-  var suiWallet = {
-    version: '1.0.0', name: NAME, icon: ICON, chains: SUI_CHAINS.slice(),
-    features: {
-      'standard:connect': { version: '1.0.0', connect: function (o) {
-        if (suiAcc) return Promise.resolve({ accounts: suiWallet.accounts });
-        return call('sui', 'sui_connect', { silent: !!(o && o.silent) }).then(function (r) { suiSet(r && r.address, r && r.publicKey); return { accounts: suiWallet.accounts }; }, function (e) { if (o && o.silent) return { accounts: [] }; throw e; });
-      } },
-      'standard:disconnect': { version: '1.0.0', disconnect: function () { return call('sui', 'sui_disconnect', {}).then(function () { suiSet(null); }, function () { suiSet(null); }); } },
-      'standard:events': { version: '1.0.0', on: function (e, f) { if (e !== 'change') return function () {}; suiChange.push(f); return function () { suiChange = suiChange.filter(function (x) { return x !== f; }); }; } },
+  /* ---------- v1.8.15 (4.2): ONE Wallet Standard object, "Hwallet", for Solana and Sui ----------
+     Both chain sets and both feature sets on one wallet (as multi-chain wallets do). Each account carries only its own
+     chains and features: Sui kits keep the accounts on a sui: chain, and the Solana account comes first for Solana adapters
+     (they take accounts[0]). connect() asks Hwallet once for both chains (one approval sheet that lists them); a silent
+     connect returns what this site already approved. Chains switched off in Hwallet are left out entirely. */
+  var WS_SOL = !OFF.sol, WS_SUI = !OFF.sui;
+  var wsChange = [];
+  function wsAccounts() { var a = []; if (WS_SOL && solAcc) a.push(solAcc); if (WS_SUI && suiAcc) a.push(suiAcc); return a; }
+  function wsChanged() { var acc = wsAccounts(); wsChange.forEach(function (f) { try { f({ accounts: acc }); } catch (e) {} }); }
+  solChange = { forEach: function () { wsChanged(); }, push: function () {} };   /* solSet() notifies through the merged listeners */
+  var wsNs = []; if (WS_SOL) wsNs.push('solana'); if (WS_SUI) wsNs.push('sui');
+  var wsChains = [].concat(WS_SOL ? SOL_CHAINS : [], WS_SUI ? SUI_CHAINS : []);
+  var wsFeat = {
+    'standard:connect': { version: '1.0.0', connect: function (o) {
+      var silent = !!(o && o.silent);
+      return call('hw', 'hw_connect', { ns: wsNs, silent: silent }).then(function (r) {
+        r = r || {};
+        if (WS_SOL) solSet(r.solana && r.solana.publicKey || null);
+        if (WS_SUI) { if (r.sui && r.sui.address) suiSet(r.sui.address, r.sui.publicKey); else suiSet(null); }
+        return { accounts: wsAccounts() };
+      }, function (e) { if (silent) return { accounts: wsAccounts() }; throw e; });
+    } },
+    'standard:disconnect': { version: '1.0.0', disconnect: function () {
+      var j = []; if (WS_SOL && solAcc) j.push(call('solana', 'solana_disconnect', {}).catch(function () {})); if (WS_SUI && suiAcc) j.push(call('sui', 'sui_disconnect', {}).catch(function () {}));
+      return Promise.all(j).then(function () { if (WS_SOL) solSet(null); if (WS_SUI) suiSet(null); });
+    } },
+    'standard:events': { version: '1.0.0', on: function (e, f) { if (e !== 'change') return function () {}; wsChange.push(f); return function () { wsChange = wsChange.filter(function (x) { return x !== f; }); }; } }
+  };
+  if (WS_SOL) ['solana:signAndSendTransaction', 'solana:signTransaction', 'solana:signMessage'].forEach(function (k) { wsFeat[k] = wallet.features[k]; });
+  var suiF = {
       'sui:signTransaction': { version: '2.0.0', signTransaction: function (i) { return Promise.resolve().then(function () { return suiSign(i, false); }).then(function (r) { return { bytes: r.bytes, signature: r.signature }; }); } },
       'sui:signAndExecuteTransaction': { version: '2.0.0', signAndExecuteTransaction: function (i) { return Promise.resolve().then(function () { return suiSign(i, true); }).then(function (r) { return { bytes: r.bytes, signature: r.signature, digest: r.digest, effects: r.effects || '' }; }); } },
       'sui:signPersonalMessage': { version: '1.1.0', signPersonalMessage: function (i) { return Promise.resolve().then(function () { return suiMsg(i); }).then(function (r) { return { bytes: r.bytes, signature: r.signature }; }); } },
@@ -3598,19 +3643,25 @@ window.hwPlayOpening();
       'sui:signAndExecuteTransactionBlock': { version: '1.0.0', signAndExecuteTransactionBlock: function (i) { return Promise.resolve().then(function () { return suiSign(i, true); }).then(function (r) { return { digest: r.digest, effects: r.effectsJson || undefined, rawEffects: r.effects ? Array.prototype.slice.call(b64d(r.effects)) : undefined }; }); } },
       'sui:signMessage': { version: '1.0.0', signMessage: function (i) { return Promise.resolve().then(function () { return suiMsg(i); }).then(function (r) { return { messageBytes: r.bytes, signature: r.signature }; }); } },
       'sui:reportTransactionEffects': { version: '1.0.0', reportTransactionEffects: function () { return Promise.resolve(); } }
-    }
   };
-  Object.defineProperty(suiWallet, 'accounts', { get: function () { return suiAcc ? [suiAcc] : []; }, enumerable: true });
-  var suiReg = function (api) { try { api.register(suiWallet); } catch (e) {} };
-  function suiAnnounce() { try { window.dispatchEvent(new CustomEvent('wallet-standard:register-wallet', { detail: suiReg })); } catch (e) {} }
-  suiAnnounce();
-  window.addEventListener('wallet-standard:app-ready', function (ev) { if (ev && ev.detail) suiReg(ev.detail); });
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', suiAnnounce, { once: true }); else setTimeout(suiAnnounce, 0);
-  window.addEventListener('load', suiAnnounce, { once: true });
-  /* v1.8.14: Sui apps whose wallet list mounts late (Cetus and other single-page apps) get it again, and the legacy
-     navigator.wallets queue some Sui kits still read is filled too */
-  setTimeout(suiAnnounce, 1500); setTimeout(suiAnnounce, 4000);
-  try { var nw = window.navigator.wallets; if (!Array.isArray(nw) && !(nw && typeof nw.push === 'function')) { nw = []; Object.defineProperty(window.navigator, 'wallets', { value: nw, configurable: true, writable: true }); } nw.push(suiReg); } catch (e) {}
+  if (WS_SUI) Object.keys(suiF).forEach(function (k) { wsFeat[k] = suiF[k]; });
+  var hwWallet = { version: '1.0.0', name: NAME, icon: ICON, chains: wsChains, features: wsFeat };
+  Object.defineProperty(hwWallet, 'id', { value: RDNS, enumerable: true });
+  Object.defineProperty(hwWallet, 'accounts', { get: wsAccounts, enumerable: true });
+  /* @wallet-standard/wallet registerWallet(): announce now, again when the app says it is ready, and again for apps whose
+     wallet list mounts late (Jupiter, Raydium, Cetus and other single-page apps); repeats are ignored by @wallet-standard/app */
+  var wsReg = function (api) { try { api.register(hwWallet); } catch (e) {} };
+  function wsAnnounce() { if (!wsChains.length) return; try { window.dispatchEvent(new CustomEvent('wallet-standard:register-wallet', { detail: wsReg })); } catch (e) {} }
+  Object.defineProperty(window, '__hwWsAnnounce', { value: wsAnnounce });
+  if (wsChains.length) {
+    wsAnnounce();
+    window.addEventListener('wallet-standard:app-ready', function (ev) { if (ev && ev.detail) wsReg(ev.detail); });
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wsAnnounce, { once: true }); else setTimeout(wsAnnounce, 0);
+    window.addEventListener('load', wsAnnounce, { once: true });
+    setTimeout(wsAnnounce, 1500); setTimeout(wsAnnounce, 4000);
+    /* the legacy navigator.wallets queue some Sui kits still read */
+    if (WS_SUI) try { var nw = window.navigator.wallets; if (!Array.isArray(nw) && !(nw && typeof nw.push === 'function')) { nw = []; Object.defineProperty(window.navigator, 'wallets', { value: nw, configurable: true, writable: true }); } nw.push(wsReg); } catch (e) {}
+  }
   onNs('sui', function (e, d) { if (e === 'disconnect') suiSet(null); else if (e === 'accountsChanged') suiSet(d || null); });
 
   /* ---------- v1.8.12 (push 17, R2): Cardano CIP-30 at window.cardano.hwallet ----------
@@ -3624,9 +3675,13 @@ window.hwPlayOpening();
     return { code: c === 4001 ? -3 : c === 4100 ? -4 : -2, info: (e && e.message) || 'Refused' };
   }
   function cCall(m, p, kind) { if (!adaOn && m !== 'cardano_enable') return Promise.reject({ code: -4, info: 'Not enabled' }); return call('cardano', m, p || {}).catch(function (e) { throw cErr(e, kind); }); }
+  /* v1.8.15 (4.2): CIP-30 complete: name, icon, apiVersion, isEnabled, enable({ extensions }), supportedExtensions and
+     getExtensions. CIP-95 (governance) is listed as unsupported: Hwallet does not sign stake / DRep keys (no blind signing),
+     so the extension list is empty and enable() ignores a CIP-95 request instead of pretending. */
+  var ADA_EXT = [];   /* supported CIP extensions, e.g. { cip: 95 } once Kwallet can review and sign governance */
   var adaApi = {
-    getNetworkId: function () { return Promise.resolve(1); },
-    getExtensions: function () { return Promise.resolve([]); },
+    getNetworkId: function () { return adaOn ? Promise.resolve(1) : Promise.reject({ code: -4, info: 'Not enabled' }); },
+    getExtensions: function () { return Promise.resolve(ADA_EXT.slice()); },
     getUtxos: function (amount, paginate) { return cCall('cardano_getUtxos', { amount: amount || null, paginate: paginate || null }); },
     getCollateral: function (o) { return cCall('cardano_getCollateral', { amount: o && o.amount || null }); },
     getBalance: function () { return cCall('cardano_getBalance'); },
@@ -3639,17 +3694,18 @@ window.hwPlayOpening();
     submitTx: function (tx) { return cCall('cardano_submitTx', { tx: String(tx || '') }, 'submit'); }
   };
   adaApi.experimental = { getCollateral: adaApi.getCollateral, on: function () {}, off: function () {} };
-  var adaW = Object.freeze({ name: NAME, icon: ICON, apiVersion: '0.1.0', supportedExtensions: [], isHwallet: true,
+  adaApi.cip30 = adaApi;
+  var adaW = Object.freeze({ name: NAME, icon: ICON, apiVersion: '0.1.0', supportedExtensions: ADA_EXT.slice(), isHwallet: true,
     isEnabled: function () { return call('cardano', 'cardano_isEnabled', {}).then(function (r) { adaOn = !!r; return adaOn; }, function () { return false; }); },
-    enable: function () { return call('cardano', 'cardano_enable', {}).then(function () { adaOn = true; return adaApi; }, function (e) { throw cErr(e); }); } });
-  try { if (!window.cardano) Object.defineProperty(window, 'cardano', { value: {}, configurable: true, writable: true }); window.cardano.hwallet = adaW; } catch (e) {}
+    enable: function (o) { return call('cardano', 'cardano_enable', { extensions: o && Array.isArray(o.extensions) ? o.extensions.slice(0, 8) : [] }).then(function () { adaOn = true; return adaApi; }, function (e) { throw cErr(e); }); } });
+  if (!OFF.ada) try { if (!window.cardano) Object.defineProperty(window, 'cardano', { value: {}, configurable: true, writable: true }); window.cardano.hwallet = adaW; } catch (e) {}
   onNs('cardano', function (e) { if (e === 'disconnect') adaOn = false; });
 
   /* ---------- v1.8.12 (push 17, R2): XRP Ledger, GemWallet-compatible ----------
      There is no universal injected XRPL standard. GemWallet's page API (@gemwallet/api) talks to its extension with
      window.postMessage; Hwallet answers the same messages, so apps built on @gemwallet/api see Hwallet as GemWallet. */
   var xrpAddr = null;
-  try { Object.defineProperty(window, 'gemWallet', { value: true, configurable: true }); } catch (e) {}
+  if (!OFF.xrp) try { Object.defineProperty(window, 'gemWallet', { value: true, configurable: true }); } catch (e) {}
   function gemReply(id, o) { try { window.postMessage(Object.assign({ source: 'GEM_WALLET_MSG_RESPONSE', messagedId: id }, o), window.location.origin); } catch (e) {} }
   function gemErr(e) { return { error: JSON.stringify({ name: 'Error', message: (e && e.message) || 'Request failed', code: e && e.code }) }; }
   var GEM = {
@@ -3667,7 +3723,7 @@ window.hwPlayOpening();
       return call('xrpl', 'xrpl_signTransaction', { transaction: t, submit: true }).then(function (r) { return { result: { hash: r.hash } }; }); }
   };
   window.addEventListener('message', function (ev) {
-    var d = ev && ev.data; if (ev.source !== window || !d || d.source !== 'GEM_WALLET_MSG_REQUEST' || d.app !== 'gem-wallet') return;
+    var d = ev && ev.data; if (OFF.xrp || ev.source !== window || !d || d.source !== 'GEM_WALLET_MSG_REQUEST' || d.app !== 'gem-wallet') return;
     var f = GEM[d.type]; if (!f) { gemReply(d.messageId, gemErr({ message: 'Hwallet does not support ' + String(d.type).slice(0, 60) })); return; }
     Promise.resolve().then(function () { return f(d.payload || {}); }).then(function (o) { gemReply(d.messageId, o); }, function (e) { gemReply(d.messageId, e && e.code === 4001 ? { result: undefined } : gemErr(e)); });
   });
@@ -6713,7 +6769,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.14';
+var APP_VERSION = '1.8.15';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -9578,21 +9634,37 @@ var APP_VERSION = '1.8.14';
   ];
   /* v1.8.13: Chains (kill switch) and Saved inputs, in every UI style (they are ordinary Settings sub-pages) */
   KCAT.splice(1, 0, ['chn', 'Chains', 'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z']);
-  KCAT.splice(KCAT.length - 3, 0, ['inp', 'Saved inputs', 'M12.65 10A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z']);
+  /* v1.8.15 (4.4): Saved inputs moved to Browser ⋮ > Browser settings > Saved inputs (brSinSheet); no longer a Settings page */
   function chnRow(id, lg, name, sub, cls) {
     return '<button type="button" class="kws-row kws-tl kws-chn' + (cls ? ' ' + cls : '') + '" id="kws-ch-' + id + '" data-chn="' + esc(id) + '"><span class="kws-ic kws-chl">' + logo(lg, name, '', 'sm') + '</span><span class="kws-t">' + esc(name) +
       '<span class="kws-s" id="kws-ch-' + id + '-s">' + esc(sub || '') + '</span></span>' + KSW + '</button>';
   }
+  /* v1.8.15 (4.5): a wallet paired from a Monero-only (25-word / Polyseed) seed has no address on any other chain */
+  function chnXmrOnly() {
+    var w = curW(), a = (w && w.A) || {};
+    var ks = Object.keys(a).filter(function (k) { return typeof a[k] === 'string' && a[k] && chainOfKey(k); });
+    return ks.length > 0 && ks.every(function (k) { return chainOfKey(k) === 'xmr'; });
+  }
   function chnHtml() {
+    /* v1.8.15 (4.5): one short intro line; on a Monero-only wallet only Monero is active, the rest are greyed out (disabled)
+       with one hint, and the EVM networks section is hidden */
+    if (chnXmrOnly()) {
+      var rows = CH_ALL.map(function (c) { var nm = c.id === 'eth' ? 'Ethereum & EVM networks' : c.name; if (c.id === 'xmr') return chnRow(c.id, c.logo, nm, ''); return chnRow(c.id, c.logo, nm, '', 'kws-chn-na').replace('<button type="button"', '<button type="button" disabled aria-disabled="true"'); });
+      var xr = rows.filter(function (r, i) { return CH_ALL[i].id === 'xmr'; }), na = rows.filter(function (r, i) { return CH_ALL[i].id !== 'xmr'; });
+      return '<p class="hw-kp kws-chn-h">Turn a chain off to stop its network use and hide it.</p>' +
+        '<div class="kws-grp kws-chn-g">' + xr.join('') + '</div><p class="hw-kp kws-chn-hint">Monero seed: other chains need a 12/24-word wallet</p><div class="kws-grp kws-chn-g kws-chn-nag">' + na.join('') + '</div>';
+    }
     var main = CH_ALL.map(function (c) { return chnRow(c.id, c.logo, c.id === 'eth' ? 'Ethereum & EVM networks' : c.name, ''); }).join('');
     var evm = EVM_ALL.map(function (n) { return chnRow('evm-' + n.id, n.logo, n.name, '', 'kws-chn-sub'); }).join('');
-    return '<p class="hw-kp kws-chn-h">Turn a chain off to stop all its network activity (balances, prices, nodes, WalletConnect, Monero sync) and hide it everywhere. Turn it on again any time.</p>' +
-      '<div class="kws-grp">' + main + '</div><div class="kws-sec">EVM networks</div><div class="kws-grp">' + evm + '</div>';
+    return '<p class="hw-kp kws-chn-h">Turn a chain off to stop its network use and hide it.</p>' +
+      '<div class="kws-grp kws-chn-g">' + main + '</div><div class="kws-sec">EVM networks</div><div class="kws-grp kws-chn-g">' + evm + '</div>';
   }
   function chnId(id) { return /^evm-/.test(id) ? 'evm:' + id.slice(4) : id; }
   function chnSync() {
+    var xo = chnXmrOnly();
     CH_ALL.concat(EVM_ALL.map(function (n) { return { id: 'evm-' + n.id, evm: 1 }; })).forEach(function (c) {
       var k = chnId(c.id), own = !CHOFF[k], on = chainOn(k);
+      if (xo && k !== 'xmr') { kflag('kws-ch-' + c.id, false); ksub('kws-ch-' + c.id, ''); return; }
       kflag('kws-ch-' + c.id, own); ksub('kws-ch-' + c.id, own ? (on ? 'On' : 'On \u00b7 Ethereum & EVM networks is off') : 'Off \u00b7 no network, hidden');
       var b = kov && kq('#kws-ch-' + c.id); if (b && c.evm) b.classList.toggle('kws-dim', !chainOn('eth'));
     });
@@ -9608,6 +9680,7 @@ var APP_VERSION = '1.8.14';
     if (changed === 'xmr') { try { if (!chainOn('xmr')) xeStop(); if (window.hwXmrWalletChanged) hwXmrWalletChanged(); } catch (e) {} }
     try { wcWalletChanged(); } catch (e) {}
     try { brWalletChanged(); } catch (e) {}
+    try { if (brInited) brProvPush(); } catch (e) {}
     try { NCFG = null; } catch (e) {}
     refreshAll(); liveConfig(); try { wsStart(); } catch (e) {}
   }
@@ -11041,9 +11114,20 @@ window.hwCrashPrompt = crashPrompt;
   function brNat(f) { try { if (window.HwNative && HwNative[f]) return HwNative[f].apply(HwNative, Array.prototype.slice.call(arguments, 1)); } catch (e) { console.error(e); } return null; }
   function brEng() { return jget('hw-br-eng', 'ddg'); }
   function brCur() { return BR.act ? BRM.get(BR, BR.act) : null; }
+  /* v1.8.15 (4.2): the provider script carries the chains switched off in Chains (they are never announced); sent again
+     when Chains change, so every new tab gets the current set */
+  function brProvOff() {
+    var o = {}; ['eth', 'sol', 'trx', 'sui', 'ada', 'xrp', 'btc'].forEach(function (c) { if (!chainOn(c) || (c === 'eth' && !EVM.length)) o[c] = 1; });
+    return o;
+  }
+  function brProvPush() {
+    var p = document.getElementById('hw-prov'); if (!p) return;
+    var t = p.textContent, off = JSON.stringify(brProvOff());
+    brNat('brInit', t.replace('var OFF = {}; /*@HWOFF*/', 'var OFF = ' + off + '; /*@HWOFF*/'));
+  }
   function brInit() {
     if (brInited || !brN()) return; brInited = true;
-    var p = document.getElementById('hw-prov'); if (p) brNat('brInit', p.textContent);
+    brProvPush();
     var af = document.getElementById('hw-af'); if (af) brNat('brAfInit', af.textContent);   /* v1.8.13: saved inputs (never in incognito tabs) */
   }
 
@@ -11175,7 +11259,9 @@ window.hwCrashPrompt = crashPrompt;
   }
   function brSwHtml() {
     var n = BR.tabs.length;
-    return '<header class="br-swh"><b>' + n + ' tab' + (n === 1 ? '' : 's') + '</b><button class="br-pill" data-br="new">' + sv('plus') + ' New tab</button><button class="br-pill br-incp" data-br="newinc">' + brSvg(INCI) + ' Incognito</button>' + (n ? '<button class="br-txt" data-br="closeall">Close all</button>' : '') + '<button class="br-txt pri" data-br="done">Done</button></header>' +
+    /* v1.8.15 (4.3): Chrome-style header: "N tabs" on one line, small icon buttons for a new tab and an incognito tab,
+       Close all in the overflow menu, Done on the right */
+    return '<header class="br-swh br-swh2"><b class="br-swn">' + n + ' tab' + (n === 1 ? '' : 's') + '</b><button class="ib br-swi" data-br="new" aria-label="New tab" title="New tab">' + sv('plus') + '</button><button class="ib br-swi" data-br="newinc" aria-label="New incognito tab" title="New incognito tab">' + brSvg(INCI) + '</button>' + (n ? '<button class="ib br-swi" data-br="swmore" aria-label="More" title="More">' + sv('more') + '</button>' : '') + '<button class="br-txt pri br-swd" data-br="done">Done</button></header>' +
       '<div class="br-grid">' + (n ? BR.tabs.slice().reverse().map(function (t) {
         var th = brNat('brThumb', t.id) || '';
         return '<div class="br-card' + (t.id === BR.act ? ' on' : '') + (t.inc ? ' br-inc' : '') + '" data-tab-id="' + esc(t.id) + '"><div class="br-ch">' + (t.inc ? '<span class="br-incb" title="Incognito">' + brSvg(INCI) + '</span>' : brFav(t)) + '<span class="br-ct">' + (t.inc ? '<em class="br-inct">Incognito</em> ' : '') + esc(t.title || brHostOf(t.url) || (t.inc ? 'New incognito tab' : 'New tab')) + '</span>' +
@@ -11238,9 +11324,25 @@ window.hwCrashPrompt = crashPrompt;
   function brNew(url, inc) { if (inc === undefined) { var c0 = brCur(); inc = !!(url && c0 && c0.inc); } var id = BRM.add(BR, url ? brUrl(url, brEng()) : '', inc); brSave(true); BRU.sw = false; BRU.edit = !url; brPaint(); if (!url) setTimeout(function () { var i = document.getElementById('br-in'); if (i) i.focus(); }, 60); return id; }
   function brSelect(id) { if (!BRM.select(BR, id)) return; brSave(); BRU.sw = false; BRU.edit = false; brShown = ''; brPaint(); }
   function brClose(id) {
+    brIncDrop(id);
     BRM.close(BR, id); delete BRL[id]; brNat('brClose', id); brSave(true); brShown = ''; brPaint();
   }
-  function brCloseAll() { BR.tabs.forEach(function (t) { brNat('brClose', t.id); }); BR = BRM.fresh(); BRL = {}; brSave(true); brShown = ''; brPaint(); }
+  function brCloseAll() { BR.tabs.forEach(function (t) { brIncDrop(t.id); brNat('brClose', t.id); }); BR = BRM.fresh(); BRL = {}; brSave(true); brShown = ''; brPaint(); }
+  /* v1.8.15 (3.7): a wallet connection approved in an incognito tab is dropped when that tab closes (and at the next start,
+     if Hwallet was closed with the tab open): it never stays under Connected sites */
+  var BRINC = jget('hw-br-incc', {}) || {};
+  function brIncSave() { try { jset('hw-br-incc', BRINC); } catch (e) {} }
+  function brIncTrack(tab, o, before) {
+    var t = BRM.get(BR, tab); if (!t || !t.inc || !o) return;
+    var r = brSites()[o], now = r && r.ns ? Object.keys(r.ns) : [], add = now.filter(function (n) { return before.indexOf(n) < 0; });
+    if (!add.length) return;
+    var m = BRINC[tab] = BRINC[tab] || {}; m[o] = (m[o] || []).concat(add.filter(function (n) { return (m[o] || []).indexOf(n) < 0; })); brIncSave();
+  }
+  function brIncDrop(tab) {
+    var m = BRINC[tab]; if (!m) return; delete BRINC[tab]; brIncSave();
+    Object.keys(m).forEach(function (o) { (m[o] || []).forEach(function (n) { try { if (brIs(o, n)) brRevoke(o, n); } catch (e) {} }); });
+  }
+  setTimeout(function () { try { Object.keys(BRINC).forEach(function (id) { if (!BRM.get(BR, id)) brIncDrop(id); }); } catch (e) {} }, 0);
   function brBind(el) {
     el.addEventListener('submit', function (e) { e.preventDefault(); var i = document.getElementById('br-in'); if (i) { i.blur(); brGo(i.value); } });
     el.addEventListener('focusin', function (e) { if (e.target.id === 'br-in') { BRU.edit = true; var t = brCur(); e.target.value = t ? t.url : ''; e.target.select(); var v = document.getElementById('br-v'); if (v) v.innerHTML = brStartHtml(); brPlace(); } });
@@ -11314,6 +11416,7 @@ window.hwCrashPrompt = crashPrompt;
       else if (k === 'new') { buzz(4); brNew('', false); }
       else if (k === 'newinc') { buzz(4); brNew('', true); toast('Incognito tab: no history, cookies or site data are kept after you close it'); }
       else if (k === 'closeall') { if (b.dataset.sure) { buzz([10, 30, 10]); brCloseAll(); } else { b.dataset.sure = '1'; b.textContent = 'Close all?'; setTimeout(function () { if (b.isConnected) { delete b.dataset.sure; b.textContent = 'Close all'; } }, 2500); } }
+      else if (k === 'swmore') { buzz(4); brSwMore(); }
       else if (k === 'menu') brMenu();
       else if (k === 'cap') { e.preventDefault(); buzz(6); capToggle(); var nh = capPillHtml(); if (nh) b.outerHTML = nh; else b.remove(); }
       else if (k === 'tr') { if (Date.now() - brTrLp < 700) return; if (window.hwTr) hwTr.tap(); }
@@ -11344,6 +11447,17 @@ window.hwCrashPrompt = crashPrompt;
   }
   /* the new-tab page shows the newest bookmarks too */
   function brBmStart() { var a = brBm().slice(0, 8); return '<div id="br-bmh">' + (a.length ? '<div class="sech">Bookmarks<button class="br-txt" data-br="bm">All</button></div><div class="br-top">' + a.map(function (x) { return brTile(x.u, x.t && x.t.length < 18 ? x.t : brHostOf(x.u)); }).join('') + '</div>' : '') + '</div>'; }
+  /* v1.8.15 (4.3): the tab switcher's overflow menu */
+  function brSwMore() {
+    var n = BR.tabs.length;
+    brSheet('<div class="lst"><button class="br-row" data-sm="closeall"><span class="br-ri">' + sv('close') + '</span><span class="am"><span class="an">Close all tabs</span><span class="ap">' + n + ' open</span></span></button></div>', function (ov, close) {
+      ov.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-sm]'); if (!b) return;
+        if (!b.dataset.sure) { b.dataset.sure = '1'; var a = b.querySelector('.an'); if (a) a.textContent = 'Tap again to close ' + n + ' tab' + (n === 1 ? '' : 's'); buzz(6); return; }
+        buzz([10, 30, 10]); close(); brCloseAll();
+      });
+    });
+  }
   function brMenu() {
     var t = brCur(), L = t ? BRL[t.id] || {} : {}, web = !!(t && /^https?:/.test(t.url || '')), bm = web && brBmHas(t.url);
     /* v1.8.8 (R2a/R4): one nav row across the full width: back, forward, reload, new tab, bookmark (star), desktop view */
@@ -11433,6 +11547,7 @@ window.hwCrashPrompt = crashPrompt;
         '<button class="br-row" data-shu><span class="br-ri">' + sv('reload') + '</span><span class="am"><span class="an">Update filter lists</span><span class="ap">' + (shState().updated ? 'Updated ' + new Date(shState().updated).toLocaleDateString() : 'Weekly, in the background') + '</span></span></button>' +
         '<button class="br-row" data-uas><span class="br-ri">' + brSvg(UAI) + '</span><span class="am"><span class="an">User agent</span><span class="ap">' + esc(uaSum()) + '</span></span></button></div>' : '') +
       (window.hwTr && window.HwNative && HwNative.brEval ? '<div class="lbl">Translation</div><div class="lst br-tgl"><div class="br-row br-trr"><span class="br-ri">' + brSvg(hwTr.icon) + '</span><span class="am"><span class="an">Translate pages to</span><span class="ap">On the phone \u00b7 Mozilla Bergamot</span></span>' + hwTr.selHtml('br-trto2') + '</div></div>' : '') +
+      '<div class="lbl">Saved inputs</div><div class="lst"><button class="br-row" data-sin><span class="br-ri">' + brSvg('M12.65 10A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z') + '</span><span class="am"><span class="an">Saved inputs</span><span class="ap">' + esc(typeof sinSum === 'function' ? sinSum() : '') + '</span></span></button></div>' +
       '<div class="lbl">Search engine</div><div class="seg br-eng">' + Object.keys(BR_ENG).map(function (k) { return '<button data-eng="' + k + '"' + (k === e0 ? ' class="on"' : '') + '>' + BR_ENG[k][0] + '</button>'; }).join('') + '</div>' +
       '<p class="hint">' + (capOn() ? 'Your mobile-data limit is on: pages load at that speed, and reopened tabs come from the phone first.' : 'Reopened tabs load from the phone first, so they use almost no data.') + '</p>' +
       '<button class="btn wide br-clr" data-clr>' + sv('del') + ' Clear all</button><p class="hint">Closes every tab and deletes saved pages, history, icons, cache and cookies. Connected sites stay.</p>', function (ov) {
@@ -11441,6 +11556,7 @@ window.hwCrashPrompt = crashPrompt;
       ov.addEventListener('click', function (e) {
         var sh = e.target.closest('[data-shs]'); if (sh) { var o2 = !sh.classList.contains('on'); shSet(o2); sh.classList.toggle('on', o2); buzz(6); return; }
         if (e.target.closest('[data-shu]')) { brNat('brShieldUpdate'); toast('Updating filter lists'); buzz(4); return; }
+        if (e.target.closest('[data-sin]')) { buzz(4); setTimeout(brSinSheet, 120); return; }
         if (e.target.closest('[data-uas]')) { buzz(4); uaPick(function () { var x = ov.querySelector('[data-uas] .ap'); if (x) x.textContent = uaSum(); }); return; }
         var g = e.target.closest('[data-eng]');
         if (g) { jset('hw-br-eng', g.getAttribute('data-eng')); ov.querySelectorAll('[data-eng]').forEach(function (x) { x.classList.toggle('on', x === g); }); buzz(4); return; }
@@ -11482,6 +11598,34 @@ window.hwCrashPrompt = crashPrompt;
       var S = brSites(), r = S[o] || { ns: {}, cid: cid, since: Date.now() };
       r.ns[ns] = 1; r.name = String(site.name || site.host).slice(0, 60); if (site.icon) r.icon = site.icon; r.cid = r.cid || cid; S[o] = r; brSitesSet(S);
       return addr;
+    }, function (e) { delete brAsk[k]; throw e; });
+    return brAsk[k];
+  }
+  /* v1.8.15 (4.2): the one Wallet Standard "Hwallet" (Solana + Sui) connects both chains with ONE approval sheet that lists
+     each address; a silent connect only returns what this site already approved. Chains switched off or without an
+     address are left out. */
+  function brConnectMany(o, site, list, silent) {
+    list = (Array.isArray(list) ? list : []).filter(function (n) { return (n === 'solana' || n === 'sui') && !!brAddr(n) && !nsOff(n); });
+    function out() {
+      var r = {}, j = [];
+      list.forEach(function (n) {
+        if (!brIs(o, n)) return; var a = brAddr(n);
+        if (n === 'solana') r.solana = { publicKey: a };
+        else j.push(Promise.resolve().then(function () { return suiPk(a); }).then(function (pk) { r.sui = { address: a, publicKey: pk || null }; }, function () { r.sui = { address: a, publicKey: null }; }));
+      });
+      return Promise.all(j).then(function () { return r; });
+    }
+    var need = list.filter(function (n) { return !brIs(o, n); });
+    if (silent || !need.length) return out();
+    var k = o + '|ws'; if (brAsk[k]) return brAsk[k];
+    var cid = brCid(o), rows = need.map(function (n) { return { logo: chainLogo(n, cid), name: chainLabel(n, cid), addr: brAddr(n) }; });
+    brAsk[k] = hpConnect({ site: site, trust: site.trust, ns: need, accs: rows, chains: rows.map(function (x) { return { name: x.name, logo: x.logo }; }) }).then(function (ok) {
+      delete brAsk[k];
+      if (ok && ok.wallet) { switchWallet(ok.wallet, true); return brConnectMany(o, site, list, false); }
+      if (!ok) throw dErr(4001, 'User rejected the request');
+      var S = brSites(), r = S[o] || { ns: {}, cid: cid, since: Date.now() };
+      need.forEach(function (n) { r.ns[n] = 1; }); r.name = String(site.name || site.host).slice(0, 60); if (site.icon) r.icon = site.icon; r.cid = r.cid || cid; S[o] = r; brSitesSet(S);
+      return out();
     }, function (e) { delete brAsk[k]; throw e; });
     return brAsk[k];
   }
@@ -11586,6 +11730,7 @@ window.hwCrashPrompt = crashPrompt;
         /* v1.8.12 (push 17): Sui / Cardano / XRP Ledger connections */
         sui: brIs(o, 'sui') && A.sui ? { address: A.sui, publicKey: jget('hw-suipk:' + A.sui, '') || null } : null, ada: brIs(o, 'cardano') && !!A.ada, xrp: brIs(o, 'xrpl') && A.xrp ? { address: A.xrp } : null });
     }
+    if (m === 'hw_connect') return brConnectMany(o, site, p && p.ns, !!(p && p.silent));
     if (nsOff(ns)) return Promise.reject(dErr(4100, 'This network is turned off in Hwallet'));
     if (ns === 'eip155') {
       var c = brCid(o), on = brIs(o, 'eip155') && !!A.eth;
@@ -11680,7 +11825,7 @@ window.hwCrashPrompt = crashPrompt;
       if (!c || afMine(a) || S.addrs.some(function (x) { return x.a === a; }) || afBusy) return Promise.resolve(null);
       afBusy = true;
       sheet('<h3>Save this ' + esc(afChName(c)) + ' address?</h3><p class="sp mono">' + esc(short(a, 10)) + '</p><div class="inp"><input id="af-an" maxlength="40" placeholder="Name (optional)" autocomplete="off"></div>' +
-        '<div class="row2"><button class="btn" data-x>Not now</button><button class="btn pri" data-afs>Save</button></div><p class="hint">Saved addresses are in Settings \u203a Saved inputs.</p>', function (ov, close) {
+        '<div class="row2"><button class="btn" data-x>Not now</button><button class="btn pri" data-afs>Save</button></div><p class="hint">Saved addresses are in Browser \u22ee \u203a Browser settings \u203a Saved inputs.</p>', function (ov, close) {
         ov.querySelector('[data-afs]').onclick = function () { var S2 = afGet(); S2.addrs.unshift({ ch: c, a: a, name: ov.querySelector('#af-an').value.trim().slice(0, 40), t: Date.now() }); S2.addrs = S2.addrs.slice(0, 300); afPut(S2); close(); toast('Address saved'); buzz(8); };
         var obs = new MutationObserver(function () { if (!ov.isConnected) { obs.disconnect(); afBusy = false; } }); obs.observe(document.body, { childList: true });
       });
@@ -11735,17 +11880,24 @@ window.hwCrashPrompt = crashPrompt;
     });
   }
   /* ---------- Settings > Saved inputs ---------- */
-  var SIN_TAB = 'pw';
+  var SIN_TAB = '';   /* v1.8.15 (4.4): '' = the overview (four rows with counts); pw / em / in / ad = that list */
   function sinSum() { var S = afGet(), n = S.logins.length + S.emails.length + S.inputs.length + S.addrs.length; return (S.on ? '' : 'Off \u00b7 ') + (n ? n + ' saved' : 'Nothing saved'); }
   function sinHtml() { return '<div id="sin-body"></div>'; }
   function sinRow(i, t, s, acts) { return '<div class="kws-row sin-r"><span class="kws-t">' + esc(String(t).slice(0, 80)) + '<span class="kws-s">' + esc(String(s).slice(0, 80)) + '</span></span><span class="sin-a">' + acts.map(function (a) { return '<button type="button" class="sin-b" data-sa="' + a + '" data-si="' + i + '">' + ({ c: 'Copy', e: 'Edit', d: 'Delete' })[a] + '</button>'; }).join('') + '</span></div>'; }
   function sinPaint() {
-    var el = (typeof kq === 'function' ? kq('#sin-body') : null) || document.getElementById('sin-body'); if (!el) return;
+    var el = document.getElementById('sin-body'); if (!el) { try { el = kq('#sin-body'); } catch (e) { el = null; } } if (!el) return;
     var S = afGet(), body = '';
-    var tabs = [['pw', 'Passwords', S.logins.length], ['em', 'Emails', S.emails.length], ['in', 'Inputs', S.inputs.length], ['ad', 'Addresses', S.addrs.length]];
-    var hd = '<div class="kws-grp"><button type="button" class="kws-row kws-tl' + (S.on ? ' on' : '') + '" id="sin-on" aria-pressed="' + !!S.on + '"><span class="kws-t">Offer to save<span class="kws-s">' + (S.on ? 'On \u00b7 never in incognito tabs' : 'Off') + '</span></span>' + KSW + '</button>' +
-      (Object.keys(S.never).length ? '<button type="button" class="kws-row" id="sin-nv"><span class="kws-t">Never-save sites<span class="kws-s">' + esc(Object.keys(S.never).slice(0, 4).join(', ')) + ' \u00b7 tap to clear</span></span></button>' : '') + '</div>' +
-      '<div class="seg wide sin-seg">' + tabs.map(function (x) { return '<button type="button" data-st="' + x[0] + '" class="' + (SIN_TAB === x[0] ? 'on' : '') + '">' + x[1] + (x[2] ? ' ' + x[2] : '') + '</button>'; }).join('') + '</div>';
+    var tabs = [['pw', 'Passwords', S.logins.length], ['em', 'Emails', S.emails.length], ['in', 'Inputs', S.inputs.length], ['ad', 'Addresses', S.addrs.filter(function (x) { return chainOn(x.ch); }).length]];
+    var SIC = { pw: 'M12.65 10A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z', em: 'M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z', in: 'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z', ad: 'M21 18v1c0 1.1-.9 2-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14c1.1 0 2 .9 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z' };
+    if (!SIN_TAB) {
+      el.innerHTML = '<div class="kws-grp"><button type="button" class="kws-row kws-tl' + (S.on ? ' on' : '') + '" id="sin-on" aria-pressed="' + !!S.on + '"><span class="kws-t">Offer to save<span class="kws-s">' + (S.on ? 'On \u00b7 never in incognito tabs' : 'Off') + '</span></span>' + KSW + '</button>' +
+        (Object.keys(S.never).length ? '<button type="button" class="kws-row" id="sin-nv"><span class="kws-t">Never-save sites<span class="kws-s">' + esc(Object.keys(S.never).slice(0, 4).join(', ')) + ' \u00b7 tap to clear</span></span></button>' : '') + '</div>' +
+        '<div class="kws-grp sin-list">' + tabs.map(function (x) { return '<button type="button" class="kws-row sin-cat" data-st="' + x[0] + '"><span class="kws-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="' + SIC[x[0]] + '"/></svg></span><span class="kws-t">' + x[1] + '</span><span class="sin-n">' + (x[2] || '') + '</span><span class="sin-chev" aria-hidden="true">\u203a</span></button>'; }).join('') + '</div>' +
+        (S.logins.length + S.emails.length + S.inputs.length + S.addrs.length ? '' : '<p class="hw-kp">Nothing saved yet.</p>');
+      return;
+    }
+    var tname = (tabs.filter(function (x) { return x[0] === SIN_TAB; })[0] || [0, ''])[1];
+    var hd = '<button type="button" class="sin-back" id="sin-back">\u2039 Saved inputs</button><div class="kws-sec">' + esc(tname) + '</div>';
     if (SIN_TAB === 'pw') body = S.logins.map(function (x, i) { return sinRow(i, x.host, x.user || '(no username)', ['c', 'e', 'd']); }).join('');
     else if (SIN_TAB === 'em') body = S.emails.map(function (x, i) { return sinRow(i, x.v, 'Email', ['c', 'e', 'd']); }).join('');
     else if (SIN_TAB === 'in') body = S.inputs.map(function (x, i) { return sinRow(i, x.v, x.host + ' \u00b7 ' + x.f, ['c', 'e', 'd']); }).join('');
@@ -11753,7 +11905,12 @@ window.hwCrashPrompt = crashPrompt;
       var by = {}; S.addrs.forEach(function (x, i) { if (!chainOn(x.ch)) return; (by[x.ch] = by[x.ch] || []).push(sinRow(i, x.name || short(x.a, 10), x.name ? short(x.a, 10) : afChName(x.ch), ['c', 'e', 'd'])); });
       body = Object.keys(by).map(function (c) { return '<div class="kws-sec">' + esc(afChName(c)) + '</div><div class="kws-grp">' + by[c].join('') + '</div>'; }).join('');
     }
-    el.innerHTML = hd + (body ? (SIN_TAB === 'ad' ? body : '<div class="kws-grp">' + body + '</div>') : '<p class="hw-kp">Nothing saved here yet. The Browser offers to save when you sign in, send a form or paste an address (never in incognito tabs).</p>');
+    el.innerHTML = hd + (body ? (SIN_TAB === 'ad' ? body : '<div class="kws-grp">' + body + '</div>') : '<p class="hw-kp">Nothing saved here yet.</p>');
+  }
+  /* v1.8.15 (4.4): Browser ⋮ > Browser settings > Saved inputs */
+  function brSinSheet() {
+    SIN_TAB = '';
+    brSheet('<h3>Saved inputs</h3>' + sinHtml(), function (ov) { var sh = ov.querySelector('.sheet') || ov; sh.classList.add('sin-sh'); sinBind(sh); sinPaint(); });
   }
   function sinEdit(title, fields, done) {
     sheet('<h3>' + esc(title) + '</h3>' + fields.map(function (f, i) { return '<div class="lbl">' + esc(f.l) + '</div><div class="inp"><input data-sf="' + i + '" type="' + (f.pw ? 'password' : 'text') + '" value="' + esc(f.v || '') + '" maxlength="' + (f.max || 200) + '" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'; }).join('') +
@@ -11769,6 +11926,7 @@ window.hwCrashPrompt = crashPrompt;
       if (b.id === 'sin-on') { ktick(); S.on = !S.on; afPut(S); sinPaint(); return; }
       if (b.id === 'sin-nv') { ktick(); S.never = {}; afPut(S); sinPaint(); toast('Hwallet offers to save on every site again'); return; }
       if (b.hasAttribute('data-st')) { ktick(); SIN_TAB = b.getAttribute('data-st'); sinPaint(); return; }
+      if (b.id === 'sin-back') { ktick(); SIN_TAB = ''; sinPaint(); return; }
       var a = b.getAttribute('data-sa'), i = +b.getAttribute('data-si'); if (!a) return;
       var L = SIN_TAB === 'pw' ? S.logins : SIN_TAB === 'em' ? S.emails : SIN_TAB === 'in' ? S.inputs : S.addrs, x = L[i]; if (!x) return;
       buzz(6);
@@ -11789,9 +11947,10 @@ window.hwCrashPrompt = crashPrompt;
   window.hwBrReq = function (tab, origin, json) {
     var q; try { q = JSON.parse(json); } catch (e) { return; }
     if (!q || typeof q.id !== 'string') return;
-    var o = brOrigin(origin);
+    var o = brOrigin(origin), before = [];
+    try { before = o ? Object.keys((brSites()[o] || {}).ns || {}) : []; } catch (e) {}
     var job = !o ? Promise.reject(dErr(4100, 'Only https sites can use the wallet')) : q.ns === 'hwaf' ? afHandle(tab, o, q) : brHandle(o, q);
-    job.then(function (r) { brReply(tab, q.id, r); }, function (e) {
+    job.then(function (r) { try { brIncTrack(tab, o, before); } catch (e) {} brReply(tab, q.id, r); }, function (e) {
       /* EIP-1193: 4001 only for a user rejection; everything else that has no code of its own is -32603 */
       var c = e && e.code; if (c == null || c === 5000 || typeof c !== 'number') c = /reject|cancel/i.test(String(e && e.message)) ? 4001 : -32603;
       brReply(tab, q.id, null, { code: c, message: e && e.message || String(e) });
@@ -14057,7 +14216,7 @@ window.hwCrashPrompt = crashPrompt;
       var st = XS.st; if (!st) return XS.busy ? '<div class="xs-l"><span class="spin"></span><span>Starting the Monero scan\u2026</span></div>' : '';
       var ago = Math.max(0, Math.round((Date.now() - (st.at || 0)) / 60000));
       return '<div class="xs-l ok"><span>Synced to block ' + (st.height || 0).toLocaleString('en-US') + (ago ? ' \u00b7 ' + ago + ' min ago' : ' \u00b7 just now') + ' \u00b7 ' + esc(xmrNodeName()) + '</span>' + (XS.busy ? '<span class="spin"></span>' : '') + '</div>' +
-        (st.kiMissing ? '<div class="xs-l"><span>' + st.kiMissing + ' received output' + (st.kiMissing > 1 ? 's are' : ' is') + ' not checked for spends. Run Settings \u203a Monero \u203a Sync spent status.</span></div>' : '');
+        (st.kiMissing ? '<div class="xs-l"><span>' + st.kiMissing + ' received output' + (st.kiMissing > 1 ? 's are' : ' is') + ' not checked for spends yet. Kwallet checks ' + (st.kiMissing > 1 ? 'them' : 'it') + ' at your next send.</span></div>' : '');
     }
     var pct = Math.max(0, Math.min(100, Math.floor((p.pct || 0) * 100)));
     var eta = p.eta > 0 ? (p.eta >= 3600 ? Math.floor(p.eta / 3600) + ' h ' + Math.round((p.eta % 3600) / 60) + ' min' : p.eta >= 60 ? Math.round(p.eta / 60) + ' min' : p.eta + ' s') : '';
@@ -14298,10 +14457,28 @@ window.hwCrashPrompt = crashPrompt;
     /* v1.8.8 (push 13, R9d): the build can always be cancelled (the engine is stopped and restarted from its saved cache, so the
        scan goes on); each phase has a hard limit with a plain error */
     xmrCancelBtn(true, function () { me.xcancel = true; xeStop(); });
-    xe('build', { to: to, amount: SND.max ? '0' : SND.amt.toString(), max: !!SND.max, level: lvl }, 150000).catch(function (e) {
+    var buildArgs = { to: to, amount: SND.max ? '0' : SND.amt.toString(), max: !!SND.max, level: lvl };
+    function buildFail(e) {
       if (me.xcancel) throw Object.assign(new Error('Cancelled'), { quiet: true, xc: true });
       if (/timed out/i.test(String(e && e.message))) { xeStop(); throw new Error('The Monero node was too slow. Pick another node in Settings > Monero and try again'); }
       throw e;
+    }
+    /* v1.8.15 (Monero 4.1 D): the wallet can only spend outputs whose key image it knows (monero_c: "No enotes available to
+       spend"). When the build fails for that reason and outputs are still unchecked, Hwallet asks Kwallet for their key images
+       right here (one Kwallet sheet), imports them and builds once more: no manual Sync spent status, also on the first send
+       after pairing (at pairing time the wallet has no outputs yet, so there is nothing to check then). */
+    xe('build', buildArgs, 150000).catch(function (e) {
+      var m0 = String(e && e.message || e);
+      if (me.xcancel || !/No enotes available|not enough unlocked|unknown key image/i.test(m0) || !((XS.st && (XS.st.kiNeed > 0 || XS.st.kiMissing > 0)) || XS.st && XS.st.kiNeed == null)) return buildFail(e);
+      xmrCancelBtn(false);
+      if ($('go')) $('go').textContent = 'Checking spendable XMR\u2026';
+      return xmrKiPass(true).then(function (k) {
+        if (me.xcancel) throw Object.assign(new Error('Cancelled'), { quiet: true, xc: true });
+        if (k && k.state) xmrApply(k.state, false);
+        if ($('go')) $('go').textContent = 'Preparing\u2026';
+        xmrCancelBtn(true, function () { me.xcancel = true; xeStop(); });
+        return xe('build', buildArgs, 150000).catch(buildFail);
+      });
     }).then(function (b) {
       xmrCancelBtn(false);
       if (me.xcancel) throw Object.assign(new Error('Cancelled'), { quiet: true, xc: true });
@@ -14324,7 +14501,7 @@ window.hwCrashPrompt = crashPrompt;
       if ($('go')) $('go').textContent = 'Sending\u2026';
       return xe('submit', { signed: res.signed }, 120000).then(function (o) {
         /* signed key images (with proofs) from Kwallet: spent status of every output is checked against the node */
-        if (res.ki && res.ki.length) xe('importKI', { ki: res.ki, offset: res.kiOffset | 0 }, 120000).then(function (k) { if (k && k.state) xmrApply(k.state, false); }, function () {});
+        if (res.ki && res.ki.length) xe('importKI', { ki: res.ki, offset: res.kiOffset | 0, pks: built && built.pks || null }, 120000).then(function (k) { if (k && k.state) xmrApply(k.state, false); }, function () {});
         return { hashes: o.hashes || res.hashes || [], state: o.state, amount: res.amount || built.amount };
       });
     }).then(function (o) {
@@ -14343,7 +14520,7 @@ window.hwCrashPrompt = crashPrompt;
       xmrCancelBtn(false);
       SND.busy = false; if ($('go')) $('go').textContent = 'Continue';
       var m = String(e && e.message || e);
-      if (/No enotes available|not enough unlocked|unknown key image|key images? (are|is) (not|un)known/i.test(m)) m = 'Hwallet doesn\u2019t know which Monero it can spend yet. Run Settings \u203a Monero \u203a Sync spent status once, then retry';
+      if (/No enotes available|not enough unlocked|unknown key image|key images? (are|is) (not|un)known/i.test(m)) m = 'Hwallet doesn\u2019t know which Monero it can spend yet (key images missing). Try again; Settings \u203a Monero \u203a Sync spent status repairs it';
       else if (/double spend|already spent|key image/i.test(m)) m = 'An output is already spent. Run Settings \u203a Monero \u203a Sync spent status, then retry';
       toast((e && e.quiet ? '' : 'Not sent: ') + m.slice(0, 160)); validate();
       /* R9d: nothing was submitted: the scan may run again now (not after the 4-minute hold) */
@@ -14364,18 +14541,28 @@ window.hwCrashPrompt = crashPrompt;
   }
 
   /* ---------- Settings > Monero ---------- */
+  /* v1.8.15 (Monero 4.1 D): one key-image pass, used by Send (automatically, when the build needs it) and by
+     Settings > Monero > Sync spent status (now a repair tool). Output-order contract: Hwallet exports ALL outputs (offset 0)
+     with the list of their public keys in the same order (pks); Kwallet answers ki[i] for output i; the native import checks
+     each signature against output i (wallet2) and its fallback matches by public key (HwXmrN.kt, above outputPks). */
+  function xmrKiPass(inSend) {
+    return xe('outputs', {}, 120000).then(function (o) {
+      try { console.log('xmr-ki: exported ' + (o.n != null ? o.n : '?') + ' outputs, ' + (o.need != null ? o.need : '?') + ' without key image, ' + Math.round(String(o.outputs || '').length / 2048) + ' KB'); } catch (e) {}
+      var now = Date.now();
+      return callK({ v: 2, id: rid(16), action: 'sign', chain: 'xmr', kind: 'xmr-ki', from: xmrPrimary(), to: xmrPrimary(), token: 'native', tokenSym: 'XMR', tokenDec: 12, amount: '0', fee: { level: 'medium', levels: { medium: { fee: '0' } } }, xmr: { outputs: o.outputs, n: o.n != null ? o.n : null }, inSend: !!inSend, live: false, created: now, expires: now + 120000 })
+        .then(function (res) { return { res: res, pks: o.pks || null }; });
+    }).then(function (x) {
+      var res = x.res;
+      if (!res || res.status !== 'signed' || !res.ki) throw Object.assign(new Error({ rejected: 'Cancelled in Kwallet', expired: 'The request expired. Try again' }[res && res.status] || (res && res.error) || 'Kwallet didn\u2019t answer'), { quiet: !!(res && (res.status === 'rejected' || res.status === 'expired')) });
+      return xe('importKI', { ki: res.ki, offset: res.kiOffset | 0, pks: x.pks }, 180000);
+    });
+  }
   function xmrKiSync() {
     if (!xmrReady() || !(A.paired && A.paired.xmr)) { toast('Pair Monero with Kwallet first'); return; }
     if (!(window.HwNative && HwNative.sign)) { toast('Works in the Hwallet app with Kwallet on the same phone'); return; }
     if (xmrSyncing()) { toast('Monero is syncing (' + xmrLeftTxt() + '). Try again when it\u2019s done'); return; }
     toast('Preparing\u2026');
-    xe('outputs', {}, 120000).then(function (o) {
-      var now = Date.now();
-      return callK({ v: 2, id: rid(16), action: 'sign', chain: 'xmr', kind: 'xmr-ki', from: xmrPrimary(), to: xmrPrimary(), token: 'native', tokenSym: 'XMR', tokenDec: 12, amount: '0', fee: { level: 'medium', levels: { medium: { fee: '0' } } }, xmr: { outputs: o.outputs }, live: false, created: now, expires: now + 120000 });
-    }).then(function (res) {
-      if (!res || res.status !== 'signed' || !res.ki) throw new Error({ rejected: 'Cancelled in Kwallet', expired: 'The request expired. Try again' }[res && res.status] || (res && res.error) || 'Kwallet didn\u2019t answer');
-      return xe('importKI', { ki: res.ki, offset: res.kiOffset | 0 }, 180000);
-    }).then(function (k) { if (k && k.state) xmrApply(k.state, false); toast(k && k.real === false ? 'Spent outputs hidden, but sending may still fail: ' + String(k.realErr || '').slice(0, 90) : 'Spent status synced. Monero is ready to send'); buzz([10, 40, 10]); }, function (e) { toast(String(e && e.message || e).slice(0, 140)); });
+    xmrKiPass(false).then(function (k) { if (k && k.state) xmrApply(k.state, false); toast(k && k.real === false ? 'Spent outputs hidden, but sending may still fail: ' + String(k.realErr || '').slice(0, 90) : 'Spent status synced. Monero is ready to send'); buzz([10, 40, 10]); }, function (e) { toast(String(e && e.message || e).slice(0, 220)); });
   }
   /* v1.8.4 (push 10): compact single-line rows in one card, a radio on the selected one, live latency per node; a custom node
      that answers is saved as its own row (host as name, x to remove), selected, and the input clears for the next one */
@@ -14442,7 +14629,7 @@ window.hwCrashPrompt = crashPrompt;
         '<div class="kws-sec">Wallet</div><div class="kws-grp">' + krow('kws-xh', HIx, 'Restore height', xmrHeight() >= 0 ? 'Block ' + xmrHeight().toLocaleString('en-US') : 'Not set') +
         krow('kws-xre', 'M17.65 6.35A7.958 7.958 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z', 'Rescan from restore height', null) +
         krow('kws-xsc', 'M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2z', 'Addresses scanned', xmrSubMax() > 2 ? 'Main + #1\u2013#' + xmrSubMax() + ' (paired)' : 'Main + 2 subaddresses') + '</div>' +
-        '<div class="kws-sec">Scan</div><div class="kws-grp">' + krow('kws-xst', SIx, 'Scan status', esc(xmrScanSum())) + krow('kws-xki', KIx, 'Sync spent status', null) + '</div>' +
+        '<div class="kws-sec">Scan</div><div class="kws-grp">' + krow('kws-xst', SIx, 'Scan status', esc(xmrScanSum())) + krow('kws-xki', KIx, 'Sync spent status', 'Repair only \u00b7 Send checks this on its own') + '</div>' +
         (nat('sign') ? '<div class="kws-sec">Pairing</div><div class="kws-grp">' + krow('kws-xpair', 'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z', 'Pair again from Kwallet', null) + '</div>' : '');
     }
     return inl ? rws : '<div class="kws-sec">Monero</div><div class="kws-grp">' + rws + '</div>';

@@ -4,6 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import android.util.Log
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -251,7 +252,7 @@ object HwXmrN {
                     "importKI" -> held { importKI(a) }
                     /* v1.8.13: Sync spent status exports the outputs with wallet2's refresh paused (as build() does), so it never
                        waits behind a slow refresh on this thread; released afterwards, also when it fails */
-                    "outputs" -> held { JSONObject().put("outputs", outputsHex(c)) }
+                    "outputs" -> held { outputsPack(c) }
                     "release" -> { hold = 0; arm(); true }
                     "save" -> { store(true); true }
                     "close" -> { close(true); true }
@@ -447,7 +448,7 @@ object HwXmrN {
     /* ---------- state for the page (same shape as the WASM engine's hState) ---------- */
     private fun state(): JSONObject? {
         val L = lib ?: return null; val p = w ?: return null
-        val coins = L.MONERO_Wallet_coins(p); val per = HashMap<String, Array<BigInteger>>(); val used = HashSet<String>(); var kiMissing = 0
+        val coins = L.MONERO_Wallet_coins(p); val per = HashMap<String, Array<BigInteger>>(); val used = HashSet<String>(); var kiMissing = 0; var kiNeed = 0
         val accs = sortedSetOf(0)
         loadChecked()
         if (coins != null) {
@@ -460,6 +461,7 @@ object HwXmrN {
                 val amt = BigInteger(java.lang.Long.toUnsignedString(L.MONERO_CoinsInfo_amount(ci)))
                 val e = per.getOrPut(k) { arrayOf(BigInteger.ZERO, BigInteger.ZERO) }
                 e[0] = e[0].add(amt); if (b(L.MONERO_CoinsInfo_unlocked(ci))) e[1] = e[1].add(amt)
+                if (!b(L.MONERO_CoinsInfo_keyImageKnown(ci))) kiNeed++   /* v1.8.15: monero_c builds only from outputs whose key image is known */
                 if (!b(L.MONERO_CoinsInfo_keyImageKnown(ci))) { val pk = (L.MONERO_CoinsInfo_pubKey(ci) ?: "").lowercase(); if (synchronized(checked) { !checked.contains(pk) }) kiMissing++ }
             }
         }
@@ -498,7 +500,7 @@ object HwXmrN {
         txs.sortWith(compareByDescending<JSONObject> { if (it.optLong("ts") == 0L) 9e15.toLong() else it.optLong("ts") }.thenByDescending { it.optLong("h") })
         val ta = JSONArray(); txs.take(400).forEach { ta.put(it) }
         val st = JSONObject().put("height", h).put("daemon", maxOf(dh, h)).put("bal", bal.toString()).put("unl", unl.toString())
-            .put("unl0", u(L.MONERO_Wallet_unlockedBalance(p, 0))).put("subs", subs).put("txs", ta).put("kiMissing", kiMissing).put("at", System.currentTimeMillis()).put("eng", "native")
+            .put("unl0", u(L.MONERO_Wallet_unlockedBalance(p, 0))).put("subs", subs).put("txs", ta).put("kiMissing", kiMissing).put("kiNeed", kiNeed).put("at", System.currentTimeMillis()).put("eng", "native")
         if (paused) st.put("paused", 1)
         return st
     }
@@ -518,6 +520,45 @@ object HwXmrN {
     private fun outputsHex(c: Context): String {
         val L = lw(); val p = wp(); val f = tmp(c, "outs")
         try { if (!b(L.MONERO_Wallet_exportOutputs(p, f.absolutePath, 1)) || !f.exists()) throw IllegalStateException("Exporting outputs failed: " + werr()); return hex(f.readBytes()) } finally { f.delete() }
+    }
+
+    /* v1.8.15 (Monero 4.1 D/E): THE OUTPUT-ORDER CONTRACT between Hwallet (native wallet2, monero_c) and Kwallet (monero-ts
+     * wallet2 in WebAssembly).
+     *  1. Hwallet exports ALL outputs: wallet2 export_outputs(all=true) = m_transfers[0..n) in order, offset 0. A partial export
+     *     (all=false, only new outputs) is NOT possible with Kwallet's design: Kwallet signs in a throwaway wallet that starts
+     *     empty every time, and wallet2 import_outputs throws "Imported outputs omit more outputs that we know of" when the
+     *     offset is beyond the outputs it knows. So the full set is sent, but only when it is needed (see the page).
+     *  2. Kwallet's wallet imports them at the same indices and exportKeyImages(all=true) returns ki[i] for output i, offset 0.
+     *  3. Import, real path: importTrezorEncryptedKeyImagesJson -> wallet2::import_key_images(ski, offset 0, check_spent).
+     *     wallet2 checks every signature against m_transfers[i]'s output public key, so a shifted list throws instead of
+     *     marking the wrong output. It is the same wallet2 call the key-image FILE import ends in (MONERO_Wallet_importKeyImages
+     *     is exported too, but that file needs wallet2's chacha key from the view key through cn_slow_hash, which Hwallet does
+     *     not have outside wallet2, so the Trezor JSON envelope is kept; monero_c's API asks for a trusted daemon for it).
+     *  4. Fallback (Android < 9, or the real import failed): ki[i] is matched to an output by PUBLIC KEY, using the list of
+     *     output public keys taken at export time in the same m_transfers order (pks below), never by array position against
+     *     a later state and never by CoinsInfo.internalOutputIndex (that is the output's index inside its own transaction,
+     *     not its index in the wallet; 1.8.14 used it, which mapped key images to the wrong outputs).
+     */
+    private fun outputPks(): JSONArray {
+        val L = lw(); val p = wp(); val arr = JSONArray()
+        val coins = L.MONERO_Wallet_coins(p) ?: return arr
+        L.MONERO_Coins_refresh(coins)   /* rows are m_transfers in order (monero_c coin control: one row per transfer detail) */
+        for (i in 0 until L.MONERO_Coins_count(coins)) { val ci = L.MONERO_Coins_coin(coins, i); arr.put(if (ci == null) "" else (L.MONERO_CoinsInfo_pubKey(ci) ?: "").lowercase()) }
+        return arr
+    }
+    private fun kiNeed(): Int {
+        val L = lw(); val p = wp(); var n = 0
+        val coins = L.MONERO_Wallet_coins(p) ?: return 0
+        L.MONERO_Coins_refresh(coins)
+        for (i in 0 until L.MONERO_Coins_count(coins)) { val ci = L.MONERO_Coins_coin(coins, i) ?: continue
+            if (!b(L.MONERO_CoinsInfo_spent(ci)) && !b(L.MONERO_CoinsInfo_frozen(ci)) && !b(L.MONERO_CoinsInfo_keyImageKnown(ci))) n++ }
+        return n
+    }
+    /** the full export plus the output public keys in export order (same lock, nothing can refresh in between: held) */
+    private fun outputsPack(c: Context): JSONObject {
+        val pks = outputPks(); val out = outputsHex(c)
+        Log.i("HwXmr", "outputs export: n=${pks.length()} bytes=${out.length / 2} kiNeed=${kiNeed()}")
+        return JSONObject().put("outputs", out).put("pks", pks).put("n", pks.length()).put("need", kiNeed())
     }
 
     private val PRI = mapOf("slow" to 1, "medium" to 2, "fast" to 3, "fastest" to 4)
@@ -544,7 +585,8 @@ object HwXmrN {
             val raw = f.readBytes()
             if (!String(raw, 0, minOf(22, raw.size), Charsets.ISO_8859_1).startsWith("Monero unsigned tx set")) throw IllegalStateException("The wallet did not make an unsigned transaction")
             val fee = java.lang.Long.toUnsignedString(L.MONERO_PendingTransaction_fee(pt)); val amt = java.lang.Long.toUnsignedString(L.MONERO_PendingTransaction_amount(pt))
-            return JSONObject().put("unsigned", hex(raw)).put("outputs", outputsHex(c)).put("fee", fee).put("amount", amt).put("n", L.MONERO_PendingTransaction_txCount(pt)).put("weight", 0)
+            val pks = outputPks()
+            return JSONObject().put("unsigned", hex(raw)).put("outputs", outputsHex(c)).put("pks", pks).put("outs", pks.length()).put("fee", fee).put("amount", amt).put("n", L.MONERO_PendingTransaction_txCount(pt)).put("weight", 0)
         } finally { f.delete() }
     }
 
@@ -565,22 +607,28 @@ object HwXmrN {
     private fun importKI(a: JSONObject): JSONObject {
         val L = lw(); val p = wp()
         val ki = a.optJSONArray("ki") ?: JSONArray(); val off = a.optInt("offset", 0)
+        val pks = a.optJSONArray("pks")   /* v1.8.15: output public keys in export order (null from an older page) */
+        Log.i("HwXmr", "ki import: ki=${ki.length()} offset=$off pks=${pks?.length() ?: -1}")
+        if (pks != null && pks.length() > 0 && off + ki.length() != pks.length())
+            Log.w("HwXmr", "ki import: Kwallet returned ${ki.length()} key images (offset $off) for ${pks.length()} exported outputs")
         /* v1.8.14: the real import. Kwallet's key images + signatures go into wallet2 itself (the Trezor KI JSON path of
            monero_c), so every output's key image becomes known: sends can be built (no more "No enotes available to
            spend") and later spends are seen while syncing. The old freeze-only path stays as the fallback. */
         var realErr = ""
         if (off == 0 && ki.length() > 0) {
-            try { return importReal(L, p, ki) } catch (e: Throwable) { realErr = (e.message ?: e.toString()).take(200) }
+            try { return importReal(L, p, ki) } catch (e: Throwable) { realErr = (e.message ?: e.toString()).take(200); Log.w("HwXmr", "ki import: real path failed: $realErr") }
         }
         val coins = L.MONERO_Wallet_coins(p) ?: throw IllegalStateException("No outputs")
         L.MONERO_Coins_refresh(coins)
-        val byIdx = HashMap<Long, Pointer>()
-        for (i in 0 until L.MONERO_Coins_count(coins)) { val ci = L.MONERO_Coins_coin(coins, i) ?: continue; byIdx[L.MONERO_CoinsInfo_internalOutputIndex(ci).toLong()] = ci }
+        /* v1.8.15: match by output PUBLIC KEY (see the contract above outputPks). Rows are m_transfers in order, so without the
+           export-time list (older page) the row at offset + i is the same output only if nothing changed since the export. */
+        val byPk = HashMap<String, Pointer>(); val rows = ArrayList<Pointer?>()
+        for (i in 0 until L.MONERO_Coins_count(coins)) { val ci = L.MONERO_Coins_coin(coins, i); rows.add(ci); if (ci != null) (L.MONERO_CoinsInfo_pubKey(ci) ?: "").lowercase().takeIf { it.isNotEmpty() }?.let { byPk[it] = ci } }
         val ask = ArrayList<Pair<String, Pointer>>()
         for (i in 0 until ki.length()) {
             val hx = ki.optJSONObject(i)?.optString("hex") ?: ki.optString(i)
             if (!Regex("^[0-9a-f]{64}$").matches(hx)) continue
-            val ci = byIdx[(off + i).toLong()] ?: continue
+            val ci: Pointer = if (pks != null) { val pk = pks.optString(off + i, "").lowercase(); byPk[pk] ?: continue } else (rows.getOrNull(off + i) ?: continue)
             if (b(L.MONERO_CoinsInfo_spent(ci)) || b(L.MONERO_CoinsInfo_frozen(ci))) continue
             ask.add(hx to ci)
         }
@@ -600,6 +648,7 @@ object HwXmrN {
         }
         saveChecked()
         store(true)
+        Log.i("HwXmr", "ki import: fallback checked=${ask.size} spent=$spent unspent=$unspent")
         return JSONObject().put("spent", spent.toString()).put("unspent", unspent.toString()).put("real", false).put("realErr", realErr).put("state", state())
     }
 

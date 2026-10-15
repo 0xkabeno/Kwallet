@@ -12428,7 +12428,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98.14';
+const APP_VERSION = '3.98.15';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -22115,6 +22115,26 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   if (!window.__kwSign) return;
   try { var th = localStorage.getItem('wallet-theme') || 'light'; document.body.setAttribute('data-theme', th); } catch (e) {}
   var REQ = null, done = false;
+  /* v3.98.15 (Monero 4.1 A): the sign page reports each stage it reaches to SignActivity (KwSign.stage). If the sheet never
+     calls KwSign.ready(), the 30 s watchdog answers Hwallet with the last stage reached instead of a generic text, so a
+     failure on the phone names where it stopped (request read, route, Monero checks, record lookup, draw, ready, engine). */
+  var STG = { last: '', t0: Date.now() };
+  function stage(s) {
+    s = String(s || '').slice(0, 160); STG.last = s;
+    try { if (window.KwSign && KwSign.stage) KwSign.stage(s); } catch (e) {}
+    try { console.log('kwstage +' + (Date.now() - STG.t0) + 'ms ' + s); } catch (e) {}
+  }
+  /* v3.98.15 (4.1 C): work that must wait until the sheet has drawn and KwSign.ready() fired (the Monero engine boot) */
+  var isReady = false, readyQ = [];
+  function whenReady(f) { if (isReady) setTimeout(f, 30); else readyQ.push(f); }
+  function markReady() {
+    if (isReady) return; isReady = true;
+    try { if (KwSign.ready) KwSign.ready(); } catch (e) {}
+    stage('sheet ready (KwSign.ready)');
+    var q = readyQ; readyQ = [];
+    /* one more frame after ready, so the first paint is never starved by what follows */
+    setTimeout(function () { q.forEach(function (f) { try { f(); } catch (e) { try { console.warn('afterReady', e); } catch (x) {} } }); }, 60);
+  }
   /* wave A (#102): the sheet wears Hwallet's live theme (light/dark and its palette, Material You included), sent with
      the request. Only plain colours for known tokens are taken; anything else keeps Hwallet's classic palette. */
   var THK = ['bg', 'card', 'card2', 'line', 'border', 'text', 'muted', 'soft', 'acc', 'accI', 'pill', 'sel', 'up', 'dn', 'warn', 'warnBg', 'errBg'];
@@ -22173,9 +22193,13 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   function mount() {
     if (page.isConnected) return;
     document.body.appendChild(page);
-    requestAnimationFrame(function () { requestAnimationFrame(function () { page.classList.add('in'); try { if (KwSign.ready) KwSign.ready(); } catch (e) {} }); });
+    stage('mounted, waiting for first frame');
+    requestAnimationFrame(function () { requestAnimationFrame(function () { page.classList.add('in'); markReady(); }); });
+    /* v3.98.15: if no frame comes (a busy page), still tell Kwallet the sheet is there after 1.5 s */
+    setTimeout(function () { if (!isReady) { page.classList.add('in'); stage('no frame after 1.5 s, ready anyway'); markReady(); } }, 1500);
   }
   function fail(msg, fix) {
+    stage('fail: ' + String(msg || '').slice(0, 120));
     mount();
     var R0 = REQ || {}, dapp = R0.action === 'dapp';
     var hd = dapp ? { icon: R0.site && R0.site.icon, name: HWP.siteName(R0.site && R0.site.name, R0.origin) || 'App', url: String(R0.origin || '').replace(/\/+$/, '') } : { icon: HWICON, name: 'Hwallet', sub: 'Request from Hwallet' };
@@ -22199,12 +22223,22 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var raw = ''; try { raw = String(KwSign.request() || ''); } catch (e) {}
     /* P2a (f): a sign page Kwallet pre-loaded while warm has no request yet; SignActivity calls kwSignStart() when it adopts it */
     if (!raw && window.KwSign && KwSign.pending && KwSign.pending()) return;
-    started = true;
+    started = true; STG.t0 = Date.now();
+    stage('request read (' + Math.round(raw.length / 1024) + ' KB)');
     try { REQ = JSON.parse(raw || 'null'); } catch (e) { REQ = null; }
+    raw = '';
+    stage('request parsed' + (REQ && REQ.chain ? ' (' + String(REQ.chain).slice(0, 8) + (REQ.kind ? ' ' + String(REQ.kind).slice(0, 16) : '') + ')' : ''));
     document.documentElement.classList.add('kw-sheet'); page.classList.add('kss-sh');
     try { if (KwSign.sheet) KwSign.sheet(); } catch (e) {}
-    if (REQ && typeof REQ === 'object') applyTheme(REQ.theme);
-    route();
+    try { if (REQ && typeof REQ === 'object') applyTheme(REQ.theme); } catch (e) {}
+    /* v3.98.15 (4.1 B): an exception anywhere in route() / a page builder used to leave the sheet undrawn (the watchdog's
+       "could not open the signing screen"); now the real error is shown, with the stage it happened in */
+    try { stage('route entered'); route(); }
+    catch (e) {
+      var at = STG.last; try { console.error('route', e); } catch (x) {}
+      try { fail('Kwallet hit an error while opening this request: ' + String(e && e.message || e).slice(0, 160) + ' (at: ' + at + ')', 'Nothing was signed. Send this text to support if it happens again.'); }
+      catch (e2) { try { finish({ status: 'error', error: 'Kwallet error at ' + at + ': ' + String(e && e.message || e).slice(0, 160) }); } catch (x) {} }
+    }
   }
   window.kwSignStart = start;
   function route() {
@@ -22357,27 +22391,40 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     try { var full = load(); for (var j = 0; j < full.length; j++) if (full[j].xmrPrimary === from) return { id: full[j].id, label: full[j].label, index: full[j].index, addrs: full[j].addrs, seedType: full[j].seedType }; } catch (e) {}
     return null;
   }
+  /* v3.98.15 (4.1 C): a cheap shape check for the multi-MB hex blobs before the first paint (even length, hex at both ends);
+     the full scan runs after the tap (xmrHexFull), and wallet2 in the worker rejects anything malformed anyway */
+  function xmrHexish(v) { v = typeof v === 'string' ? v : ''; if (v.length < 2 || v.length % 2) return false; var re = /^[0-9a-f]*$/i; return re.test(v.slice(0, 8192)) && re.test(v.slice(-8192)); }
+  function xmrHexFull(v) { return typeof v === 'string' && v.length >= 2 && !(v.length % 2) && /^[0-9a-f]+$/i.test(v); }
   function xmrPage() {
+    stage('monero: route entered');
     var R = REQ, kind = R.kind || 'transfer', X = R.xmr || {};
     if (kind !== 'transfer' && kind !== 'xmr-ki') return fail('Kwallet does not know this kind of Monero request.', 'Update Kwallet and Hwallet to matching versions.');
     if (!/^4[1-9A-HJ-NP-Za-km-z]{94}$/.test(String(R.from || '')) || !xmrKeysOf(R.from)) return fail('The sending Monero address is not valid.');
     if (kind === 'transfer' && !xmrAddrOk(R.to)) return fail('The recipient is not a valid Monero address.');
-    if (!/^[0-9a-f]+$/i.test(String(X.outputs || '')) || (kind === 'transfer' && !/^[0-9a-f]+$/i.test(String(X.unsigned || '')))) return fail('This Monero request is incomplete.', 'Update Hwallet to v1.8 or later.');
+    if (!xmrHexish(X.outputs) || (kind === 'transfer' && !xmrHexish(X.unsigned))) return fail('This Monero request is incomplete.', 'Update Hwallet to v1.8 or later.');
     if (kind === 'transfer' && R.amount !== 'max' && !(U(R.amount) > 0n)) return fail('Bad amount.');
+    stage('monero: validation passed (outputs ' + Math.round(String(X.outputs).length / 2048) + ' KB' + (X.n != null ? ', ' + (X.n | 0) + ' outputs' : '') + ')');
     var rec = xmrRecFor(R.from);
+    stage('monero: xmrRecFor ' + (rec ? 'found' : 'none'));
     try { if (!rec && window.KwE2E && KwE2E.on()) rec = { id: 'e2e', label: 'E2E test wallet', index: 0, e2e: true }; } catch (e) {}
     if (!rec) return fail('No paired seed owns ' + short(R.from) + '.', 'Pair this seed in <b>Settings &gt; Hwallet signer</b>, then pair again in Hwallet.');
     var fee = U(X.fee) || 0n, amt = kind === 'transfer' ? (R.amount === 'max' ? U(X.amount) : U(R.amount)) : 0n;
     S = { xmr: true, R: R, c: 'xmr', kind: kind, info: { name: 'Monero', sym: 'XMR', dec: 12, logo: 'monero' }, net: 'xmr', rec: rec, tok: null, dec: 12, gdec: 12, sym: 'XMR', gsym: 'XMR', armed: false,
       level: (R.fee && R.fee.level) || 'medium', last: { amount: amt, fee: fee, err: null }, total: Math.max(1000, R.expires - Date.now()) };
     lastFeed = Date.now();
-    xmrDraw(); mount(); arm(700);
+    xmrDraw(); stage('monero: xmrDraw done'); mount(); arm(700);
     setInterval(tickExp, 250);
     /* warm the engine while the user reads. v3.98.13: a start failure shows at once with its real reason (it used to be
-       swallowed here, and Confirm then waited for the 110 s limit) */
-    kxStart().then(function () { return kx('boot', {}, 60000); }).catch(function (e) {
-      if (done || busy) return; kxStop();
-      fail('The Monero engine could not start: ' + String(e && e.message || e).replace(/^The Monero engine could not start:?\s*/, '').slice(0, 200), 'Nothing was signed. Close Kwallet, open it again, then retry in Hwallet.');
+       swallowed here, and Confirm then waited for the 110 s limit). v3.98.15 (4.1 C): only after the sheet has drawn and
+       KwSign.ready() fired, so the worker (3 MB script + WebAssembly) never competes with the first paint. */
+    whenReady(function () {
+      if (done) return;
+      stage('monero: engine boot started');
+      kxStart().then(function () { return kx('boot', {}, 60000); }).then(function () { stage('monero: engine boot finished'); }).catch(function (e) {
+        stage('monero: engine boot failed');
+        if (done || busy) return; kxStop();
+        fail('The Monero engine could not start: ' + String(e && e.message || e).replace(/^The Monero engine could not start:?\s*/, '').slice(0, 200), 'Nothing was signed. Close Kwallet, open it again, then retry in Hwallet.');
+      });
     });
   }
   function xmrDraw() {
@@ -22413,7 +22460,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var R = S.R, X = R.xmr || {};
     if (Date.now() > R.expires) return finish({ status: 'expired' });
     if (S.rec && S.rec.e2e) return finish({ status: 'rejected', error: 'The E2E test wallet cannot sign' });
-    setBusy(true, 'Signing\u2026');
+    if (!xmrHexFull(X.outputs) || (S.kind === 'transfer' && !xmrHexFull(X.unsigned))) return fail('This Monero request is damaged (not hex).', 'Nothing was signed. Start again in Hwallet.');
+    setBusy(true, 'Signing\u2026'); stage('monero: signing (' + S.kind + ')');
     var keys = null;
     try {
       var sec = await getSecret();
@@ -22424,9 +22472,16 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (keys.address !== R.from) throw new Error('The paired seed no longer derives ' + short(R.from) + '.');
       await new Promise(function (r) { setTimeout(r, 16); });
       if (S.kind === 'xmr-ki') {
+        /* Output-order contract (v3.98.15, 4.1 E): Hwallet exports ALL outputs (wallet2 export_outputs all=true, offset 0). The
+           throwaway wallet here imports them at the same indices (wallet2 import_outputs keeps index = offset + i) and
+           exportKeyImages(all=true) returns one (key image, signature) per output in that same order, kiOffset 0. So ki[i]
+           belongs to Hwallet's output i (m_transfers[i]); wallet2 on Hwallet re-checks every signature against that output's
+           public key when it imports, so a mismatch fails loudly instead of marking the wrong output. A partial export
+           (all=false) cannot work here: this wallet starts empty and wallet2 refuses an offset beyond the outputs it knows. */
         var k = await kx('kKeyImages', { address: keys.address, view: keys.view, spend: keys.spend, outputs: X.outputs }, 110000); keys = null; kxStop();
+        if (X.n != null && (k.ki || []).length !== (X.n | 0)) try { console.warn('xmr-ki: ' + (k.ki || []).length + ' key images for ' + (X.n | 0) + ' outputs'); } catch (e) {}
         try { pushActivity('act', 'Hwallet: Monero spent status synced'); } catch (e) {}
-        return success({ status: 'signed', chain: 'xmr', kind: 'xmr-ki', ki: k.ki, kiOffset: k.kiOffset | 0 }, 'Done');
+        return success({ status: 'signed', chain: 'xmr', kind: 'xmr-ki', ki: k.ki, kiOffset: k.kiOffset | 0, n: k.imported | 0 }, 'Done');
       }
       var r = await kx('kSign', { address: keys.address, view: keys.view, spend: keys.spend, outputs: X.outputs, unsigned: X.unsigned }, 110000); keys = null; kxStop();
       /* what the set really does, read by wallet2 from the set itself: it must pay R.to exactly, nobody else, at the fee shown */
