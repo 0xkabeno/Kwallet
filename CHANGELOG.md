@@ -1,5 +1,9 @@
 # Changelog
 
+## Hwallet v1.8.17 (2026-10-15, work in progress; Kwallet stays 3.98.16)
+
+- Hwallet › Settings: the lime "Support Hwallet · Free and open source" donation card (ETH / SOL / BTC / XMR, icon, short address, tap to copy) is back on the main Settings page, directly under the settings list; the separate "Support Hwallet" row and page are gone. The page is a flex column measured live down to the bottom bar (bar height + gesture inset, so OG, M3 and MIUIX all fit): header, list and card on one screen, no scrolling, nothing under the bottom bar or the status bar. On shorter screens the list and card rows tighten (44 px, then 40 px rows; card rows 36–52 px); only a very short screen scrolls. versionName 1.8.17 / versionCode 10817 (from APP_VERSION).
+
 ## Kwallet v3.98.16 · Hwallet v1.8.16 (2026-10-15, work in progress)
 
 Working build for phone testing. Not tested on a device or emulator: static checks (`node --check` of every inline and injected script, Kotlin brace/comment check, a stubbed run of the Browser providers, BIP-322 checked against the BIP's to_spend / to_sign vectors, PSBT sign + extract checked with bitcoinjs) and the CI build. The Monero fix is ready to test on a device, not confirmed.
