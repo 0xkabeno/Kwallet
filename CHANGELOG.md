@@ -1,5 +1,9 @@
 # Changelog
 
+## Hwallet v1.8.20 (2026-10-15, work in progress; Kwallet stays 3.98.17)
+
+- Monero: Kwallet's "Failed to authenticate ciphertext" means the outputs it got were exported by a wallet whose view key is not the paired one. Every Monero op Kwallet signs for (outputs export for key images, transaction build) now carries the paired primary address; Hwallet's native engine refuses to run it on any other open wallet (WALLET_MISMATCH), Hwallet reopens the paired wallet and retries once, and the export reports which wallet it came from so a wrong one never reaches Kwallet. Still unconfirmed on device.
+
 ## Kwallet v3.98.17 · Hwallet v1.8.19 (2026-10-15, work in progress)
 
 - Monero: Kwallet's engine no longer swallows an output-import failure. monero-ts resolved importOutputs() with the error text instead of rejecting, so Kwallet returned zero key images and Hwallet fell back silently ("sending may still fail:" with no reason). Kwallet now fails the request with the real reason ("Kwallet could not read Hwallet's Monero outputs: …"), both for Sync spent status and for Send; Hwallet names an empty or offset answer and shows the raw engine error next to its hint when a send fails. Diagnostic step; Monero send still unconfirmed on device.

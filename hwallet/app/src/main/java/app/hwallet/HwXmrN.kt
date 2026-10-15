@@ -247,12 +247,12 @@ object HwXmrN {
                     "server", "nodes" -> { nodes(a); true }
                     "newSub" -> newSub(a.optString("label"))
                     "label" -> { lw().MONERO_Wallet_setSubaddressLabel(wp(), 0, a.optInt("i"), a.optString("label").take(40)); store(true); true }
-                    "build" -> build(c, a)
+                    "build" -> { expect(a); build(c, a) }
                     "submit" -> submit(c, a)
                     "importKI" -> held { importKI(a) }
                     /* v1.8.13: Sync spent status exports the outputs with wallet2's refresh paused (as build() does), so it never
                        waits behind a slow refresh on this thread; released afterwards, also when it fails */
-                    "outputs" -> held { outputsPack(c) }
+                    "outputs" -> { expect(a); held { outputsPack(c) } }
                     "release" -> { hold = 0; arm(); true }
                     "save" -> { store(true); true }
                     "close" -> { close(true); true }
@@ -555,10 +555,17 @@ object HwXmrN {
         return n
     }
     /** the full export plus the output public keys in export order (same lock, nothing can refresh in between: held) */
+    /** v1.8.20: the open wallet must be the paired one Kwallet will sign for; another wallet's export can't be read by Kwallet
+     *  ("Failed to authenticate ciphertext"), and its set would be signed with the wrong seed */
+    private fun expect(a: JSONObject) {
+        val want = a.optString("expect"); if (want.isEmpty()) return
+        val have = lw().MONERO_Wallet_address(wp(), 0, 0) ?: ""
+        if (have != want) throw IllegalStateException("WALLET_MISMATCH open=" + have.take(8) + " paired=" + want.take(8))
+    }
     private fun outputsPack(c: Context): JSONObject {
         val pks = outputPks(); val out = outputsHex(c)
         Log.i("HwXmr", "outputs export: n=${pks.length()} bytes=${out.length / 2} kiNeed=${kiNeed()}")
-        return JSONObject().put("outputs", out).put("pks", pks).put("n", pks.length()).put("need", kiNeed())
+        return JSONObject().put("outputs", out).put("pks", pks).put("n", pks.length()).put("need", kiNeed()).put("addr", lw().MONERO_Wallet_address(wp(), 0, 0) ?: "")
     }
 
     private val PRI = mapOf("slow" to 1, "medium" to 2, "fast" to 3, "fastest" to 4)

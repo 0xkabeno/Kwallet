@@ -3814,7 +3814,7 @@ window.hwPlayOpening();
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
       var c = String(d.command), dt = d.data || {}, job;
-      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.19' });
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.20' });
       else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
       else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
       else if (c === 'network') job = Promise.resolve({ network: XNET });
@@ -3879,7 +3879,7 @@ window.hwPlayOpening();
       isHwallet: true,
       request: function (method, params) {
         var id = 'hw' + Date.now().toString(36), p = params || {}, job;
-        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.19', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.20', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
         else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
           job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
         else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
@@ -6972,7 +6972,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.19';
+var APP_VERSION = '1.8.20';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -14724,7 +14724,7 @@ window.hwCrashPrompt = crashPrompt;
        spend"). When the build fails for that reason and outputs are still unchecked, Hwallet asks Kwallet for their key images
        right here (one Kwallet sheet), imports them and builds once more: no manual Sync spent status, also on the first send
        after pairing (at pairing time the wallet has no outputs yet, so there is nothing to check then). */
-    xe('build', buildArgs, 150000).catch(function (e) {
+    xeP('build', buildArgs, 150000).catch(function (e) {
       var m0 = String(e && e.message || e);
       if (me.xcancel || !/No enotes available|not enough unlocked|unknown key image/i.test(m0) || !((XS.st && (XS.st.kiNeed > 0 || XS.st.kiMissing > 0)) || XS.st && XS.st.kiNeed == null)) return buildFail(e);
       xmrCancelBtn(false);
@@ -14734,7 +14734,7 @@ window.hwCrashPrompt = crashPrompt;
         if (k && k.state) xmrApply(k.state, false);
         if ($('go')) $('go').textContent = 'Preparing\u2026';
         xmrCancelBtn(true, function () { me.xcancel = true; xeStop(); });
-        return xe('build', buildArgs, 150000).catch(buildFail);
+        return xeP('build', buildArgs, 150000).catch(buildFail);
       });
     }).then(function (b) {
       xmrCancelBtn(false);
@@ -14802,8 +14802,25 @@ window.hwCrashPrompt = crashPrompt;
      Settings > Monero > Sync spent status (now a repair tool). Output-order contract: Hwallet exports ALL outputs (offset 0)
      with the list of their public keys in the same order (pks); Kwallet answers ki[i] for output i; the native import checks
      each signature against output i (wallet2) and its fallback matches by public key (HwXmrN.kt, above outputPks). */
+  /* v1.8.20: every Monero op that Kwallet signs for runs on the PAIRED wallet. If the native engine holds another wallet
+     (another seed, a restarted service with an older config), reopen the paired one first, then run the op. */
+  function xmrEnsure() {
+    var cfg = xmrCfg(), sig = cfg.address + ':' + cfg.height + ':' + cfg.server + ':' + cfg.accLook + 'x' + cfg.subLook;
+    return xe('open', cfg, 180000).then(function (st) { XS.opened = sig; return st; });
+  }
+  function xeP(op, args, ms) {
+    args = Object.assign({}, args || {}, { expect: xmrPrimary() });
+    return xe(op, args, ms).catch(function (e) {
+      if (!/WALLET_MISMATCH/.test(String(e && e.message || e))) throw e;
+      return xmrEnsure().then(function () { return xe(op, args, ms); }).catch(function (e2) {
+        if (/WALLET_MISMATCH/.test(String(e2 && e2.message || e2))) throw new Error('Hwallet\u2019s Monero engine has another wallet open. Restart Hwallet and try again');
+        throw e2;
+      });
+    });
+  }
   function xmrKiPass(inSend) {
-    return xe('outputs', {}, 120000).then(function (o) {
+    return xeP('outputs', {}, 120000).then(function (o) {
+      if (o.addr && o.addr !== xmrPrimary()) throw new Error('Hwallet exported another wallet\u2019s outputs. Restart Hwallet and try again');
       try { console.log('xmr-ki: exported ' + (o.n != null ? o.n : '?') + ' outputs, ' + (o.need != null ? o.need : '?') + ' without key image, ' + Math.round(String(o.outputs || '').length / 2048) + ' KB'); } catch (e) {}
       var now = Date.now();
       return callK({ v: 2, id: rid(16), action: 'sign', chain: 'xmr', kind: 'xmr-ki', from: xmrPrimary(), to: xmrPrimary(), token: 'native', tokenSym: 'XMR', tokenDec: 12, amount: '0', fee: { level: 'medium', levels: { medium: { fee: '0' } } }, xmr: { outputs: o.outputs, n: o.n != null ? o.n : null }, inSend: !!inSend, live: false, created: now, expires: now + 120000 })
