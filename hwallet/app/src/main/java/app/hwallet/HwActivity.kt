@@ -92,7 +92,12 @@ class HwActivity : FragmentActivity() {
         js = { s -> runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript(s, null) } catch (_: Throwable) {} } },
         onWc = { s -> wcLink(s) }).also { br = it }
 
-    companion object { const val KWALLET = "app.kwallet"; const val EXTRA_MAX = 120000 }
+    companion object {
+        const val KWALLET = "app.kwallet"; const val EXTRA_MAX = 120000
+        /* v1.8.16 live link transaction codes (same numbers in Kwallet's SignActivity) */
+        const val LINK_STATUS = android.os.IBinder.FIRST_CALL_TRANSACTION + 1
+        const val LINK_CANCEL = android.os.IBinder.FIRST_CALL_TRANSACTION + 2
+    }
     private lateinit var root: FrameLayout
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     @Volatile var insetCss = "{\"t\":0,\"r\":0,\"b\":0,\"l\":0}"
@@ -103,13 +108,13 @@ class HwActivity : FragmentActivity() {
 
     /** Kwallet's sign page: one request at a time, answered only to this app. */
     private val kwSign = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
-        signing = false; kwSeq++
+        signing = false; kwSeq++; kwUnlink()
         val d = res.data
         val rid = kwRid
         /* v1.8.8 (push 13, R11a): a large answer (signed Monero set) is in the answer file; the page reads it from /kwres/<id> */
         val json = if (d?.getBooleanExtra("resf", false) == true && rid.isNotEmpty() && KwxProvider.file(this, "res", rid).length() > 0L)
             "{\"status\":\"file\",\"f\":${JSONObject.quote(rid)}}"
-        else d?.getStringExtra("res") ?: "{\"status\":\"rejected\"}"
+        else d?.getStringExtra("res") ?: (if (d == null) "{\"status\":\"error\",\"error\":\"Kwallet closed before answering. Nothing was signed\",\"gone\":true}" else "{\"status\":\"rejected\"}")
         if (rid.isNotEmpty()) { try { KwxProvider.file(this, "req", rid).delete() } catch (_: Throwable) {} }
         web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote(json)})", null)
     }
@@ -120,8 +125,46 @@ class HwActivity : FragmentActivity() {
     @Volatile private var kwPaused = false
     /** R9c: the token the Monero worker uses for its direct node path (/xmrq/<token>); new for every app start */
     private val xmrToken: String = java.util.UUID.randomUUID().toString().replace("-", "") + java.util.UUID.randomUUID().toString().replace("-", "").take(8)
+    /* ---- v1.8.16: live K <-> H link (no timeouts; see Kwallet's SignActivity) ----
+       A fresh Binder rides in every launch Intent. Kwallet pushes each state to it (received, sheet, stage, signing, signed /
+       rejected / error) and hands over its own Binder once: Hwallet uses that to cancel the open sheet and links to its death,
+       so a Kwallet that dies is reported at once instead of waited on. Calls are accepted only from the Kwallet package. */
+    @Volatile private var kwPeer: android.os.IBinder? = null
+    @Volatile private var kwLinkSeq = 0
+    private val kwDeath = android.os.IBinder.DeathRecipient {
+        val seq = kwLinkSeq
+        kwPeer = null
+        runOnUiThread { if (signing && seq == kwSeq) { kwJs("{\"st\":\"gone\"}"); signFail("Kwallet stopped before answering. Nothing was signed") } }
+    }
+    private fun kwUidOk(uid: Int): Boolean = try {
+        (packageManager.getPackagesForUid(uid) ?: emptyArray()).any { it == KWALLET } && packageManager.checkSignatures(packageName, KWALLET) == android.content.pm.PackageManager.SIGNATURE_MATCH
+    } catch (_: Exception) { false }
+    private fun kwJs(json: String) { try { if (::web.isInitialized) web.evaluateJavascript("window.hwKStatus&&hwKStatus(${JSONObject.quote(json)})", null) } catch (_: Throwable) {} }
+    private inner class KwLink(val seq: Int) : android.os.Binder() {
+        override fun onTransact(code: Int, data: android.os.Parcel, reply: android.os.Parcel?, flags: Int): Boolean {
+            if (code != LINK_STATUS) return super.onTransact(code, data, reply, flags)
+            if (!kwUidOk(android.os.Binder.getCallingUid())) return false
+            val id = data.readString() ?: ""; val st = data.readString() ?: ""; val det = data.readString() ?: ""
+            val peer = try { data.readStrongBinder() } catch (_: Exception) { null }
+            runOnUiThread {
+                if (seq != kwSeq) return@runOnUiThread
+                if (peer != null && kwPeer == null) { try { peer.linkToDeath(kwDeath, 0); kwPeer = peer } catch (_: Exception) { kwDeath.binderDied() } }
+                kwJs(JSONObject().put("id", id).put("st", st).put("d", det).toString())
+            }
+            return true
+        }
+    }
+    private fun kwUnlink() { val p = kwPeer; kwPeer = null; try { p?.unlinkToDeath(kwDeath, 0) } catch (_: Exception) {} }
+    /** Cancel from Hwallet: closes Kwallet's open sheet (Kwallet answers "rejected" through the normal result) */
+    private fun kwCancel(id: String) {
+        val p = kwPeer
+        if (p == null) { if (signing) signFail("Cancelled. Nothing was signed"); return }
+        val d = android.os.Parcel.obtain()
+        try { d.writeString(id); p.transact(LINK_CANCEL, d, null, android.os.IBinder.FLAG_ONEWAY) }
+        catch (_: Exception) { if (signing) signFail("Cancelled. Nothing was signed") } finally { d.recycle() }
+    }
     private fun signFail(why: String) {
-        signing = false; kwSeq++
+        signing = false; kwSeq++; kwUnlink()
         web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote(JSONObject().put("status", "error").put("error", why).toString())})", null)
     }
     /** v1.8.8 (R11f): Kwallet's version code (0 = not installed) */
@@ -144,10 +187,13 @@ class HwActivity : FragmentActivity() {
         kwRid = rid
         /* P2a (#97a): no window animation (Kwallet's page slides its own sheet up over this screen, which stays as it is) */
         try {
-            signing = true; kwPaused = false; val seq = ++kwSeq
+            kwUnlink()
+            signing = true; kwPaused = false; val seq = ++kwSeq; kwLinkSeq = seq
+            i.putExtras(Bundle().apply { putBinder("kwlink", KwLink(seq)) })
             kwSign.launch(i, androidx.core.app.ActivityOptionsCompat.makeCustomAnimation(this@HwActivity, 0, 0))
-            /* R11 (never silent): if Kwallet's sheet has not come up over Hwallet within 12 s, say so and give Hwallet back */
-            ui.postDelayed({ if (signing && seq == kwSeq && !kwPaused) signFail("Kwallet did not open. Open Kwallet once, then try again") }, 12000L)
+            /* v1.8.16: no limit. If Kwallet has not said "received" after 12 s, the waiting card says so (with Cancel); the
+               request keeps waiting until Kwallet answers, dies, or the user cancels */
+            ui.postDelayed({ if (signing && seq == kwSeq && kwPeer == null) kwJs("{\"st\":\"slow\"}") }, 12000L)
         } catch (e: Exception) {
             signing = false
             signFail("Kwallet could not be opened (" + (e.javaClass.simpleName) + "). Try again")
@@ -178,6 +224,10 @@ class HwActivity : FragmentActivity() {
                 runOnUiThread { launchSign(json, r, f) }
             }
         }
+
+        /** v1.8.16: Cancel on Hwallet's "Waiting for Kwallet" card closes Kwallet's sheet (nothing is signed) */
+        @android.webkit.JavascriptInterface
+        fun kwCancel(id: String) { runOnUiThread { this@HwActivity.kwCancel(id.take(64)) } }
 
         /** v1.8.12 (push 17, R1): the native Monero engine (monero_c wallet2). xmrNOk: the library loaded on this phone.
          *  xmrN: one engine op, answered later through window.hwXmrN(id, ok, json). xmrNStatus: cached heights, never blocks. */
