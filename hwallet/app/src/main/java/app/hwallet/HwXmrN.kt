@@ -391,7 +391,7 @@ object HwXmrN {
 
     private fun store(force: Boolean) {
         val L = lib ?: return; val p = w ?: return
-        if (!force && System.currentTimeMillis() - lastStore < 300000) return   /* v1.8.14: 5 min while syncing (was 90 s); each save stalls the scan
+        if (!force && System.currentTimeMillis() - lastStore < 300000) return   /* v1.8.14: 5 min while syncing (was 90 s); each save stalls the scan */
         lastStore = System.currentTimeMillis()
         try { L.MONERO_Wallet_store(p, "") } catch (_: Throwable) {}
     }
@@ -625,7 +625,7 @@ object HwXmrN {
         val json = JSONObject().put("key_images", arr).put("enc_key", hex(key)).toString()
         java.util.Arrays.fill(key, 0)
         val wasTrusted = try { b(L.MONERO_Wallet_trustedDaemon(p)) } catch (_: Throwable) { false }
-        val ok: Boolean
+        var ok = false
         try {
             if (!wasTrusted) L.MONERO_Wallet_setTrustedDaemon(p, 1)
             ok = b(L.MONERO_Wallet_importTrezorEncryptedKeyImagesJson(p, json))
