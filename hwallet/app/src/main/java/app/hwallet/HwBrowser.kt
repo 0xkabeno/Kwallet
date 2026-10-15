@@ -585,6 +585,10 @@ class HwBrowser(
         w.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest): Boolean {
                 val u = req.url; val s = u.scheme?.lowercase() ?: return true
+                /* v1.8.16 (4.2 d): a WalletConnect deep link the page opens (wallet-list buttons of a WC modal: trust://wc?uri=,
+                   metamask:wc?uri=, intent://wc?uri=…, https://<wallet>/wc?uri=wc:…) pairs with Hwallet's own WalletConnect wallet
+                   instead of leaving the app. Only a real WC v2 pairing URI (wc:<topic>@2?…symKey=…) is taken. */
+                wcIn(u.toString())?.let { onWc(it); return true }
                 if (s == "https" || s == "http") {
                     if (t.offline && req.isForMainFrame) { leaveSnapshot(t, view); live(t, view); view.loadUrl(u.toString()); return true }
                     if (req.isForMainFrame && req.hasGesture() && !t.touched) live(t, view)
@@ -638,8 +642,9 @@ class HwBrowser(
                     private var done = false
                     private fun grab(u: String?) {
                         if (done) return; done = true
-                        if (isWeb(u)) ev(JSONObject().put("t", "new").put("url", u))
-                        else if (u != null && u.startsWith("wc:")) onWc(u)
+                        val wc = wcIn(u ?: "")
+                        if (wc != null) onWc(wc)
+                        else if (isWeb(u)) ev(JSONObject().put("t", "new").put("url", u))
                         ui.post { try { tmp.destroy() } catch (_: Throwable) {} }
                     }
                 }
@@ -649,6 +654,18 @@ class HwBrowser(
             }
         }
         return w
+    }
+
+    /** v1.8.16: the WalletConnect v2 pairing URI inside a link (itself, or its uri= parameter), else null */
+    private fun wcIn(u: String): String? {
+        try {
+            val ok = { w: String -> Regex("^wc:[0-9a-fA-F]{64}@2\\?").containsMatchIn(w) && w.contains("symKey=") }
+            if (u.startsWith("wc:", true)) return if (ok(u)) u else null
+            val m = Regex("[?&#]uri=(wc(?:%3A|:)[^&#\\s]+)", RegexOption.IGNORE_CASE).find(u) ?: return null
+            var w = m.groupValues[1]
+            for (k in 0 until 2) { if (w.startsWith("wc%3A", true)) w = java.net.URLDecoder.decode(w, "UTF-8") }
+            return if (ok(w)) w.take(2048) else null
+        } catch (_: Throwable) { return null }
     }
 
     /** intent:, market:, mailto:, tel: … open outside, never with an explicit component (no intent hijacking) */

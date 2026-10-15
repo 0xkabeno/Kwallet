@@ -3758,6 +3758,155 @@ window.hwPlayOpening();
   });
   onNs('xrpl', function (e, d) { if (e === 'disconnect') xrpAddr = null; else if (e === 'accountsChanged') xrpAddr = d || null; });
 
+
+  /* ---------- v1.8.16 (4): providers for wallet lists that are fixed (Nabil OK'd borrowing listed names, Cardano / XRP / BTC).
+     Each is announced only when its chain is ON in Chains; every signature goes to Kwallet with a review sheet. ---------- */
+  function u8hex(u) { var s = ''; for (var i = 0; i < u.length; i++) s += ('0' + (u[i] & 255).toString(16)).slice(-2); return s; }
+  function hexu8p(h) { h = String(h || '').replace(/^0x/i, ''); var o = new Uint8Array(h.length >> 1); for (var i = 0; i < o.length; i++) o[i] = parseInt(h.substr(i * 2, 2), 16); return o; }
+
+  /* Cardano: dApps with a hard-coded CIP-30 list (dano.finance, some aggregators) look for these keys. Same Hwallet API. */
+  if (!OFF.ada) try {
+    ['eternl', 'lace'].forEach(function (k) {
+      if (window.cardano[k]) return;
+      window.cardano[k] = Object.freeze({ name: k, icon: ICON, apiVersion: '0.1.0', supportedExtensions: ADA_EXT.slice(), isHwallet: true, isEnabled: adaW.isEnabled, enable: adaW.enable });
+    });
+  } catch (e) {}
+
+  /* XRP Ledger: Crossmark page protocol (@crossmarkio/sdk: window.xrpl.isCrossmark, window.postMessage request/response) */
+  if (!OFF.xrp) {
+    var xmk = { isCrossmark: true, isHwallet: true };
+    try {
+      var xrplLib = window.xrpl;
+      if (xrplLib && typeof xrplLib === 'object') { try { xrplLib.isCrossmark = true; xrplLib.crossmark = xmk; } catch (e) {} }
+      else Object.defineProperty(window, 'xrpl', { configurable: true, enumerable: true,
+        get: function () { return xrplLib || xmk; },
+        /* a page that loads xrpl.js (also window.xrpl) keeps its library; it just carries the flag too */
+        set: function (v) { xrplLib = v; try { if (v && typeof v === 'object') { v.isCrossmark = true; v.crossmark = xmk; } } catch (e) {} } });
+      xmk.crossmark = xmk;
+    } catch (e) {}
+    var XNET = { label: 'Mainnet', type: 'main', protocol: 'xrpl', rpc: 'wss://xrplcluster.com', wss: 'wss://xrplcluster.com', explorer: 'https://livenet.xrpl.org' };
+    var xmMeta = function (ok, rej) { return { isSuccess: !!ok, isRejected: !!rej, isError: !ok && !rej, isFail: !ok, isSigned: !!ok, isExpired: false }; };
+    var xmReply = function (req, data) { try { window.postMessage({ request: req, response: { type: 'response', id: req.id, data: data }, createdAt: Date.now(), resolvedAt: Date.now() }, window.location.origin); } catch (e) {} };
+    window.addEventListener('message', function (ev) {
+      var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
+      var c = String(d.command), dt = d.data || {}, job;
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.16' });
+      else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
+      else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
+      else if (c === 'network') job = Promise.resolve({ network: XNET });
+      else if (c === 'user') job = Promise.resolve({ user: { id: 'hwallet', username: NAME } });
+      else if (c === 'address') job = xrpAddr ? Promise.resolve({ address: xrpAddr }) : call('xrpl', 'xrpl_connect', {}).then(function (r) { xrpAddr = r && r.address; return { address: xrpAddr }; });
+      else if (c === 'sign' && dt.tx && dt.tx.TransactionType === 'SignIn')
+        job = call('xrpl', 'xrpl_connect', {}).then(function (r) { xrpAddr = r && r.address; return { address: xrpAddr, network: XNET, user: { id: 'hwallet', username: NAME }, meta: xmMeta(true) }; });
+      else if (c === 'sign') job = call('xrpl', 'xrpl_signTransaction', { transaction: dt.tx, submit: false }).then(function (r) { return { txBlob: r.tx_blob, meta: xmMeta(true) }; });
+      else if (c === 'sign-and-submit') job = call('xrpl', 'xrpl_signTransaction', { transaction: dt.tx, submit: true }).then(function (r) { return { resp: { result: { hash: r.hash, engine_result: 'tesSUCCESS', tx_json: r.tx || null } }, meta: xmMeta(true) }; });
+      else job = Promise.reject({ message: 'Hwallet does not support ' + c.slice(0, 40) });
+      job.then(function (data) { xmReply(d, data); }, function (e) { xmReply(d, { meta: xmMeta(false, e && e.code === 4001), error: (e && e.message) || 'Request failed' }); });
+    });
+
+    /* XRPL Wallet Standard (xrpl:0): listed as Hwallet by apps on @xrpl-wallet-standard */
+    var xAcc = function (a) { return { address: a, publicKey: new Uint8Array(0), chains: ['xrpl:0'], features: ['xrpl:signTransaction', 'xrpl:signAndSubmitTransaction'] }; };
+    var xws = { version: '1.0.0', name: NAME, icon: ICON, id: RDNS + '.xrpl', chains: ['xrpl:0'], accounts: [], features: {} };
+    var xLs = [];
+    xws.features['standard:connect'] = { version: '1.0.0', connect: function (o) {
+      if (o && o.silent && !xrpAddr) return Promise.resolve({ accounts: [] });
+      return (xrpAddr ? Promise.resolve({ address: xrpAddr }) : call('xrpl', 'xrpl_connect', {})).then(function (r) { xrpAddr = r && r.address; xws.accounts = xrpAddr ? [xAcc(xrpAddr)] : []; xLs.forEach(function (f) { try { f({ accounts: xws.accounts }); } catch (e) {} }); return { accounts: xws.accounts }; });
+    } };
+    xws.features['standard:disconnect'] = { version: '1.0.0', disconnect: function () { xws.accounts = []; return Promise.resolve(); } };
+    xws.features['standard:events'] = { version: '1.0.0', on: function (ev, f) { if (ev !== 'change') return function () {}; xLs.push(f); return function () { xLs = xLs.filter(function (x) { return x !== f; }); }; } };
+    xws.features['xrpl:signTransaction'] = { version: '1.0.0', signTransaction: function (i) { return call('xrpl', 'xrpl_signTransaction', { transaction: i && (i.tx_json || i.transaction), submit: false }).then(function (r) { return { signed_tx_blob: r.tx_blob }; }); } };
+    xws.features['xrpl:signAndSubmitTransaction'] = { version: '1.0.0', signAndSubmitTransaction: function (i) { return call('xrpl', 'xrpl_signTransaction', { transaction: i && (i.tx_json || i.transaction), submit: true }).then(function (r) { return { tx_hash: r.hash }; }); } };
+    var xReg = function (api) { try { api.register(xws); } catch (e) {} };
+    var xAnn = function () { try { window.dispatchEvent(new CustomEvent('wallet-standard:register-wallet', { detail: xReg })); } catch (e) {} };
+    xAnn(); window.addEventListener('wallet-standard:app-ready', function (ev) { if (ev && ev.detail) xReg(ev.detail); }); setTimeout(xAnn, 1500);
+  }
+
+  /* Bitcoin: UniSat (window.unisat), Xverse / sats-connect (window.XverseProviders.BitcoinProvider, window.BitcoinProvider,
+     window.btc_providers) and the Bitcoin Wallet Standard. Native SegWit (bc1q) address of the paired seed. */
+  if (!OFF.btc) {
+    var btcAddr = null, btcPk = null, uLs = {};
+    var bEmit = function (ev, d) { (uLs[ev] || []).forEach(function (f) { try { f(d); } catch (e) {} }); };
+    var bConn = function () { return call('btc', 'btc_connect', {}).then(function (r) { btcAddr = r && r.address || null; if (r && r.publicKey) btcPk = r.publicKey; bEmit('accountsChanged', btcAddr ? [btcAddr] : []); return r; }); };
+    var bPk = function () { return btcPk ? Promise.resolve(btcPk) : call('btc', 'btc_getPublicKey', {}).then(function (r) { btcPk = r && r.publicKey; return btcPk; }); };
+    var unisat = {
+      isHwallet: true,
+      requestAccounts: function () { return bConn().then(function () { return btcAddr ? [btcAddr] : []; }); },
+      getAccounts: function () { return Promise.resolve(btcAddr ? [btcAddr] : []); },
+      getPublicKey: function () { return bPk(); },
+      getNetwork: function () { return Promise.resolve('livenet'); },
+      switchNetwork: function (n) { return n === 'livenet' ? Promise.resolve('livenet') : Promise.reject(perr({ code: 4200, message: 'Hwallet is on Bitcoin mainnet only' })); },
+      getChain: function () { return Promise.resolve({ enum: 'BITCOIN_MAINNET', name: 'Bitcoin Mainnet', network: 'livenet' }); },
+      switchChain: function (c) { return c === 'BITCOIN_MAINNET' ? unisat.getChain() : Promise.reject(perr({ code: 4200, message: 'Hwallet is on Bitcoin mainnet only' })); },
+      getBalance: function () { return call('btc', 'btc_getBalance', {}); },
+      signMessage: function (msg, type) { return call('btc', 'btc_signMessage', { message: String(msg == null ? '' : msg), protocol: type === 'bip322-simple' ? 'bip322' : 'ecdsa' }).then(function (r) { return r.signature; }); },
+      signPsbt: function (hex, o) { o = o || {}; return call('btc', 'btc_signPsbt', { psbtHex: String(hex || ''), signInputs: Array.isArray(o.toSignInputs) ? o.toSignInputs.map(function (x) { return x.index; }) : null, autoFinalized: o.autoFinalized !== false }).then(function (r) { return r.psbtHex; }); },
+      signPsbts: function (hs, os) { var out = [], i = 0; hs = hs || []; return hs.reduce(function (p, h) { var k = i++; return p.then(function () { return unisat.signPsbt(h, (os || [])[k]).then(function (x) { out.push(x); }); }); }, Promise.resolve()).then(function () { return out; }); },
+      pushPsbt: function (hex) { return call('btc', 'btc_pushPsbt', { psbtHex: String(hex || '') }); },
+      pushTx: function (o) { return call('btc', 'btc_pushTx', { rawtx: String((o && o.rawtx) || o || '') }); },
+      sendBitcoin: function (to, sats, o) { return call('btc', 'btc_sendBitcoin', { to: String(to || ''), amount: String(sats), feeRate: o && o.feeRate || null }); },
+      on: function (ev, f) { (uLs[ev] = uLs[ev] || []).push(f); }, removeListener: function (ev, f) { uLs[ev] = (uLs[ev] || []).filter(function (x) { return x !== f; }); }
+    };
+    try { if (!window.unisat) Object.defineProperty(window, 'unisat', { value: unisat, configurable: true }); } catch (e) {}
+    /* sats-connect (Xverse) request API: request(method, params) -> { jsonrpc, id, result } or { jsonrpc, id, error } */
+    var sOk = function (id, r) { return { jsonrpc: '2.0', id: id, result: r }; };
+    var sErr = function (id, e) { return { jsonrpc: '2.0', id: id, error: { code: e && e.code === 4001 ? -32000 : (e && e.code) || -32603, message: (e && e.message) || 'Request failed' } }; };
+    var sAccs = function () { return bPk().catch(function () { return ''; }).then(function (pk) { return [{ address: btcAddr, publicKey: pk || '', purpose: 'payment', addressType: 'p2wpkh', walletType: 'software' }]; }); };
+    var bprov = {
+      isHwallet: true,
+      request: function (method, params) {
+        var id = 'hw' + Date.now().toString(36), p = params || {}, job;
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.16', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
+          job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
+        else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
+        else if (method === 'getBalance') job = call('btc', 'btc_getBalance', {}).then(function (b) { return { confirmed: String(b.confirmed), unconfirmed: String(b.unconfirmed), total: String(b.total) }; });
+        else if (method === 'signMessage') job = call('btc', 'btc_signMessage', { address: p.address, message: String(p.message == null ? '' : p.message), protocol: String(p.protocol || 'BIP322').toLowerCase() }).then(function (r) { return { signature: r.signature, messageHash: r.messageHash, address: r.address, protocol: String(r.protocol).toUpperCase() }; });
+        else if (method === 'signPsbt') job = call('btc', 'btc_signPsbt', { psbt: String(p.psbt || ''), signInputs: p.signInputs || null, autoFinalized: !!p.broadcast || p.finalize === true, broadcast: !!p.broadcast }).then(function (r) { return { psbt: r.psbt, txid: r.txid || undefined }; });
+        else if (method === 'sendTransfer') { var rc = (p.recipients || [])[0] || {}; job = (p.recipients || []).length !== 1 ? Promise.reject({ code: 4200, message: 'Hwallet sends to one recipient at a time' }) : call('btc', 'btc_sendBitcoin', { to: String(rc.address || ''), amount: String(rc.amount) }).then(function (t) { return { txid: t }; }); }
+        else job = Promise.reject({ code: -32601, message: 'Hwallet does not support ' + String(method).slice(0, 40) });
+        return job.then(function (r) { return sOk(id, r); }, function (e) { return sErr(id, e); });
+      }
+    };
+    try {
+      window.HwalletProviders = { BitcoinProvider: bprov };
+      if (!window.XverseProviders) window.XverseProviders = { BitcoinProvider: bprov };
+      if (!window.BitcoinProvider) window.BitcoinProvider = bprov;
+      var bl = Array.isArray(window.btc_providers) ? window.btc_providers : (window.btc_providers = []);
+      bl.push({ id: 'HwalletProviders.BitcoinProvider', name: NAME, icon: ICON, webUrl: 'https://github.com/0xkabeno/Kwallet', methods: ['getAccounts', 'signMessage', 'signPsbt', 'sendTransfer', 'getBalance'] });
+    } catch (e) {}
+    /* Bitcoin Wallet Standard (bitcoin:mainnet) */
+    var bAcc = function () { return { address: btcAddr, publicKey: btcPk ? hexu8p(btcPk) : new Uint8Array(0), chains: ['bitcoin:mainnet'], features: ['bitcoin:signMessage', 'bitcoin:signTransaction'], purpose: 'payment' }; };
+    var bws = { version: '1.0.0', name: NAME, icon: ICON, id: RDNS + '.btc', chains: ['bitcoin:mainnet'], accounts: [], features: {} }, bwL = [];
+    var bwSet = function () { bws.accounts = btcAddr ? [bAcc()] : []; bwL.forEach(function (f) { try { f({ accounts: bws.accounts }); } catch (e) {} }); return { accounts: bws.accounts }; };
+    bws.features['bitcoin:connect'] = { version: '1.0.0', connect: function () { return bConn().then(function () { return bPk().catch(function () {}); }).then(bwSet); } };
+    bws.features['standard:connect'] = { version: '1.0.0', connect: function (o) { if (o && o.silent) return Promise.resolve({ accounts: bws.accounts }); return bws.features['bitcoin:connect'].connect(); } };
+    bws.features['standard:disconnect'] = { version: '1.0.0', disconnect: function () { btcAddr = null; bwSet(); return Promise.resolve(); } };
+    bws.features['standard:events'] = { version: '1.0.0', on: function (ev, f) { if (ev !== 'change') return function () {}; bwL.push(f); return function () { bwL = bwL.filter(function (x) { return x !== f; }); }; } };
+    bws.features['bitcoin:signMessage'] = { version: '1.0.0', signMessage: function () {
+      var a = Array.prototype.slice.call(arguments), out = [];
+      return a.reduce(function (p, i) { return p.then(function () { var m = i && i.message; return call('btc', 'btc_signMessage', { address: i && i.account && i.account.address, message: m instanceof Uint8Array ? u8hex(m) : String(m || ''), encoding: m instanceof Uint8Array ? 'hex' : 'utf8', protocol: 'bip322' }).then(function (r) { out.push({ signedMessage: m, signature: b64d(r.signature) }); }); }); }, Promise.resolve()).then(function () { return out; });
+    } };
+    bws.features['bitcoin:signTransaction'] = { version: '1.0.0', signTransaction: function () {
+      var a = Array.prototype.slice.call(arguments), out = [];
+      return a.reduce(function (p, i) { return p.then(function () { var idx = []; ((i && i.inputsToSign) || []).forEach(function (s) { (s.signingIndexes || []).forEach(function (n) { idx.push(n); }); }); return call('btc', 'btc_signPsbt', { psbtHex: u8hex(i.psbt), signInputs: idx.length ? idx : null, autoFinalized: false }).then(function (r) { out.push({ signedPsbt: hexu8p(r.psbtHex) }); }); }); }, Promise.resolve()).then(function () { return out; });
+    } };
+    var bReg = function (api) { try { api.register(bws); } catch (e) {} };
+    var bAnn = function () { try { window.dispatchEvent(new CustomEvent('wallet-standard:register-wallet', { detail: bReg })); } catch (e) {} };
+    bAnn(); window.addEventListener('wallet-standard:app-ready', function (ev) { if (ev && ev.detail) bReg(ev.detail); }); setTimeout(bAnn, 1500);
+    onNs('btc', function (e, d) { if (e === 'disconnect') { btcAddr = null; bwSet(); bEmit('accountsChanged', []); } });
+  }
+
+  /* WalletConnect from inside a page (Sui / Cetus "WalletConnect" and any WC modal): "Copy link" puts a wc: URI on the
+     clipboard. Hwallet pairs it with its own WalletConnect wallet (its normal approval sheet follows). Deep links and
+     window.open of wc: URIs are caught natively (HwBrowser.kt). */
+  try {
+    var cbw = navigator.clipboard && navigator.clipboard.writeText;
+    if (cbw) navigator.clipboard.writeText = function (t) {
+      try { var s = String(t || ''); if (/^wc:[0-9a-f]{64}@2\?/i.test(s) && /symKey=/.test(s)) call('hw', 'hw_wcUri', { uri: s.slice(0, 2048) }).catch(function () {}); } catch (e) {}
+      return cbw.apply(navigator.clipboard, arguments);
+    };
+  } catch (e) {}
+
   /* ---------- restore what this site is already connected to (no prompt) ---------- */
   call('hw', 'hw_state', null).then(function (s) {
     s = s || {};
@@ -3767,6 +3916,7 @@ window.hwPlayOpening();
     if (s.sui && s.sui.address) suiSet(s.sui.address, s.sui.publicKey);
     if (s.ada) adaOn = true;
     if (s.xrp && s.xrp.address) xrpAddr = s.xrp.address;
+    if (s.btc && s.btc.address && !OFF.btc) { btcAddr = s.btc.address; if (s.btc.publicKey) btcPk = s.btc.publicKey; try { bwSet(); } catch (e) {} }
   }, function () {});
 })();
 </script>
@@ -7944,6 +8094,7 @@ var APP_VERSION = '1.8.16';
     if (p.xmr && /^[0-9a-f]{64}$/.test(p.xmr.view || '')) { na.xmrView = p.xmr.view; na.xmrHeight = p.xmr.height | 0; if (/^4[1-9A-HJ-NP-Za-km-z]{94}$/.test(p.xmr.primary || '')) na.xmrPrimary = p.xmr.primary; }
     if (!na.eth && !na.xmr) { pairErr('No valid addresses in that pairing. Pair again from Kwallet.'); return false; }
     /* v1.8.14: Kwallet sends the Sui public key with the pairing (Sui dApps ask for it before any signature) */
+    try { var bpk = p.pks && String(p.pks.btc || ''); if (na.btc && /^0[23][0-9a-f]{64}$/i.test(bpk)) jset('hw-btcpk:' + na.btc, bpk.toLowerCase()); } catch (e) {}   /* v1.8.16 */
     try { var spk = p.pks && String(p.pks.sui || ''); if (na.sui && /^[A-Za-z0-9+/]{43}=$/.test(spk)) jset('hw-suipk:' + na.sui, spk); } catch (e) {}
     var w = putWallet(na, wname(), String(p.label || '').slice(0, 24)), upd = !!w._upd; delete w._upd;
     buzz([15, 40, 15]); snd('seed');
@@ -10297,8 +10448,8 @@ window.hwCrashPrompt = crashPrompt;
       var iv = setInterval(function () { if (!ov.isConnected) { clearInterval(iv); if (!settled) { settled = true; res(null); } } }, 250);
     });
   }
-  function chainLabel(ns, cid) { return ns === 'eip155' ? (EVMID[cid] ? EVMID[cid].name : 'Chain ' + cid) : ns === 'solana' ? 'Solana' : ns === 'sui' ? 'Sui' : ns === 'cardano' ? 'Cardano' : ns === 'xrpl' ? 'XRP Ledger' : 'Tron'; }
-  function chainLogo(ns, cid) { return ns === 'eip155' ? logo((EVMID[cid] || EVM[0]).logo, 'E', '', 'sm') : logo({ solana: 'solana', sui: 'sui', cardano: 'cardano', xrpl: 'ripple' }[ns] || 'tron', ns[0].toUpperCase(), '', 'sm'); }
+  function chainLabel(ns, cid) { return ns === 'eip155' ? (EVMID[cid] ? EVMID[cid].name : 'Chain ' + cid) : ns === 'solana' ? 'Solana' : ns === 'sui' ? 'Sui' : ns === 'cardano' ? 'Cardano' : ns === 'xrpl' ? 'XRP Ledger' : ns === 'btc' ? 'Bitcoin' : 'Tron'; }
+  function chainLogo(ns, cid) { return ns === 'eip155' ? logo((EVMID[cid] || EVM[0]).logo, 'E', '', 'sm') : logo({ solana: 'solana', sui: 'sui', cardano: 'cardano', xrpl: 'ripple', btc: 'bitcoin' }[ns] || 'tron', ns[0].toUpperCase(), '', 'sm'); }
   /* ---------- P2a (#94a): the connect popup, same design as Kwallet's sign sheet (hwpop.js / hwpop.css) ----------
      o = { site, trust: { cls: ok|unk|bad, t }, chains: [{ name, logo (html) }], accs: [{ name, addr, logo }], ns: [...], err }
      Resolves true (connect), false (cancel) or { wallet: id } when the user picked another wallet (the caller switches and asks again). */
@@ -10603,7 +10754,7 @@ window.hwCrashPrompt = crashPrompt;
   function qHex(v) { if (v == null || v === '') return v; try { if (typeof v === 'string' && /^0x[0-9a-f]*$/i.test(v)) return v === '0x' ? '0x0' : v.toLowerCase(); var b = BI(typeof v === 'number' ? Math.trunc(v) : String(v).trim()); return '0x' + b.toString(16); } catch (e) { return v; } }
   function txHex(tx) { var o = Object.assign({}, tx); ['value', 'gas', 'gasLimit', 'gasPrice', 'maxFeePerGas', 'maxPriorityFeePerGas', 'nonce'].forEach(function (k) { if (o[k] != null) o[k] = qHex(o[k]); }); if (o.input && !o.data) o.data = o.input; if (!o.value) o.value = '0x0'; return o; }
   /* v1.8.13: a dApp namespace whose chain is turned off in Settings > Chains */
-  function nsOff(ns) { var c = { eip155: 'eth', solana: 'sol', tron: 'trx', sui: 'sui', cardano: 'ada', cip34: 'ada', xrpl: 'xrp', bip122: 'btc' }[ns]; return !!c && (!chainOn(c) || (c === 'eth' && !EVM.length)); }
+  function nsOff(ns) { var c = { eip155: 'eth', solana: 'sol', tron: 'trx', sui: 'sui', cardano: 'ada', cip34: 'ada', xrpl: 'xrp', bip122: 'btc', btc: 'btc' }[ns]; return !!c && (!chainOn(c) || (c === 'eth' && !EVM.length)); }
   function dappRoute(c) {
     if (nsOff(c.ns)) return Promise.reject(dErr(4100, 'This network is turned off in Hwallet'));
     var site = c.site, ns = c.ns, cid = c.cid, m = c.method, p = c.params, cs = c.cs || (ns + (cid != null ? ':' + cid : ''));
@@ -10741,7 +10892,7 @@ window.hwCrashPrompt = crashPrompt;
   var WC_SUI_M = ['sui_getAccounts', 'sui_signPersonalMessage', 'sui_signTransaction', 'sui_signAndExecuteTransaction', 'sui_signTransactionBlock', 'sui_signAndExecuteTransactionBlock'];
   var WC_ADA_M = ['cardano_signTx', 'cardano_signData', 'cardano_submitTx', 'cardano_getBalance', 'cardano_getUtxos', 'cardano_getCollateral', 'cardano_getNetworkId', 'cardano_getUsedAddresses', 'cardano_getUnusedAddresses', 'cardano_getChangeAddress', 'cardano_getRewardAddress', 'cardano_getRewardAddresses'];
   var WC_XRPL_M = ['xrpl_signTransaction'];
-  var WC_BTC_M = ['getAccountAddresses', 'sendTransfer'];
+  var WC_BTC_M = ['getAccountAddresses', 'sendTransfer', 'signMessage', 'signPsbt'];   /* v1.8.16: message + PSBT, signed in Kwallet with a review sheet */
   /* the address a session namespace (or a dApp namespace) uses in a wallet's address set */
   function wcNsAddr(a, k) { a = a || {}; return k === 'eip155' ? a.eth : k === 'solana' ? a.sol : k === 'tron' ? a.trx : k === 'sui' ? a.sui : (k === 'cip34' || k === 'cardano') ? a.ada : k === 'xrpl' ? a.xrp : k === 'bip122' ? a.btc : null; }
 
@@ -10960,7 +11111,14 @@ window.hwCrashPrompt = crashPrompt;
         return Promise.resolve(!it || it.indexOf('payment') >= 0 ? [{ address: A.btc, intention: 'payment' }] : []);
       }
       if (m === 'sendTransfer') return wcBtcSend(site, bp);
-      if (m === 'signMessage' || m === 'signPsbt') return Promise.reject(dErr(4200, 'Bitcoin ' + (m === 'signPsbt' ? 'PSBT' : 'message') + ' signing is not supported yet'));
+      if (m === 'signMessage') {
+        if (bp.address && bp.address !== A.btc) return Promise.reject(dErr(4100, 'Unknown account'));
+        return p17K(site, 'btc', 'btc_signMessage', { message: String(bp.message == null ? '' : bp.message), protocol: bp.protocol || 'ecdsa', address: A.btc }).then(function (r) { return { address: A.btc, signature: r.signature, messageHash: r.messageHash }; });
+      }
+      if (m === 'signPsbt') return p17K(site, 'btc', 'btc_signPsbt', { psbt: String(bp.psbt || ''), signInputs: Array.isArray(bp.signInputs) ? bp.signInputs : null, autoFinalized: !!bp.broadcast }).then(function (r) {
+        if (!bp.broadcast) return { psbt: r.psbt };
+        return btcPushPsbt(site, r.psbtHex).then(function (txid) { return { psbt: r.psbt, txid: txid }; });
+      });
       return Promise.reject(dErr(4200, 'Hwallet does not support ' + m));
     } catch (e) { return Promise.reject(e && e.code ? e : dErr(-32603, String(e && e.message || e))); }
   }
@@ -11650,12 +11808,12 @@ window.hwCrashPrompt = crashPrompt;
   var BRC = {};  /* origin -> EVM chain id for a site that has not connected yet */
   function brCid(o) { var r = brSites()[o]; return (r && r.cid) || BRC[o] || 1; }
   function brIs(o, ns) { var r = brSites()[o]; return !!(r && r.ns && r.ns[ns]); }
-  function brAddr(ns) { return ns === 'eip155' ? A.eth : ns === 'solana' ? A.sol : ns === 'tron' ? A.trx : ns === 'sui' ? A.sui : ns === 'cardano' ? A.ada : ns === 'xrpl' ? A.xrp : null; }
+  function brAddr(ns) { return ns === 'eip155' ? A.eth : ns === 'solana' ? A.sol : ns === 'tron' ? A.trx : ns === 'sui' ? A.sui : ns === 'cardano' ? A.ada : ns === 'xrpl' ? A.xrp : ns === 'btc' ? (/^bc1q/.test(String(A.btc || '')) ? A.btc : null) : null; }
   function brEmit(o, ns, ev, data) { brNat('brEmit', o, JSON.stringify({ ns: ns, ev: ev, data: data === undefined ? null : data })); }
   var brAsk = {};
   function brConnect(o, site, ns) {
     var addr = brAddr(ns);
-    if (!addr) return Promise.reject(dErr(4100, 'This wallet has no ' + ({ eip155: 'EVM', solana: 'Solana', tron: 'Tron', sui: 'Sui', cardano: 'Cardano', xrpl: 'XRP' }[ns] || ns) + ' address'));
+    if (!addr) return Promise.reject(dErr(4100, 'This wallet has no ' + ({ eip155: 'EVM', solana: 'Solana', tron: 'Tron', sui: 'Sui', cardano: 'Cardano', xrpl: 'XRP', btc: 'native SegWit Bitcoin' }[ns] || ns) + ' address'));
     if (brIs(o, ns)) return Promise.resolve(addr);
     var k = o + '|' + ns; if (brAsk[k]) return brAsk[k];
     var cid = brCid(o);
@@ -11706,7 +11864,7 @@ window.hwCrashPrompt = crashPrompt;
   function brSitesRows() {
     var S = brSites(), k = Object.keys(S);
     if (!k.length) return '<div class="wc-empty"><b>No connected sites</b><span>When a site in the Browser asks to connect and you approve, it shows here.</span></div>';
-    var NS = { eip155: 'EVM', solana: 'Solana', tron: 'Tron', sui: 'Sui', cardano: 'Cardano', xrpl: 'XRP' };
+    var NS = { eip155: 'EVM', solana: 'Solana', tron: 'Tron', sui: 'Sui', cardano: 'Cardano', xrpl: 'XRP', btc: 'Bitcoin' };
     return '<div class="lst wc-l">' + k.map(function (o) {
       var r = S[o], site = { name: r.name || hostOf(o), host: hostOf(o), icon: r.icon };
       return '<div class="wc-r wc-s">' + siteIcon(site) + '<span class="am"><span class="an">' + esc(site.name) + '</span><span class="ap">' + esc(site.host) + ' \u00b7 ' + Object.keys(r.ns || {}).map(function (n) { return NS[n] || n; }).join(', ') + '</span></span>' +
@@ -11797,9 +11955,12 @@ window.hwCrashPrompt = crashPrompt;
       return Promise.resolve({ eth: { accounts: brIs(o, 'eip155') && A.eth ? [A.eth] : [], chainId: '0x' + cid.toString(16) },
         sol: brIs(o, 'solana') && A.sol ? { publicKey: A.sol } : null, trx: brIs(o, 'tron') && A.trx ? { address: A.trx } : null,
         /* v1.8.12 (push 17): Sui / Cardano / XRP Ledger connections */
-        sui: brIs(o, 'sui') && A.sui ? { address: A.sui, publicKey: jget('hw-suipk:' + A.sui, '') || null } : null, ada: brIs(o, 'cardano') && !!A.ada, xrp: brIs(o, 'xrpl') && A.xrp ? { address: A.xrp } : null });
+        sui: brIs(o, 'sui') && A.sui ? { address: A.sui, publicKey: jget('hw-suipk:' + A.sui, '') || null } : null, ada: brIs(o, 'cardano') && !!A.ada, xrp: brIs(o, 'xrpl') && A.xrp ? { address: A.xrp } : null,
+        btc: brIs(o, 'btc') && brAddr('btc') ? { address: A.btc, publicKey: jget('hw-btcpk:' + A.btc, '') || null } : null });
     }
     if (m === 'hw_connect') return brConnectMany(o, site, p && p.ns, !!(p && p.silent));
+    /* v1.8.16 (4.2 d): a page copied a WalletConnect link (WC modal "Copy link"): pair it with Hwallet's own WC wallet */
+    if (m === 'hw_wcUri') { var wu = String(p && p.uri || ''); if (/^wc:[0-9a-f]{64}@2\?/i.test(wu) && /symKey=/.test(wu)) { setTimeout(function () { wcPair(wu); }, 50); return Promise.resolve(true); } return Promise.resolve(false); }
     if (nsOff(ns)) return Promise.reject(dErr(4100, 'This network is turned off in Hwallet'));
     if (ns === 'eip155') {
       var c = brCid(o), on = brIs(o, 'eip155') && !!A.eth;
@@ -11819,7 +11980,7 @@ window.hwCrashPrompt = crashPrompt;
       if (!on) return Promise.reject(dErr(4100, 'Connect to this site first'));
       return dappRoute({ site: site, via: 'browser', ns: ns, cid: c, method: m, params: p, chainId: function () { return brCid(o); }, switchChain: function (a, mm) { return brSwitch(o, a, mm); } });
     }
-    if (ns === 'sui' || ns === 'cardano' || ns === 'xrpl') return brHandle17(o, q, site);
+    if (ns === 'sui' || ns === 'cardano' || ns === 'xrpl' || ns === 'btc') return brHandle17(o, q, site);
     if (ns === 'solana') {
       if (m === 'solana_connect') {
         if (brIs(o, 'solana') && A.sol) return Promise.resolve({ publicKey: A.sol });
@@ -15291,8 +15452,8 @@ window.hwCrashPrompt = crashPrompt;
      (GemWallet page protocol). Connect is approved here per origin (the same connected-sites list as EVM / Solana / Tron).
      Every signature is Kwallet's: Hwallet prepares (builds the Sui bytes with its node, autofills the XRPL Fee / Sequence /
      LastLedgerSequence, reads Cardano UTxOs), Kwallet decodes and signs only what it decoded, Hwallet broadcasts. */
-  function p17Addr(ns) { return ns === 'sui' ? A.sui : ns === 'cardano' ? A.ada : ns === 'xrpl' ? A.xrp : null; }
-  function p17Ch(ns) { return ns === 'sui' ? 'sui' : ns === 'cardano' ? 'ada' : 'xrp'; }
+  function p17Addr(ns) { return ns === 'sui' ? A.sui : ns === 'cardano' ? A.ada : ns === 'xrpl' ? A.xrp : ns === 'btc' ? brAddr('btc') : null; }
+  function p17Ch(ns) { return ns === 'sui' ? 'sui' : ns === 'cardano' ? 'ada' : ns === 'btc' ? 'btc' : 'xrp'; }
   function p17Paired(ns) { var c = p17Ch(ns); return !!(p17Addr(ns) && A.paired && A.paired[c]); }
   function p17Base(site, via) {
     var b = { origin: String(site.origin || ('https://' + site.host)).slice(0, 200), via: via || 'browser', site: { name: String(site.name || site.host).slice(0, 60) } };
@@ -15432,6 +15593,56 @@ window.hwCrashPrompt = crashPrompt;
     return Promise.reject(dErr(4200, 'Hwallet does not support ' + m));
   }
 
+  /* ---------- v1.8.16: Bitcoin in the Browser (UniSat / sats-connect / Wallet Standard). Every signature is Kwallet's, with a
+     review sheet (message: the text and format; PSBT: every input and output, change, fee, fee rate, inputs not signed). */
+  function btcRun(site, m, p) {
+    var a = brAddr('btc');
+    if (m === 'btc_getPublicKey') { var pk = jget('hw-btcpk:' + a, ''); if (pk) return Promise.resolve({ publicKey: pk }); return p17K(site, 'btc', m, {}).then(function (r) { if (r && /^0[23][0-9a-f]{64}$/i.test(r.publicKey || '')) jset('hw-btcpk:' + a, String(r.publicKey).toLowerCase()); return { publicKey: r.publicKey }; }); }
+    if (m === 'btc_getBalance') { var b = C.b.btc || {}, n = BI(b.n || 0); return Promise.resolve({ confirmed: Number(n), unconfirmed: 0, total: Number(n) }); }
+    if (m === 'btc_signMessage') { if (p.address && p.address !== a) return Promise.reject(dErr(4100, 'Unknown account')); return p17K(site, 'btc', m, { message: String(p.message == null ? '' : p.message), encoding: p.encoding || 'utf8', protocol: p.protocol || 'ecdsa', address: a }); }
+    if (m === 'btc_signPsbt') return p17K(site, 'btc', m, { psbt: p.psbt || '', psbtHex: p.psbtHex || '', signInputs: p.signInputs || null, autoFinalized: p.autoFinalized !== false }).then(function (r) {
+      if (!p.broadcast) return r;
+      return btcPushPsbt(site, r.psbtHex).then(function (txid) { r.txid = txid; return r; });
+    });
+    if (m === 'btc_pushPsbt') return btcPushPsbt(site, p.psbtHex);
+    if (m === 'btc_pushTx') return btcPushRaw(site, String(p.rawtx || ''));
+    if (m === 'btc_sendBitcoin') return wcBtcSend(site, { recipientAddress: p.to, amount: p.amount, account: a });
+    return Promise.reject(dErr(4200, 'Hwallet does not support ' + m));
+  }
+  function btcPushRaw(site, raw) {
+    if (!/^[0-9a-f]{120,}$/i.test(raw)) return Promise.reject(dErr(-32602, 'Not a raw transaction'));
+    return race(CHBY.btc.rest, function (u) { return http(u + '/tx', { method: 'POST', body: raw, ctype: 'text/plain', text: true, timeout: 12000 }); })
+      .then(function (t) { var h = String(t).trim(); if (!/^[0-9a-f]{64}$/i.test(h)) throw new Error(h.slice(0, 160)); try { dappLog('btc', h, site); } catch (e) {} return h; }, function (e) { throw dErr(-32603, 'Broadcast failed: ' + String(e && e.body || e && e.message || e).slice(0, 160)); });
+  }
+  /* a finalized PSBT (signed in Kwallet) -> raw transaction, extracted by Kwallet's answer or here from the final witnesses */
+  function btcPushPsbt(site, hex) {
+    try { var raw = btcExtract(String(hex || '')); return btcPushRaw(site, raw); } catch (e) { return Promise.reject(dErr(-32603, String(e && e.message || e).slice(0, 160))); }
+  }
+  /* minimal PSBT extractor (BIP-174): unsigned tx + finalScriptSig / finalScriptWitness per input */
+  function btcExtract(hex) {
+    var u = hexu8(hex), o = 0;
+    function vi() { var b = u[o++]; if (b < 253) return b; if (b === 253) { var v = u[o] | (u[o + 1] << 8); o += 2; return v; } if (b === 254) { var w = (u[o] | (u[o + 1] << 8) | (u[o + 2] << 16)) + u[o + 3] * 16777216; o += 4; return w; } throw new Error('PSBT too large'); }
+    function rd(n) { var x = u.slice(o, o + n); o += n; return x; }
+    if (p17Hex(rd(5)) !== '70736274ff') throw new Error('Not a PSBT');
+    var tx = null, maps = [], m;
+    function map() { var r = []; for (;;) { var kl = vi(); if (!kl) return r; var k = rd(kl), vl = vi(), v = rd(vl); r.push([k, v]); } }
+    m = map(); m.forEach(function (kv) { if (kv[0][0] === 0) tx = kv[1]; }); if (!tx) throw new Error('PSBT without a transaction');
+    /* parse the unsigned tx: version, inputs, outputs, locktime (no witness) */
+    var t = tx, q = 0; function tv() { var b = t[q++]; if (b < 253) return b; if (b === 253) { var v = t[q] | (t[q + 1] << 8); q += 2; return v; } throw new Error('bad tx'); }
+    var ver = t.slice(0, 4); q = 4; var nin = tv(), ins = [];
+    for (var i = 0; i < nin; i++) { var pre = t.slice(q, q + 36); q += 36; var sl = tv(); q += sl; var sq = t.slice(q, q + 4); q += 4; ins.push({ pre: pre, sq: sq }); }
+    var outStart = q, nout = tv(); for (var j = 0; j < nout; j++) { q += 8; var ol = tv(); q += ol; }
+    var outs = t.slice(outStart, q), lock = t.slice(q, q + 4);
+    for (i = 0; i < nin; i++) { var im = map(), fs = null, fw = null; im.forEach(function (kv) { if (kv[0][0] === 7) fs = kv[1]; if (kv[0][0] === 8) fw = kv[1]; }); if (!fs && !fw) throw new Error('Input ' + i + ' is not finalized (not signed)'); ins[i].fs = fs || new Uint8Array(0); ins[i].fw = fw; }
+    function cv(n) { return n < 253 ? [n] : [253, n & 255, n >> 8]; }
+    var seg = ins.some(function (x) { return x.fw; }), out = [].concat(Array.prototype.slice.call(ver), seg ? [0, 1] : [], cv(nin));
+    ins.forEach(function (x) { out = out.concat(Array.prototype.slice.call(x.pre), cv(x.fs.length), Array.prototype.slice.call(x.fs), Array.prototype.slice.call(x.sq)); });
+    out = out.concat(Array.prototype.slice.call(outs));
+    if (seg) ins.forEach(function (x) { out = out.concat(x.fw ? Array.prototype.slice.call(x.fw) : [0]); });
+    out = out.concat(Array.prototype.slice.call(lock));
+    return p17Hex(out);
+  }
+
   /* the Browser's entry for these namespaces (segBrowser brHandle hands them here) */
   var P17_SIGN = { sui_signTransaction: 1, sui_signAndExecuteTransaction: 1, sui_signPersonalMessage: 1, cardano_signTx: 1, cardano_signData: 1, cardano_submitTx: 1, cardano_getUtxos: 1, cardano_getBalance: 1, cardano_getCollateral: 1, cardano_getUsedAddresses: 1, cardano_getChangeAddress: 1, cardano_getRewardAddresses: 1, xrpl_signTransaction: 1, xrpl_signMessage: 1, xrpl_getPublicKey: 1 };
   function brHandle17(o, q, site) {
@@ -15441,6 +15652,8 @@ window.hwCrashPrompt = crashPrompt;
     if (ns === 'cardano' && m === 'cardano_isEnabled') return Promise.resolve(brIs(o, 'cardano') && !!addr);
     if (ns === 'cardano' && m === 'cardano_enable') return brConnect(o, site, 'cardano').then(function () { return true; });
     if (ns === 'xrpl' && m === 'xrpl_connect') return brConnect(o, site, 'xrpl').then(function (a) { return { address: a }; });
+    if (ns === 'btc' && m === 'btc_connect') return brConnect(o, site, 'btc').then(function (a) { return { address: a, publicKey: jget('hw-btcpk:' + a, '') || null }; });
+    if (ns === 'btc') { if (!brIs(o, 'btc') || !addr) return Promise.reject(dErr(4100, 'Connect to this site first')); return btcRun(site, m, p); }
     if (!P17_SIGN[m]) return Promise.reject(dErr(4200, 'Hwallet does not support ' + m));
     if (!brIs(o, ns) || !addr) return Promise.reject(dErr(4100, 'Connect to this site first'));
     if (ns === 'sui') return suiRun(site, m, p);

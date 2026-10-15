@@ -1,5 +1,33 @@
 # Changelog
 
+## Kwallet v3.98.16 · Hwallet v1.8.16 (2026-10-15, work in progress)
+
+Working build for phone testing. Not tested on a device or emulator: static checks (`node --check` of every inline and injected script, Kotlin brace/comment check, a stubbed run of the Browser providers, BIP-322 checked against the BIP's to_spend / to_sign vectors, PSBT sign + extract checked with bitcoinjs) and the CI build. The Monero fix is ready to test on a device, not confirmed.
+
+### Monero
+- Kwallet's Monero sheet crashed before drawing ("Cannot set properties of null (setting 'onclick')"): `xmrPage()` drew the sheet before mounting it, so its buttons were looked up in a page that was not in the document yet. It now mounts first, then draws, like every other sheet (the other sheet kinds were checked: pair, send, dApp and the error sheet already mount first).
+- Cancel works while the Monero engine is still running (it stops the engine; nothing has left Kwallet at that point).
+
+### Live K↔H link, no timeouts
+- No time limits on a request any more: the 30 s watchdog error in Kwallet, the request `expires` countdown and auto-expire on both sides, Hwallet's 45 s Monero wait and 300 s limit, the 12 s "Kwallet did not open" error and the hard 110 s Monero signing cut are gone. Only the user's decision (Approve / Reject / Cancel) ends a request. `expires` is still sent for older builds but Kwallet ignores it.
+- Hwallet hands Kwallet a Binder with each request; Kwallet pushes every state to it (received → sheet open → waiting for you → signing → signed / rejected / error with the stage) and hands back its own Binder. Both sides check the caller's package on every call.
+- Hwallet shows a "Waiting for Kwallet…" card with the live state and a Cancel button; Cancel closes Kwallet's sheet (nothing is signed).
+- If either app's process dies, the other notices at once (Binder death): Hwallet says "Kwallet stopped before answering. Nothing was signed"; Kwallet closes its sheet when Hwallet is gone.
+- A sign page that throws before its sheet draws answers immediately with the error and the stage. A long Monero operation shows "Still signing… N s" on the sheet and in Hwallet instead of failing.
+
+### Design
+- Hwallet › Pair with Kwallet: the empty red error bar under the Pair button is gone (the error box exists only when there is an error); tighter hero, one status card, slim one-line stepper, privacy line as a small footnote.
+- Kwallet › Pair Hwallet: Kwallet's lime / dark palette instead of blue; slim stepper on top, the pair form in one card, paired wallets as clean rows (chain icon, name, short address, chain count) with Copy pairing code and Remove in a ⋮ menu.
+- Kwallet address rows: the Monero S|V key button is one pill with a segmented look (Spend | View), same height, radius and type as the Addr pill in every UI style, in dark slate instead of alarm red.
+- Hwallet Settings: shorter rows, smaller icons and one-line subtitles so the menu fits one screen; the "Support Hwallet" card moved to its own page (Settings › Support Hwallet); the Settings title is sticky under the status bar, and page content no longer scrolls visibly under the status bar on any screen except the dApp browser.
+
+### dApps (Hwallet Browser; every signature in Kwallet with a review sheet; only chains switched ON in Chains are announced)
+- Cardano: the CIP-30 API is also exposed as `window.cardano.eternl` and `window.cardano.lace` (Hwallet icon) for dApps with a fixed wallet list (dano.finance and similar).
+- XRP Ledger: Crossmark-compatible provider (`window.xrpl.isCrossmark`, the @crossmarkio/sdk request / response protocol: sign-in, sign, sign-and-submit, address, network); a page that loads xrpl.js keeps its library. XRPL Wallet Standard registration as Hwallet (`xrpl:0`). GemWallet compatibility kept.
+- Bitcoin (native SegWit address of the paired seed): UniSat-compatible `window.unisat` (requestAccounts, getAccounts, getPublicKey, getBalance, getNetwork, signMessage, signPsbt / signPsbts, pushPsbt, pushTx, sendBitcoin), Xverse / sats-connect `request()` provider (`window.XverseProviders.BitcoinProvider`, `window.BitcoinProvider`, listed in `window.btc_providers` as Hwallet) and a Bitcoin Wallet Standard wallet (`bitcoin:mainnet`). WalletConnect bip122 now also supports `signMessage` and `signPsbt`.
+- Kwallet signs Bitcoin messages (legacy "Bitcoin Signed Message" ECDSA, or BIP-322 simple) and PSBTs. The PSBT sheet lists every input (yours or not, signed by Kwallet or not), every output, change, fee and fee rate, and flags sighash types other than ALL; Kwallet refuses to sign when an input's amount is unknown (fee cannot be checked) or nothing is yours. Pairing now also sends the Bitcoin public key (pair again; older pairings ask Kwallet once with a "Share public key" sheet).
+- WalletConnect from a page (Cetus' WalletConnect option and other WC modals): a wallet deep link that carries a WalletConnect URI (`trust://wc?uri=…`, `intent://…`, `https://…?uri=wc:…`), a `wc:` link or window.open, and the modal's "Copy link" are paired with Hwallet's own WalletConnect wallet instead of leaving the app. Whether Cetus offers a WC v2 Sui session this way is not verified.
+
 ## Kwallet v3.98.15 · Hwallet v1.8.15 (2026-10-15, work in progress)
 
 Working build for phone testing. Not tested on a device or emulator: static checks (`node --check` of every inline and injected script, a stubbed run of the Browser providers) and the CI build. The Monero changes are ready to test on a device, not confirmed.

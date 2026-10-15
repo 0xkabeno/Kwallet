@@ -6268,6 +6268,7 @@ function __fastCoreFactory(G) {
       n = ctx.walk(path);
       r.kind = btcKindForPath(path);
       r.address = addrFor(r.kind, n);
+      r.pub = bytesToHex(n.pc);   /* v3.98.16: compressed public key (hex) for the Hwallet pairing */
       if (full) r.privateKey = b58check(concat(new Uint8Array([0x80]), n.kb, new Uint8Array([1])));
     } else if (net === 'xrp') {
       n = ctx.walk(path);
@@ -21851,7 +21852,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   function writePub(all) {
     try {
-      localStorage.setItem(PUB, JSON.stringify(all.map(function (r) { return { id: r.id, label: r.label, index: r.index, addrs: r.addrs, seedType: r.seedType, created: r.created, xmrView: r.xmrView || '', xmrPrimary: r.xmrPrimary || '', xmrHeight: r.xmrHeight | 0 , suiPk: r.suiPk || ''}; })));
+      localStorage.setItem(PUB, JSON.stringify(all.map(function (r) { return { id: r.id, label: r.label, index: r.index, addrs: r.addrs, seedType: r.seedType, created: r.created, xmrView: r.xmrView || '', xmrPrimary: r.xmrPrimary || '', xmrHeight: r.xmrHeight | 0 , suiPk: r.suiPk || '', btcPk: r.btcPk || ''}; })));
       localStorage.setItem(PUBV, String(PUBVER));
     } catch (e) {}
   }
@@ -21939,6 +21940,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           var ctx = FastCore.makeCtx({ net: net, pathTpl: DEFAULT_PATH[net], seedHex: getBip39SeedHex(m, p), adaEnt: net === 'ada' ? adaEntropyHex() : null, pass: p, seedType: st });
           var dd = FastCore.derive(ctx, index, false); rec.addrs[net] = dd.address;
           if (net === 'sui' && dd.pub) rec.suiPk = dd.pub;
+          if (net === 'btc' && dd.pub) rec.btcPk = dd.pub;   /* v3.98.16: Bitcoin dApps ask for the public key (UniSat getPublicKey, Wallet Standard accounts) */
         }
       } catch (e) { try { console.warn('pair', net, e); } catch (x) {} }
       await new Promise(function (r) { setTimeout(r, 0); });
@@ -21952,7 +21954,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   function publicExport(r) {
     /* v3.98: + the primary address (a subaddress pairing still scans the whole wallet) and the restore height when known */
-    return { v: 1, src: 'kwallet', label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null, pks: r.suiPk ? { sui: r.suiPk } : undefined };
+    return { v: 1, src: 'kwallet', label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null, pks: r.suiPk || r.btcPk ? { sui: r.suiPk || undefined, btc: r.btcPk || undefined } : undefined };
   }
   function exportText(r) { return 'kwallet-pair:' + btoa(unescape(encodeURIComponent(JSON.stringify(publicExport(r))))); }
   /* v3.98: block height for a date, offline (60 s blocks to the v2 fork 1009827, 120 s after; anchor 3,783,000 = 1791875075) */
@@ -23159,7 +23161,9 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
      Connect Wallet. KwD17 decodes them here; Kwallet shows the origin, the decoded transaction and the amounts, and signs only
      the bytes it decoded (each signer decodes again and checks the sender / key before it signs). */
   var P17M = { sui_signPersonalMessage: ['sui', 'Sign message'], sui_signTransaction: ['sui', 'Review transaction'], cardano_signTx: ['ada', 'Review transaction'], cardano_signData: ['ada', 'Sign data'],
-    xrpl_getPublicKey: ['xrp', 'Share public key'], xrpl_signMessage: ['xrp', 'Sign message'], xrpl_signTransaction: ['xrp', 'Review transaction'] };
+    xrpl_getPublicKey: ['xrp', 'Share public key'], xrpl_signMessage: ['xrp', 'Sign message'], xrpl_signTransaction: ['xrp', 'Review transaction'],
+    /* v3.98.16: Bitcoin message (legacy ECDSA or BIP-322 simple) and PSBT, with a full review sheet */
+    btc_signMessage: ['btc', 'Sign message'], btc_signPsbt: ['btc', 'Review transaction'], btc_getPublicKey: ['btc', 'Share public key'] };
   Object.keys(P17M).forEach(function (k) { DM[k] = P17M[k][1]; DCH[k] = P17M[k][0]; });
   var MAXU = (1n << 255n);
   /* known methods: the selector is computed from the signature, so nothing here is a magic number */
@@ -23558,7 +23562,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   function dappPage() {
     var R = REQ, m = String(R.method || ''), c = DCH[m];
-    if (!c) return fail('Kwallet does not sign "' + m.slice(0, 40) + '" requests.', 'Only connect, message, typed-data and transaction requests on EVM networks, Solana, Tron, Sui, Cardano and the XRP Ledger are supported.');
+    if (!c) return fail('Kwallet does not sign "' + m.slice(0, 40) + '" requests.', 'Only connect, message, typed-data and transaction requests on EVM networks, Solana, Tron, Sui, Cardano, Bitcoin and the XRP Ledger are supported.');
     if (R.chain !== c) return fail('Bad request.');
     var inf, net;
     if (c === 'evm') { inf = EVM[+R.chainId]; if (!inf) return fail('Unknown network (chain ' + esc(R.chainId) + ').'); net = 'eth'; }
@@ -23621,10 +23625,115 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var dp = new Uint8Array(9); dp[0] = 3; for (var i = 0; i < 8; i++) dp[1 + i] = Number((f.pr >> BI(8 * i)) & 255n); set(v.cbP, dp);
     if (v.cbL >= 0) { var dl = new Uint8Array(5), l = Number(f.lim); dl[0] = 2; dl[1] = l & 255; dl[2] = (l >>> 8) & 255; dl[3] = (l >>> 16) & 255; dl[4] = (l >>> 24) & 255; set(v.cbL, dl); }
   }
+  /* ---------- v3.98.16: Bitcoin message signing and PSBT review (Hwallet's Browser: UniSat / Xverse (sats-connect) /
+     Bitcoin Wallet Standard providers, and WalletConnect bip122). Kwallet decodes everything itself and never signs what it
+     could not read: every input (yours or not, signed or not), every output, change, fee and fee rate are on the sheet. ---------- */
+  function btcLib() { var b = window.bitcoinjs || window.bitcoin; if (!b || !b.Psbt || !b.ECPair || !b.Transaction) throw new Error('The Bitcoin engine is missing from this Kwallet build'); return b; }
+  function btcSpk(addr) { var b = btcLib(); return b.address.toOutputScript(String(addr), b.networks.bitcoin); }
+  function btcVar(n) { return n < 253 ? [n] : n < 65536 ? [253, n & 255, n >> 8] : [254, n & 255, (n >> 8) & 255, (n >> 16) & 255, (n >>> 24) & 255]; }
+  function btcMsgBytes(P) {
+    var m = P.message; if (m == null) return null;
+    if (P.encoding === 'hex' || P.isHex) { var h = String(m).replace(/^0x/i, ''); if (!/^([0-9a-f]{2})*$/i.test(h)) return null; return hexB('0x' + h); }
+    if (P.encoding === 'base64') return b64u(String(m));
+    return new TextEncoder().encode(String(m));
+  }
+  function btcProto(P) { var p = String(P.protocol || P.type || 'ecdsa').toLowerCase(); return /bip-?322/.test(p) ? 'bip322' : 'ecdsa'; }
+  /* legacy "Bitcoin Signed Message" (BIP-137 compact, compressed key: header 31 + recovery id), as UniSat / Electrum */
+  function btcSignEcdsa(wif, msg) {
+    var b = btcLib(), kp = b.ECPair.fromWIF(wif, b.networks.bitcoin), pre = new TextEncoder().encode('\x18Bitcoin Signed Message:\n');
+    var buf = new Uint8Array(pre.length + btcVar(msg.length).length + msg.length); buf.set(pre, 0); buf.set(btcVar(msg.length), pre.length); buf.set(msg, pre.length + btcVar(msg.length).length);
+    var h = ethers.sha256(ethers.sha256(buf)), sg = new ethers.SigningKey('0x' + kp.privateKey.toString('hex')).sign(h);
+    var out = new Uint8Array(65); out[0] = 31 + (sg.yParity | 0); out.set(ethers.getBytes(sg.r), 1); out.set(ethers.getBytes(sg.s), 33); kp = null;
+    return { signature: u8b64(out), messageHash: h.slice(2) };
+  }
+  /* BIP-322 "simple" signature for a P2WPKH address (the witness of the virtual to_sign transaction, base64) */
+  function btcSignBip322(wif, msg, addr) {
+    var b = btcLib(), Bf = b.Buffer, kp = b.ECPair.fromWIF(wif, b.networks.bitcoin), spk = btcSpk(addr);
+    var pay = b.payments.p2wpkh({ pubkey: kp.publicKey, network: b.networks.bitcoin }); if (pay.address !== addr) throw new Error('BIP-322 signing works for your native SegWit address only');
+    var tag = ethers.getBytes(ethers.sha256(new TextEncoder().encode('BIP0322-signed-message'))), tm = new Uint8Array(64 + msg.length); tm.set(tag, 0); tm.set(tag, 32); tm.set(msg, 64);
+    var mh = Bf.from(ethers.getBytes(ethers.sha256(tm)));
+    var spend = new b.Transaction(); spend.version = 0; spend.locktime = 0;
+    spend.addInput(Bf.alloc(32, 0), 0xffffffff, 0, Bf.concat([Bf.from([0x00, 0x20]), mh])); spend.addOutput(spk, 0);
+    var sign = new b.Transaction(); sign.version = 0; sign.locktime = 0;
+    sign.addInput(spend.getHash(), 0, 0); sign.addOutput(Bf.from([0x6a]), 0);
+    var code = b.payments.p2pkh({ hash: pay.hash }).output, hh = sign.hashForWitnessV0(0, code, 0, b.Transaction.SIGHASH_ALL);
+    var der = b.script.signature.encode(kp.sign(hh), b.Transaction.SIGHASH_ALL), pub = kp.publicKey; kp = null;
+    var w = [2].concat(btcVar(der.length), Array.prototype.slice.call(der), btcVar(pub.length), Array.prototype.slice.call(pub));
+    return { signature: u8b64(new Uint8Array(w)), messageHash: bhex(mh) };
+  }
+  function btcPsbtParse(P) {
+    var b = btcLib(), raw = String(P.psbt || P.psbtBase64 || P.psbtHex || '').trim(), ps;
+    if (!raw) throw new Error('The PSBT is missing.');
+    try { ps = /^[0-9a-f]+$/i.test(raw) && raw.length % 2 === 0 && /^70736274ff/i.test(raw) ? b.Psbt.fromHex(raw, { network: b.networks.bitcoin }) : b.Psbt.fromBase64(raw, { network: b.networks.bitcoin }); }
+    catch (e) { throw new Error('Kwallet could not read this PSBT: ' + String(e && e.message || e).slice(0, 120)); }
+    return ps;
+  }
+  /* what the PSBT does, decoded here: inputs (owner, value, signed by Kwallet or not), outputs, change, fee, fee rate */
+  function btcPsbtView(P, from) {
+    var b = btcLib(), ps = btcPsbtParse(P), tx = b.Transaction.fromBuffer(ps.data.globalMap.unsignedTx.toBuffer()), mine = btcSpk(from).toString('hex');
+    var want = null;
+    if (Array.isArray(P.signInputs)) want = P.signInputs.map(function (x) { return typeof x === 'number' ? x : +((x || {}).index); }).filter(function (x) { return x >= 0; });
+    else if (P.signInputs && typeof P.signInputs === 'object') { want = []; Object.keys(P.signInputs).forEach(function (a) { if (a === from) (P.signInputs[a] || []).forEach(function (i) { want.push(+i); }); }); }
+    var v = { ins: [], outs: [], warn: [], notes: [], inSum: 0n, inKnown: true, outSum: 0n, mineIn: 0n, mineOut: 0n, sign: [], fee: null, vsize: 0, rate: null };
+    tx.ins.forEach(function (inp, i) {
+      var d = ps.data.inputs[i] || {}, spk = null, val = null;
+      if (d.witnessUtxo) { spk = d.witnessUtxo.script; val = BI(d.witnessUtxo.value); }
+      else if (d.nonWitnessUtxo) { try { var pt = b.Transaction.fromBuffer(d.nonWitnessUtxo), o = pt.outs[inp.index]; if (o) { spk = o.script; val = BI(o.value); } } catch (e) {} }
+      var own = !!spk && spk.toString('hex') === mine, sh = d.sighashType, signs = own && (!want || want.indexOf(i) >= 0) && !d.finalScriptWitness && !d.finalScriptSig;
+      var a = ''; try { a = spk ? b.address.fromOutputScript(spk, b.networks.bitcoin) : ''; } catch (e) { a = ''; }
+      v.ins.push({ i: i, txid: bhex(Array.prototype.slice.call(inp.hash).reverse()), vout: inp.index, a: a, own: own, val: val, signs: signs, sh: sh, done: !!(d.finalScriptWitness || d.finalScriptSig) });
+      if (val == null) v.inKnown = false; else v.inSum += val;
+      if (own && val != null) v.mineIn += val;
+      if (signs) { v.sign.push(i); if (!d.witnessUtxo && !d.nonWitnessUtxo) v.warn.push('Input ' + i + ' has no amount: Kwallet will not sign it.'); }
+      if (signs && sh != null && sh !== b.Transaction.SIGHASH_ALL) v.warn.push('Input ' + i + ' uses sighash ' + sh + ' (not ALL): the app can change other parts of the transaction after you sign.');
+      v.vsize += own || (spk && spk.length === 22 && spk[0] === 0) ? 68 : spk && spk.length === 34 && spk[0] === 0x51 ? 58 : spk && spk.length === 23 ? 91 : 148;
+    });
+    if (want) want.forEach(function (i) { if (!v.ins[i]) v.warn.push('The app asked to sign input ' + i + ', which does not exist.'); else if (!v.ins[i].own) v.warn.push('The app asked to sign input ' + i + ', which is not yours. Kwallet will not sign it.'); });
+    tx.outs.forEach(function (o, i) {
+      var a = '', val = BI(o.value), op = o.script[0] === 0x6a; try { a = b.address.fromOutputScript(o.script, b.networks.bitcoin); } catch (e) { a = ''; }
+      var own = o.script.toString('hex') === mine;
+      v.outs.push({ i: i, a: a, val: val, own: own, op: op, script: a ? '' : bhex(o.script).slice(0, 80) });
+      v.outSum += val; if (own) v.mineOut += val;
+      v.vsize += 9 + o.script.length;
+    });
+    v.vsize = Math.ceil(v.vsize + 10.5);
+    if (v.inKnown) { v.fee = v.inSum - v.outSum; if (v.fee < 0n) { v.warn.push('The outputs are larger than the inputs: this PSBT is not valid.'); v.fee = null; } else v.rate = Number(v.fee) / v.vsize; }
+    else v.warn.push('Some inputs have no amount, so Kwallet cannot compute the network fee.');
+    if (!v.sign.length) v.warn.push('No input of this PSBT belongs to your address: there is nothing for Kwallet to sign.');
+    if (v.rate != null && v.rate > 500) v.warn.push('Very high network fee: about ' + Math.round(v.rate) + ' sat/vB.');
+    if (v.ins.some(function (x) { return !x.own; })) v.notes.push('Some inputs belong to someone else; Kwallet signs only yours.');
+    v.out = v.mineIn > v.mineOut ? v.mineIn - v.mineOut - (v.fee != null && v.mineIn ? (v.ins.every(function (x) { return x.own; }) ? v.fee : 0n) : 0n) : 0n;
+    v.net = v.mineOut - v.mineIn;   /* what your address gains (+) or loses (-), fee included when you pay all inputs */
+    v.finalize = P.autoFinalized !== false && P.finalize !== false;
+    return v;
+  }
+  function btcSignPsbt(wif, P, from, view) {
+    var b = btcLib(), ps = btcPsbtParse(P), kp = b.ECPair.fromWIF(wif, b.networks.bitcoin);
+    if (b.payments.p2wpkh({ pubkey: kp.publicKey, network: b.networks.bitcoin }).address !== from) throw new Error('The paired seed no longer derives ' + short(from) + '.');
+    /* sign exactly the inputs shown on the sheet */
+    view.sign.forEach(function (i) { var d = ps.data.inputs[i] || {}; ps.signInput(i, kp, [d.sighashType != null ? d.sighashType : b.Transaction.SIGHASH_ALL]); if (view.finalize) ps.finalizeInput(i); });
+    kp = null;
+    return { psbt: ps.toBase64(), psbtHex: ps.toHex(), signedInputs: view.sign.slice() };
+  }
   /* ---------- v3.98.12 (push 17): Sui / Cardano / XRP Ledger: decode, draw, sign ---------- */
   function p17Open(m, P) {
+    var R = DS.R, D = window.KwD17;
+    if (m === 'btc_getPublicKey') { DS.view = { title: '' }; return ''; }
+    if (m === 'btc_signMessage' || m === 'btc_signPsbt') {
+      try {
+        if (m === 'btc_signMessage') {
+          if (P.address && P.address !== R.from) return 'Kwallet signs messages only with this account\u2019s own address.';
+          DS.msg = btcMsgBytes(P); if (!DS.msg) return 'The message could not be read.'; DS.proto = btcProto(P);
+          if (DS.proto === 'bip322' && !/^bc1q/.test(String(R.from))) return 'BIP-322 signing works for a native SegWit (bc1q) address only.';
+        } else {
+          var bv = btcPsbtView(P, R.from);
+          DS.view = { p17tx: true, chain: 'btc', fee: bv.fee, out: bv.out, bv: bv, warn: bv.warn.slice(), title: '' };
+        }
+      } catch (e) { return String((e && e.message) || 'The request could not be read.').slice(0, 200); }
+      if (DS.msg) { if (!DS.msg.length) return 'The message is empty.'; if (DS.msg.length > 65536) return 'The message is too long.'; DS.text = utf8(DS.msg); }
+      return '';
+    }
     if (!window.KwD17 || !window.KwVend17) return 'This Kwallet build cannot read ' + DS.info.name + ' requests.';
-    var R = DS.R, D = KwD17;
     try {
       if (m === 'sui_signTransaction') {
         var sv = D.suiView(String(P.tx || ''), R.from);
@@ -23651,8 +23760,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   function p17Draw(c) {
     var R = DS.R, m = DS.m, v = DS.view || {}, sym = DS.info.sym, dec = DS.info.dec, gpx = +((R.prices || {}).gasUsd) || 0, o = { main: '', det: '', warn: [] };
     var blind = '<b>Blind signing.</b> Kwallet can read this request but cannot see what the app\u2019s smart contract will do with it. Only confirm if you trust ' + esc(DS.site) + '.';
-    if (m === 'xrpl_getPublicKey') {
-      o.main += HWP.card(HWP.kv('XRP Ledger public key', 'Public key only', 'No private key leaves Kwallet'));
+    if (m === 'xrpl_getPublicKey' || m === 'btc_getPublicKey') {
+      o.main += HWP.card(HWP.kv(m === 'btc_getPublicKey' ? 'Bitcoin public key' : 'XRP Ledger public key', 'Public key only', 'No private key leaves Kwallet'));
       o.main += HWP.cap('Free \u00b7 sharing the public key sends no funds.');
       o.det += addrKv('Account', R.from, esc(DS.rec.label) + ' \u00b7 #' + DS.rec.index);
       return o;
@@ -23663,6 +23772,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       o.main += HWP.cap('Free \u00b7 signing a message sends no funds.');
       if (m === 'cardano_signData') o.det += kv('Format', 'CIP-8 message (COSE_Sign1)', 'Payment key');
       if (m === 'sui_signPersonalMessage') o.det += kv('Format', 'Sui personal message', 'Intent 3');
+      if (m === 'btc_signMessage') o.det += kv('Format', DS.proto === 'bip322' ? 'BIP-322 (simple)' : 'Bitcoin Signed Message (ECDSA)', 'Your SegWit key');
       o.det += addrKv('Account', R.from, esc(DS.rec.label) + ' \u00b7 #' + DS.rec.index);
       return o;
     }
@@ -23687,6 +23797,15 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       av.warn.forEach(function (w) { o.warn.push(w); }); av.notes.forEach(function (w) { o.det += '<div class="hp-note">' + esc(w) + '</div>'; });
       if (av.outs.some(function (x) { return x.script; }) || av.notes.length || av.warn.length) needBlind = true;
       o.warn.push('Kwallet sees where ADA goes, not the value of the inputs it spends. Check the amounts in the app too.');
+    } else if (v.chain === 'btc') {
+      var bv = v.bv;
+      bv.outs.forEach(function (x) { lines.push(x.op ? 'Data (OP_RETURN), ' + fmt(x.val, 8, 8) + ' BTC' : (x.own ? 'Change ' : 'Send ') + fmt(x.val, 8, 8) + ' BTC ' + (x.own ? 'back to you' : 'to ' + (x.a ? short(x.a) : 'a script'))); });
+      bv.ins.forEach(function (x) { o.det += kv('Input ' + x.i, (x.val != null ? fmt(x.val, 8, 8) + ' BTC' : 'Amount unknown'), (x.own ? 'Yours' : 'Not yours') + ' \u00b7 ' + (x.signs ? '<b>Kwallet signs</b>' : x.done ? 'Already signed' : 'Not signed by Kwallet') + ' \u00b7 ' + esc(x.txid.slice(0, 8)) + '\u2026:' + x.vout); });
+      bv.outs.forEach(function (x) { if (x.a) o.det += addrKv(x.own ? 'Change' : 'Output ' + x.i, x.a, fmt(x.val, 8, 8) + ' BTC'); else o.det += kv('Output ' + x.i, fmt(x.val, 8, 8) + ' BTC', x.op ? 'OP_RETURN data' : 'Script ' + esc(x.script)); });
+      o.det += kv('Size', '\u2248 ' + bv.vsize + ' vB', bv.rate != null ? '\u2248 ' + (Math.round(bv.rate * 10) / 10) + ' sat/vB' : 'Fee rate unknown');
+      if (bv.ins.some(function (x) { return !x.signs; })) o.warn.push(bv.ins.filter(function (x) { return !x.signs; }).length + ' of ' + bv.ins.length + ' inputs are not signed by Kwallet (' + bv.ins.filter(function (x) { return !x.signs; }).map(function (x) { return '#' + x.i + (x.own ? '' : ' not yours'); }).join(', ') + ').');
+      v.warn.forEach(function (w) { o.warn.push(esc(w)); }); bv.notes.forEach(function (w) { o.det += '<div class="hp-note">' + esc(w) + '</div>'; });
+      if (bv.rate != null) o.main += HWP.card(HWP.kv('Fee rate', '\u2248 ' + (Math.round(bv.rate * 10) / 10) + ' sat/vB', '\u2248 ' + bv.vsize + ' vB', { sm: true }));
     } else if (v.chain === 'xrp') {
       var xv = v.xv;
       o.main += HWP.card(xv.rows.map(function (r) { return HWP.kv(esc(r[0]), esc(String(r[1])), '', { sm: true }); }).join(''));
@@ -23712,6 +23831,9 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     else if (m === 'cardano_signData') r = D.adaSignData(pk, String(P.address || ''), String(P.payload || ''), from);
     else if (m === 'xrpl_signTransaction') { var x = D.xrpSignTx(pk, P.tx, from); r = { tx_blob: x.tx_blob, hash: x.hash, publicKey: x.tx.SigningPubKey, tx: x.tx }; }   /* v3.98.13: tx = the signed fields (WalletConnect xrpl_signTransaction answers with tx_json) */
     else if (m === 'xrpl_signMessage') r = D.xrpSignMsg(pk, String(P.message || ''), from);
+    else if (m === 'btc_signMessage') { r = DS.proto === 'bip322' ? btcSignBip322(pk, DS.msg, from) : btcSignEcdsa(pk, DS.msg); r.address = from; r.protocol = DS.proto; }
+    else if (m === 'btc_signPsbt') r = btcSignPsbt(pk, P, from, DS.view.bv);
+    else if (m === 'btc_getPublicKey') { var bl = btcLib(), kq = bl.ECPair.fromWIF(pk, bl.networks.bitcoin); if (bl.payments.p2wpkh({ pubkey: kq.publicKey }).address !== from) throw new Error('The paired seed no longer derives ' + short(from) + '.'); r = { publicKey: kq.publicKey.toString('hex'), address: from }; kq = null; }
     else if (m === 'xrpl_getPublicKey') { var h = String(pk).replace(/^0x/i, ''); if (h.length === 66 && /^00/.test(h)) h = h.slice(2); r = { publicKey: ethers.SigningKey.computePublicKey('0x' + h, true).slice(2).toUpperCase() }; }
     else throw new Error('Unsupported request');
     return r;
@@ -23726,7 +23848,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (!c.err && c.gbal != null && c.fee + c.amount > c.gbal) c.err = 'Not enough SOL for this transaction plus the network fee.';
     } else if (P17M[m] && v.p17tx) {
       c.fee = v.fee; c.amount = v.out || 0n; c.atMost = !!v.atMost; c.gbal = U(R.balance && R.balance.gas);
-      if (c.gbal != null && c.fee + c.amount > c.gbal) c.err = 'Not enough ' + DS.info.sym + ' for this transaction plus the network fee.';
+      if (v.chain === 'btc') { c.gbal = null; if (!v.bv.inKnown || v.fee == null) c.err = 'Kwallet cannot see the amount of every input, so it cannot check the fee and will not sign.'; else if (!v.bv.sign.length) c.err = 'Nothing in this PSBT is yours to sign.'; }
+      else if (c.gbal != null && c.fee != null && c.fee + c.amount > c.gbal) c.err = 'Not enough ' + DS.info.sym + ' for this transaction plus the network fee.';
     } else if (m === 'tron_signTransaction') {
       c.custom = DS.level === 'custom' && !!R.cf; c.fee = c.custom ? U(R.cf.fl) : v.feeLimit || 0n; c.atMost = true; c.gbal = U(R.balance && R.balance.gas); c.amount = v.value || 0n;
       if (c.custom && (R.cf.bad || c.fee == null || c.fee <= 0n)) { c.err = 'Enter a valid fee limit.'; c.fee = 0n; } else if (c.custom && c.fee > 15000000000n) c.err = 'The fee limit can be at most 15,000 TRX.';
@@ -24055,7 +24178,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     body += notes + HWP.warns(warnsL, tl === 'bad' || !!c.err || warnsL.some(function (w) { return /phishing|Known scam|another account/.test(w); })) + main + HWP.trust(tl, R.trustText ? String(R.trustText).slice(0, 80) : '') + HWP.details(det, DS.detOpen, 'kss-det');
     var sc = $('kss-sc'), top = sc ? sc.scrollTop : 0;
     if (!$('kss-foot')) {
-      page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ col: true, no: 'Cancel', ok: m === 'kw_nearAccount' || m === 'xrpl_getPublicKey' ? 'Share' : 'Confirm', okId: 'kss-go', noId: 'kss-no', disabled: true, hint: '' })) + '</div>';
+      page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ col: true, no: 'Cancel', ok: m === 'kw_nearAccount' || m === 'xrpl_getPublicKey' || m === 'btc_getPublicKey' ? 'Share' : 'Confirm', okId: 'kss-go', noId: 'kss-no', disabled: true, hint: '' })) + '</div>';
       $('kss-no').onclick = function () { if (!busy) finish({ status: 'rejected' }); };
       page.querySelector('[data-hp-x]').onclick = function () { if (!busy) finish({ status: 'rejected' }); };
       hold($('kss-go'));
