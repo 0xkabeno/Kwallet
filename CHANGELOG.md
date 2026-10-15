@@ -1,5 +1,9 @@
 # Changelog
 
+## Hwallet v1.8.18 (2026-10-15, work in progress; Kwallet stays 3.98.16)
+
+- Hwallet › Settings: the Support card is compact and takes its natural height: one header line ("Support Hwallet · Free and open source"), then ETH, SOL / BTC, XMR as a 2×2 grid of chips (coin icon, short address, copy icon; tap a chip to copy, with the copy toast). Lime card with dark text in OG, M3 and MIUIX, light and dark. The 1.8.17 stretch-to-fill / height-measuring logic and the row tightening are gone; the Settings page now pads its bottom by the fixed bottom bar's real height (gesture inset included) + 8 px, so nothing sits under the bar and a short screen simply scrolls. versionName 1.8.18 / versionCode 10818 (from APP_VERSION).
+
 ## Hwallet v1.8.17 (2026-10-15, work in progress; Kwallet stays 3.98.16)
 
 - Hwallet › Settings: the lime "Support Hwallet · Free and open source" donation card (ETH / SOL / BTC / XMR, icon, short address, tap to copy) is back on the main Settings page, directly under the settings list; the separate "Support Hwallet" row and page are gone. The page is a flex column measured live down to the bottom bar (bar height + gesture inset, so OG, M3 and MIUIX all fit): header, list and card on one screen, no scrolling, nothing under the bottom bar or the status bar. On shorter screens the list and card rows tighten (44 px, then 40 px rows; card rows 36–52 px); only a very short screen scrolls. versionName 1.8.17 / versionCode 10817 (from APP_VERSION).
