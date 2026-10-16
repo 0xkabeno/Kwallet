@@ -678,6 +678,12 @@ class HwBrowser(
         try {
             val i = if (scheme == "intent") Intent.parseUri(u, Intent.URI_INTENT_SCHEME).apply { component = null; selector = null; addCategory(Intent.CATEGORY_BROWSABLE) }
                     else Intent(Intent.ACTION_VIEW, Uri.parse(u)).addCategory(Intent.CATEGORY_BROWSABLE)
+            /* v1.8.32: a wallet link the page opens to wake its wallet (bifrostwallet://, joey://, girinwallet://… with no
+               pairing URI) resolves to Hwallet itself; starting it would mark Hwallet as woken by a dApp, and the next
+               WalletConnect answer would send Hwallet to the background (xrp.cafe closed Hwallet on Connect). Hwallet is
+               already the wallet on screen, so such a link is dropped. */
+            val own = try { i.resolveActivity(act.packageManager)?.packageName == act.packageName } catch (_: Throwable) { false }
+            if (own) return
             act.startActivity(i)
         } catch (_: ActivityNotFoundException) {
         } catch (_: Throwable) {}
