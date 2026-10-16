@@ -12440,7 +12440,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98.29';
+const APP_VERSION = '3.98.30';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -20365,6 +20365,7 @@ window.kwBack = function () {
     else if (it && a === 'ed') { view = 'form'; editId = id; selChain = it.chain; render(); }
   });
   window.KwVault = {
+    seeds: function () { try { return sget().slice(); } catch (e) { return []; } },
     open: function () { if (locked()) return; build(); load(); seeds = null; view = 'list'; render(); requestAnimationFrame(function () { ov.classList.add('show'); }); },
     add: function () {
       if (locked()) return; build(); load();
@@ -21987,8 +21988,16 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       try { load().forEach(function (r) { if (r.m) src.push({ m: r.m, p: r.p || '', st: r.seedType || 'bip39' }); }); } catch (e) {}
       try { var d = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); if (d && d.mnemonic) { var dt = d.seedType || detectSeedType(d.mnemonic); src.push({ m: d.mnemonic, p: dt === 'bip39' && typeof d.passphrase === 'string' ? d.passphrase : '', st: dt }); } } catch (e) {}
       try { (JSON.parse(localStorage.getItem('kw-seed-book') || '[]') || []).forEach(function (x) { if (x && x.m) src.push({ m: x.m, p: '', st: x.t || detectSeedType(x.m), note: x.note || '', o: x.o || '' }); }); } catch (e) {}
+      /* v3.98.30: every seed Kwallet holds, not only the seed book: the seed on screen, its Undo / Redo history
+         (in memory and as stored) and Saved keys; a seed met twice is listed once */
+      try { if (typeof currentMnemonic !== 'undefined' && currentMnemonic) { var ct = (typeof currentSeedType !== 'undefined' && currentSeedType) || detectSeedType(currentMnemonic); src.splice(0, 0, { m: currentMnemonic, p: ct === 'bip39' && typeof currentPassphrase === 'string' ? currentPassphrase : '', st: ct }); } } catch (e) {}
+      var hpush = function (e) { try { if (!e) return; var hm = typeof e === 'string' ? e : e.m; if (!hm) return; src.push({ m: hm, p: '', st: (e && e.t) || detectSeedType(hm) }); } catch (x) {} };
+      try { (typeof seedHistory !== 'undefined' && Array.isArray(seedHistory) ? seedHistory : []).slice().reverse().forEach(hpush); } catch (e) {}
+      try { (typeof redoStack !== 'undefined' && Array.isArray(redoStack) ? redoStack : []).forEach(hpush); } catch (e) {}
+      try { var d2 = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); if (d2) { (Array.isArray(d2.history) ? d2.history : []).slice().reverse().forEach(hpush); (Array.isArray(d2.redo) ? d2.redo : []).forEach(hpush); } } catch (e) {}
+      try { if (window.KwVault && typeof KwVault.seeds === 'function') (KwVault.seeds() || []).forEach(function (x) { if (x && x.m) src.push({ m: x.m, p: '', st: x.t || detectSeedType(x.m), note: x.note || '', o: x.o || '' }); }); } catch (e) {}
       var seen = {};
-      for (var i = 0; i < src.length && out.length < 40; i++) {
+      for (var i = 0; i < src.length && out.length < 120; i++) {
         var s = src[i], m = String(s.m).trim().split(/\s+/).join(' '), k = m + '|' + s.p; if (!m) continue; if (seen[k]) { if (s.o && !seen[k].o) seen[k].o = s.o; if (s.note && !seen[k].named && /^$/.test(seen[k].label || '')) seen[k].label = String(s.note).slice(0, 24); continue; }
         var sid = SIDC[k]; if (!sid) { try { sid = await seedSidOf(m, s.p, s.st); } catch (e) { sid = ''; } if (sid) SIDC[k] = sid; }
         seen[k] = add({ key: sid || 'm' + i, sid: sid, st: s.st, label: s.note ? String(s.note).slice(0, 24) : '', recs: [], m: m, p: s.p, o: s.o || '' });
