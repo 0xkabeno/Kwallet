@@ -2882,7 +2882,7 @@ html.hwa:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#
 /* v1.8.18: compact Support card on Settings (natural height, 2x2 chips); the Settings page pads its bottom by the fixed
    bottom bar's measured height (--hw-navh, gesture inset included) + 8px, falling back to --nav + --sab */
 html.hwa:not(#v18a):not(#v18b):not(#v18c):not(#v18d):not(#v18e):not(#v18f):not(#v18g):not(#v18h):not(#v18i):not(#v18j):not(#v18k):not(#v18l):not(#v18m):not(#v18n):not(#v18o):not(#v18p) .app:has(#kset-host){padding-bottom:calc(max(var(--hw-navh, 0px), var(--nav, 76px) + var(--sab, 0px)) + 8px)!important}
-html .snd-j .snd-chips{gap:6px!important}html .snd-j .snd-chip{height:30px!important;padding:0 12px!important;border-radius:10px!important;font:600 13px/1 var(--u-font,'InterE'),system-ui!important;letter-spacing:.2px;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.12)!important;color:var(--text)!important}html .snd-j .snd-chip:active{transform:scale(.96)}.td-cf .dv{display:inline-flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-end;gap:10px;white-space:nowrap!important}.td-bk{display:inline-flex;gap:3px;flex:0 0 auto}.td-bk i{width:6px;height:12px;border-radius:2px;background:rgba(255,255,255,.12);transition:background .3s}.td-bk i.on{background:#f26822}.td-bk.ok i{background:#2ecc71}.td-cn{font-variant-numeric:tabular-nums;min-width:30px;text-align:right}.td-cf.ok .td-cn{color:#2ecc71}
+html .snd-j .snd-chips{gap:6px!important}html .snd-j .snd-chip{height:30px!important;padding:0 12px!important;border-radius:10px!important;font:600 13px/1 var(--u-font,'InterE'),system-ui!important;letter-spacing:.2px;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.12)!important;color:var(--text)!important}html .snd-j .snd-chip:active{transform:scale(.96)}html .sw-qk{gap:6px!important;align-items:center}html .sw-qk button,html .inp.amt .mx[data-smax]{height:30px!important;min-height:30px!important;padding:0 12px!important;border-radius:10px!important;font:600 13px/1 var(--u-font,'InterE'),system-ui!important;letter-spacing:.2px!important;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.12)!important;color:var(--text)!important;box-shadow:none!important}html .sw-qk button:active,html .inp.amt .mx[data-smax]:active{transform:scale(.96)}.td-cf .dv{display:inline-flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-end;gap:10px;white-space:nowrap!important}.td-bk{display:inline-flex;gap:3px;flex:0 0 auto}.td-bk i{width:6px;height:12px;border-radius:2px;background:rgba(255,255,255,.12);transition:background .3s}.td-bk i.on{background:#f26822}.td-bk.ok i{background:#2ecc71}.td-cn{font-variant-numeric:tabular-nums;min-width:30px;text-align:right}.td-cf.ok .td-cn{color:#2ecc71}
 </style>
 </head>
 <body data-theme="light">
@@ -3815,7 +3815,7 @@ window.hwPlayOpening();
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
       var c = String(d.command), dt = d.data || {}, job;
-      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.23' });
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.24' });
       else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
       else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
       else if (c === 'network') job = Promise.resolve({ network: XNET });
@@ -3880,7 +3880,7 @@ window.hwPlayOpening();
       isHwallet: true,
       request: function (method, params) {
         var id = 'hw' + Date.now().toString(36), p = params || {}, job;
-        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.23', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.24', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
         else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
           job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
         else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
@@ -6973,7 +6973,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.23';
+var APP_VERSION = '1.8.24';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -14453,7 +14453,7 @@ window.hwCrashPrompt = crashPrompt;
   function xmrStKey() { return 'hw-xmr-st:' + xmrPrimary(); }
   function xmrLoadSt() {
     var k = xmrPrimary(); if (XS.key === k) return; XS.key = k; XS.st = null; XS.prog = null; XS.err = ''; XS.fails = 0;
-    if (!k) return; var s = jget(xmrStKey(), null); if (s && s.bal != null) { XS.st = s; C.b.xmr = { n: s.bal, unl: s.unl, at: s.at }; }
+    if (!k) return; var s = jget(xmrStKey(), null); if (s && s.bal != null) { XS.st = s; C.b.xmr = { n: s.bal, unl: s.unl, at: s.at }; xmrClamp(s); }
   }
   function xmrProg(p) {
     XS.prog = p; var el = $('xmrsync'); if (el) el.innerHTML = xmrSyncInner();
@@ -14489,10 +14489,22 @@ window.hwCrashPrompt = crashPrompt;
       '<div class="xs-l xs-lo"><span>Receiving works now. Sending unlocks when the sync is done.' + (p.nat ? ' It keeps going with the screen off.' : '') + '</span></div>';
   }
   function xmrRowSub() { if (!xmrReady()) return ''; var p = XS.prog; if (XS.busy && p && !p.done && p.pct < 1) return 'Scanning ' + Math.floor((p.pct || 0) * 100) + '%'; return ''; }
+  /* v1.8.24: while our own send waits in the mempool the watch-only engine already counts the change but not the spent inputs,
+     so the balance would go up; show at most (balance before - amount - fee) until the send is in a block (or 2 h pass) */
+  function xmrClamp(st) {
+    try {
+      var po = xmrGet('pendOut'); if (!po || !C.b.xmr) return;
+      var pt = null; (st.txs || []).forEach(function (t) { if (t.hash === po.hash) pt = t; });
+      if ((pt && (!pt.pool || pt.failed)) || Date.now() - po.t > 72e5) { xmrSet('pendOut', undefined); return; }
+      var pb = BigInt(po.bal), pu = BigInt(po.unl);
+      if (pb < BigInt(C.b.xmr.n || '0')) C.b.xmr.n = pb.toString();
+      if (pu < BigInt(C.b.xmr.unl || '0')) C.b.xmr.unl = pu.toString();
+    } catch (e) {}
+  }
   function xmrApply(st, fresh) {
     if (!st) return;
     var prev = XS.st; XS.st = st; XS.err = ''; XS.fails = 0;
-    C.b.xmr = { n: st.bal, unl: st.unl, at: st.at || Date.now() };
+    C.b.xmr = { n: st.bal, unl: st.unl, at: st.at || Date.now() }; xmrClamp(st);
     var keep = Object.assign({}, st, { txs: (st.txs || []).slice(0, 120) }); jset(xmrStKey(), keep); saveCache();
     /* activity rows (native cache) + incoming notifications */
     var items = xmrItems(st); try { actStore(items); } catch (e) {}
@@ -14768,7 +14780,10 @@ window.hwCrashPrompt = crashPrompt;
       });
     }).then(function (o) {
       SND.busy = false;
-      var hash = o.hashes[0] || ''; if (o.state) xmrApply(o.state, false);
+      var hash = o.hashes[0] || '';
+      try { var z = 0n, sp = BigInt(o.amount || '0') + BigInt(built && built.fee || '0'), b0 = BigInt(st.bal || '0') - sp, u0 = BigInt(st.unl || '0') - sp;
+        if (hash) xmrSet('pendOut', { hash: hash, bal: (b0 < z ? z : b0).toString(), unl: (u0 < z ? z : u0).toString(), t: Date.now() }); } catch (e) {}
+      if (o.state) xmrApply(o.state, false);
       var amtTxt = fmtU(o.amount, 12, 8);
       actAdd({ t: Date.now(), ch: 'xmr', net: null, key: 'native', s: 'XMR', amt: amtTxt, to: to, hash: hash, st: 'pending', kind: 'transfer' });   /* v1.8.9 (R17): no id = no local row (the engine still lists the tx from the pool) */
       if (RCP.indexOf(to.toLowerCase()) < 0) { RCP.unshift(to.toLowerCase()); RCP = RCP.slice(0, 300); jset('hw-recips', RCP); }
