@@ -3732,7 +3732,7 @@ window.hwPlayOpening();
   /* v1.8.15 (4.2): CIP-30 complete: name, icon, apiVersion, isEnabled, enable({ extensions }), supportedExtensions and
      getExtensions. CIP-95 (governance) is listed as unsupported: Hwallet does not sign stake / DRep keys (no blind signing),
      so the extension list is empty and enable() ignores a CIP-95 request instead of pretending. */
-  var ADA_EXT = [];   /* supported CIP extensions, e.g. { cip: 95 } once Kwallet can review and sign governance */
+  var ADA_EXT = [{ cip: 95 }];   /* v1.8.25: CIP-95 governance (DRep key, stake keys, signData with the DRep or stake key); Kwallet reviews every signature */   /* supported CIP extensions, e.g. { cip: 95 } once Kwallet can review and sign governance */
   var adaApi = {
     getNetworkId: function () { return adaOn ? Promise.resolve(1) : Promise.reject({ code: -4, info: 'Not enabled' }); },
     getExtensions: function () { return Promise.resolve(ADA_EXT.slice()); },
@@ -3749,6 +3749,12 @@ window.hwPlayOpening();
   };
   adaApi.experimental = { getCollateral: adaApi.getCollateral, on: function () {}, off: function () {} };
   adaApi.cip30 = adaApi;
+  adaApi.cip95 = {
+    getPubDRepKey: function () { return cCall('cardano_getPubDRepKey'); },
+    getRegisteredPubStakeKeys: function () { return cCall('cardano_getRegisteredPubStakeKeys'); },
+    getUnregisteredPubStakeKeys: function () { return cCall('cardano_getUnregisteredPubStakeKeys'); },
+    signData: function (addr, payload) { return cCall('cardano_signData', { address: String(addr || ''), payload: String(payload || '') }, 'data'); }
+  };
   var adaW = Object.freeze({ name: NAME, icon: ICON, apiVersion: '0.1.0', supportedExtensions: ADA_EXT.slice(), isHwallet: true,
     isEnabled: function () { return call('cardano', 'cardano_isEnabled', {}).then(function (r) { adaOn = !!r; return adaOn; }, function () { return false; }); },
     enable: function (o) { return call('cardano', 'cardano_enable', { extensions: o && Array.isArray(o.extensions) ? o.extensions.slice(0, 8) : [] }).then(function () { adaOn = true; return adaApi; }, function (e) { throw cErr(e); }); } });
@@ -3815,7 +3821,7 @@ window.hwPlayOpening();
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
       var c = String(d.command), dt = d.data || {}, job;
-      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.24' });
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.25' });
       else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
       else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
       else if (c === 'network') job = Promise.resolve({ network: XNET });
@@ -3880,7 +3886,7 @@ window.hwPlayOpening();
       isHwallet: true,
       request: function (method, params) {
         var id = 'hw' + Date.now().toString(36), p = params || {}, job;
-        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.24', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.25', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
         else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
           job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
         else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
@@ -6973,7 +6979,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.24';
+var APP_VERSION = '1.8.25';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -10923,7 +10929,7 @@ window.hwCrashPrompt = crashPrompt;
   var SUI_CH = 'sui:mainnet', ADA_CH = 'cip34:1-764824073', XRPL_CH = 'xrpl:0', BTC_CH = 'bip122:000000000019d6689c085ae165831e93';
   var WC_SUI_M = ['sui_getAccounts', 'sui_signPersonalMessage', 'sui_signTransaction', 'sui_signAndExecuteTransaction', 'sui_signTransactionBlock', 'sui_signAndExecuteTransactionBlock'];
   var WC_ADA_M = ['cardano_signTx', 'cardano_signData', 'cardano_submitTx', 'cardano_getBalance', 'cardano_getUtxos', 'cardano_getCollateral', 'cardano_getNetworkId', 'cardano_getUsedAddresses', 'cardano_getUnusedAddresses', 'cardano_getChangeAddress', 'cardano_getRewardAddress', 'cardano_getRewardAddresses'];
-  var WC_XRPL_M = ['xrpl_signTransaction'];
+  var WC_XRPL_M = ['xrpl_signTransaction', 'xrpl_signTransactionFor'];   /* v1.8.25: ...For is listed so dApps that require it can connect; multi-signing itself is refused */
   var WC_BTC_M = ['getAccountAddresses', 'sendTransfer', 'signMessage', 'signPsbt'];   /* v1.8.16: message + PSBT, signed in Kwallet with a review sheet */
   /* the address a session namespace (or a dApp namespace) uses in a wallet's address set */
   function wcNsAddr(a, k) { a = a || {}; return k === 'eip155' ? a.eth : k === 'solana' ? a.sol : k === 'tron' ? a.trx : k === 'sui' ? a.sui : (k === 'cip34' || k === 'cardano') ? a.ada : k === 'xrpl' ? a.xrp : k === 'bip122' ? a.btc : null; }
@@ -10982,7 +10988,7 @@ window.hwCrashPrompt = crashPrompt;
     if (A.trx && p.trx) o.tron = { chains: [TRX_CH], methods: WC_TRX_M, events: [], accounts: [TRX_CH + ':' + A.trx] };
     if (A.sui && p.sui) o.sui = { chains: [SUI_CH], methods: WC_SUI_M, events: [], accounts: [SUI_CH + ':' + A.sui] };
     if (A.ada && p.ada) o.cip34 = { chains: [ADA_CH], methods: WC_ADA_M, events: [], accounts: [ADA_CH + ':' + A.ada] };
-    if (A.xrp && p.xrp) o.xrpl = { chains: [XRPL_CH], methods: WC_XRPL_M, events: [], accounts: [XRPL_CH + ':' + A.xrp] };
+    if (A.xrp && p.xrp) o.xrpl = { chains: [XRPL_CH], methods: WC_XRPL_M, events: ['accountsChanged', 'chainChanged'], accounts: [XRPL_CH + ':' + A.xrp] };
     if (A.btc && p.btc) o.bip122 = { chains: [BTC_CH], methods: WC_BTC_M, events: ['bip122_addressesChanged'], accounts: [BTC_CH + ':' + A.btc] };
     return o;
   }
@@ -15586,9 +15592,19 @@ window.hwCrashPrompt = crashPrompt;
     if (m === 'sui_signPersonalMessage') return p17K(site, 'sui', m, { message: p.message }).then(function (r) { if (r.publicKey) jset('hw-suipk:' + A.sui, r.publicKey); return r; });
     toast('Preparing\u2026');
     var b64;
-    return HwSui.build(p.transaction, A.sui, SUIC).catch(function (e) { throw dErr(-32603, 'Could not prepare the Sui transaction: ' + String(e && e.message || e).slice(0, 160)); }).then(function (b) {
-      b64 = b;
-      return HwSui.dryRun(b, SUIC).then(function (dr) { var st = dr.status || {}; return suiDeltas(dr).then(function (d) { return st.status === 'failure' ? { error: String(st.error || 'The transaction would fail').slice(0, 160), plain: 1 } : d.length ? { deltas: d } : null; }); }, function () { return null; });
+    /* v1.8.25: a Sui simulation that fails right after the app built the transaction (a MoveAbort from a router whose
+       quote or objects the RPC node had not caught up with yet) is built and simulated again, up to twice, before
+       Kwallet is told it would fail; the sheet no longer opens on a failure that clears a second later */
+    function suiPrep(n) {
+      return HwSui.build(p.transaction, A.sui, SUIC).catch(function (e) { throw dErr(-32603, 'Could not prepare the Sui transaction: ' + String(e && e.message || e).slice(0, 160)); }).then(function (b) {
+        return HwSui.dryRun(b, SUIC).then(function (dr) { var st = dr.status || {}; return suiDeltas(dr).then(function (d) { return { b: b, sim: st.status === 'failure' ? { error: String(st.error || 'The transaction would fail').slice(0, 160), plain: 1 } : d.length ? { deltas: d } : null }; }); }, function () { return { b: b, sim: null }; });
+      }).then(function (o) {
+        if (o.sim && o.sim.error && n < 2) return new Promise(function (r) { setTimeout(r, 900 + n * 900); }).then(function () { return suiPrep(n + 1).catch(function () { return o; }); });
+        return o;
+      });
+    }
+    return suiPrep(0).then(function (o) {
+      b64 = o.b; return o.sim;
     }).then(function (sim) {
       return p17K(site, 'sui', 'sui_signTransaction', { tx: b64 }, sim ? { sim: sim } : {});
     }).then(function (r) {
@@ -15604,7 +15620,24 @@ window.hwCrashPrompt = crashPrompt;
   }
 
   /* ---------- Cardano ---------- */
+  /* v1.8.25 (CIP-95): the DRep and stake public keys, shared once by Kwallet (a Share sheet) and kept for this address */
+  function adaGov(site) {
+    var k = 'hw-adagov:' + A.ada, c = jget(k, null);
+    if (c && c.drep && c.stake) return Promise.resolve(c);
+    return p17K(site, 'cardano', 'cardano_getPubKeys', {}).then(function (r) {
+      if (!r || !/^[0-9a-f]{64}$/i.test(String(r.drepPub || '')) || !/^[0-9a-f]{64}$/i.test(String(r.stakePub || ''))) throw dErr(-32603, 'Update Kwallet to 3.98.22 or later for Cardano governance');
+      var o = { drep: String(r.drepPub).toLowerCase(), stake: String(r.stakePub).toLowerCase() }; jset(k, o); return o;
+    });
+  }
+  function adaStakeReg() {
+    return koios('/address_info', { _addresses: [A.ada] }).then(function (r) {
+      var sa = ((r || [])[0] || {}).stake_address; if (!sa) return false;
+      return koios('/account_info', { _stake_addresses: [sa] }).then(function (a) { return ((a || [])[0] || {}).status === 'registered'; });
+    }).catch(function () { return true; });
+  }
   function adaRun(site, m, p) {
+    if (m === 'cardano_getPubDRepKey') return adaGov(site).then(function (g) { return g.drep; });
+    if (m === 'cardano_getRegisteredPubStakeKeys' || m === 'cardano_getUnregisteredPubStakeKeys') return adaGov(site).then(function (g) { return adaStakeReg().then(function (reg) { return (m === 'cardano_getRegisteredPubStakeKeys') === reg ? [g.stake] : []; }); });
     if (m === 'cardano_getUsedAddresses') return Promise.resolve([p17Hex(p17Bech(A.ada))]);
     if (m === 'cardano_getChangeAddress') return Promise.resolve(p17Hex(p17Bech(A.ada)));
     if (m === 'cardano_getRewardAddresses') { var st = adaStakeHex(); return Promise.resolve(st ? [st] : []); }
@@ -15708,7 +15741,7 @@ window.hwCrashPrompt = crashPrompt;
   }
 
   /* the Browser's entry for these namespaces (segBrowser brHandle hands them here) */
-  var P17_SIGN = { sui_signTransaction: 1, sui_signAndExecuteTransaction: 1, sui_signPersonalMessage: 1, cardano_signTx: 1, cardano_signData: 1, cardano_submitTx: 1, cardano_getUtxos: 1, cardano_getBalance: 1, cardano_getCollateral: 1, cardano_getUsedAddresses: 1, cardano_getChangeAddress: 1, cardano_getRewardAddresses: 1, xrpl_signTransaction: 1, xrpl_signMessage: 1, xrpl_getPublicKey: 1 };
+  var P17_SIGN = { sui_signTransaction: 1, sui_signAndExecuteTransaction: 1, sui_signPersonalMessage: 1, cardano_signTx: 1, cardano_signData: 1, cardano_submitTx: 1, cardano_getUtxos: 1, cardano_getBalance: 1, cardano_getCollateral: 1, cardano_getUsedAddresses: 1, cardano_getChangeAddress: 1, cardano_getRewardAddresses: 1, cardano_getPubDRepKey: 1, cardano_getRegisteredPubStakeKeys: 1, cardano_getUnregisteredPubStakeKeys: 1, xrpl_signTransaction: 1, xrpl_signMessage: 1, xrpl_getPublicKey: 1 };
   function brHandle17(o, q, site) {
     var ns = q.ns, m = String(q.method || ''), p = q.params || {}, addr = p17Addr(ns);
     if (ns === 'sui' && m === 'sui_connect') { if (brIs(o, 'sui') && addr) return suiPk(addr).then(function (pk) { return { address: addr, publicKey: pk || null }; }); if (p.silent) return Promise.reject(dErr(4100, 'Not connected')); return brConnect(o, site, 'sui').then(function (a) { return suiPk(a).then(function (pk) { return { address: a, publicKey: pk || null }; }); }); }
