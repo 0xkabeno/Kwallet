@@ -1,5 +1,11 @@
 # Changelog
 
+## Kwallet v3.98.21 + Hwallet v1.8.24 (2026-10-16)
+
+- Kwallet: the Monero S|V key button is now a real PK button (same classes), so in every style (OG, MD3, M3, MIUIX, light and dark) it has exactly PK's size, corners, red and font, split into S | V by a thin divider. The live-measuring script from 3.98.19 is gone. Copying S or V never greys the button; only the copied key text is struck. Hide dims it once, like PK.
+- Hwallet: the Monero balance no longer goes up while your own send waits in the mempool. It shows at most balance before minus amount and fee until the send is in a block (or 2 hours pass).
+- Hwallet: the TRX Max button and the swap sheet's 25% / 50% / Max chips use the same outlined chip style as the send sheet.
+
 ## Kwallet v3.98.20 + Hwallet v1.8.23 (2026-10-16)
 
 - Hwallet: tighter, cleaner USD/Max chips on the send sheet. (Max on Monero fills the spendable amount; change from a recent send stays locked for 10 blocks.)
