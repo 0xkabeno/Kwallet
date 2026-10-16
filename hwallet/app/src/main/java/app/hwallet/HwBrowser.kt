@@ -632,11 +632,16 @@ class HwBrowser(
                     if (o.size() < 11_000) ev(JSONObject().put("t", "icon").put("id", t.id).put("icon", "data:image/png;base64," + Base64.encodeToString(o.toByteArray(), Base64.NO_WRAP)))
                 } catch (_: Throwable) {}
             }
+            /** v1.8.25: <input type=file> on a website opens the system file picker (uploads from storage) */
+            override fun onShowFileChooser(view: WebView, cb: android.webkit.ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean =
+                try { act.chooseFiles(cb, params) } catch (_: Throwable) { false }
             /** target=_blank / window.open after a tap: a new Hwallet tab (never a popup window) */
             override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
                 if (!isUserGesture) return false
                 val tmp = WebView(act)
                 tmp.webViewClient = object : WebViewClient() {
+                    @android.annotation.TargetApi(26)
+                    override fun onRenderProcessGone(v: WebView, d: android.webkit.RenderProcessGoneDetail): Boolean { try { v.destroy() } catch (_: Throwable) {}; return true }
                     override fun shouldOverrideUrlLoading(v: WebView, r: WebResourceRequest): Boolean { grab(r.url.toString()); return true }
                     override fun onPageStarted(v: WebView, url: String?, f: Bitmap?) { grab(url) }
                     private var done = false
