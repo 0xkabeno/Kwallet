@@ -1,5 +1,14 @@
 # Changelog
 
+## Kwallet v3.98.27 + Hwallet v1.8.30 (2026-10-16)
+
+- Address numbers per seed: a seed paired at #0 and then #1 is one wallet in Hwallet with both numbers as chips on its row; a tap switches the live number. Only the selected number is live; balances, activity, history and swaps are kept per number. Wallet options list the numbers (remove one) and the seed ID with a copy button.
+- Kwallet keeps every address number it pairs for a seed (needed to sign for each), shown as one seed row with #0 #1 chips; the ⋮ menu removes one number or the whole seed.
+- Pair by seed ID: Hwallet's pairing page takes the 10-digit seed ID (the check digit catches typos); Kwallet opens on that seed and sends every paired address number in one handoff.
+- Hwallet wallets paired before seed IDs learn theirs from the next pairing or the next signed request.
+- Kwallet's Pair Hwallet page: no step strip, name and address number on one row, a copy button beside each seed ID, Copy pairing code removed (Hwallet still accepts old codes under Other ways).
+- Hwallet's pairing page: step strip removed, seed ID field under Pair with Kwallet.
+
 ## Kwallet v3.98.26 + Hwallet v1.8.29 (2026-10-16)
 
 - Seed ID: every paired seed gets a 10-digit public ID (e.g. 4821-0937-52), a hash of its primary public address with a check digit. The same seed always gets the same ID at any address number; a BIP39 passphrase gives another ID. It is shown on Kwallet's Pair Hwallet page (with Copy seed ID), on Kwallet's pairing sheet and on Hwallet's wallet rows and pairing result.
