@@ -56,7 +56,8 @@ class HwActivity : FragmentActivity() {
         if (i?.action != Intent.ACTION_VIEW) return ""
         val s = when (u.scheme?.lowercase()) {
             "wc" -> u.toString()
-            "hwallet", "https", "bifrostwallet" -> try { u.getQueryParameter("uri") ?: "" } catch (_: Throwable) { "" }
+            "hwallet", "https", "bifrostwallet", "metamask", "trust", "okex", "bitkeep", "tpoutside", "rainbow", "safepalwallet", "zerion", "uniswap" ->
+                try { u.getQueryParameter("uri") ?: "" } catch (_: Throwable) { "" }
             else -> ""
         }
         return if (s.startsWith("wc:") && s.length < 4096) s else ""
@@ -68,7 +69,7 @@ class HwActivity : FragmentActivity() {
         val u = i?.data ?: return
         if (i.action != Intent.ACTION_VIEW) return
         val sc = u.scheme?.lowercase() ?: return
-        val isWc = sc == "wc" || (sc == "hwallet" && u.host == "wc") || sc == "bifrostwallet" ||
+        val isWc = sc == "wc" || (sc == "hwallet" && u.host == "wc") || sc in WC_ALIAS ||
             (sc == "https" && (u.host == "hwallet.app" || u.host == "app.bifrostwallet.com") && (u.path ?: "").startsWith("/wc"))
         if (!isWc) return
         wcWokeAt = System.currentTimeMillis()
@@ -1210,6 +1211,26 @@ class HwActivity : FragmentActivity() {
             android.util.Log.i("HwWarm", "warm sent to Kwallet")
         } catch (e: Exception) { android.util.Log.w("HwWarm", "warm failed: $e") }
     }
+    /* v1.8.28: WalletConnect links of other wallets Hwallet answers (pairing link or the request ping) */
+    private val WC_ALIAS = setOf("bifrostwallet", "metamask", "trust", "okex", "bitkeep", "tpoutside", "rainbow", "safepalwallet", "zerion", "uniswap")
+    /** v1.8.28: a WalletConnect link copied from a dApp's QR ("Copy link") pairs as soon as Hwallet gets focus. Each link
+     *  is used once; Android only lets the app read the clipboard while it has focus. */
+    @Volatile private var lastClipWc = ""
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus) return
+        try {
+            val cm = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val d = cm.primaryClip ?: return
+            if (d.itemCount < 1) return
+            val t = (d.getItemAt(0)?.text ?: return).toString().trim()
+            if (!t.startsWith("wc:") || !t.contains("symKey=") || t.length >= 4096 || t == lastClipWc) return
+            if (getSharedPreferences("hw_wc_clip", MODE_PRIVATE).getString("last", "") == t) { lastClipWc = t; return }
+            lastClipWc = t; getSharedPreferences("hw_wc_clip", MODE_PRIVATE).edit().putString("last", t).apply()
+            wcLink(t)
+        } catch (_: Throwable) {}
+    }
+
     override fun onResume() {
         super.onResume(); fgNow = true; web.onResume(); br?.resume(); if (::web.isInitialized) tuneWebView(this, web)
         if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwFront&&hwFront()", null)
