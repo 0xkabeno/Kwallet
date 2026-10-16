@@ -56,7 +56,7 @@ class HwActivity : FragmentActivity() {
         if (i?.action != Intent.ACTION_VIEW) return ""
         val s = when (u.scheme?.lowercase()) {
             "wc" -> u.toString()
-            "hwallet", "https", "bifrostwallet", "metamask", "trust", "okex", "bitkeep", "tpoutside", "rainbow", "safepalwallet", "zerion", "uniswap" ->
+            "hwallet", "https", "bifrostwallet", "girinwallet", "joey", "metamask", "trust", "okex", "bitkeep", "tpoutside", "rainbow", "safepalwallet", "zerion", "uniswap" ->
                 try { u.getQueryParameter("uri") ?: "" } catch (_: Throwable) { "" }
             else -> ""
         }
@@ -1212,7 +1212,7 @@ class HwActivity : FragmentActivity() {
         } catch (e: Exception) { android.util.Log.w("HwWarm", "warm failed: $e") }
     }
     /* v1.8.28: WalletConnect links of other wallets Hwallet answers (pairing link or the request ping) */
-    private val WC_ALIAS = setOf("bifrostwallet", "metamask", "trust", "okex", "bitkeep", "tpoutside", "rainbow", "safepalwallet", "zerion", "uniswap")
+    private val WC_ALIAS = setOf("bifrostwallet", "girinwallet", "joey", "metamask", "trust", "okex", "bitkeep", "tpoutside", "rainbow", "safepalwallet", "zerion", "uniswap")
     /** v1.8.28: a WalletConnect link copied from a dApp's QR ("Copy link") pairs as soon as Hwallet gets focus. Each link
      *  is used once; Android only lets the app read the clipboard while it has focus. */
     @Volatile private var lastClipWc = ""
