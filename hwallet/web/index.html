@@ -3611,6 +3611,15 @@ window.hwPlayOpening();
     if (!window.tronLink) { try { Object.defineProperty(window, 'tronLink', { value: tronLink, configurable: true }); } catch (e) {} }
     if (!window.tronWeb) { try { Object.defineProperty(window, 'tronWeb', { value: tronWeb, configurable: true }); } catch (e) {} }
     window.dispatchEvent(new Event('tronLink#initialized'));
+    /* v1.8.26: Hwallet under its own name too. TronLink stays (window.tronLink / tronWeb, for fixed wallet lists); dApps
+       that discover Tron wallets (TIP-6963, the Tron twin of EIP-6963, and window.tron) list Hwallet with its icon. */
+    if (!window.tron) { try { Object.defineProperty(window, 'tron', { value: tronLink, configurable: true }); } catch (e) {} }
+    try {
+      var tInfo = Object.freeze({ uuid: (crypto.randomUUID ? crypto.randomUUID() : 'hwt-' + Date.now().toString(16) + '-' + Math.random().toString(16).slice(2)), name: NAME, icon: ICON, rdns: RDNS });
+      var tDet = Object.freeze({ info: tInfo, provider: tronLink });
+      var tAnn = function () { try { window.dispatchEvent(new CustomEvent('TIP6963:announceProvider', { detail: tDet })); } catch (e) {} };
+      window.addEventListener('TIP6963:requestProvider', tAnn); tAnn();
+    } catch (e) {}
   }
 
   /* ---------- v1.8.12 (push 17, R2): Sui Wallet Standard ----------
@@ -3821,7 +3830,7 @@ window.hwPlayOpening();
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
       var c = String(d.command), dt = d.data || {}, job;
-      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.25' });
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.26' });
       else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
       else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
       else if (c === 'network') job = Promise.resolve({ network: XNET });
@@ -3886,7 +3895,7 @@ window.hwPlayOpening();
       isHwallet: true,
       request: function (method, params) {
         var id = 'hw' + Date.now().toString(36), p = params || {}, job;
-        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.25', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.26', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
         else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
           job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
         else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
@@ -6979,7 +6988,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.25';
+var APP_VERSION = '1.8.26';
 (function () {
   'use strict';
   var BI = window.BigInt;
