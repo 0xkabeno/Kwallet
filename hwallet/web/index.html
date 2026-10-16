@@ -2883,6 +2883,18 @@ html.hwa:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#
    bottom bar's measured height (--hw-navh, gesture inset included) + 8px, falling back to --nav + --sab */
 html.hwa:not(#v18a):not(#v18b):not(#v18c):not(#v18d):not(#v18e):not(#v18f):not(#v18g):not(#v18h):not(#v18i):not(#v18j):not(#v18k):not(#v18l):not(#v18m):not(#v18n):not(#v18o):not(#v18p) .app:has(#kset-host){padding-bottom:calc(max(var(--hw-navh, 0px), var(--nav, 76px) + var(--sab, 0px)) + 8px)!important}
 html .snd-j .snd-chips{gap:6px!important}html .snd-j .snd-chip{height:30px!important;padding:0 12px!important;border-radius:10px!important;font:600 13px/1 var(--u-font,'InterE'),system-ui!important;letter-spacing:.2px;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.12)!important;color:var(--text)!important}html .snd-j .snd-chip:active{transform:scale(.96)}html .sw-qk{gap:6px!important;align-items:center}html .sw-qk button,html .inp.amt .mx[data-smax]{height:30px!important;min-height:30px!important;padding:0 12px!important;border-radius:10px!important;font:600 13px/1 var(--u-font,'InterE'),system-ui!important;letter-spacing:.2px!important;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.12)!important;color:var(--text)!important;box-shadow:none!important}html .sw-qk button:active,html .inp.amt .mx[data-smax]:active{transform:scale(.96)}.td-cf .dv{display:inline-flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-end;gap:10px;white-space:nowrap!important}.td-bk{display:inline-flex;gap:3px;flex:0 0 auto}.td-bk i{width:6px;height:12px;border-radius:2px;background:rgba(255,255,255,.12);transition:background .3s}.td-bk i.on{background:#f26822}.td-bk.ok i{background:#2ecc71}.td-cn{font-variant-numeric:tabular-nums;min-width:30px;text-align:right}.td-cf.ok .td-cn{color:#2ecc71}
+
+/* v1.8.29: pairing panels and wallet rows, compact and solid (14px cards, square avatars, tighter rows, seed ID in mono) */
+html:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9):not(#w10):not(#w11):not(#w12):not(#w13):not(#w14):not(#w15):not(#w16) .pr .pr-card{border-radius:14px!important;padding:14px!important}
+html:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9):not(#w10):not(#w11):not(#w12):not(#w13):not(#w14):not(#w15):not(#w16) .pr .pr-go{height:48px!important;min-height:48px!important;border-radius:12px!important;font-size:15.5px!important}
+html:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9):not(#w10):not(#w11):not(#w12):not(#w13):not(#w14):not(#w15):not(#w16) .pr .pr-st{border-radius:12px!important}
+html:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9):not(#w10):not(#w11):not(#w12):not(#w13):not(#w14):not(#w15):not(#w16) .wrow{min-height:60px!important;padding-top:8px!important;padding-bottom:8px!important}
+html:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9):not(#w10):not(#w11):not(#w12):not(#w13):not(#w14):not(#w15):not(#w16) .wav{width:36px!important;height:36px!important;border-radius:10px!important;font-size:16px!important}
+html:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9):not(#w10):not(#w11):not(#w12):not(#w13):not(#w14):not(#w15):not(#w16) .wrow .an{font-size:15px!important;line-height:19px!important}
+html:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9):not(#w10):not(#w11):not(#w12):not(#w13):not(#w14):not(#w15):not(#w16) .wrow .ap{font-size:12px!important;line-height:16px!important}
+html:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9):not(#w10):not(#w11):not(#w12):not(#w13):not(#w14):not(#w15):not(#w16) .wrow .ap.wid{color:var(--text,inherit)!important;font:600 12.5px/17px 'RobotoMonoE',ui-monospace,monospace!important;letter-spacing:.5px!important;font-variant-numeric:tabular-nums}
+html:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9):not(#w10):not(#w11):not(#w12):not(#w13):not(#w14):not(#w15):not(#w16) .wrow .ap.wid i, html:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9):not(#w10):not(#w11):not(#w12):not(#w13):not(#w14):not(#w15):not(#w16) .pd-id i{font-style:normal;font:700 10px/1 'InterE',system-ui;letter-spacing:.6px;opacity:.6;margin-right:6px;vertical-align:1px;text-transform:uppercase}
+html:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9):not(#w10):not(#w11):not(#w12):not(#w13):not(#w14):not(#w15):not(#w16) .pd-id{margin:2px 0 6px;text-align:center;font:600 14px/20px 'RobotoMonoE',ui-monospace,monospace;letter-spacing:.6px;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body data-theme="light">
@@ -3843,7 +3855,7 @@ window.hwPlayOpening();
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
       var c = String(d.command), dt = d.data || {}, job;
-      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.28' });
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.29' });
       else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
       else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
       else if (c === 'network') job = Promise.resolve({ network: XNET });
@@ -3908,7 +3920,7 @@ window.hwPlayOpening();
       isHwallet: true,
       request: function (method, params) {
         var id = 'hw' + Date.now().toString(36), p = params || {}, job;
-        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.28', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.29', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
         else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
           job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
         else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
@@ -7001,7 +7013,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.28';
+var APP_VERSION = '1.8.29';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -7160,6 +7172,24 @@ var APP_VERSION = '1.8.28';
   function cgOn(k) { return !k || CG.indexOf(k) >= 0 || !CG_ALL.some(function (x) { return x === k; }); }
   chainsFilter();
   try { if (window.HwNative && HwNative.xmrNOff) HwNative.xmrNOff(!chainOn('xmr')); } catch (e) {}
+  /* v1.8.29: chain switches belong to each seed (wallet). hw-chains-off-w = { walletId: { chain: true } }; a wallet with no
+     entry yet starts from the old app-wide switches (hw-chains-off, kept untouched as that default). Turning a chain off on one
+     seed never touches another, and a paired wallet is never emptied: if every chain it holds would be off, its own switches
+     start all on (that is what sent a Monero-only seed back to "Pair" and crashed it). */
+  var CHOFF_G = (function () { var o = {}; Object.keys(CHOFF).forEach(function (k) { o[k] = CHOFF[k]; }); return o; })();
+  function chOffMap() { var m = jget('hw-chains-off-w', {}); return m && typeof m === 'object' && !Array.isArray(m) ? m : {}; }
+  function chOffSave() { if (!WID) return; var m = chOffMap(), o = {}; Object.keys(CHOFF).forEach(function (k) { if (CHOFF[k]) o[k] = true; }); m[WID] = o; jset('hw-chains-off-w', m); }
+  function chOffLoad(w) {
+    var m = chOffMap(), src = w && m[w.id] && typeof m[w.id] === 'object' ? m[w.id] : CHOFF_G;
+    Object.keys(CHOFF).forEach(function (k) { delete CHOFF[k]; }); Object.keys(src).forEach(function (k) { if (src[k]) CHOFF[k] = true; });
+    if (w && w.A) {
+      var has = Object.keys(w.A).some(function (k) { return !!chainOfKey(k) && w.A[k]; }), vis = chainView(w.A);
+      if (has && !Object.keys(vis).some(function (k) { return !!chainOfKey(k) && vis[k] && k !== 'xmrView' && k !== 'xmrHeight' && k !== 'xmrPrimary'; })) { Object.keys(CHOFF).forEach(function (k) { delete CHOFF[k]; }); }
+    }
+    chainsFilter(); try { Object.keys(EVMID).forEach(function (k) { delete EVMID[k]; }); EVM.forEach(function (n) { EVMID[n.chainId] = n; }); } catch (e) {}
+    try { if (window.HwNative && HwNative.xmrNOff) HwNative.xmrNOff(!chainOn('xmr')); } catch (e) {}
+    try { NCFG = null; } catch (e) {}
+  }
   var CBS = { ethereum: 'ETH', bitcoin: 'BTC', solana: 'SOL', tron: 'TRX', sui: 'SUI', ripple: 'XRP', cardano: 'ADA', monero: 'XMR', binancecoin: 'BNB', 'polygon-ecosystem-token': 'POL' };
   var LOGO = {}, TOKLOGO = { USDC: 'usdc', USDT: 'usdt', USDG: 'usdg' };
 
@@ -7178,7 +7208,8 @@ var APP_VERSION = '1.8.28';
   }
   function curW() { for (var i = 0; i < W.length; i++) if (W[i].id === WID) return W[i]; return null; }
   function useWallet(id) {
-    WID = id; var w = curW(); A = w ? chainView(w.A) : {}; if (w) A.label = w.label;   /* v1.8.13: chains turned off are left out */
+    WID = id; var w = curW(); chOffLoad(w); if (w && !(chOffMap()[w.id])) chOffSave();   /* v1.8.29: this seed's own chain switches */
+    A = w ? chainView(w.A) : {}; if (w) A.label = w.label;   /* v1.8.13: chains turned off are left out */
     C.b = jget('hw-bal:' + id, {}) || {}; C.res = {}; ACT = jget('hw-acts:' + id, []) || []; HIST = {}; jset('hw-wid', id);
     try { if (window.hwXmrWalletChanged) hwXmrWalletChanged(); } catch (e) {}
   }
@@ -7999,8 +8030,10 @@ var APP_VERSION = '1.8.28';
   }
 
   /* ---------- wallets (#17 / #18): numbered, switch, add, rename, remove ---------- */
-  function walletSub(w) { var p = w.A.paired && Object.keys(w.A.paired).length, n = CH.filter(function (c) { return w.A[c.id]; }).length; return (p ? 'Paired with Kwallet' : 'Watch only') + ' · ' + n + (n === 1 ? ' network' : ' networks'); }
-  function wrow(w, data, right) { return '<div class="wrow">' + '<button class="tap" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;text-align:left" ' + data + '><span class="wav">' + (W.indexOf(w) + 1) + '</span><span class="am"><span class="an">' + esc(w.label) + (w.id === WID ? sv('check', 'ic sm ok') : '') + '</span><span class="ap">' + esc(walletSub(w)) + '</span></span></button>' + (right || '') + '</div>'; }
+  /* v1.8.29: seed ID from Kwallet (10 digits, public): one wallet per seed, shown on every wallet row */
+  function sidFmt(d) { d = String(d || ''); return /^\d{10}$/.test(d) ? d.slice(0, 4) + '-' + d.slice(4, 8) + '-' + d.slice(8) : ''; }
+  function walletSub(w) { var p = w.A.paired && Object.keys(w.A.paired).length, n = CH_ALL.filter(function (c) { return w.A[c.id]; }).length; return (p ? 'Paired' : 'Watch only') + ' · ' + n + (n === 1 ? ' network' : ' networks'); }
+  function wrow(w, data, right) { return '<div class="wrow">' + '<button class="tap" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;text-align:left" ' + data + '><span class="wav">' + (W.indexOf(w) + 1) + '</span><span class="am"><span class="an">' + esc(w.label) + (w.id === WID ? sv('check', 'ic sm ok') : '') + '</span>' + (sidFmt(w.A.sid) ? '<span class="ap wid"><i>ID</i>' + sidFmt(w.A.sid) + '</span>' : '') + '<span class="ap">' + esc(walletSub(w)) + '</span></span></button>' + (right || '') + '</div>'; }
   function walletSheet() {
     sheet('<h3>Wallets</h3><div class="lst">' + W.map(function (w) { return wrow(w, 'data-w="' + w.id + '"'); }).join('') + '</div>' +
       '<div class="row2"><button class="btn" data-m>' + sv('edit') + ' Manage</button><button class="btn pri" data-add>' + sv('plus') + ' Add wallet</button></div>', function (ov, close) {
@@ -8013,6 +8046,7 @@ var APP_VERSION = '1.8.28';
     if (id === WID) return; saveCache(); stopWs(); useWallet(id); buzz([10, 40, 14]); snd('sw');
     try { wcWalletChanged(); } catch (e) {}
     try { brWalletChanged(); } catch (e) {}
+    try { if (brInited) brProvPush(); } catch (e) {}
     /* P2a: keep = switched from a connect popup; stay on the screen (and Browser tab) the user is on */
     if (!keep) { stack = []; V = { v: 'home' }; render('in'); } refreshAll(); liveConfig();
   }
@@ -8036,7 +8070,7 @@ var APP_VERSION = '1.8.28';
       var rm = ov.querySelector('[data-rm]');
       rm.onclick = function () {
         if (rm.getAttribute('data-arm') !== '1') { rm.setAttribute('data-arm', '1'); rm.lastChild.textContent = ' Tap again to remove'; buzz([20, 30, 20]); return; }
-        W = W.filter(function (x) { return x.id !== id; }); saveWallets(); ['hw-bal:', 'hw-acts:', 'hw-hist:'].forEach(function (k) { try { localStorage.removeItem(k + id); } catch (e) {} });
+        W = W.filter(function (x) { return x.id !== id; }); saveWallets(); try { var cm = chOffMap(); delete cm[id]; jset('hw-chains-off-w', cm); } catch (e) {} ['hw-bal:', 'hw-acts:', 'hw-hist:'].forEach(function (k) { try { localStorage.removeItem(k + id); } catch (e) {} });
         close(); toast('Wallet removed'); buzz([10, 40, 10]);
         if (id === WID) { if (W.length) useWallet(W[0].id); else { useWallet(''); A = {}; } stack = []; V = W.length ? { v: 'wallets' } : { v: 'setup', first: 1 }; render('in'); refreshAll(); liveConfig(); }
         else render();
@@ -8126,12 +8160,17 @@ var APP_VERSION = '1.8.28';
   function wname() { var el = $('wname'); var v = el ? el.value.trim().slice(0, 24) : ''; return v; }
   /* a pairing with the same Ethereum (or Monero) address updates that wallet; anything else becomes a new numbered wallet */
   function putWallet(na, label, soft) {
+    /* v1.8.29: one wallet per seed: the seed ID from Kwallet finds it first (any address number of that seed) */
+    var hitS = na.sid ? W.filter(function (w) { return w.A && w.A.sid === na.sid; })[0] : null;
     var fp = String(na.eth || na.xmr || '').toLowerCase(), hit = W.filter(function (w) { return String(w.A.eth || w.A.xmr || '').toLowerCase() === fp && fp; })[0];
     /* v1.8.4 (push 10): one Monero wallet = one block. Another subaddress of the same seed (same primary address) updates the
        wallet that already holds it, unless both carry different EVM addresses (a different account of a BIP39 seed) */
     var prim = function (a) { return String((a && (a.xmrPrimary || (/^4/.test(a.xmr || '') ? a.xmr : ''))) || ''); }, np = prim(na);
     if (!hit && np) hit = W.filter(function (w) { return prim(w.A) === np && (!na.eth || !w.A.eth || String(w.A.eth).toLowerCase() === String(na.eth).toLowerCase()); })[0];
+    if (hitS) hit = hitS;
     if (V.edit && curW()) hit = curW();
+    if (hit && !na.sid && hit.A && hit.A.sid && !V.edit) na.sid = hit.A.sid;
+    if (V.edit && hit && hit.A && hit.A.sid && !na.sid) na.sid = hit.A.sid;
     if (hit) {
       /* v1.8.4: a refresh never loses what this wallet already had (Monero view key, scan start) when the new pairing lacks it */
       var o = hit.A || {}; if (!na.xmrView && o.xmrView && na.xmr && na.xmr === o.xmr) { na.xmrView = o.xmrView; if (!na.xmrPrimary && o.xmrPrimary) na.xmrPrimary = o.xmrPrimary; if (!na.xmrHeight && o.xmrHeight) na.xmrHeight = o.xmrHeight; }
@@ -8143,6 +8182,7 @@ var APP_VERSION = '1.8.28';
   function applyPair(p) {
     if (!p || p.src !== 'kwallet' || !p.addrs) { pairErr('That isn\u2019t a Kwallet pairing.'); return false; }
     var na = { paired: {}, index: p.index | 0 };
+    if (/^\d{10}$/.test(String(p.sid || ''))) na.sid = String(p.sid);   /* v1.8.29 */
     Object.keys(OKRE).forEach(function (k) { if (k === 'xmrView') return; var v = String(p.addrs[k] || ''); if (v && OKRE[k].test(v)) { na[k] = v; na.paired[k] = true; } });
     if (p.xmr && /^[0-9a-f]{64}$/.test(p.xmr.view || '')) { na.xmrView = p.xmr.view; na.xmrHeight = p.xmr.height | 0; if (/^4[1-9A-HJ-NP-Za-km-z]{94}$/.test(p.xmr.primary || '')) na.xmrPrimary = p.xmr.primary; }
     if (!na.eth && !na.xmr) { pairErr('No valid addresses in that pairing. Pair again from Kwallet.'); return false; }
@@ -8151,8 +8191,11 @@ var APP_VERSION = '1.8.28';
     try { var spk = p.pks && String(p.pks.sui || ''); if (na.sui && /^[A-Za-z0-9+/]{43}=$/.test(spk)) jset('hw-suipk:' + na.sui, spk); } catch (e) {}
     var w = putWallet(na, wname(), String(p.label || '').slice(0, 24)), upd = !!w._upd; delete w._upd;
     buzz([15, 40, 15]); snd('seed');
-    stack = []; V = { v: 'home' }; render('in'); refreshAll(); liveConfig();
-    pairDone(w, upd);
+    stack = []; V = { v: 'home' };
+    try { render('in'); } catch (e) { try { console.error('pair render', e); } catch (x) {} }
+    try { refreshAll(); liveConfig(); } catch (e) { try { console.error('pair refresh', e); } catch (x) {} }
+    try { pairDone(w, upd); } catch (e) { toast((w && w.label || 'Wallet') + (upd ? ' updated' : ' paired')); }
+    try { if (w.A && w.A.xmr && w.A.paired && w.A.paired.xmr) jset('hw-xmr-ki-auto:' + (w.A.xmrPrimary || w.A.xmr), { t: 0, n: -1, pair: Date.now() }); } catch (e) {}
     return true;
   }
   /* v1.8.4 (#B): what came across, in one sheet */
@@ -8163,7 +8206,7 @@ var APP_VERSION = '1.8.28';
       var ok = /^[0-9a-f]{64}$/.test(a.xmrView || '');
       xr = '<li class="' + (ok ? '' : 'warn') + '">' + logo((CHBY.xmr || {}).logo || 'monero', 'Monero', '', 'xs') + '<span>Monero</span><em>' + (ok ? 'Ready \u00b7 scanning starts now' : 'Needs Kwallet 3.98.4') + '</em></li>';
     }
-    sheet('<div class="pd-ok">' + sv('check') + '</div><h3 class="pd-h">' + esc(w.label) + (upd ? ' updated' : ' paired') + '</h3><p class="sp pd-s">' + (upd ? 'Same wallet, refreshed from Kwallet.' : 'Keys stay in Kwallet. Hwallet asks it to sign every time.') + '</p>' +
+    sheet('<div class="pd-ok">' + sv('check') + '</div><h3 class="pd-h">' + esc(w.label) + (upd ? ' updated' : ' paired') + '</h3>' + (sidFmt(a.sid) ? '<p class="pd-id"><i>Seed ID</i>' + sidFmt(a.sid) + '</p>' : '') + '<p class="sp pd-s">' + (upd ? 'Same seed, refreshed from Kwallet.' : 'Keys stay in Kwallet. Hwallet asks it to sign every time.') + '</p>' +
       '<ul class="pd-l">' + rows.join('') + xr + '</ul>' +
       (a.xmr && !/^[0-9a-f]{64}$/.test(a.xmrView || '') ? '<p class="sp">Kwallet didn\u2019t send the Monero view key. Update Kwallet, open it once, then pair again.</p>' : '') +
       '<div class="row2"><button class="btn pri" data-x>Done</button></div>');
@@ -9967,7 +10010,7 @@ var APP_VERSION = '1.8.28';
   function chainsToggle(id) {
     var k = chnId(id), off = !CHOFF[k];
     if (off) CHOFF[k] = true; else delete CHOFF[k];
-    jset('hw-chains-off', CHOFF);
+    chOffSave();   /* v1.8.29: this seed only */
     chainsApply(k);
     toast((k === 'eth' ? 'Ethereum & EVM networks' : /^evm:/.test(k) ? (EVMBY[k.slice(4)] || {}).name : (CHBY[k] || {}).name) + (off ? ' off' : ' on'));
   }
@@ -14614,7 +14657,7 @@ window.hwCrashPrompt = crashPrompt;
       return XS.opened === sig ? null : xe('open', cfg, 180000).then(function () { XS.opened = sig; });
     })
       .then(function () { if (xmrPaused()) return xe('state', {}, 120000).then(function (s) { if (s) { var tip = Math.max(s.daemon | 0, (XS.st && XS.st.daemon) | 0, (XS.prog && XS.prog.end) | 0); try { tip = Math.max(tip, xmrHeightAt(Date.now()) | 0); } catch (e) {} s.daemon = tip; s.paused = 1; } return s; }); return xe('sync', {}, 3600000); })
-      .then(function (st) { XS.busy = false; if (XS.key !== me) return null; if (st && !st.busy) xmrApply(st, true); return st; }, function (e) {
+      .then(function (st) { XS.busy = false; if (XS.key !== me) return null; if (st && !st.busy) { xmrApply(st, true); setTimeout(function () { if (XS.key === me) xmrAutoKi(st); }, 1200); } return st; }, function (e) {
         XS.busy = false; if (XS.key !== me) return null;
         var msg = String(e && e.message || e);
         if (msg === 'stopped') return XS.st;   /* v1.8.8: the engine was restarted on purpose (send cancelled): not a node failure */
@@ -14866,18 +14909,35 @@ window.hwCrashPrompt = crashPrompt;
       });
     });
   }
-  function xmrKiPass(inSend) {
+  function xmrKiPass(inSend, auto) {
     return xeP('outputs', {}, 120000).then(function (o) {
       if (o.addr && o.addr !== xmrPrimary()) throw new Error('Hwallet exported another wallet\u2019s outputs. Restart Hwallet and try again');
       try { console.log('xmr-ki: exported ' + (o.n != null ? o.n : '?') + ' outputs, ' + (o.need != null ? o.need : '?') + ' without key image, ' + Math.round(String(o.outputs || '').length / 2048) + ' KB'); } catch (e) {}
       var now = Date.now();
-      return callK({ v: 2, id: rid(16), action: 'sign', chain: 'xmr', kind: 'xmr-ki', from: xmrPrimary(), to: xmrPrimary(), token: 'native', tokenSym: 'XMR', tokenDec: 12, amount: '0', fee: { level: 'medium', levels: { medium: { fee: '0' } } }, xmr: { outputs: o.outputs, n: o.n != null ? o.n : null }, inSend: !!inSend, live: false, created: now, expires: now + 120000 })
+      return callK({ v: 2, id: rid(16), action: 'sign', chain: 'xmr', kind: 'xmr-ki', from: xmrPrimary(), to: xmrPrimary(), token: 'native', tokenSym: 'XMR', tokenDec: 12, amount: '0', fee: { level: 'medium', levels: { medium: { fee: '0' } } }, xmr: { outputs: o.outputs, n: o.n != null ? o.n : null }, inSend: !!inSend, auto: !!auto, live: false, created: now, expires: now + 120000 })
         .then(function (res) { return { res: res, pks: o.pks || null }; });
     }).then(function (x) {
       var res = x.res;
       if (!res || res.status !== 'signed' || !res.ki) throw Object.assign(new Error({ rejected: 'Cancelled in Kwallet', expired: 'The request expired. Try again' }[res && res.status] || (res && res.error) || 'Kwallet didn\u2019t answer'), { quiet: !!(res && (res.status === 'rejected' || res.status === 'expired')) });
       return xe('importKI', { ki: res.ki, offset: res.kiOffset | 0, pks: x.pks }, 180000);
     });
+  }
+  /* v1.8.29: spent status syncs by itself: after pairing, and whenever a finished scan has outputs without key images. Kwallet
+     answers without a tap (key images only, it can't move funds). Only in the foreground, never during a send, at most once
+     per new set of outputs; a refusal waits 6 hours. Settings > Monero > Sync spent status stays as the manual way. */
+  var XKA = false;
+  function xmrAutoKi(st) {
+    try {
+      if (XKA || !st || !(st.kiNeed > 0) || !xmrReady() || !(A.paired && A.paired.xmr) || !(window.HwNative && HwNative.sign) || xmrSyncing()) return;
+      if (window.HwNative.isFg && !HwNative.isFg()) return;
+      try { if (typeof SND !== 'undefined' && SND && SND.busy) return; } catch (e) {}
+      var key = 'hw-xmr-ki-auto:' + xmrPrimary(), L = jget(key, null) || {}, now = Date.now(), n = (st.kiNeed | 0) + ':' + (st.height | 0 ? 1 : 0) + ':' + ((st.outs | 0) || (st.kiNeed | 0));
+      if (L.n === n && (L.ok || now - (L.t || 0) < 6 * 3600000)) return;
+      if (now - (L.t || 0) < 60000) return;
+      XKA = true; jset(key, { t: now, n: n, ok: false });
+      xmrKiPass(false, true).then(function (k) { XKA = false; jset(key, { t: Date.now(), n: n, ok: true }); if (k && k.state) xmrApply(k.state, false); toast('Monero spent status synced'); },
+        function (e) { XKA = false; try { console.warn('xmr auto ki', e && e.message || e); } catch (x) {} });
+    } catch (e) { XKA = false; }
   }
   function xmrKiSync() {
     if (!xmrReady() || !(A.paired && A.paired.xmr)) { toast('Pair Monero with Kwallet first'); return; }
