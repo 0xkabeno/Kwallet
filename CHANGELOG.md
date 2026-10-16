@@ -1,5 +1,14 @@
 # Changelog
 
+## Kwallet v3.98.26 + Hwallet v1.8.29 (2026-10-16)
+
+- Seed ID: every paired seed gets a 10-digit public ID (e.g. 4821-0937-52), a hash of its primary public address with a check digit. The same seed always gets the same ID at any address number; a BIP39 passphrase gives another ID. It is shown on Kwallet's Pair Hwallet page (with Copy seed ID), on Kwallet's pairing sheet and on Hwallet's wallet rows and pairing result.
+- One seed, one pairing: pairing a seed again replaces its pairing in Kwallet and updates the same wallet in Hwallet, found by its seed ID.
+- Per-seed sandbox in Hwallet: chain switches belong to each seed. Turning a chain off on one seed never affects another; the old app-wide switches are only the starting point for seeds without their own. App settings are unchanged and stay app-wide.
+- Fixed: turning Monero off on a multi-chain seed made a Monero-only seed look unpaired (Pair again) and pairing it crashed. A paired wallet is never emptied by chain switches, and pairing never crashes while drawing.
+- Monero spent status syncs automatically after pairing and when a scan finds outputs without key images; Kwallet answers without a tap when it can sign without a PIN (key images only, can't move funds). Settings > Monero > Sync spent status stays as the manual way.
+- Pairing panels: compact, solid cards, square avatars, tighter rows, seed ID in tabular mono. dApp sheets are unchanged.
+
 ## Kwallet v3.98.25 + Hwallet v1.8.28 (2026-10-16)
 
 - Tron dApps: Hwallet's Tron provider now has the TIP-1193 events (on / removeListener) that discovery-aware dApps call after TIP-6963, so they list Hwallet by name. TronLink compatibility is unchanged.
