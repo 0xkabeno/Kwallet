@@ -1,5 +1,13 @@
 # Changelog
 
+## Kwallet v3.98.28 + Hwallet v1.8.31 (2026-10-16)
+
+- Kwallet's Pair Hwallet page lists every seed Kwallet holds (seed book, the seed on screen, paired seeds), each with its type (BIP39 12/24 words, Polyseed, Monero 25), seed ID with copy, and its paired address numbers. Pick a seed, pick an address number, Pair; no need to put the seed on screen first.
+- The pairing request from Hwallet (Add wallet / Pair with Kwallet / seed ID) shows the same seed list after one PIN or biometric unlock; the user picks the seed and the address number, and a new number is derived right there. Only that seed's public addresses (and Monero view key) go to Hwallet; the other seeds' addresses are no longer sent.
+- Pairing text (kwallet-pair: codes) removed from both apps: no Copy code in Kwallet, no paste or QR pairing in Hwallet. Pairing is Pair with Kwallet, or the seed ID.
+- Hwallet: Add wallet opens Kwallet's seed picker directly. Wallet rows are compact: initial, name, seed ID, address numbers on the right (shown as 0 1 2, no #); tapping a number in the wallet sheet switches to it.
+- Address numbers read as plain numbers everywhere ("Address 1" in menus and toasts).
+
 ## Kwallet v3.98.27 + Hwallet v1.8.30 (2026-10-16)
 
 - Address numbers per seed: a seed paired at #0 and then #1 is one wallet in Hwallet with both numbers as chips on its row; a tap switches the live number. Only the selected number is live; balances, activity, history and swaps are kept per number. Wallet options list the numbers (remove one) and the seed ID with a copy button.
