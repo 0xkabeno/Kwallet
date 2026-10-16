@@ -3213,6 +3213,9 @@ window.hwPlayOpening();
   /* v1.8.15 (4.2): chains switched off in Hwallet > Chains are never announced to the page. Hwallet fills this in when it
      hands the script to the Browser (brProvPush); a new tab picks up a change. */
   var OFF = {}; /*@HWOFF*/
+  /* v1.8.28: xrp.cafe runs its own Xaman / Crossmark / GemWallet detection; Hwallet's XRP stand-ins are left out there
+     and the site connects through WalletConnect (Bifrost) only */
+  try { if (/(^|\.)xrp\.cafe$/i.test(location.hostname)) OFF.xrp = true; } catch (e) {}
 
   /* ---------- bridge ---------- */
   var seq = 0, pend = {}, subs = {};
@@ -3606,7 +3609,17 @@ window.hwPlayOpening();
     return call('tron', 'tron_requestAccounts', {}).then(function (r) { trxSet(r && r.address); return m === 'eth_requestAccounts' ? [r && r.address] : { code: 200, message: 'The site is already in the whitelist' }; },
       function (e) { if (m === 'eth_requestAccounts') throw e; return e.code === 4001 ? { code: 4001, message: 'User rejected' } : { code: e.code || 4000, message: e.message }; });
   };
-  onNs('tron', function (e, d) { if (e === 'accountsChanged') trxSet(d || null); else if (e === 'disconnect') trxSet(null); });
+  /* v1.8.28: TIP-1193 events (on / removeListener), which TIP-6963 dApps call right after discovery; without them the
+     adapter threw and Hwallet never showed up under its own name */
+  var tronL = {};
+  tronLink.on = function (ev, fn) { if (typeof fn === 'function') (tronL[ev] = tronL[ev] || []).push(fn); return tronLink; };
+  tronLink.removeListener = tronLink.off = function (ev, fn) { tronL[ev] = (tronL[ev] || []).filter(function (f) { return f !== fn; }); return tronLink; };
+  tronLink.removeAllListeners = function (ev) { if (ev) delete tronL[ev]; else tronL = {}; return tronLink; };
+  function tronEmit(ev, d) { (tronL[ev] || []).slice().forEach(function (f) { try { f(d); } catch (e) {} }); }
+  onNs('tron', function (e, d) {
+    if (e === 'accountsChanged') { trxSet(d || null); tronEmit('accountsChanged', d ? [d] : []); }
+    else if (e === 'disconnect') { trxSet(null); tronEmit('accountsChanged', []); tronEmit('disconnect', {}); }
+  });
   if (!OFF.trx) {
     if (!window.tronLink) { try { Object.defineProperty(window, 'tronLink', { value: tronLink, configurable: true }); } catch (e) {} }
     if (!window.tronWeb) { try { Object.defineProperty(window, 'tronWeb', { value: tronWeb, configurable: true }); } catch (e) {} }
@@ -3830,7 +3843,7 @@ window.hwPlayOpening();
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
       var c = String(d.command), dt = d.data || {}, job;
-      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.27' });
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.28' });
       else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
       else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
       else if (c === 'network') job = Promise.resolve({ network: XNET });
@@ -3895,7 +3908,7 @@ window.hwPlayOpening();
       isHwallet: true,
       request: function (method, params) {
         var id = 'hw' + Date.now().toString(36), p = params || {}, job;
-        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.27', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.28', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
         else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
           job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
         else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
@@ -6988,7 +7001,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.27';
+var APP_VERSION = '1.8.28';
 (function () {
   'use strict';
   var BI = window.BigInt;
