@@ -148,6 +148,20 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="bifrostwallet" />
             </intent-filter>
+            <!-- v1.8.32: XRP Ledger dApps (xrp.cafe…) also connect as Girin Wallet (girinwallet://wc?uri=…) and
+                 Joey Wallet (joey://settings/wc?uri=…); Hwallet answers those links like Bifrost's -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="girinwallet" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="joey" />
+            </intent-filter>
             <!-- v1.8.28: the WalletConnect links dApps open for other popular wallets (their app is used when installed;
                  otherwise Hwallet takes the link and pairs, whatever the chain) -->
             <intent-filter>
