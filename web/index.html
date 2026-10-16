@@ -12440,7 +12440,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98.26';
+const APP_VERSION = '3.98.27';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -21998,10 +21998,12 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (!rec.addrs.eth && !rec.addrs.xmr) throw new Error('Could not derive addresses for this seed');
     rec.sid = sidForRec(rec);
     var all = load(), fp = (rec.addrs.eth || rec.addrs.xmr || '').toLowerCase();
-    /* v3.98.26: one pairing per seed. Pairing the same seed again (any address number) replaces its pairing and keeps its name */
-    var same = all.filter(function (r) { return ((r.addrs.eth || r.addrs.xmr || '').toLowerCase()) === fp || (rec.sid && sidForRec(r) === rec.sid); });
-    if (!rec.label && same.length) rec.label = same[same.length - 1].label;
-    all = all.filter(function (r) { return same.indexOf(r) < 0; });
+    /* v3.98.27: a seed keeps each address number it pairs (Hwallet shows them as #0, #1 of one wallet); the same number again
+       replaces itself, and every number of a seed shares the seed's name */
+    var kin = rec.sid ? all.filter(function (r) { return sidForRec(r) === rec.sid; }) : [];
+    if (!rec.label && kin.length) rec.label = kin[kin.length - 1].label;
+    all = all.filter(function (r) { return ((r.addrs.eth || r.addrs.xmr || '').toLowerCase()) !== fp; });
+    if (rec.label) all.forEach(function (r) { if (rec.sid && r.sid === rec.sid) r.label = rec.label; });
     if (!rec.label) rec.label = 'Wallet ' + (all.length + 1);
     all.push(rec); save(all);
     return rec;
@@ -22053,31 +22055,37 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   function pairErr(t, fix) { perr = { t: t, fix: fix || '' }; render(); buzz([30, 40, 30]); }
   function render() {
     var all = load(), seed = !!currentMnemonic;
-    /* v3.98.16: clean rows (chain icon, name, short address); Copy code and Remove live in a ⋮ menu */
-    var list = all.length ? all.map(function (r) {
-      var ad = r.addrs || {}, ck = ad.eth ? 'ethereum' : ad.xmr ? 'monero' : ad.sol ? 'solana' : ad.btc ? 'bitcoin' : '', a = ad.eth || ad.xmr || ad.sol || ad.btc || '';
-      var n = Object.keys(ad).filter(function (k) { return ad[k]; }).length;
+    /* v3.98.27: one row per seed: name, seed ID with a copy button, its address numbers as chips; Remove in the ⋮ menu */
+    var G = [], GK = {};
+    all.forEach(function (r) { var key = /^\d{10}$/.test(r.sid || '') ? r.sid : 'r' + r.id; if (!GK[key]) { GK[key] = { key: key, sid: r.sid || '', recs: [] }; G.push(GK[key]); } GK[key].recs.push(r); });
+    var list = G.length ? G.map(function (g) {
+      var rs = g.recs.slice().sort(function (a, b) { return (a.index | 0) - (b.index | 0); }), r = g.recs[g.recs.length - 1], r0 = rs[0];
+      var ad = r0.addrs || {}, ck = ad.eth ? 'ethereum' : ad.xmr ? 'monero' : ad.sol ? 'solana' : ad.btc ? 'bitcoin' : '', a = ad.eth || ad.xmr || ad.sol || ad.btc || '';
+      var n = Object.keys(ad).filter(function (k) { return ad[k]; }).length, id = sidFmt(g.sid);
       var ic = LOGO[ck] ? '<img src="' + LOGO[ck] + '" alt="">' : esc((String(r.label).replace(/[^A-Za-z0-9]/g, '')[0] || 'W').toUpperCase());
+      var chips = '<span class="hwp-chips">' + rs.map(function (x) { return '<i>#' + (x.index | 0) + '</i>'; }).join('') + '</span>';
+      var mi = (rs.length > 1 ? rs.map(function (x) { return '<button type="button" role="menuitem" class="hwp-mrm" data-rm="' + x.id + '">' + pic(PI.del) + '<span>Remove #' + (x.index | 0) + '</span></button>'; }).join('') : '') +
+        '<button type="button" role="menuitem" class="hwp-mrm" data-rms="' + esc(g.key) + '">' + pic(PI.del) + '<span>' + (rs.length > 1 ? 'Remove seed' : 'Remove') + '</span></button>';
       return '<div class="hwp-row"><span class="hwp-av" aria-hidden="true">' + ic + '</span>' +
-        '<div class="hwp-t"><b>' + esc(r.label) + '</b>' + (sidFmt(r.sid) ? '<span class="hwp-id"><i>ID</i>' + sidFmt(r.sid) + '</span>' : '') + '<span>' + esc(a.length > 12 ? a.slice(0, 6) + '\u2026' + a.slice(-4) : a) + ' \u00b7 #' + r.index + (n > 1 ? ' \u00b7 ' + n + ' chains' : '') + '</span></div>' +
-        '<button type="button" class="hwp-ib hwp-more" data-mn="' + r.id + '" aria-haspopup="menu" aria-label="More for ' + esc(r.label) + '">' + pic(PI.more) + '</button>' +
-        '<div class="hwp-mn" role="menu" data-mnp="' + r.id + '" hidden><button type="button" role="menuitem" data-cp="' + r.id + '">' + pic(PI.copy) + '<span>Copy pairing code</span></button>' + (sidFmt(r.sid) ? '<button type="button" role="menuitem" data-cid="' + r.id + '">' + pic(PI.copy) + '<span>Copy seed ID</span></button>' : '') +
-        '<button type="button" role="menuitem" class="hwp-mrm" data-rm="' + r.id + '">' + pic(PI.del) + '<span>Remove</span></button></div></div>';
-    }).join('') : '<div class="hwp-empty">No wallets paired yet</div>';
+        '<div class="hwp-t"><b>' + esc(r.label) + '</b>' + (id ? '<span class="hwp-id"><i>ID</i>' + id + '<button type="button" class="hwp-cpi" data-cid="' + esc(g.sid) + '" aria-label="Copy seed ID">' + pic(PI.copy) + '</button></span>' : '') +
+        '<span>' + esc(a.length > 12 ? a.slice(0, 6) + '\u2026' + a.slice(-4) : a) + (n > 1 ? ' \u00b7 ' + n + ' chains' : '') + '</span>' + chips + '</div>' +
+        '<button type="button" class="hwp-ib hwp-more" data-mn="' + esc(g.key) + '" aria-haspopup="menu" aria-label="More for ' + esc(r.label) + '">' + pic(PI.more) + '</button>' +
+        '<div class="hwp-mn" role="menu" data-mnp="' + esc(g.key) + '" hidden>' + mi + '</div></div>';
+    }).join('') : '<div class="hwp-empty">No seeds paired yet</div>';
     var err = perr ? '<div class="hwp-err" role="alert">' + pic(PI.err) + '<div><b>' + esc(perr.t) + '</b>' + (perr.fix ? '<span>' + esc(perr.fix) + '</span>' : '') + '</div></div>' : '';
+    var dis = seed ? '' : ' disabled';
     sheet.innerHTML = '<div class="hwp-bar"><button type="button" class="hwp-back" data-close aria-label="Back">' + pic(PI.back) + '</button><h2>Pair Hwallet</h2>' +
       '<span class="kbrand hwp-kb" aria-label="Kwallet"><span class="kb-k">K</span><span class="kb-w">wallet</span></span></div>' +
-      '<div class="hwp-body">' +
-      '<ol class="hwp-steps"><li class="on"><i>1</i>Pair here</li><li><i>2</i>Open Hwallet</li><li><i>3</i>Tap Pair</li></ol>' +
-      err +
-      '<div class="hwp-card hwp-new"><div class="hwp-ch">Pair this seed</div>' +
+      '<div class="hwp-body">' + err +
+      '<div class="hwp-sec">Pair this seed</div>' +
+      '<div class="hwp-card hwp-new">' +
       (seed ? '' : '<div class="hwp-need">' + pic(PI.err) + '<span>Create or import a seed first, then come back here.</span></div>') +
-      '<label class="hwp-f"><span>Name</span><input type="text" id="hwp-label" placeholder="Wallet ' + (all.length + 1) + '" maxlength="24" autocomplete="off"' + (seed ? '' : ' disabled') + '></label>' +
-      '<div class="hwp-f"><span>Address</span><div class="hwp-step"><button type="button" data-st="-1" aria-label="Previous address"' + (seed ? '' : ' disabled') + '>' + pic(PI.minus) + '</button>' +
-      '<input type="number" id="hwp-idx" min="0" step="1" value="0" inputmode="numeric" aria-label="Address number"' + (seed ? '' : ' disabled') + '><button type="button" data-st="1" aria-label="Next address"' + (seed ? '' : ' disabled') + '>' + pic(PI.plus) + '</button></div></div>' +
-      '<button class="hwp-go" type="button" id="hwp-go"' + (seed ? '' : ' disabled') + '>Pair</button></div>' +
-      '<div class="hwp-sec">Paired wallets</div><div class="hwp-card hwp-list">' + list + '</div>' +
-      '<p class="hwp-lead">' + pic(PI.lock) + '<span>Hwallet gets public addresses only. Your seed never leaves Kwallet.</span></p>' +
+      '<div class="hwp-pr"><input type="text" id="hwp-label" placeholder="Name" aria-label="Name" maxlength="24" autocomplete="off"' + dis + '>' +
+      '<div class="hwp-step"><button type="button" data-st="-1" aria-label="Previous address"' + dis + '>' + pic(PI.minus) + '</button>' +
+      '<label class="hwp-num"><span>#</span><input type="number" id="hwp-idx" min="0" step="1" value="0" inputmode="numeric" aria-label="Address number"' + dis + '></label><button type="button" data-st="1" aria-label="Next address"' + dis + '>' + pic(PI.plus) + '</button></div></div>' +
+      '<button class="hwp-go" type="button" id="hwp-go"' + dis + '>Pair</button></div>' +
+      '<div class="hwp-sec">Paired seeds</div><div class="hwp-card hwp-list">' + list + '</div>' +
+      '<p class="hwp-lead">' + pic(PI.lock) + '<span>In Hwallet, tap Pair with Kwallet or enter the seed ID. Only public addresses leave Kwallet.</span></p>' +
       '</div>';
     var idx = $('hwp-idx');
     sheet.querySelector('[data-close]').onclick = closeSheet;
@@ -22106,9 +22114,15 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       };
     });
     sheet.querySelectorAll('[data-cid]').forEach(function (b) {
-      b.onclick = function () { mnClose();
-        var r = load().filter(function (x) { return x.id === b.getAttribute('data-cid'); })[0]; if (!r || !sidFmt(r.sid)) return;
-        copyToClipboard(sidFmt(r.sid)).then(function () { toast('Seed ID copied'); }, function () {});
+      b.onclick = function (e) { e.stopPropagation(); mnClose(); var s = sidFmt(b.getAttribute('data-cid')); if (!s) return;
+        copyToClipboard(s).then(function () { toast('Seed ID ' + s + ' copied'); buzz(8); }, function () {});
+      };
+    });
+    sheet.querySelectorAll('[data-rms]').forEach(function (b) {
+      b.onclick = function () {
+        var key = b.getAttribute('data-rms');
+        if (b.getAttribute('data-arm') !== '1') { b.setAttribute('data-arm', '1'); b.classList.add('arm'); b.innerHTML = pic(PI.del) + '<span>Tap again to remove</span>'; buzz([20, 30, 20]); return; }
+        save(load().filter(function (x) { return (/^\d{10}$/.test(x.sid || '') ? x.sid : 'r' + x.id) !== key; })); toast('Unpaired'); render();
       };
     });
     sheet.querySelectorAll('[data-rm]').forEach(function (b) {
@@ -22203,6 +22217,14 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     '.hwp-sec{padding:16px 4px 6px;font:700 11.5px/16px RobotoE,system-ui;letter-spacing:.8px;text-transform:uppercase}' +
     '.hwp-new{padding:4px 14px 14px}.hwp-ch{padding:12px 0 4px;font:700 14px/18px RobotoE,system-ui}.hwp-f{min-height:52px}.hwp-f input{height:42px;border-radius:10px}.hwp-step button{width:42px;height:42px;border-radius:10px}' +
     '.hwp-go{height:48px;border-radius:12px;font:700 15.5px RobotoE,system-ui;margin-top:10px}.hwp-steps{margin:4px 2px 12px}.hwp-mn{border-radius:12px}' +
+    /* v3.98.27: compact pairing form on one row, seed rows with copy and address-number chips */
+    '.hwp-body{padding-top:0}.hwp-sec{padding:14px 4px 6px}.hwp-new{padding:12px}.hwp-pr{display:flex;gap:8px;align-items:center}.hwp-pr>input{flex:1;min-width:0;height:44px;border:1px solid var(--border);border-radius:10px;background:var(--bg-input);color:var(--text);padding:0 12px;font:500 15px RobotoE,system-ui;outline:none}.hwp-pr>input:focus{border-color:var(--text)}' +
+    '.hwp-pr .hwp-step{flex:0 0 auto;gap:0;border:1px solid var(--border);border-radius:10px;height:44px;overflow:hidden;background:var(--bg-input)}.hwp-pr .hwp-step button{width:36px;height:42px;border:0;border-radius:0;background:transparent}' +
+    '.hwp-num{display:flex;align-items:center;height:42px;padding:0 2px;border-left:1px solid var(--border);border-right:1px solid var(--border)}.hwp-num span{font:600 14px RobotoMonoE,monospace;color:var(--text-muted);padding-left:6px}.hwp-num input{width:42px;height:42px;border:0;background:transparent;color:var(--text);text-align:center;padding:0;font:600 15px RobotoMonoE,monospace;outline:none;-moz-appearance:textfield}.hwp-num input::-webkit-inner-spin-button{-webkit-appearance:none}' +
+    '.hwp-go{height:44px;margin-top:10px}.hwp-need{margin:0 0 10px}' +
+    '.hwp-t .hwp-id{display:flex;align-items:center;overflow:visible}.hwp-cpi{width:28px;height:24px;margin-left:4px;border:0;border-radius:6px;background:transparent;color:var(--text-muted);display:grid;place-items:center;padding:0}.hwp-cpi svg{width:15px;height:15px}.hwp-cpi:active{background:var(--bg-input);color:var(--text)}' +
+    '.hwp-chips{display:flex!important;gap:4px;margin-top:4px;white-space:normal!important;flex-wrap:wrap}.hwp-chips i{font-style:normal;height:20px;padding:0 7px;border-radius:6px;border:1px solid var(--border);font:600 11.5px/18px RobotoMonoE,monospace;color:var(--text)}' +
+    '.hwp-row{align-items:flex-start;padding-top:10px;padding-bottom:10px}.hwp-row .hwp-av{margin-top:2px}.hwp-row .hwp-more{margin-top:-2px}.hwp-lead{margin-top:12px}' +
     '.kss-hp .kss-wo span{line-height:19px}.kss-hp .kss-wo small{display:block;margin-top:2px;font:500 12px/16px RobotoMonoE,monospace;letter-spacing:.3px;color:var(--hp-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kss-hp .kss-wo{padding-top:9px;padding-bottom:9px}';
   var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
 
@@ -22246,6 +22268,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   function finish(o) {
     if (done) return; done = true;
     o = o || { status: 'rejected' }; if (REQ && REQ.id) o.id = REQ.id;
+    try { if (S && S.rec && /^\d{10}$/.test(S.rec.sid || '') && !o.sid) o.sid = S.rec.sid; } catch (e) {}
     /* v3.98.1 (#3): a fee speed the user picked here goes back to Hwallet, which keeps it per chain for the next time */
     try { if (S && S.feeUser && o.status !== 'expired') o.feePick = { dapp: !!S.dapp, c: S.c, network: S.c === 'evm' ? String((S.info && S.info.id) || '') : '', level: S.level, tier: S.tier || null, man: S.level === 'custom' && !S.tier && S.man ? S.man : null }; } catch (e) {}
     try { KwSign.done(JSON.stringify(o)); } catch (e) {}
@@ -22375,11 +22398,17 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
 
   /* ---------- pair: send the public addresses of one paired seed (public data only, no PIN) ---------- */
   function pairPage() {
-    var all = pubList(); mount();
-    if (!all.length) return pairNone();
+    var pubs = pubList(); mount();
+    if (!pubs.length) return pairNone();
+    /* v3.98.27: one option per seed (its latest address number is the one Hwallet opens on); a seed ID from Hwallet picks it */
+    var all = [], seen = {};
+    pubs.slice().reverse().forEach(function (r) { var key = /^\d{10}$/.test(r.sid || '') ? r.sid : 'r' + r.id; if (seen[key]) return; seen[key] = 1; all.unshift(r); });
+    var want = /^\d{10}$/.test(String(REQ.sid || '')) ? String(REQ.sid) : '';
+    if (want) { all = all.filter(function (r) { return r.sid === want; }); if (!all.length) return finish({ status: 'rejected', error: 'nosid' }); }
+    function kin(r) { return /^\d{10}$/.test(r.sid || '') ? pubs.filter(function (x) { return x.sid === r.sid; }) : [r]; }
     var pick = 0;
     /* v3.98.26: each seed with its ID, address number and chain count (the old " · Monero" read like the wallet's chain) */
-    function opts() { return all.map(function (r, i) { var ad = r.addrs || {}, n = Object.keys(ad).filter(function (k) { return ad[k]; }).length, id = sidFmt(r.sid); return '<button type="button" class="hp-wo kss-wo' + (i === pick ? ' on' : '') + '" data-i="' + i + '"><i></i><span>' + esc(r.label) + '<small>' + (id ? 'ID ' + id + ' \u00b7 ' : '') + '#' + r.index + ' \u00b7 ' + (n === 1 && ad.xmr ? 'Monero' : n + (n === 1 ? ' chain' : ' chains')) + '</small></span><em>' + esc(HWP.shortA(ad.eth || ad.xmr)) + '</em></button>'; }).join(''); }
+    function opts() { return all.map(function (r, i) { var ad = r.addrs || {}, n = Object.keys(ad).filter(function (k) { return ad[k]; }).length, id = sidFmt(r.sid), ix = kin(r).map(function (x) { return '#' + (x.index | 0); }).join(' '); return '<button type="button" class="hp-wo kss-wo' + (i === pick ? ' on' : '') + '" data-i="' + i + '"><i></i><span>' + esc(r.label) + '<small>' + (id ? 'ID ' + id + ' \u00b7 ' : '') + ix + ' \u00b7 ' + (n === 1 && ad.xmr ? 'Monero' : n + (n === 1 ? ' chain' : ' chains')) + '</small></span><em>' + esc(HWP.shortA(ad.eth || ad.xmr)) + '</em></button>'; }).join(''); }
     var body = HWP.head({ icon: HWICON, name: 'Hwallet', sub: 'Pairing request' }) + HWP.title('Pair with Hwallet') +
       '<div class="hp-lead">Pick the wallet to use in Hwallet. If it is already there, Hwallet updates it.</div>' +
       HWP.card('<div class="hp-sec">Wallet</div><div class="hp-wl" id="kss-pl">' + opts() + '</div>') +
@@ -22405,7 +22434,10 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           sec = null;
         } catch (e) { try { console.warn('pair xmr', e); } catch (x) {} }
       }
-      success({ status: 'paired', pair: publicExport(r) }, 'Sent to Hwallet');
+      var pe = publicExport(r);
+      try { if (pe.sid) pe.accts = kin(r).filter(function (x) { return x.id !== r.id; }).map(function (x) { var e = publicExport(x); delete e.label; return e; }); } catch (e) {}
+      try { pe.ids = pubs.filter(function (x) { return /^\d{10}$/.test(x.sid || ''); }).map(function (x) { return { sid: x.sid, eth: (x.addrs && x.addrs.eth) || '', xmr: (x.addrs && x.addrs.xmr) || '', xp: x.xmrPrimary || '' }; }); } catch (e) {}
+      success({ status: 'paired', pair: pe }, 'Sent to Hwallet');
     };
   }
   /* v3.98.4 (#B): no seed paired yet: clear steps instead of a dead end (the sign page has no seed on screen to pair) */
