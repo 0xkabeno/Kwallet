@@ -1,5 +1,9 @@
 # Changelog
 
+## Kwallet v3.98.23 + Hwallet v1.8.26 (2026-10-16)
+
+- Hwallet in Tron dApps: still connects as TronLink (window.tronLink / tronWeb, for fixed wallet lists) and now also announces itself as Hwallet with its own icon (TIP-6963 and window.tron), so dApps that discover Tron wallets list Hwallet by name. Kwallet: version bump only.
+
 ## Kwallet v3.98.22 + Hwallet v1.8.25 (2026-10-16)
 
 - Kwallet: one red (#d93025) on every red button (Clear, PK, S|V, Cancel on the sign sheet, the lock screen's Forget buttons) in every style (OG, MD3, M3, MIUIX), light and dark.
