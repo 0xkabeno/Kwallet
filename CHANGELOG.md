@@ -1,5 +1,12 @@
 # Changelog
 
+## Kwallet v3.98.25 + Hwallet v1.8.28 (2026-10-16)
+
+- Tron dApps: Hwallet's Tron provider now has the TIP-1193 events (on / removeListener) that discovery-aware dApps call after TIP-6963, so they list Hwallet by name. TronLink compatibility is unchanged.
+- WalletConnect from any dApp, any chain: Hwallet answers the WalletConnect links dApps open for MetaMask, Trust, OKX, Bitget, TokenPocket, Rainbow, SafePal, Zerion and Uniswap Wallet when those apps are not installed, and a WalletConnect link copied from a QR ("Copy link") pairs as soon as Hwallet opens. The chains come from the dApp's proposal.
+- xrp.cafe: Hwallet's injected XRP stand-ins (Xaman / Crossmark / GemWallet style) are left out on xrp.cafe, which connects through WalletConnect (Bifrost) instead.
+- Kwallet: version bump only (the dApp sheets keep their look).
+
 ## Kwallet v3.98.24 + Hwallet v1.8.27 (2026-10-16)
 
 - Hwallet as Bifrost (XRP Ledger WalletConnect): dApps that connected to Hwallet through their Bifrost button (xrp.cafe and others) open bifrostwallet:// to pair and to bring the wallet up for each sign request. Hwallet now answers those links, so a sign request opens Hwallet and goes to Kwallet instead of only leaving a notification while Hwallet stays in the background. Kwallet: version bump only.
