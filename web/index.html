@@ -12440,7 +12440,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98.27';
+const APP_VERSION = '3.98.28';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -21968,18 +21968,52 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (ch) { save(a); try { if (sheet && sheet.classList.contains('show')) render(); } catch (e) {} }
   }
 
+  /* ---------- v3.98.28: every seed Kwallet holds ----------
+     The seed book, the seed on screen and the paired seeds, one entry per seed ID, each with its type and the address numbers
+     paired with Hwallet. The phrases are read only while the vault is open; without it only the paired seeds are listed. */
+  function seedKind(st, m) { var n = String(m || '').trim().split(/\s+/).filter(Boolean).length; return st === 'poly' ? 'Polyseed' : st === 'xmr' ? 'Monero 25' : 'BIP39' + (n ? ' \u00b7 ' + n + ' words' : ''); }
+  async function seedSidOf(m, p, st) {
+    if (st !== 'poly' && st !== 'xmr') return sidForRec({ m: m, p: p, seedType: 'bip39', index: 1, addrs: {} });
+    var ssk = await xmrSskFor({ m: m, p: p, seedType: st }), prim = FastCore.xmrAddr(FastCore.xmrAccount(ssk), 0, 0); ssk = null;
+    return sidOf('xmr', prim);
+  }
+  var SIDC = {};
+  async function scanSeeds(withSec) {
+    var out = [], by = {};
+    function add(o) { var k = o.sid || o.key, x = by[k]; if (x) { if (!x.m && o.m) { x.m = o.m; x.p = o.p; } if (!x.named && o.label) x.label = o.label; return x; } by[k] = o; out.push(o); return o; }
+    pubList().forEach(function (r) { var sid = /^\d{10}$/.test(r.sid || '') ? r.sid : ''; var o = add({ key: sid || 'r' + r.id, sid: sid, st: r.seedType || 'bip39', label: r.label, named: true, recs: [], m: '', p: '' }); o.recs.push(r); o.label = r.label; });
+    if (withSec) {
+      var src = [];
+      try { load().forEach(function (r) { if (r.m) src.push({ m: r.m, p: r.p || '', st: r.seedType || 'bip39' }); }); } catch (e) {}
+      try { var d = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); if (d && d.mnemonic) { var dt = d.seedType || detectSeedType(d.mnemonic); src.push({ m: d.mnemonic, p: dt === 'bip39' && typeof d.passphrase === 'string' ? d.passphrase : '', st: dt }); } } catch (e) {}
+      try { (JSON.parse(localStorage.getItem('kw-seed-book') || '[]') || []).forEach(function (x) { if (x && x.m) src.push({ m: x.m, p: '', st: x.t || detectSeedType(x.m), note: x.note || '' }); }); } catch (e) {}
+      var seen = {};
+      for (var i = 0; i < src.length && out.length < 40; i++) {
+        var s = src[i], m = String(s.m).trim().split(/\s+/).join(' '), k = m + '|' + s.p; if (!m) continue; if (seen[k]) { if (s.note && !seen[k].named && /^$/.test(seen[k].label || '')) seen[k].label = String(s.note).slice(0, 24); continue; }
+        var sid = SIDC[k]; if (!sid) { try { sid = await seedSidOf(m, s.p, s.st); } catch (e) { sid = ''; } if (sid) SIDC[k] = sid; }
+        seen[k] = add({ key: sid || 'm' + i, sid: sid, st: s.st, label: s.note ? String(s.note).slice(0, 24) : '', recs: [], m: m, p: s.p });
+        await new Promise(function (r) { setTimeout(r, 0); });
+      }
+    }
+    var n = 0;
+    out.forEach(function (o) { o.kind = seedKind(o.st, o.m) + (o.p ? ' + passphrase' : ''); o.recs.sort(function (a, b) { return (a.index | 0) - (b.index | 0); }); if (!o.label) o.label = 'Seed ' + (++n); });
+    return out;
+  }
+  function nextNum(o) { var u = {}; (o.recs || []).forEach(function (r) { u[r.index | 0] = 1; }); var i = 0; while (u[i]) i++; return i; }
+
   /* ---------- pairing ---------- */
-  async function makePair(index, label) {
-    if (!currentMnemonic) throw new Error('No seed on screen. Generate or import one first');
+  async function makePair(index, label, src) {
+    src = src || { m: currentMnemonic, p: currentPassphrase || '', st: currentSeedType };
+    if (!src.m) throw new Error('No seed on screen. Generate or import one first');
     index = Math.max(0, Math.min(2147483647, parseInt(index, 10) || 0));
-    var st = currentSeedType, m = currentMnemonic, p = currentPassphrase || '';
+    var st = src.st || 'bip39', m = src.m, p = src.p || '';
     var rec = { id: rid(8), label: String(label || '').trim().slice(0, 24), index: index, created: Date.now(), seedType: st, m: m, p: p, addrs: {} };
     var nets = st === 'bip39' ? NETS : ['xmr'];
     for (var i = 0; i < nets.length; i++) {
       var net = nets[i];
       try {
         if (net === 'xmr') {
-          var ssk = await xmrSpendKeyForSeed();
+          var ssk = await xmrSskFor({ m: m, p: p, seedType: st });
           var xc = FastCore.makeCtx({ net: 'xmr', pathTpl: DEFAULT_PATH.xmr, ssk: ssk, seedType: st });
           var xr = FastCore.derive(xc, index, true);
           rec.addrs.xmr = xr.address; rec.xmrView = xr.viewKey || '';
@@ -21987,7 +22021,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           try { rec.xmrPrimary = FastCore.xmrAddr(FastCore.xmrAccount(ssk), 0, 0); } catch (e) {}
           try { if (st === 'poly' && typeof polyDecodePhrase === 'function' && typeof POLY !== 'undefined') { var pd = await polyDecodePhrase(m); var bts = POLY.EPOCH + (pd.birthday | 0) * POLY.TIME_STEP; rec.xmrHeight = Math.max(0, xmrHeightAt(bts * 1000) - 21600); } } catch (e) {}
         } else {
-          var ctx = FastCore.makeCtx({ net: net, pathTpl: DEFAULT_PATH[net], seedHex: getBip39SeedHex(m, p), adaEnt: net === 'ada' ? adaEntropyHex() : null, pass: p, seedType: st });
+          var ctx = FastCore.makeCtx({ net: net, pathTpl: DEFAULT_PATH[net], seedHex: getBip39SeedHex(m, p), adaEnt: net === 'ada' ? ethers.Mnemonic.fromPhrase(String(m).trim().toLowerCase().split(/\s+/).join(' ')).entropy : null, pass: p, seedType: st });
           var dd = FastCore.derive(ctx, index, false); rec.addrs[net] = dd.address;
           if (net === 'sui' && dd.pub) rec.suiPk = dd.pub;
           if (net === 'btc' && dd.pub) rec.btcPk = dd.pub;   /* v3.98.16: Bitcoin dApps ask for the public key (UniSat getPublicKey, Wallet Standard accounts) */
@@ -22004,7 +22038,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (!rec.label && kin.length) rec.label = kin[kin.length - 1].label;
     all = all.filter(function (r) { return ((r.addrs.eth || r.addrs.xmr || '').toLowerCase()) !== fp; });
     if (rec.label) all.forEach(function (r) { if (rec.sid && r.sid === rec.sid) r.label = rec.label; });
-    if (!rec.label) rec.label = 'Wallet ' + (all.length + 1);
+    if (!rec.label) { var ns = {}; all.forEach(function (r) { ns[r.sid || r.id] = 1; }); rec.label = 'Wallet ' + (Object.keys(ns).length + 1); }
     all.push(rec); save(all);
     return rec;
   }
@@ -22012,7 +22046,6 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* v3.98: + the primary address (a subaddress pairing still scans the whole wallet) and the restore height when known */
     return { v: 1, src: 'kwallet', sid: /^\d{10}$/.test(r.sid || '') ? r.sid : undefined, label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null, pks: r.suiPk || r.btcPk ? { sui: r.suiPk || undefined, btc: r.btcPk || undefined } : undefined };
   }
-  function exportText(r) { return 'kwallet-pair:' + btoa(unescape(encodeURIComponent(JSON.stringify(publicExport(r))))); }
   /* v3.98: block height for a date, offline (60 s blocks to the v2 fork 1009827, 120 s after; anchor 3,783,000 = 1791875075) */
   function xmrHeightAt(ms) {
     var t = Math.floor((+ms || Date.now()) / 1000);
@@ -22053,53 +22086,59 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     try { var s2 = document.getElementById('kws-hw-s'); if (s2) s2.textContent = window.KwHw.summary(); } catch (e) {}
   }
   function pairErr(t, fix) { perr = { t: t, fix: fix || '' }; render(); buzz([30, 40, 30]); }
+  var SEEDS = null, selK = null, scanning = false;
+  function rescan() {
+    if (scanning) return; scanning = true;
+    scanSeeds(!(window.KwDB && KwDB.state() === 'locked')).then(function (L) { SEEDS = L; }, function () { SEEDS = []; }).then(function () { scanning = false; if (sheet && sheet.classList.contains('show')) render(); });
+  }
   function render() {
-    var all = load(), seed = !!currentMnemonic;
-    /* v3.98.27: one row per seed: name, seed ID with a copy button, its address numbers as chips; Remove in the ⋮ menu */
-    var G = [], GK = {};
-    all.forEach(function (r) { var key = /^\d{10}$/.test(r.sid || '') ? r.sid : 'r' + r.id; if (!GK[key]) { GK[key] = { key: key, sid: r.sid || '', recs: [] }; G.push(GK[key]); } GK[key].recs.push(r); });
-    var list = G.length ? G.map(function (g) {
-      var rs = g.recs.slice().sort(function (a, b) { return (a.index | 0) - (b.index | 0); }), r = g.recs[g.recs.length - 1], r0 = rs[0];
-      var ad = r0.addrs || {}, ck = ad.eth ? 'ethereum' : ad.xmr ? 'monero' : ad.sol ? 'solana' : ad.btc ? 'bitcoin' : '', a = ad.eth || ad.xmr || ad.sol || ad.btc || '';
-      var n = Object.keys(ad).filter(function (k) { return ad[k]; }).length, id = sidFmt(g.sid);
-      var ic = LOGO[ck] ? '<img src="' + LOGO[ck] + '" alt="">' : esc((String(r.label).replace(/[^A-Za-z0-9]/g, '')[0] || 'W').toUpperCase());
-      var chips = '<span class="hwp-chips">' + rs.map(function (x) { return '<i>#' + (x.index | 0) + '</i>'; }).join('') + '</span>';
-      var mi = (rs.length > 1 ? rs.map(function (x) { return '<button type="button" role="menuitem" class="hwp-mrm" data-rm="' + x.id + '">' + pic(PI.del) + '<span>Remove #' + (x.index | 0) + '</span></button>'; }).join('') : '') +
-        '<button type="button" role="menuitem" class="hwp-mrm" data-rms="' + esc(g.key) + '">' + pic(PI.del) + '<span>' + (rs.length > 1 ? 'Remove seed' : 'Remove') + '</span></button>';
-      return '<div class="hwp-row"><span class="hwp-av" aria-hidden="true">' + ic + '</span>' +
-        '<div class="hwp-t"><b>' + esc(r.label) + '</b>' + (id ? '<span class="hwp-id"><i>ID</i>' + id + '<button type="button" class="hwp-cpi" data-cid="' + esc(g.sid) + '" aria-label="Copy seed ID">' + pic(PI.copy) + '</button></span>' : '') +
-        '<span>' + esc(a.length > 12 ? a.slice(0, 6) + '\u2026' + a.slice(-4) : a) + (n > 1 ? ' \u00b7 ' + n + ' chains' : '') + '</span>' + chips + '</div>' +
-        '<button type="button" class="hwp-ib hwp-more" data-mn="' + esc(g.key) + '" aria-haspopup="menu" aria-label="More for ' + esc(r.label) + '">' + pic(PI.more) + '</button>' +
-        '<div class="hwp-mn" role="menu" data-mnp="' + esc(g.key) + '" hidden>' + mi + '</div></div>';
-    }).join('') : '<div class="hwp-empty">No seeds paired yet</div>';
+    /* v3.98.28: every seed Kwallet holds, not only the one on screen: tap one, choose its address number, Pair */
+    if (!SEEDS) { rescan(); }
+    var L = SEEDS || [], cur = L.filter(function (o) { return o.key === selK; })[0] || L.filter(function (o) { return o.recs.length; })[0] || L[0] || null;
+    if (cur) selK = cur.key;
+    var rows = L.map(function (o) {
+      var on = o === cur, id = sidFmt(o.sid);
+      var chips = o.recs.length ? '<span class="hwp-chips">' + o.recs.map(function (x) { return '<i data-nx="' + (x.index | 0) + '">' + (x.index | 0) + '</i>'; }).join('') + '</span>' : '';
+      var mi = o.recs.length ? (o.recs.length > 1 ? o.recs.map(function (x) { return '<button type="button" role="menuitem" class="hwp-mrm" data-rm="' + x.id + '">' + pic(PI.del) + '<span>Remove address ' + (x.index | 0) + '</span></button>'; }).join('') : '') +
+        '<button type="button" role="menuitem" class="hwp-mrm" data-rms="' + esc(o.key) + '">' + pic(PI.del) + '<span>Unpair seed</span></button>' : '';
+      return '<div class="hwp-row hwp-sd' + (on ? ' on' : '') + '" data-sk="' + esc(o.key) + '" role="radio" aria-checked="' + on + '" tabindex="0"><span class="hwp-rd" aria-hidden="true"></span>' +
+        '<div class="hwp-t"><b>' + esc(o.label) + '</b><span class="hwp-kd">' + esc(o.kind) + (id ? ' \u00b7 ' + id : '') + '</span>' + chips + '</div>' +
+        (id ? '<button type="button" class="hwp-cpi" data-cid="' + esc(o.sid) + '" aria-label="Copy seed ID">' + pic(PI.copy) + '</button>' : '') +
+        (mi ? '<button type="button" class="hwp-ib hwp-more" data-mn="' + esc(o.key) + '" aria-haspopup="menu" aria-label="More">' + pic(PI.more) + '</button><div class="hwp-mn" role="menu" data-mnp="' + esc(o.key) + '" hidden>' + mi + '</div>' : '') + '</div>';
+    }).join('');
+    var list = !SEEDS ? '<div class="hwp-empty">Reading your seeds\u2026</div>' : rows || '<div class="hwp-empty">No seeds yet. Create or import one first.</div>';
     var err = perr ? '<div class="hwp-err" role="alert">' + pic(PI.err) + '<div><b>' + esc(perr.t) + '</b>' + (perr.fix ? '<span>' + esc(perr.fix) + '</span>' : '') + '</div></div>' : '';
-    var dis = seed ? '' : ' disabled';
+    var dis = cur ? '' : ' disabled', nn = cur ? (cur.recs.length ? cur.recs[cur.recs.length - 1].index | 0 : 0) : 0;
     sheet.innerHTML = '<div class="hwp-bar"><button type="button" class="hwp-back" data-close aria-label="Back">' + pic(PI.back) + '</button><h2>Pair Hwallet</h2>' +
       '<span class="kbrand hwp-kb" aria-label="Kwallet"><span class="kb-k">K</span><span class="kb-w">wallet</span></span></div>' +
       '<div class="hwp-body">' + err +
-      '<div class="hwp-sec">Pair this seed</div>' +
-      '<div class="hwp-card hwp-new">' +
-      (seed ? '' : '<div class="hwp-need">' + pic(PI.err) + '<span>Create or import a seed first, then come back here.</span></div>') +
-      '<div class="hwp-pr"><input type="text" id="hwp-label" placeholder="Name" aria-label="Name" maxlength="24" autocomplete="off"' + dis + '>' +
+      '<div class="hwp-sec">Seeds</div><div class="hwp-card hwp-list" role="radiogroup">' + list + '</div>' +
+      '<div class="hwp-card hwp-new"><div class="hwp-pr"><input type="text" id="hwp-label" placeholder="Name" aria-label="Name" maxlength="24" autocomplete="off" value="' + esc(cur && cur.recs.length ? cur.label : '') + '"' + dis + '>' +
       '<div class="hwp-step"><button type="button" data-st="-1" aria-label="Previous address"' + dis + '>' + pic(PI.minus) + '</button>' +
-      '<label class="hwp-num"><span>#</span><input type="number" id="hwp-idx" min="0" step="1" value="0" inputmode="numeric" aria-label="Address number"' + dis + '></label><button type="button" data-st="1" aria-label="Next address"' + dis + '>' + pic(PI.plus) + '</button></div></div>' +
+      '<label class="hwp-num"><input type="number" id="hwp-idx" min="0" step="1" value="' + nn + '" inputmode="numeric" aria-label="Address number"' + dis + '></label><button type="button" data-st="1" aria-label="Next address"' + dis + '>' + pic(PI.plus) + '</button></div></div>' +
       '<button class="hwp-go" type="button" id="hwp-go"' + dis + '>Pair</button></div>' +
-      '<div class="hwp-sec">Paired seeds</div><div class="hwp-card hwp-list">' + list + '</div>' +
-      '<p class="hwp-lead">' + pic(PI.lock) + '<span>In Hwallet, tap Pair with Kwallet or enter the seed ID. Only public addresses leave Kwallet.</span></p>' +
-      '</div>';
+      '<p class="hwp-lead">' + pic(PI.lock) + '<span>Only public addresses leave Kwallet.</span></p></div>';
     var idx = $('hwp-idx');
     sheet.querySelector('[data-close]').onclick = closeSheet;
     sheet.querySelectorAll('[data-st]').forEach(function (b) { b.onclick = function () { idx.value = Math.max(0, Math.min(2147483647, (parseInt(idx.value, 10) || 0) + +b.getAttribute('data-st'))); buzz(6); }; });
+    sheet.querySelectorAll('[data-sk]').forEach(function (r) {
+      r.onclick = function (e) {
+        if (e.target.closest('[data-mn],[data-cid],.hwp-mn')) return;
+        var nx = e.target.closest('[data-nx]'), k2 = r.getAttribute('data-sk');
+        if (k2 !== selK) { selK = k2; perr = null; render(); buzz(6); }
+        if (nx && $('hwp-idx')) $('hwp-idx').value = nx.getAttribute('data-nx');
+      };
+    });
     var go = $('hwp-go');
     if (go) go.onclick = function () {
       var n = String(idx.value).trim();
       if (!/^\d{1,10}$/.test(n) || +n > 2147483647) return pairErr('That address number is not valid.', 'Use a whole number from 0.');
-      if (!currentMnemonic) return pairErr('No seed on screen.', 'Create or import a seed first.');
-      go.disabled = true; go.textContent = 'Pairing…'; perr = null;
-      makePair(n, $('hwp-label').value).then(function (r) {
+      if (!cur || !cur.m) return pairErr('Kwallet is locked.', 'Unlock Kwallet, then open this page again.');
+      go.disabled = true; go.textContent = 'Pairing\u2026'; perr = null;
+      makePair(n, $('hwp-label').value || (/^Seed \d+$/.test(cur.label) ? '' : cur.label), { m: cur.m, p: cur.p, st: cur.st }).then(function (r) {
         buzz([15, 40, 15]); try { FX.notify('addr'); } catch (e) {}
-        toast(r.label + ' paired. In Hwallet, tap Pair with Kwallet'); try { pushActivity('act', 'Hwallet: paired ' + r.label + ' #' + r.index); } catch (e) {}
-        render();
+        toast(r.label + ' \u00b7 address ' + r.index + ' paired'); try { pushActivity('act', 'Hwallet: paired ' + r.label + ' address ' + r.index); } catch (e) {}
+        SEEDS = null; selK = r.sid || selK; render();
       }, function (e) { pairErr('Could not pair this seed.', (e && e.message) || 'Try again.'); });
     };
     function mnClose() { sheet.querySelectorAll('.hwp-mn').forEach(function (m) { m.hidden = true; }); }
@@ -22107,12 +22146,6 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       b.onclick = function (e) { e.stopPropagation(); var m = sheet.querySelector('[data-mnp="' + b.getAttribute('data-mn') + '"]'), was = m && !m.hidden; mnClose(); if (m && !was) { m.hidden = false; buzz(6); } };
     });
     sheet.onclick = function (e) { if (!e.target.closest('.hwp-mn') && !e.target.closest('[data-mn]')) mnClose(); };
-    sheet.querySelectorAll('[data-cp]').forEach(function (b) {
-      b.onclick = function () { mnClose();
-        var r = load().filter(function (x) { return x.id === b.getAttribute('data-cp'); })[0]; if (!r) return;
-        copyToClipboard(exportText(r)).then(function () { toast('Code copied. Paste it in Hwallet'); try { FX.notify('addr'); } catch (e) {} }, function () { pairErr('Could not copy the code.', 'Allow clipboard access and try again.'); });
-      };
-    });
     sheet.querySelectorAll('[data-cid]').forEach(function (b) {
       b.onclick = function (e) { e.stopPropagation(); mnClose(); var s = sidFmt(b.getAttribute('data-cid')); if (!s) return;
         copyToClipboard(s).then(function () { toast('Seed ID ' + s + ' copied'); buzz(8); }, function () {});
@@ -22122,13 +22155,13 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       b.onclick = function () {
         var key = b.getAttribute('data-rms');
         if (b.getAttribute('data-arm') !== '1') { b.setAttribute('data-arm', '1'); b.classList.add('arm'); b.innerHTML = pic(PI.del) + '<span>Tap again to remove</span>'; buzz([20, 30, 20]); return; }
-        save(load().filter(function (x) { return (/^\d{10}$/.test(x.sid || '') ? x.sid : 'r' + x.id) !== key; })); toast('Unpaired'); render();
+        save(load().filter(function (x) { return (/^\d{10}$/.test(x.sid || '') ? x.sid : 'r' + x.id) !== key; })); toast('Unpaired'); SEEDS = null; render();
       };
     });
     sheet.querySelectorAll('[data-rm]').forEach(function (b) {
       b.onclick = function () {
         if (b.getAttribute('data-arm') !== '1') { b.setAttribute('data-arm', '1'); b.classList.add('arm'); b.innerHTML = pic(PI.del) + '<span>Tap again to remove</span>'; setTimeout(function () { if (b.isConnected && b.getAttribute('data-arm') === '1') { b.removeAttribute('data-arm'); b.classList.remove('arm'); b.innerHTML = pic(PI.del) + '<span>Remove</span>'; } }, 2500); return; }
-        save(load().filter(function (x) { return x.id !== b.getAttribute('data-rm'); })); toast('Unpaired'); render();
+        save(load().filter(function (x) { return x.id !== b.getAttribute('data-rm'); })); toast('Unpaired'); SEEDS = null; render();
       };
     });
   }
@@ -22154,7 +22187,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   window.KwUi = { get: kuiGet, set: kuiSet, choose: kuiChoose, label: function () { var v = kuiGet(); return (KUIS.filter(function (x) { return x[0] === v; })[0] || KUIS[0])[2]; } };
   window.KwHw = {
-    open: openSheet, close: closeSheet, load: load, isOpen: function () { return !!(sheet && sheet.classList.contains('show')); },
+    open: function () { SEEDS = null; return openSheet.apply(this, arguments); }, close: closeSheet, load: load, isOpen: function () { return !!(sheet && sheet.classList.contains('show')); },
     reqPin: reqPin, setReqPin: setReqPin, sync: syncStore,
     summary: function () { var n = load().length || pubList().length; return n ? n + (n === 1 ? ' seed paired' : ' seeds paired') : 'No seeds paired'; }
   };
@@ -22225,6 +22258,12 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     '.hwp-t .hwp-id{display:flex;align-items:center;overflow:visible}.hwp-cpi{width:28px;height:24px;margin-left:4px;border:0;border-radius:6px;background:transparent;color:var(--text-muted);display:grid;place-items:center;padding:0}.hwp-cpi svg{width:15px;height:15px}.hwp-cpi:active{background:var(--bg-input);color:var(--text)}' +
     '.hwp-chips{display:flex!important;gap:4px;margin-top:4px;white-space:normal!important;flex-wrap:wrap}.hwp-chips i{font-style:normal;height:20px;padding:0 7px;border-radius:6px;border:1px solid var(--border);font:600 11.5px/18px RobotoMonoE,monospace;color:var(--text)}' +
     '.hwp-row{align-items:flex-start;padding-top:10px;padding-bottom:10px}.hwp-row .hwp-av{margin-top:2px}.hwp-row .hwp-more{margin-top:-2px}.hwp-lead{margin-top:12px}' +
+    /* v3.98.28: seed list (radio rows), address-number stepper on the request sheet */
+    '.hwp-sd{cursor:pointer;padding-left:12px}.hwp-rd{flex:0 0 auto;width:18px;height:18px;margin-top:2px;border-radius:50%;border:2px solid var(--border);box-sizing:border-box}.hwp-sd.on .hwp-rd{border:5px solid var(--accent,#d7f461)}' +
+    '.hwp-sd .hwp-kd{font:500 12px/16px RobotoE,system-ui!important;letter-spacing:.1px}.hwp-chips i{cursor:pointer}.hwp-sd .hwp-cpi{margin-top:-2px;flex:0 0 auto}.hwp-list .hwp-empty{padding:16px 14px}.hwp-new{margin-top:10px}' +
+    '.kss-hp .kss-wo em.kss-nums{display:flex;gap:4px;font-style:normal}.kss-nums b{min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:6px;border:1px solid var(--hp-line,rgba(255,255,255,.14));font:600 12px/20px RobotoMonoE,monospace;text-align:center}.kss-hp em.kss-new{font:600 11px RobotoE,system-ui;letter-spacing:.4px;text-transform:uppercase;opacity:.6;font-style:normal}' +
+    '.kss-nr{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 2px;padding:8px 8px 8px 16px;border-radius:14px;background:var(--hp-card,rgba(255,255,255,.05))}.kss-nr>span{font:500 14px RobotoE,system-ui;color:var(--hp-muted)}' +
+    '.kss-stp{display:flex;align-items:center;border:1px solid var(--hp-line,rgba(255,255,255,.14));border-radius:10px;overflow:hidden}.kss-stp button{width:38px;height:38px;border:0;background:transparent;color:inherit;font:500 20px/1 RobotoE,system-ui}.kss-stp input{width:52px;height:38px;border:0!important;border-radius:0!important;box-shadow:none!important;margin:0;border-left:1px solid var(--hp-line,rgba(255,255,255,.14));border-right:1px solid var(--hp-line,rgba(255,255,255,.14));background:transparent;color:inherit;text-align:center;font:600 16px RobotoMonoE,monospace;outline:none;-moz-appearance:textfield}.kss-stp input::-webkit-inner-spin-button{-webkit-appearance:none}' +
     '.kss-hp .kss-wo span{line-height:19px}.kss-hp .kss-wo small{display:block;margin-top:2px;font:500 12px/16px RobotoMonoE,monospace;letter-spacing:.3px;color:var(--hp-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kss-hp .kss-wo{padding-top:9px;padding-bottom:9px}';
   var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
 
@@ -22398,53 +22437,70 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
 
   /* ---------- pair: send the public addresses of one paired seed (public data only, no PIN) ---------- */
   function pairPage() {
-    var pubs = pubList(); mount();
-    if (!pubs.length) return pairNone();
-    /* v3.98.27: one option per seed (its latest address number is the one Hwallet opens on); a seed ID from Hwallet picks it */
-    var all = [], seen = {};
-    pubs.slice().reverse().forEach(function (r) { var key = /^\d{10}$/.test(r.sid || '') ? r.sid : 'r' + r.id; if (seen[key]) return; seen[key] = 1; all.unshift(r); });
+    /* v3.98.28: every seed in Kwallet (vault opened once with PIN or biometrics), its type, ID and paired address
+       numbers; the user picks the seed and the address number. Only that seed's public addresses go to Hwallet. */
+    mount();
     var want = /^\d{10}$/.test(String(REQ.sid || '')) ? String(REQ.sid) : '';
-    if (want) { all = all.filter(function (r) { return r.sid === want; }); if (!all.length) return finish({ status: 'rejected', error: 'nosid' }); }
-    function kin(r) { return /^\d{10}$/.test(r.sid || '') ? pubs.filter(function (x) { return x.sid === r.sid; }) : [r]; }
-    var pick = 0;
-    /* v3.98.26: each seed with its ID, address number and chain count (the old " · Monero" read like the wallet's chain) */
-    function opts() { return all.map(function (r, i) { var ad = r.addrs || {}, n = Object.keys(ad).filter(function (k) { return ad[k]; }).length, id = sidFmt(r.sid), ix = kin(r).map(function (x) { return '#' + (x.index | 0); }).join(' '); return '<button type="button" class="hp-wo kss-wo' + (i === pick ? ' on' : '') + '" data-i="' + i + '"><i></i><span>' + esc(r.label) + '<small>' + (id ? 'ID ' + id + ' \u00b7 ' : '') + ix + ' \u00b7 ' + (n === 1 && ad.xmr ? 'Monero' : n + (n === 1 ? ' chain' : ' chains')) + '</small></span><em>' + esc(HWP.shortA(ad.eth || ad.xmr)) + '</em></button>'; }).join(''); }
-    var body = HWP.head({ icon: HWICON, name: 'Hwallet', sub: 'Pairing request' }) + HWP.title('Pair with Hwallet') +
-      '<div class="hp-lead">Pick the wallet to use in Hwallet. If it is already there, Hwallet updates it.</div>' +
-      HWP.card('<div class="hp-sec">Wallet</div><div class="hp-wl" id="kss-pl">' + opts() + '</div>') +
-      HWP.card(HWP.perms([['ok', 'See the public addresses of this wallet'], ['ok', 'See Monero balances (view key, can\u2019t spend)'], ['ok', 'Ask Kwallet to sign, every time'], ['no', 'Can\u2019t sign or move funds by itself']])) +
-      '<div class="hp-lead kss-pn" id="kss-pn"></div>' + HWP.trust('ok', 'Your seed stays in Kwallet');
+    page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(HWP.head({ icon: HWICON, name: 'Hwallet', sub: 'Pairing request' }) + '<div class="hp-lead kss-ld">Reading your seeds\u2026</div>', '') + '</div>';
+    try { page.querySelector('[data-hp-x]').onclick = function () { finish({ status: 'rejected' }); }; } catch (e) {}
+    (async function () {
+      var sec = !(window.KwDB && KwDB.state() === 'locked');
+      if (!sec) sec = await authOnce();
+      var L = await scanSeeds(!!sec);
+      if (want) { L = L.filter(function (o) { return o.sid === want; }); if (!L.length) return finish({ status: 'rejected', error: 'nosid' }); }
+      if (!L.length) return pairNone();
+      pairPick(L);
+    })().catch(function (e) { fail('Kwallet could not read its seeds.', (e && e.message) || 'Try again.'); });
+  }
+  function pairPick(L) {
+    var pick = 0; L.some(function (o, i) { if (o.recs.length) { pick = i; return true; } return false; });
+    var num = L[pick].recs.length ? L[pick].recs[L[pick].recs.length - 1].index | 0 : 0;
+    function opts() { return L.map(function (o, i) { var id = sidFmt(o.sid); return '<button type="button" class="hp-wo kss-wo' + (i === pick ? ' on' : '') + '" data-i="' + i + '"><i></i><span>' + esc(o.label) + '<small>' + esc(o.kind) + (id ? ' \u00b7 ' + id : '') + '</small></span>' + (o.recs.length ? '<em class="kss-nums">' + o.recs.map(function (x) { return '<b data-n="' + (x.index | 0) + '">' + (x.index | 0) + '</b>'; }).join('') + '</em>' : '<em class="kss-new">New</em>') + '</button>'; }).join(''); }
+    var body = HWP.head({ icon: HWICON, name: 'Hwallet', sub: 'Pairing request' }) + HWP.title('Pair a seed') +
+      HWP.card('<div class="hp-wl" id="kss-pl">' + opts() + '</div>') +
+      '<div class="kss-nr"><span>Address number</span><div class="kss-stp"><button type="button" data-ns="-1" aria-label="Previous">\u2212</button><input id="kss-n" type="number" min="0" inputmode="numeric" value="' + num + '" aria-label="Address number"><button type="button" data-ns="1" aria-label="Next">+</button></div></div>' +
+      HWP.trust('ok', 'Only public addresses and the Monero view key go to Hwallet');
     page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(body, HWP.foot({ no: 'Cancel', ok: 'Pair', okId: 'kss-go', noId: 'kss-no' })) + '</div>';
     $('kss-no').onclick = page.querySelector('[data-hp-x]').onclick = function () { finish({ status: 'rejected' }); };
-    function note() { var r = all[pick], n = $('kss-pn'); if (n) n.textContent = xmrMissing(r) && reqPin() ? 'Kwallet asks for your PIN once to add Monero.' : ''; }
-    function wire() { page.querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { pick = +b.getAttribute('data-i'); buzz(6); $('kss-pl').innerHTML = opts(); wire(); note(); }; }); }
-    wire(); note();
+    var ni = $('kss-n');
+    function wire() { page.querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function (e) { var i = +b.getAttribute('data-i'), nb = e.target.closest('[data-n]'); if (i !== pick) { pick = i; ni.value = L[i].recs.length ? L[i].recs[L[i].recs.length - 1].index | 0 : 0; } if (nb) ni.value = nb.getAttribute('data-n'); buzz(6); $('kss-pl').innerHTML = opts(); wire(); }; }); }
+    wire();
+    page.querySelectorAll('[data-ns]').forEach(function (b) { b.onclick = function () { ni.value = Math.max(0, Math.min(2147483647, (parseInt(ni.value, 10) || 0) + +b.getAttribute('data-ns'))); buzz(6); }; });
     var going = false;
     $('kss-go').onclick = async function () {
-      if (going) return; going = true;
-      var r = Object.assign({}, all[pick]), go = $('kss-go'); if (go) { go.disabled = true; go.textContent = 'Pairing\u2026'; }
-      /* v3.98.4: the public index now carries the Monero view-only data; an older index (vault not opened since the
-         update) is filled here from the signing copy, or from the vault after one PIN when Require PIN is on */
-      if (xmrMissing(r)) {
-        try {
-          var sec = secretFor(await openStore(), r.id);
-          if (!sec && window.KwDB && KwDB.state() !== 'locked') sec = secretFor(load(), r.id);
-          if (!sec && reqPin() && (await authOnce())) sec = secretFor(load(), r.id);
-          if (sec && (await xmrFill(r, sec))) { try { var pl = jget(PUB, []); pl.forEach(function (x) { if (x.id === r.id) { x.xmrView = r.xmrView; x.xmrPrimary = r.xmrPrimary; x.xmrHeight = r.xmrHeight | 0; } }); localStorage.setItem(PUB, JSON.stringify(pl)); } catch (e) {} }
-          sec = null;
-        } catch (e) { try { console.warn('pair xmr', e); } catch (x) {} }
+      if (going) return;
+      var o = L[pick], n = String(ni.value).trim(); if (!/^\d{1,10}$/.test(n) || +n > 2147483647) { buzz([30, 40, 30]); ni.focus(); return; }
+      n = +n; going = true; var go = $('kss-go'); if (go) { go.disabled = true; go.textContent = 'Pairing\u2026'; }
+      try {
+        var r = o.recs.filter(function (x) { return (x.index | 0) === n; })[0];
+        if (r) {
+          r = Object.assign({}, r);
+          /* an older public index lacks the Monero view-only data: fill it from the vault or the signing copy */
+          if (xmrMissing(r)) {
+            var sc = secretFor(await openStore(), r.id);
+            if (!sc && window.KwDB && KwDB.state() !== 'locked') sc = secretFor(load(), r.id);
+            if (!sc && reqPin() && (await authOnce())) sc = secretFor(load(), r.id);
+            if (sc && (await xmrFill(r, sc))) { try { var pl = jget(PUB, []); pl.forEach(function (x) { if (x.id === r.id) { x.xmrView = r.xmrView; x.xmrPrimary = r.xmrPrimary; x.xmrHeight = r.xmrHeight | 0; } }); localStorage.setItem(PUB, JSON.stringify(pl)); } catch (e) {} }
+            sc = null;
+          }
+        } else {
+          if (!o.m) { if (!(await authOnce())) throw new Error('Unlock Kwallet to add a new address number'); var L2 = await scanSeeds(true), o2 = L2.filter(function (x) { return x.key === o.key || (o.sid && x.sid === o.sid); })[0]; if (!o2 || !o2.m) throw new Error('Kwallet could not open this seed'); o = o2; }
+          r = await makePair(n, o.recs.length ? o.label : (/^Seed \d+$/.test(o.label) ? '' : o.label), { m: o.m, p: o.p, st: o.st });
+        }
+        var pe = publicExport(r);
+        if (pe.sid) pe.accts = pubList().filter(function (x) { return x.sid === pe.sid && (x.index | 0) !== (r.index | 0); }).map(function (x) { var e = publicExport(x); delete e.label; return e; });
+        success({ status: 'paired', pair: pe }, 'Sent to Hwallet');
+      } catch (e) {
+        going = false; if (go) { go.disabled = false; go.textContent = 'Pair'; }
+        try { toast((e && e.message) || 'Could not pair'); } catch (x) {} buzz([30, 40, 30]);
       }
-      var pe = publicExport(r);
-      try { if (pe.sid) pe.accts = kin(r).filter(function (x) { return x.id !== r.id; }).map(function (x) { var e = publicExport(x); delete e.label; return e; }); } catch (e) {}
-      try { pe.ids = pubs.filter(function (x) { return /^\d{10}$/.test(x.sid || ''); }).map(function (x) { return { sid: x.sid, eth: (x.addrs && x.addrs.eth) || '', xmr: (x.addrs && x.addrs.xmr) || '', xp: x.xmrPrimary || '' }; }); } catch (e) {}
-      success({ status: 'paired', pair: pe }, 'Sent to Hwallet');
     };
   }
   /* v3.98.4 (#B): no seed paired yet: clear steps instead of a dead end (the sign page has no seed on screen to pair) */
   function pairNone() {
     var st = function (n, t, s) { return '<div class="kss-st"><b>' + n + '</b><span>' + t + (s ? '<small>' + s + '</small>' : '') + '</span></div>'; };
     page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(HWP.head({ icon: HWICON, name: 'Hwallet', sub: 'Pairing request' }) + HWP.title('Pair a seed first') +
-      '<div class="hp-lead">Kwallet has no wallet paired with Hwallet yet. It takes a minute:</div>' +
+      '<div class="hp-lead">Kwallet has no seed yet. Create or import one, then pair again.</div>' +
       HWP.card(st(1, 'Open Kwallet', 'From your home screen, not from Hwallet') + st(2, 'Show the seed that holds your funds', 'Generate or import it as usual') + st(3, 'Settings \u203a Hwallet signer \u203a Pair', 'Pick a name and tap Pair') + st(4, 'Come back to Hwallet', 'Tap Pair with Kwallet again')),
       '<div class="hp-act"><button type="button" class="hp-btn hp-no" id="kss-close">Got it</button></div>') + '</div>';
     $('kss-close').onclick = page.querySelector('[data-hp-x]').onclick = function () { finish({ status: 'rejected', error: 'nopair' }); };
