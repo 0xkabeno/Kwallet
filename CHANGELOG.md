@@ -1,5 +1,9 @@
 # Changelog
 
+## Kwallet v3.98.24 + Hwallet v1.8.27 (2026-10-16)
+
+- Hwallet as Bifrost (XRP Ledger WalletConnect): dApps that connected to Hwallet through their Bifrost button (xrp.cafe and others) open bifrostwallet:// to pair and to bring the wallet up for each sign request. Hwallet now answers those links, so a sign request opens Hwallet and goes to Kwallet instead of only leaving a notification while Hwallet stays in the background. Kwallet: version bump only.
+
 ## Kwallet v3.98.23 + Hwallet v1.8.26 (2026-10-16)
 
 - Hwallet in Tron dApps: still connects as TronLink (window.tronLink / tronWeb, for fixed wallet lists) and now also announces itself as Hwallet with its own icon (TIP-6963 and window.tron), so dApps that discover Tron wallets list Hwallet by name. Kwallet: version bump only.
