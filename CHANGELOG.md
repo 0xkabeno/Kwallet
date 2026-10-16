@@ -1,5 +1,15 @@
 # Changelog
 
+## Kwallet v3.98.22 + Hwallet v1.8.25 (2026-10-16)
+
+- Kwallet: one red (#d93025) on every red button (Clear, PK, S|V, Cancel on the sign sheet, the lock screen's Forget buttons) in every style (OG, MD3, M3, MIUIX), light and dark.
+- Cardano governance (CIP-95): Hwallet (and its eternl / lace aliases) now offers CIP-95, so DRep sites (DRepTalk, GovTool…) can sign in. getPubDRepKey and the stake keys come from Kwallet once (Share sheet); signData with a DRep ID or stake address is signed by that key in Kwallet; transactions whose certificates, withdrawals or votes name your stake or DRep key get those witnesses too. Every signature is reviewed in Kwallet.
+- Sui dApps: a simulation that fails right after the app built the transaction (MoveAbort from a router whose quote or objects the node had not caught up with) is built and simulated again before Kwallet shows a failure, so the review sheet no longer opens on an error that clears a second later.
+- XRP Ledger WalletConnect: Hwallet accepts proposals that list xrpl_signTransactionFor and the account / chain events (Bifrost-style dApps), so they connect instead of failing; multi-signing itself is still refused.
+- Crash fix: every WebView in Hwallet and Kwallet shares one renderer; when a heavy dApp page killed it, Android closed the whole app. Both apps now rebuild their screen instead of closing (the force close on some XRP dApps).
+- Browser: websites can upload files from storage again (system file picker, single or multiple files).
+- Notifications: a WebSocket event now checks the balance at once and again after 1.5 s and 4 s (the node that answers can lag the one that pushed), an event that lands during a check is no longer dropped, and a flaky node backs off for at most 8 s instead of 30 s. Incoming payments are notified within seconds on every chain.
+
 ## Kwallet v3.98.21 + Hwallet v1.8.24 (2026-10-16)
 
 - Kwallet: the Monero S|V key button is now a real PK button (same classes), so in every style (OG, MD3, M3, MIUIX, light and dark) it has exactly PK's size, corners, red and font, split into S | V by a thin divider. The live-measuring script from 3.98.19 is gone. Copying S or V never greys the button; only the copied key text is struck. Hide dims it once, like PK.
