@@ -111,6 +111,16 @@ class HwLiveService : Service() {
     private val nextAt = ConcurrentHashMap<String, Long>()
     private val backoff = ConcurrentHashMap<String, Long>()
     private val busy = ConcurrentHashMap<String, Boolean>()
+    /* v1.8.25: a push event that lands while that chain's check is running is not lost: the check runs again at once */
+    private val again = ConcurrentHashMap<String, Boolean>()
+    /** v1.8.25: an event (WebSocket push) = check now, then twice more over the next seconds, because the RPC node that
+     *  answers the balance read can lag the one that pushed the event by a block; the notification no longer waits for
+     *  the next background interval */
+    private fun recheck(id: String) { if (busy[id] == true) { again[id] = true } else { nextAt[id] = 0L } }
+    private fun kick(id: String) {
+        recheck(id)
+        for (d in longArrayOf(1500L, 4000L)) try { exec?.schedule({ recheck(id) }, d, TimeUnit.MILLISECONDS) } catch (_: Throwable) {}
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -508,8 +518,8 @@ class HwLiveService : Service() {
         } catch (_: RateLimit) {
             backoff[id] = minOf(60000L, maxOf(2000L, (backoff[id] ?: 1000L) * 2))
         } catch (_: Exception) {
-            backoff[id] = minOf(30000L, (backoff[id] ?: 0L) + 2000L)
-        } finally { busy[id] = false }
+            backoff[id] = minOf(8000L, (backoff[id] ?: 0L) + 2000L)   /* v1.8.25: was up to 30 s, which delayed notifications */
+        } finally { busy[id] = false; if (again.remove(id) == true) nextAt[id] = 0L }
     }
 
     private fun compare(c: JSONObject, now: Map<String, BigInteger>) {
@@ -604,7 +614,7 @@ class HwLiveService : Service() {
                 if (!running) return
                 /* subscription confirmations are not events */
                 if (text.contains("\"result\"") && !text.contains("\"method\"") && k != "btc" && k != "xrp") return
-                if (busy[id] != true) { nextAt[id] = 0L }
+                kick(id)
                 /* a new block alone does not mean our address moved; a log, an account change, an address tx does */
                 val newHead = text.contains("\"parentHash\"") && !text.contains("\"topics\"")
                 if (!newHead) histKick(id, if (k == "evm") 2500L else 1200L)
