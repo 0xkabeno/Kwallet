@@ -729,9 +729,30 @@ class HwActivity : FragmentActivity() {
     }
 
     private val pickFile = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
-        val uri = if (res.resultCode == Activity.RESULT_OK) res.data?.data else null
-        fileCallback?.onReceiveValue(if (uri != null) arrayOf(uri) else null)
+        /* v1.8.25: one file or several (a page's <input type=file multiple>) */
+        val out = ArrayList<Uri>()
+        if (res.resultCode == Activity.RESULT_OK) {
+            val cd = res.data?.clipData
+            if (cd != null) for (k in 0 until cd.itemCount) cd.getItemAt(k)?.uri?.let { out.add(it) }
+            else res.data?.data?.let { out.add(it) }
+        }
+        try { fileCallback?.onReceiveValue(if (out.isNotEmpty()) out.toTypedArray() else null) } catch (_: Throwable) {}
         fileCallback = null
+    }
+    /** v1.8.25: the system file picker for the app page and for every Browser tab (websites that upload a file) */
+    fun chooseFiles(cb: ValueCallback<Array<Uri>>, params: WebChromeClient.FileChooserParams?): Boolean {
+        try { fileCallback?.onReceiveValue(null) } catch (_: Throwable) {}
+        fileCallback = cb
+        val i = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+            val types = (params?.acceptTypes ?: emptyArray()).flatMap { it.split(",") }.map { it.trim().lowercase() }.filter { it.contains("/") }
+            if (types.isNotEmpty()) putExtra(Intent.EXTRA_MIME_TYPES, (types + "application/octet-stream").distinct().toTypedArray())
+            if (params?.mode == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE) putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        }
+        return try { pickFile.launch(i); true } catch (_: Exception) {
+            try { pickFile.launch(Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")); true } catch (_: Exception) { fileCallback = null; false }
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -804,6 +825,16 @@ class HwActivity : FragmentActivity() {
                 else if (request.url.host == "appassets.androidplatform.net") assets.shouldInterceptRequest(request.url)?.also { if (request.url.path?.endsWith(".js") == true) it.mimeType = "text/javascript" } else limited(request)
 
             override fun onPageFinished(view: WebView, url: String) { pushInsets(); pageReady = true; root.invalidate() }
+
+            /* v1.8.25: every WebView in the app shares one renderer process; when a heavy dApp page makes it die (out of
+               memory, a renderer crash), a WebView without this handler takes the whole app down with it (the force close
+               seen on some XRP dApps). Hwallet now rebuilds its screen instead of closing. */
+            @android.annotation.TargetApi(26)
+            override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
+                try { (view.parent as? android.view.ViewGroup)?.removeView(view); view.destroy() } catch (_: Throwable) {}
+                if (view === web) ui.post { try { recreate() } catch (_: Throwable) {} }
+                return true
+            }
             override fun onPageCommitVisible(view: WebView, url: String) { pageReady = true; root.invalidate() }
 
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -816,17 +847,7 @@ class HwActivity : FragmentActivity() {
         }
 
         web.webChromeClient = object : WebChromeClient() {
-            override fun onShowFileChooser(view: WebView, cb: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
-                fileCallback?.onReceiveValue(null)
-                fileCallback = cb
-                val i = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "*/*"
-                    val types = params.acceptTypes.flatMap { it.split(",") }.map { it.trim() }.filter { it.contains("/") }
-                    if (types.isNotEmpty()) putExtra(Intent.EXTRA_MIME_TYPES, (types + "application/octet-stream").distinct().toTypedArray())
-                }
-                return try { pickFile.launch(i); true } catch (_: Exception) { fileCallback = null; false }
-            }
+            override fun onShowFileChooser(view: WebView, cb: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean = chooseFiles(cb, params)
         }
 
         web.addJavascriptInterface(HarkNative(this,
