@@ -56,7 +56,7 @@ class HwActivity : FragmentActivity() {
         if (i?.action != Intent.ACTION_VIEW) return ""
         val s = when (u.scheme?.lowercase()) {
             "wc" -> u.toString()
-            "hwallet", "https" -> u.getQueryParameter("uri") ?: ""
+            "hwallet", "https", "bifrostwallet" -> try { u.getQueryParameter("uri") ?: "" } catch (_: Throwable) { "" }
             else -> ""
         }
         return if (s.startsWith("wc:") && s.length < 4096) s else ""
@@ -68,7 +68,8 @@ class HwActivity : FragmentActivity() {
         val u = i?.data ?: return
         if (i.action != Intent.ACTION_VIEW) return
         val sc = u.scheme?.lowercase() ?: return
-        val isWc = sc == "wc" || (sc == "hwallet" && u.host == "wc") || (sc == "https" && u.host == "hwallet.app" && (u.path ?: "").startsWith("/wc"))
+        val isWc = sc == "wc" || (sc == "hwallet" && u.host == "wc") || sc == "bifrostwallet" ||
+            (sc == "https" && (u.host == "hwallet.app" || u.host == "app.bifrostwallet.com") && (u.path ?: "").startsWith("/wc"))
         if (!isWc) return
         wcWokeAt = System.currentTimeMillis()
         if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwWcWoke&&hwWcWoke()", null)
