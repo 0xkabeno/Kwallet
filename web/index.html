@@ -12440,7 +12440,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98.25';
+const APP_VERSION = '3.98.26';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -21861,7 +21861,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   /* v3.98.4: the public index also carries the Monero view-only data Hwallet needs (private view key, primary address,
      restore height). The user accepted sharing it with Hwallet when pairing; without it a pairing made from Hwallet
      (sign mode, vault closed) sent an empty view key. PUBV bumps force one rewrite the next time the vault is open. */
-  var PUBV = 'kw-hw-pubv', PUBVER = 2;
+  var PUBV = 'kw-hw-pubv', PUBVER = 3;
   function pubList() {
     var a = jget(PUB, null);
     if (!Array.isArray(a) || (+jget(PUBV, 0) || 0) < PUBVER) { var p = load(); if (p.length) { writePub(p); a = jget(PUB, []); } else if (!Array.isArray(a)) a = []; }
@@ -21869,7 +21869,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   function writePub(all) {
     try {
-      localStorage.setItem(PUB, JSON.stringify(all.map(function (r) { return { id: r.id, label: r.label, index: r.index, addrs: r.addrs, seedType: r.seedType, created: r.created, xmrView: r.xmrView || '', xmrPrimary: r.xmrPrimary || '', xmrHeight: r.xmrHeight | 0 , suiPk: r.suiPk || '', btcPk: r.btcPk || ''}; })));
+      localStorage.setItem(PUB, JSON.stringify(all.map(function (r) { return { id: r.id, label: r.label, index: r.index, addrs: r.addrs, seedType: r.seedType, created: r.created, xmrView: r.xmrView || '', xmrPrimary: r.xmrPrimary || '', xmrHeight: r.xmrHeight | 0 , suiPk: r.suiPk || '', btcPk: r.btcPk || '', sid: r.sid || ''}; })));
       localStorage.setItem(PUBV, String(PUBVER));
     } catch (e) {}
   }
@@ -21930,10 +21930,43 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (!Array.isArray(jget(PUB, null)) || (+jget(PUBV, 0) || 0) < PUBVER) writePub(a);
     if (!reqPin() && !jget(SK, null)) syncStore(a);
     if (a.some(xmrMissing)) upgradeXmr().catch(function () {});
+    if (a.some(function (r) { return !/^\d{10}$/.test(r.sid || ''); })) setTimeout(function () { try { sidFill(); } catch (e) {} }, 300);
   }
   document.addEventListener('kwdb-open', function () { setTimeout(migrate, 400); });
   document.addEventListener('kwallet-unlocked', function () { setTimeout(migrate, 600); });
   window.addEventListener('load', function () { setTimeout(migrate, 900); });
+
+  /* ---------- v3.98.26: seed ID ----------
+     A 10-digit public identifier of a seed (9 digits + a Luhn check digit), shown as 4821-0937-52. It is a hash of the seed's
+     primary public address (BIP39: Ethereum m/44'/60'/0'/0/0; Monero / Polyseed: the primary address), never of the seed
+     itself, so it reveals nothing and can't be reversed. The same seed always gets the same ID, whatever address number is
+     paired; a BIP39 passphrase makes another wallet and so another ID. Hwallet keeps one wallet per seed ID. */
+  function sidLuhn(s) { var sum = 0, dbl = true; for (var i = s.length - 1; i >= 0; i--) { var n = +s[i]; if (dbl) { n *= 2; if (n > 9) n -= 9; } sum += n; dbl = !dbl; } return String((10 - sum % 10) % 10); }
+  function sidOf(kind, primary) {
+    if (!primary) return '';
+    var h = ethers.getBytes(ethers.sha256(ethers.toUtf8Bytes('kwallet-seed-id/v1|' + kind + '|' + String(primary).toLowerCase()))), n = 0n;
+    for (var i = 0; i < 8; i++) n = (n << 8n) | BigInt(h[i]);
+    var d = String(n % 1000000000n); while (d.length < 9) d = '0' + d;
+    return d + sidLuhn(d);
+  }
+  function sidForRec(r) {
+    if (!r) return ''; if (/^\d{10}$/.test(r.sid || '')) return r.sid;
+    var st = r.seedType || 'bip39', ad = r.addrs || {}, prim = '';
+    try {
+      if (st === 'bip39') {
+        if ((r.index | 0) === 0 && ad.eth) prim = ad.eth;
+        else if (r.m) prim = FastCore.derive(FastCore.makeCtx({ net: 'eth', pathTpl: DEFAULT_PATH.eth, seedHex: getBip39SeedHex(r.m, r.p || ''), pass: r.p || '', seedType: st }), 0, false).address;
+      } else prim = r.xmrPrimary || ((r.index | 0) === 0 ? ad.xmr : '') || '';
+    } catch (e) { try { console.warn('seed id', e); } catch (x) {} }
+    return prim ? sidOf(st === 'bip39' ? 'bip39' : 'xmr', prim) : '';
+  }
+  function sidFmt(d) { d = String(d || ''); return /^\d{10}$/.test(d) ? d.slice(0, 4) + '-' + d.slice(4, 8) + '-' + d.slice(8) : ''; }
+  window.KwSeedId = { of: sidForRec, fmt: sidFmt };
+  function sidFill() {
+    var a = load(), ch = false;
+    a.forEach(function (r) { if (!/^\d{10}$/.test(r.sid || '')) { var s = sidForRec(r); if (s) { r.sid = s; ch = true; } } });
+    if (ch) { save(a); try { if (sheet && sheet.classList.contains('show')) render(); } catch (e) {} }
+  }
 
   /* ---------- pairing ---------- */
   async function makePair(index, label) {
@@ -21963,15 +21996,19 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       await new Promise(function (r) { setTimeout(r, 0); });
     }
     if (!rec.addrs.eth && !rec.addrs.xmr) throw new Error('Could not derive addresses for this seed');
+    rec.sid = sidForRec(rec);
     var all = load(), fp = (rec.addrs.eth || rec.addrs.xmr || '').toLowerCase();
-    all = all.filter(function (r) { return ((r.addrs.eth || r.addrs.xmr || '').toLowerCase()) !== fp; });
+    /* v3.98.26: one pairing per seed. Pairing the same seed again (any address number) replaces its pairing and keeps its name */
+    var same = all.filter(function (r) { return ((r.addrs.eth || r.addrs.xmr || '').toLowerCase()) === fp || (rec.sid && sidForRec(r) === rec.sid); });
+    if (!rec.label && same.length) rec.label = same[same.length - 1].label;
+    all = all.filter(function (r) { return same.indexOf(r) < 0; });
     if (!rec.label) rec.label = 'Wallet ' + (all.length + 1);
     all.push(rec); save(all);
     return rec;
   }
   function publicExport(r) {
     /* v3.98: + the primary address (a subaddress pairing still scans the whole wallet) and the restore height when known */
-    return { v: 1, src: 'kwallet', label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null, pks: r.suiPk || r.btcPk ? { sui: r.suiPk || undefined, btc: r.btcPk || undefined } : undefined };
+    return { v: 1, src: 'kwallet', sid: /^\d{10}$/.test(r.sid || '') ? r.sid : undefined, label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null, pks: r.suiPk || r.btcPk ? { sui: r.suiPk || undefined, btc: r.btcPk || undefined } : undefined };
   }
   function exportText(r) { return 'kwallet-pair:' + btoa(unescape(encodeURIComponent(JSON.stringify(publicExport(r))))); }
   /* v3.98: block height for a date, offline (60 s blocks to the v2 fork 1009827, 120 s after; anchor 3,783,000 = 1791875075) */
@@ -22022,9 +22059,9 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       var n = Object.keys(ad).filter(function (k) { return ad[k]; }).length;
       var ic = LOGO[ck] ? '<img src="' + LOGO[ck] + '" alt="">' : esc((String(r.label).replace(/[^A-Za-z0-9]/g, '')[0] || 'W').toUpperCase());
       return '<div class="hwp-row"><span class="hwp-av" aria-hidden="true">' + ic + '</span>' +
-        '<div class="hwp-t"><b>' + esc(r.label) + '</b><span>' + esc(a.length > 12 ? a.slice(0, 6) + '\u2026' + a.slice(-4) : a) + ' \u00b7 #' + r.index + (n > 1 ? ' \u00b7 ' + n + ' chains' : '') + '</span></div>' +
+        '<div class="hwp-t"><b>' + esc(r.label) + '</b>' + (sidFmt(r.sid) ? '<span class="hwp-id"><i>ID</i>' + sidFmt(r.sid) + '</span>' : '') + '<span>' + esc(a.length > 12 ? a.slice(0, 6) + '\u2026' + a.slice(-4) : a) + ' \u00b7 #' + r.index + (n > 1 ? ' \u00b7 ' + n + ' chains' : '') + '</span></div>' +
         '<button type="button" class="hwp-ib hwp-more" data-mn="' + r.id + '" aria-haspopup="menu" aria-label="More for ' + esc(r.label) + '">' + pic(PI.more) + '</button>' +
-        '<div class="hwp-mn" role="menu" data-mnp="' + r.id + '" hidden><button type="button" role="menuitem" data-cp="' + r.id + '">' + pic(PI.copy) + '<span>Copy pairing code</span></button>' +
+        '<div class="hwp-mn" role="menu" data-mnp="' + r.id + '" hidden><button type="button" role="menuitem" data-cp="' + r.id + '">' + pic(PI.copy) + '<span>Copy pairing code</span></button>' + (sidFmt(r.sid) ? '<button type="button" role="menuitem" data-cid="' + r.id + '">' + pic(PI.copy) + '<span>Copy seed ID</span></button>' : '') +
         '<button type="button" role="menuitem" class="hwp-mrm" data-rm="' + r.id + '">' + pic(PI.del) + '<span>Remove</span></button></div></div>';
     }).join('') : '<div class="hwp-empty">No wallets paired yet</div>';
     var err = perr ? '<div class="hwp-err" role="alert">' + pic(PI.err) + '<div><b>' + esc(perr.t) + '</b>' + (perr.fix ? '<span>' + esc(perr.fix) + '</span>' : '') + '</div></div>' : '';
@@ -22066,6 +22103,12 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       b.onclick = function () { mnClose();
         var r = load().filter(function (x) { return x.id === b.getAttribute('data-cp'); })[0]; if (!r) return;
         copyToClipboard(exportText(r)).then(function () { toast('Code copied. Paste it in Hwallet'); try { FX.notify('addr'); } catch (e) {} }, function () { pairErr('Could not copy the code.', 'Allow clipboard access and try again.'); });
+      };
+    });
+    sheet.querySelectorAll('[data-cid]').forEach(function (b) {
+      b.onclick = function () { mnClose();
+        var r = load().filter(function (x) { return x.id === b.getAttribute('data-cid'); })[0]; if (!r || !sidFmt(r.sid)) return;
+        copyToClipboard(sidFmt(r.sid)).then(function () { toast('Seed ID copied'); }, function () {});
       };
     });
     sheet.querySelectorAll('[data-rm]').forEach(function (b) {
@@ -22152,7 +22195,15 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     '[data-theme="dark"] .hwp-err{color:#f2b8b5}.hwp-err svg{width:20px;height:20px;flex:0 0 auto}.hwp-err b{display:block;font:600 14px/19px RobotoE,system-ui}.hwp-err span{display:block;font:400 13px/18px RobotoE,system-ui;opacity:.9}' +
     '.hwp-steps{display:flex;align-items:center;gap:0;list-style:none;margin:6px 2px 14px;padding:0;color:var(--text-muted);font:500 12.5px/16px RobotoE,system-ui}.hwp-steps li{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:6px;white-space:nowrap}' +
     '.hwp-steps li+li::before{content:"";flex:0 0 12px;height:1px;margin-right:2px;background:var(--border)}.hwp-steps li.on{color:var(--text)}' +
-    '.hwp-steps i{flex:0 0 20px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--bg-input);color:var(--text);font:700 11px/1 RobotoE,system-ui;font-style:normal}.hwp-steps li.on i{background:#DDF869;color:#223348}';
+    '.hwp-steps i{flex:0 0 20px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--bg-input);color:var(--text);font:700 11px/1 RobotoE,system-ui;font-style:normal}.hwp-steps li.on i{background:#DDF869;color:#223348}' +
+    /* v3.98.26: pairing panels, compact and solid: 14px cards, square avatars, tighter rows, the seed ID in tabular mono */
+    '.hwp-card{border-radius:14px}.hwp-row{min-height:60px;padding:8px 4px 8px 14px;gap:12px}.hwp-av{width:36px;height:36px;border-radius:10px}' +
+    '.hwp-t{gap:1px}.hwp-t b{font:600 15px/19px RobotoE,system-ui}.hwp-t span{font-size:12px;line-height:16px}' +
+    '.hwp-t .hwp-id{color:var(--text);font:600 12.5px/17px RobotoMonoE,monospace;letter-spacing:.5px;font-variant-numeric:tabular-nums}.hwp-id i{font-style:normal;font:700 10px/1 RobotoE,system-ui;letter-spacing:.6px;color:var(--text-muted);margin-right:6px;vertical-align:1px}' +
+    '.hwp-sec{padding:16px 4px 6px;font:700 11.5px/16px RobotoE,system-ui;letter-spacing:.8px;text-transform:uppercase}' +
+    '.hwp-new{padding:4px 14px 14px}.hwp-ch{padding:12px 0 4px;font:700 14px/18px RobotoE,system-ui}.hwp-f{min-height:52px}.hwp-f input{height:42px;border-radius:10px}.hwp-step button{width:42px;height:42px;border-radius:10px}' +
+    '.hwp-go{height:48px;border-radius:12px;font:700 15.5px RobotoE,system-ui;margin-top:10px}.hwp-steps{margin:4px 2px 12px}.hwp-mn{border-radius:12px}' +
+    '.kss-hp .kss-wo span{line-height:19px}.kss-hp .kss-wo small{display:block;margin-top:2px;font:500 12px/16px RobotoMonoE,monospace;letter-spacing:.3px;color:var(--hp-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kss-hp .kss-wo{padding-top:9px;padding-bottom:9px}';
   var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
 
   /* ================= sign page (only inside SignActivity) ================= */
@@ -22327,7 +22378,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var all = pubList(); mount();
     if (!all.length) return pairNone();
     var pick = 0;
-    function opts() { return all.map(function (r, i) { return '<button type="button" class="hp-wo' + (i === pick ? ' on' : '') + '" data-i="' + i + '"><i></i><span>' + esc(r.label) + ' \u00b7 #' + r.index + (r.addrs && r.addrs.xmr ? ' \u00b7 Monero' : '') + '</span><em>' + esc(HWP.shortA(r.addrs.eth || r.addrs.xmr)) + '</em></button>'; }).join(''); }
+    /* v3.98.26: each seed with its ID, address number and chain count (the old " · Monero" read like the wallet's chain) */
+    function opts() { return all.map(function (r, i) { var ad = r.addrs || {}, n = Object.keys(ad).filter(function (k) { return ad[k]; }).length, id = sidFmt(r.sid); return '<button type="button" class="hp-wo kss-wo' + (i === pick ? ' on' : '') + '" data-i="' + i + '"><i></i><span>' + esc(r.label) + '<small>' + (id ? 'ID ' + id + ' \u00b7 ' : '') + '#' + r.index + ' \u00b7 ' + (n === 1 && ad.xmr ? 'Monero' : n + (n === 1 ? ' chain' : ' chains')) + '</small></span><em>' + esc(HWP.shortA(ad.eth || ad.xmr)) + '</em></button>'; }).join(''); }
     var body = HWP.head({ icon: HWICON, name: 'Hwallet', sub: 'Pairing request' }) + HWP.title('Pair with Hwallet') +
       '<div class="hp-lead">Pick the wallet to use in Hwallet. If it is already there, Hwallet updates it.</div>' +
       HWP.card('<div class="hp-sec">Wallet</div><div class="hp-wl" id="kss-pl">' + opts() + '</div>') +
@@ -22502,7 +22554,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     whenReady(function () {
       if (done) return;
       stage('monero: engine boot started');
-      kxStart().then(function () { return kx('boot', {}, 60000); }).then(function () { stage('monero: engine boot finished'); }).catch(function (e) {
+      kxStart().then(function () { return kx('boot', {}, 60000); }).then(function () { stage('monero: engine boot finished'); try { if (S && S.kind === 'xmr-ki' && S.R && S.R.auto === true && !reqPin() && !done && !busy) setTimeout(function () { if (!done && !busy) xmrProceed(); }, 60); } catch (e) {} }).catch(function (e) {
         stage('monero: engine boot failed');
         if (done || busy) return; kxStop();
         fail('The Monero engine could not start: ' + String(e && e.message || e).replace(/^The Monero engine could not start:?\s*/, '').slice(0, 200), 'Nothing was signed. Close Kwallet, open it again, then retry in Hwallet.');
