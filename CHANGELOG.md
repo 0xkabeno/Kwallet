@@ -1,5 +1,9 @@
 # Changelog
 
+## Kwallet v3.98.30 (2026-10-16)
+
+- Add seed now lists every seed Kwallet holds: the seed on screen, every seed in the Gen / Import Undo and Redo history, and the Saved keys seed book (generated and imported), each once with its seed ID. Before, it showed only the seed book and paired seeds.
+
 ## Kwallet v3.98.29 + Hwallet v1.8.32 (2026-10-16)
 
 - Kwallet Pair Hwallet page rebuilt in Kwallet's own Saved keys style: one card per paired seed (GEN / IMP badge, name, type, seed ID, address numbers with a + to add one, Copy ID, Unpair). Tapping an address number offers to remove it.
