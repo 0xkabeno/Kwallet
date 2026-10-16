@@ -139,6 +139,21 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="hwallet.app" android:pathPrefix="/wc" />
             </intent-filter>
+            <!-- v1.8.27: dApps that connected to Hwallet as Bifrost (XRP Ledger WalletConnect, e.g. xrp.cafe) open
+                 bifrostwallet:// to pair and to bring the wallet up for each sign request; Hwallet answers those links.
+                 Bifrost's https link is listed too (opens Hwallet only when the user allows it under "Open supported links"). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="bifrostwallet" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="app.bifrostwallet.com" android:pathPrefix="/wc" />
+            </intent-filter>
         </activity-alias>
     </application>
 </manifest>
