@@ -120,6 +120,13 @@ open class KwActivity : FragmentActivity() {
                     else WebResourceResponse("text/plain", "utf-8", 403, "Offline", null, null)
 
             override fun onPageFinished(view: WebView, url: String) { pushInsets(); pageReady = true; root.invalidate() }
+            /* v3.98.22: if the WebView renderer dies, rebuild the screen instead of letting Android close Kwallet */
+            @android.annotation.TargetApi(26)
+            override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
+                try { (view.parent as? android.view.ViewGroup)?.removeView(view); view.destroy() } catch (_: Throwable) {}
+                if (view === web) try { recreate() } catch (_: Throwable) {}
+                return true
+            }
             override fun onPageCommitVisible(view: WebView, url: String) { pageReady = true; root.invalidate() }
 
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
