@@ -1,5 +1,13 @@
 # Changelog
 
+## Kwallet v3.98.29 + Hwallet v1.8.32 (2026-10-16)
+
+- Kwallet Pair Hwallet page rebuilt in Kwallet's own Saved keys style: one card per paired seed (GEN / IMP badge, name, type, seed ID, address numbers with a + to add one, Copy ID, Unpair). Tapping an address number offers to remove it.
+- New Add seed sheet: every seed in Kwallet, generated or imported, with its type and seed ID (search when there are many). Pick one, name it, choose the address number, Pair. The old name / number panel under the list is gone.
+- Hwallet no longer closes on xrp.cafe: the wallet wake-up link a dApp opens after connecting (bifrostwallet://…) resolved to Hwallet itself and sent it to the background after the next WalletConnect answer. Such links are dropped inside Hwallet's Browser.
+- Hwallet answers Girin Wallet (girinwallet://) and Joey Wallet (joey://settings/wc?uri=) WalletConnect links too, next to Bifrost, for XRP Ledger dApps.
+- Tron: Hwallet's Tron provider is also announced under the TronLink name (TIP-6963), which TronLink adapters such as SunSwap's look for.
+
 ## Kwallet v3.98.28 + Hwallet v1.8.31 (2026-10-16)
 
 - Kwallet's Pair Hwallet page lists every seed Kwallet holds (seed book, the seed on screen, paired seeds), each with its type (BIP39 12/24 words, Polyseed, Monero 25), seed ID with copy, and its paired address numbers. Pick a seed, pick an address number, Pair; no need to put the seed on screen first.
