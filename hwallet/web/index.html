@@ -3250,9 +3250,10 @@ window.hwPlayOpening();
   /* v1.8.15 (4.2): chains switched off in Hwallet > Chains are never announced to the page. Hwallet fills this in when it
      hands the script to the Browser (brProvPush); a new tab picks up a change. */
   var OFF = {}; /*@HWOFF*/
-  /* v1.8.28: xrp.cafe runs its own Xaman / Crossmark / GemWallet detection; Hwallet's XRP stand-ins are left out there
-     and the site connects through WalletConnect (Bifrost) only */
-  try { if (/(^|\.)xrp\.cafe$/i.test(location.hostname)) OFF.xrp = true; } catch (e) {}
+  /* v1.8.28: xrp.cafe runs its own Crossmark / Joey detection on window.xrpl; Hwallet's Crossmark hook and XRPL Wallet
+     Standard entry stay out there. v1.8.33: GemWallet's page protocol is answered on xrp.cafe again (its GemWallet button,
+     desktop view); on a phone view xrp.cafe connects through WalletConnect. */
+  var XCAFE = false; try { XCAFE = /(^|\.)xrp\.cafe$/i.test(location.hostname); } catch (e) {}
 
   /* ---------- bridge ---------- */
   var seq = 0, pend = {}, subs = {};
@@ -3868,7 +3869,7 @@ window.hwPlayOpening();
   } catch (e) {}
 
   /* XRP Ledger: Crossmark page protocol (@crossmarkio/sdk: window.xrpl.isCrossmark, window.postMessage request/response) */
-  if (!OFF.xrp) {
+  if (!OFF.xrp && !XCAFE) {
     var xmk = { isCrossmark: true, isHwallet: true };
     try {
       var xrplLib = window.xrpl;
@@ -3885,7 +3886,7 @@ window.hwPlayOpening();
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
       var c = String(d.command), dt = d.data || {}, job;
-      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.32' });
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.33' });
       else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
       else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
       else if (c === 'network') job = Promise.resolve({ network: XNET });
@@ -3950,7 +3951,7 @@ window.hwPlayOpening();
       isHwallet: true,
       request: function (method, params) {
         var id = 'hw' + Date.now().toString(36), p = params || {}, job;
-        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.32', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.33', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
         else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
           job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
         else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
@@ -7043,7 +7044,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.32';
+var APP_VERSION = '1.8.33';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -11297,7 +11298,9 @@ window.hwCrashPrompt = crashPrompt;
         if (!tj || typeof tj !== 'object') return Promise.reject(dErr(-32602, 'Missing tx_json'));
         var filled = null;
         toast('Preparing\u2026');
-        return xrpFill(tj).then(function (t) { filled = t; return p17K(site, 'xrpl', 'xrpl_signTransaction', { tx: t }); }).then(function (r) {
+        var noFill = xp.autofill === false && !xp.submit;   /* v1.8.33: sign as given (xrp.cafe sign-in) */
+        var prep = noFill ? (tj.Account && tj.Account !== A.xrp ? Promise.reject(dErr(4100, 'The transaction is from another account')) : Promise.resolve(Object.assign(JSON.parse(JSON.stringify(tj)), { Account: A.xrp }))) : xrpFill(tj);
+        return prep.then(function (t) { filled = t; return p17K(site, 'xrpl', 'xrpl_signTransaction', { tx: t }); }).then(function (r) {
           if (r.publicKey) jset('hw-xrppk:' + A.xrp, r.publicKey);
           var out = Object.assign({}, r.tx || filled, { hash: r.hash }); if (!r.tx && r.publicKey) out.SigningPubKey = r.publicKey;
           if (!xp.submit) return { tx_json: out, tx_blob: r.tx_blob };
