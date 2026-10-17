@@ -433,8 +433,27 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun afSeal(plain: String): String = if (plain.length > 4096) "" else HwVault.seal(plain)
 
+        /** v1.8.35 (B13): a saved password opens only within 60 s of a device unlock (afAuth: fingerprint / face / screen
+         *  lock); it locks again when Hwallet goes to the background or the page calls afLock. "" while locked. */
         @android.webkit.JavascriptInterface
-        fun afOpen(sealed: String): String = if (sealed.length > 20000) "" else HwVault.open(sealed)
+        fun afOpen(sealed: String): String = if (sealed.length > 20000 || !afUnlockedNow()) "" else HwVault.open(sealed)
+        /** v1.8.35 (B13): "is this the saved password?" (Save vs Update prompt) without ever returning it */
+        @android.webkit.JavascriptInterface
+        fun afSame(sealed: String, plain: String): Boolean = sealed.length <= 20000 && plain.length <= 4096 && plain.isNotEmpty() && HwVault.open(sealed) == plain
+        @android.webkit.JavascriptInterface
+        fun afUnlocked(): Boolean = afUnlockedNow()
+        /** asks for the phone's own unlock; the answer goes to window.hwAfAuthDone("ok" | "cancel" | "fail" | "nolock") */
+        @android.webkit.JavascriptInterface
+        fun afAuth(title: String) { val t = title.take(80); runOnUiThread { afDevAuth(t) } }
+        @android.webkit.JavascriptInterface
+        fun afLock() { afUntil = 0L }
+        /** v1.8.35 (B13): the Browser's native autofill dropdown (rows are labels only; see HwAfPop) */
+        @android.webkit.JavascriptInterface
+        fun brAfPop(id: String, json: String) { br?.afShow(id, json) }
+        @android.webkit.JavascriptInterface
+        fun brAfMove(id: String, json: String) { br?.afMove(id, json) }
+        @android.webkit.JavascriptInterface
+        fun brAfHide() { br?.afHide() }
         @android.webkit.JavascriptInterface
         fun brShow(id: String, top: Int, bottom: Int) { brw().show(id, top, bottom) }
         /** v1.7.4 (#108): UI style for the Browser's native pull to refresh: og | m3 | miuix, optional ":dark" */
@@ -1005,6 +1024,27 @@ class HwActivity : FragmentActivity() {
         try { prompt.authenticate(info) } catch (_: Exception) { bioResult("fail") }
     }
 
+    /** v1.8.35 (B13): saved Browser passwords open (afOpen) only within 60 s of this unlock, and never in the background */
+    @Volatile private var afUntil = 0L
+    @Volatile private var afAuthing = false   // the unlock prompt itself may pause Hwallet (screen-lock PIN page)
+    private fun afUnlockedNow(): Boolean = android.os.SystemClock.elapsedRealtime() < afUntil
+    private fun afDone(r: String) { afAuthing = false; if (::web.isInitialized) web.evaluateJavascript("window.hwAfAuthDone&&hwAfAuthDone(${JSONObject.quote(r)})", null) }
+    private fun afDevAuth(title: String) {
+        val km = getSystemService(KEYGUARD_SERVICE) as android.app.KeyguardManager
+        if (!km.isDeviceSecure) { afDone("nolock"); return }
+        afAuthing = true
+        val prompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) { afUntil = android.os.SystemClock.elapsedRealtime() + 60_000L; afDone("ok") }
+            override fun onAuthenticationError(code: Int, msg: CharSequence) {
+                afDone(if (code == BiometricPrompt.ERROR_USER_CANCELED || code == BiometricPrompt.ERROR_CANCELED || code == BiometricPrompt.ERROR_NEGATIVE_BUTTON) "cancel" else "fail")
+            }
+        })
+        val b = BiometricPrompt.PromptInfo.Builder().setTitle(title.ifEmpty { "Use saved password" }).setSubtitle("Hwallet").setConfirmationRequired(false)
+        if (Build.VERSION.SDK_INT >= 30) b.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+        else @Suppress("DEPRECATION") b.setDeviceCredentialAllowed(true)
+        try { prompt.authenticate(b.build()) } catch (_: Exception) { afDone("fail") }
+    }
+
     /** v3.90: the phone's own lock for the sign page when Kwallet has no PIN. "ok" | "cancel" | "fail" | "nolock" */
     private fun devResult(r: String) = web.evaluateJavascript("window.kwDevDone&&kwDevDone(${JSONObject.quote(r)})", null)
     private fun devAuth(title: String) {
@@ -1237,7 +1277,7 @@ class HwActivity : FragmentActivity() {
     }
     /* P2a (#95): while Kwallet's sheet is over Hwallet the dApp tab stays live and visible behind it (no pause, no save) */
     override fun onPause() {
-        super.onPause(); fgNow = false; kwPaused = true
+        super.onPause(); fgNow = false; kwPaused = true; if (!afAuthing) afUntil = 0L   // v1.8.35 (B13): saved passwords lock in the background
         if (!signing) { web.onPause(); br?.pause() }
         /* v1.8.13: Kwallet's sheet came up over Hwallet: the page's Monero no-answer limit (45 s) stops here */
         else if (pageReady && ::web.isInitialized) try { web.evaluateJavascript("window.hwKShown&&hwKShown()", null) } catch (_: Throwable) {}
