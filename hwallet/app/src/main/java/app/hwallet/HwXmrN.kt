@@ -412,6 +412,30 @@ object HwXmrN {
         onTick?.invoke()
     }
 
+    /** v1.8.34: Kwallet erased / cleared / a seed removed: the native view-key wallet of those Monero addresses goes (wallet files,
+     *  key-image list, persisted config with the sealed view key). [any]: every native Monero wallet (no map to tell them apart). */
+    fun forgetFor(c: Context, addrs: Set<String>, any: Boolean) {
+        ex.execute {
+            try {
+                val cfgAddr = try { JSONObject(prefs(c).getString("cfg", null) ?: "{}").optString("address") } catch (_: Throwable) { "" }
+                val openAddr = try { dir?.let { File(it, "addr") }?.takeIf { it.exists() }?.readText() ?: "" } catch (_: Throwable) { "" }
+                if (any || (cfgAddr.isNotEmpty() && cfgAddr in addrs) || (openAddr.isNotEmpty() && openAddr in addrs)) {
+                    close(false); dir = null; checkedDir = ""; synchronized(checked) { checked.clear() }
+                    prefs(c).edit().remove("cfg").putBoolean("want", false).commit()
+                    h = 0; dh = 0; startH = 0; synced = false; err = ""
+                }
+                File(c.filesDir, "xmrn").listFiles()?.forEach { f ->
+                    if (!f.isDirectory) return@forEach
+                    val a = try { File(f, "addr").takeIf { it.exists() }?.readText() ?: "" } catch (_: Throwable) { "" }
+                    if (any || a in addrs || (a.isEmpty() && prefs(c).getString("cfg", null) == null)) f.deleteRecursively()
+                }
+                try { c.cacheDir.listFiles()?.forEach { if (it.name.startsWith("xmrn-")) it.delete() } } catch (_: Throwable) {}
+                try { onTick?.invoke() } catch (_: Throwable) {}
+                if (!wanted(c)) try { c.stopService(android.content.Intent(c, HwXmrService::class.java)) } catch (_: Throwable) {}
+            } catch (e: Throwable) { err = (e.message ?: "").take(200) }
+        }
+    }
+
     /* ---------- the watchdog: heights, speed, stall re-arm, periodic save ---------- */
     private fun startDog() {
         if (dog != null) return
