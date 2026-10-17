@@ -79,6 +79,26 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Monero wallet synchronisation: scanning blocks with the user's view key until the wallet reaches the chain tip, started by the user's wallet" />
         </service>
+        <!-- v1.8.34: Kwallet's data cleared or Kwallet uninstalled: Hwallet erases the wallets it paired with it, at once,
+             also when Hwallet is not running. Both broadcasts are system-only (protected) and exempt from the Android 8
+             implicit-broadcast limits; Kwallet is visible to Hwallet through <queries> above (Android 11+). -->
+        <receiver android:name=".KwPkgReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_DATA_CLEARED" />
+                <action android:name="android.intent.action.PACKAGE_FULLY_REMOVED" />
+                <data android:scheme="package" android:ssp="app.kwallet" />
+            </intent-filter>
+        </receiver>
+        <!-- v1.8.34: Kwallet erased in the app, or a paired seed removed there. Only an app signed with the Kwallet key
+             (holding SIGN_FEED) can send it. -->
+        <receiver
+            android:name=".KwEventReceiver"
+            android:exported="true"
+            android:permission="app.kwallet.permission.SIGN_FEED">
+            <intent-filter>
+                <action android:name="app.hwallet.KW_EVENT" />
+            </intent-filter>
+        </receiver>
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
