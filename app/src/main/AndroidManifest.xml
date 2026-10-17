@@ -10,6 +10,9 @@
     <!-- v3.91: live fee / balance updates from Hwallet to the open sign page. Only apps signed with the
          Kwallet key can hold this permission (Hwallet declares the same one, so install order does not matter). -->
     <permission android:name="app.kwallet.permission.SIGN_FEED" android:protectionLevel="signature" />
+    <!-- v3.98.32: Kwallet tells Hwallet at once when a paired seed is removed or Kwallet is erased (an explicit broadcast to
+         Hwallet's KwEventReceiver, which requires this permission from the sender) -->
+    <uses-permission android:name="app.kwallet.permission.SIGN_FEED" />
 
     <!-- v3.90: Kwallet checks that Hwallet is signed with the same key before it signs anything -->
     <queries>
@@ -58,6 +61,14 @@
                 <action android:name="app.kwallet.WARM" />
             </intent-filter>
         </receiver>
+
+        <!-- v3.98.32: Hwallet reads this Kwallet's install id and the public IDs of its paired seeds (no PIN, no keys), so it
+             erases wallets of seeds Kwallet no longer holds. Signature permission + caller uid / signature check in code. -->
+        <provider
+            android:name=".KwLinkProvider"
+            android:authorities="app.kwallet.link"
+            android:exported="true"
+            android:permission="app.kwallet.permission.SIGN_FEED" />
 
         <!-- Launcher icons. Settings > App icon enables one alias and disables the other.
              The lime alias keeps the old component name so existing home-screen shortcuts survive updates. -->
