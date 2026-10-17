@@ -440,6 +440,9 @@ class HwActivity : FragmentActivity() {
         /** v1.7.4 (#108): UI style for the Browser's native pull to refresh: og | m3 | miuix, optional ":dark" */
         @android.webkit.JavascriptInterface
         fun brPtrUi(v: String) { if (v.length in 2..24) { HwBrowser.ptrUiPref = v; br?.ptrUi(v) } }
+        /** Browser ⋮ > Dark pages: "on" | "off" | "auto:dark" | "auto:light" (Auto = Hwallet's theme), saved natively, applied to every tab */
+        @android.webkit.JavascriptInterface
+        fun brDark(v: String) { if (v.length in 2..10) brw().dark(v) }
         @android.webkit.JavascriptInterface
         fun brHide() { br?.hide() }
         @android.webkit.JavascriptInterface
@@ -634,6 +637,42 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun openUrl(url: String) {
             runOnUiThread { try { if (url.startsWith("https://")) startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (_: Exception) {} }
+        }
+
+        /** v1.8.34 (Kwallet wipe link, see KwWipe.kt). kwPending: the purge Hwallet must apply before it draws any wallet
+         *  ("" = none), read synchronously at page start. kwPendingDone: that purge is applied. */
+        @android.webkit.JavascriptInterface
+        fun kwPending(): String = KwWipe.pending(this@HwActivity)
+
+        @android.webkit.JavascriptInterface
+        fun kwPendingDone(at: String) { try { KwWipe.done(this@HwActivity, at.toLong()) } catch (_: Throwable) {} }
+
+        /** the Kwallet-paired wallets (id, seed ID, install id, Monero addresses), so a purge can erase their native copies
+         *  even while the page is not running */
+        @android.webkit.JavascriptInterface
+        fun kwMap(json: String) { KwWipe.setMap(this@HwActivity, json) }
+
+        /** a live purge in the page: erase the native copies of these wallets now ({ids:[], xmr:[]}) */
+        @android.webkit.JavascriptInterface
+        fun kwErased(json: String) {
+            if (json.length > 200_000) return
+            net.execute {
+                try {
+                    val o = JSONObject(json); val ids = HashSet<String>(); val xmr = HashSet<String>()
+                    o.optJSONArray("ids")?.let { a -> for (i in 0 until a.length()) ids.add(a.optString(i)) }
+                    o.optJSONArray("xmr")?.let { a -> for (i in 0 until a.length()) xmr.add(a.optString(i)) }
+                    KwWipe.eraseIds(this@HwActivity, ids, xmr, false)
+                } catch (_: Throwable) {}
+            }
+        }
+
+        /** ask Kwallet for {install id, seed IDs}; the answer comes back through window.hwKwState(json). Never blocks the page. */
+        @android.webkit.JavascriptInterface
+        fun kwCheck() {
+            net.execute {
+                val r = try { KwWipe.query(this@HwActivity) } catch (e: Throwable) { JSONObject().put("st", "unreachable").put("why", e.javaClass.simpleName) }
+                runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript("window.hwKwState&&hwKwState(${JSONObject.quote(r.toString())})", null) } catch (_: Throwable) {} }
+            }
         }
 
         /** v1.6 (#79): is Kwallet on this phone, and which version. Package visibility comes from <queries> in the manifest. */
@@ -906,6 +945,8 @@ class HwActivity : FragmentActivity() {
         else web.loadUrl(startUrl())
         takeWc(intent)
         HwActDb.listener = { wid, json -> actPatch(wid, json) }
+        /* v1.8.34: Kwallet cleared / uninstalled / erased / a seed removed while this screen is up: the page applies it now */
+        KwWipe.onPurge = { runOnUiThread { try { if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwKwPurge&&hwKwPurge()", null) } catch (_: Throwable) {} } }
         HwNet.onChange = { runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript("window.hwNetChanged&&hwNetChanged()", null) } catch (_: Throwable) {} } }
         // v1.3 (#42): the always-on listener is NOT started here any more. The page starts it through setLive()
         // after it has loaded, when Hwallet is resumed (see startLiveSafe).
@@ -1234,10 +1275,12 @@ class HwActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume(); fgNow = true; web.onResume(); br?.resume(); if (::web.isInitialized) tuneWebView(this, web)
         if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwFront&&hwFront()", null)
+        /* v1.8.34: back in front: apply a purge that came in meanwhile, then ask Kwallet whether its seeds are still there */
+        if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwKwFront&&hwKwFront()", null)
         if (pendingLive) ui.postDelayed({ if (pendingLive) startLiveSafe() }, 300)
         ui.postDelayed({ warmKwallet() }, 2500)  // P2a: keep Kwallet's sign sheet quick to open while Hwallet is in use
     }  // OEMs drop back to 60 Hz after resume
-    override fun onDestroy() { try { br?.destroy(); br = null } catch (_: Throwable) {}; try { socks.values.forEach { it.cancel() }; socks.clear(); HwActDb.listener = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
+    override fun onDestroy() { try { br?.destroy(); br = null } catch (_: Throwable) {}; try { socks.values.forEach { it.cancel() }; socks.clear(); HwActDb.listener = null; KwWipe.onPurge = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
 }
 
 /** Smooth rendering like Chrome: highest refresh rate, no overscroll glow.
