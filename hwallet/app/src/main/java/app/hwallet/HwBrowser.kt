@@ -373,7 +373,7 @@ class HwBrowser(
             top = (topCss * d).toInt(); bottom = (botCss * d).toInt()
             val t = tabs[id] ?: return@post
             val w = t.web ?: return@post
-            if (visible != id) pullOff()
+            if (visible != id) { pullOff(); afDrop(null) }   // v1.8.35 (B13)
             tabs.values.forEach { o -> if (o !== t) o.web?.let { if (it.visibility != View.GONE) { save(o); it.visibility = View.GONE; it.onPause(); prio(it, false) } } }
             val lp = (w.layoutParams as? FrameLayout.LayoutParams) ?: FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             lp.topMargin = top; lp.bottomMargin = bottom
@@ -388,8 +388,17 @@ class HwBrowser(
         }
     }
 
+    /* v1.8.35 (B13): the autofill dropdown over the active tab (HwAfPop), driven by Hwallet's page (brAfPop/brAfMove/brAfHide) */
+    private var afp: HwAfPop? = null
+    private fun afPop(): HwAfPop = afp ?: HwAfPop(act) { tab, tok, idx -> js("window.hwAfPicked&&hwAfPicked(${q(tab)},$tok,$idx)") }.also { afp = it }
+    fun afShow(id: String, json: String) { if (!okId(id) || json.length > 60_000) return; post { val t = tabs[id]; val w = t?.web; if (t == null || w == null || t.inc || visible != id || w.visibility != View.VISIBLE) { afp?.close(); return@post }; afPop().show(id, w, json) } }
+    fun afMove(id: String, json: String) { if (json.length > 2000) return; post { afp?.move(id, json) } }
+    fun afHide() { post { afp?.closeQuiet() } }
+    private fun afDrop(id: String?) { val p = afp ?: return; if (id == null || p.tabId() == id) p.close() }
+
     fun hide() {
         post {
+            afDrop(null)   // v1.8.35 (B13)
             // v1.7 (P1): out of the way first (a sheet in Hwallet is waiting to be seen), then save; the switcher's thumbnail
             // comes from snap(), so the slow software draw of a thumbnail no longer delays the hide
             pullOff()
@@ -405,6 +414,7 @@ class HwBrowser(
 
     /** v1.7 (P1): Android Back while a page is on screen goes back in that page first (UI thread, from HwActivity) */
     fun back(): Boolean {
+        if (afp?.isOpen == true) { afDrop(null); return true }   // v1.8.35 (B13): Back closes the autofill dropdown first
         val t = tabs[visible ?: return false] ?: return false
         val w = t.web ?: return false
         // v1.8.7: dApps navigate with history.pushState (no page load), so ask the WebView itself every time
@@ -434,6 +444,7 @@ class HwBrowser(
     fun close(id: String) {
         if (!okId(id)) return
         post {
+            afDrop(id)   // v1.8.35 (B13)
             val gone = tabs.remove(id)
             gone?.let { t -> uncover(t); t.web?.let { w -> root.removeView(w); w.stopLoading(); try { if (t.inc && !incProfiles) w.clearCache(true) } catch (_: Throwable) {}; w.destroy() } }
             if (visible == id) visible = null
@@ -534,7 +545,7 @@ class HwBrowser(
     fun pause() { post { tabs.values.forEach { t -> t.web?.let { save(t); it.onPause() } } ; CookieManager.getInstance().flush() } }
     fun resume() { post { visible?.let { tabs[it]?.web?.onResume() } } }
     /** called on the UI thread from HwActivity.onDestroy */
-    fun destroy() { try { ui.removeCallbacksAndMessages(null); tabs.values.forEach { t -> uncover(t); t.web?.let { save(t); root.removeView(it); it.destroy() } }; tabs.clear() } catch (_: Throwable) {} }
+    fun destroy() { try { afp?.closeQuiet(); afp = null } catch (_: Throwable) {}; try { ui.removeCallbacksAndMessages(null); tabs.values.forEach { t -> uncover(t); t.web?.let { save(t); root.removeView(it); it.destroy() } }; tabs.clear() } catch (_: Throwable) {} }
 
     // ---------------------------------------------------------------- internals
 
@@ -656,7 +667,7 @@ class HwBrowser(
                 outside(u.toString(), s)
                 return true
             }
-            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { if (t.inc) { val o = originOf(url); if (o.isNotEmpty()) t.incOrigins.add(o) }; try { Uri.parse(url ?: "").host?.let { HwShield.resetCount(it.lowercase()) } } catch (_: Throwable) {}; navEv(t, view, true, 10); lateInject(view) }
+            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { afDrop(t.id); if (t.inc) { val o = originOf(url); if (o.isNotEmpty()) t.incOrigins.add(o) }; try { Uri.parse(url ?: "").host?.let { HwShield.resetCount(it.lowercase()) } } catch (_: Throwable) {}; navEv(t, view, true, 10); lateInject(view) }
             override fun onPageCommitVisible(view: WebView, url: String?) { lateInject(view); hide(view, url); uncover(t) }
             // v1.8.7: single-page dApps (pushState / hash routes) update Back / Forward too
             override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) { navEv(t, view, view.progress < 100, view.progress) }
