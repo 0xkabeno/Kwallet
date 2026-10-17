@@ -1700,6 +1700,24 @@
   [data-theme="dark"] .wc-chip, body:not([data-theme="light"]) .wc-chip { color: #81c995; background: rgba(129,201,149,.14); }
   [data-theme="dark"] .wc-chip.partial, body:not([data-theme="light"]) .wc-chip.partial { background: transparent; border-color: rgba(129,201,149,.45); }
   .seed-wrap > .wc-chip { position: absolute; left: 6px; bottom: 4px; z-index: 2; }
+  /* pk32ui B1 (v3.98.32): the seed card chips are one family: same height, type and pill shape in og / m3 / miuix,
+     light and dark. The m3 skin's 32px .wc-chip rule must never reach #seed-wc (it grew over the last seed line). */
+  html:not(#k32a):not(#k32b):not(#k32c) .seed-wrap > #seed-wc { height: 18px !important; min-height: 0 !important; max-height: 18px !important;
+    box-sizing: border-box !important; padding: 0 7px !important; margin: 0 !important; border-radius: 999px !important;
+    font: 700 9px/1 system-ui, sans-serif !important; letter-spacing: .3px !important; transform: none !important; animation: none !important;
+    max-width: 68px; overflow: hidden; }
+  html[data-ui="m3"]:not(#k32a):not(#k32b):not(#k32c) .seed-wrap > #seed-wc,
+  html[data-ui="miuix"]:not(#k32a):not(#k32b):not(#k32c) .seed-wrap > #seed-wc { font-family: var(--u-font) !important; }
+  html:not(#k32a):not(#k32b):not(#k32c) .seed-wrap > .pp-row { max-width: calc(100% - 80px) !important; min-width: 0; flex-wrap: nowrap; justify-content: flex-end; }
+  html:not(#k32a):not(#k32b):not(#k32c) .seed-wrap > .pp-row > .pp-chip { flex: 0 0 auto; box-sizing: border-box; height: 18px; min-height: 0; }
+  html:not(#k32a):not(#k32b):not(#k32c) .seed-wrap > .pp-row > .pp-chip.kw-nm { flex: 0 1 auto; min-width: 34px; max-width: 110px; overflow: hidden; }
+  html:not(#k32a):not(#k32b):not(#k32c) .seed-wrap > .pp-row > .pp-chip.kw-nm .pp-lb { display: block; min-width: 0; }
+  @media (max-width: 380px) {
+    html:not(#k32a):not(#k32b):not(#k32c) .seed-wrap > .pp-row { gap: 4px; }
+    html:not(#k32a):not(#k32b):not(#k32c) .seed-wrap > .pp-row > .pp-chip { padding: 0 5px; letter-spacing: .15px; }
+    html:not(#k32a):not(#k32b):not(#k32c) .seed-wrap > .pp-row > .pp-chip.kw-nm { max-width: 76px; }
+    html:not(#k32a):not(#k32b):not(#k32c) .seed-wrap > #seed-wc { padding: 0 6px !important; letter-spacing: .15px !important; }
+  }
 
   /* v3.12 import mode: blur generated seed (same motion as Hide) */
   .seed-wrap > .seed, .seed-wrap > .wc-chip, .seed-wrap > .pp-row { transition: filter .2s ease, opacity .2s ease; }
@@ -2482,6 +2500,56 @@
 .wc-inline .wc-g2 button.on { border-style: solid !important; }
 .wc-inline button b { display: block; line-height: 18px !important; }
 .wc-inline button small, .wc-inline .wc-g2 button small { display: block; line-height: 12px !important; margin-top: 2px; font-size: 9.5px !important; }
+
+/* pk32wc B8 (v3.98.32): word-count strip = one equal-width segmented row, edge to edge with the toolbar above, in og / m3 / miuix,
+   light and dark. Outranks the skin layer's dropdown rules for .wc-menu (min/max-width, 48-50px items, 14-16px type). */
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline { min-width: 0 !important; max-width: none !important; width: auto !important; border-radius: 0 !important; container-type: inline-size; }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-in { display: grid !important; grid-template-columns: repeat(7, minmax(0, 1fr)) !important; gap: 6px !important; flex-direction: initial !important; }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-g, html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-g2 { display: contents !important; }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-g2::before { content: none !important; }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline button { all: unset; box-sizing: border-box !important; grid-column: auto / span 1; min-width: 0 !important; width: auto !important;
+  height: 40px !important; min-height: 0 !important; max-height: 40px !important; margin: 0 !important; padding: 0 1px !important;
+  display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; gap: 1px !important;
+  border-radius: 10px !important; border: 1px solid color-mix(in srgb, var(--text) 16%, var(--bg-card)) !important; border-style: solid !important;
+  background: color-mix(in srgb, var(--text) 3%, var(--bg-card)) !important; color: var(--text) !important; box-shadow: none !important;
+  font: 500 12px/1 'RobotoE','Roboto',system-ui,sans-serif !important; letter-spacing: 0 !important; text-transform: none !important; cursor: pointer; overflow: hidden;
+  animation: none !important; transition: background-color .15s, border-color .15s, color .15s, transform .1s !important; -webkit-tap-highlight-color: transparent; }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-g2 button { border-style: dashed !important; }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline button b { display: block !important; font: 700 15px/17px 'RobotoE','Roboto',system-ui,sans-serif !important; letter-spacing: 0 !important; color: inherit !important;
+  font-variant-numeric: tabular-nums; white-space: nowrap; margin: 0 !important; }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline button small, html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-g2 button small { display: block !important; font: 500 9.5px/11px 'RobotoE','Roboto',system-ui,sans-serif !important; letter-spacing: -.1px !important;
+  color: var(--text-muted) !important; opacity: 1 !important; white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important;
+  max-width: none !important; margin: 0 !important; text-transform: none !important; }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline button:active { transform: scale(.96); }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline button:focus-visible { outline: 2px solid var(--accent) !important; outline-offset: 1px; }
+/* selected: Kwallet lime with navy ink, same in every style and theme (the sliding pill carries it when present) */
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline button.on, html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-g2 button.on { border-style: solid !important; border-color: #C9E64A !important; background: #DDF869 !important; color: #223348 !important; }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline button.on small { color: rgba(34,51,72,.74) !important; }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline.kw-slid > .kw-slide { background: #DDF869 !important; box-shadow: inset 0 0 0 1px #C9E64A; border-radius: 10px !important; }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline.kw-slid button.on { background: transparent !important; border-color: transparent !important; }
+[data-theme="dark"] html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline button.on, [data-theme="dark"] html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-g2 button.on { border-color: #DDF869 !important; }
+[data-theme="dark"] html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline.kw-slid > .kw-slide { box-shadow: none; }
+/* too narrow for seven legible segments: an even 4 + 3 grid, both rows full width */
+@container (max-width: 339px) {
+  html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-in { grid-template-columns: repeat(12, minmax(0, 1fr)) !important; }
+  html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-g button { grid-column: auto / span 3 !important; }
+  html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-g button:nth-child(n+5), html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-g2 button { grid-column: auto / span 4 !important; }
+  html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline button { height: 38px !important; max-height: 38px !important; }
+  html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline button small, html:not(#kwc1):not(#kwc2):not(#kwc3) .wc-menu.wc-inline .wc-g2 button small { letter-spacing: .2px !important; }
+}
+
+/* pk32wc B8: generator toolbar, equal widths, labels never clipped, aligned edge to edge with the word-count strip */
+html:not(#kwc1):not(#kwc2):not(#kwc3) .panel > .row:first-child:has(> #btn-gen) .btn { flex: 1 1 0 !important; min-width: auto !important; overflow: clip !important; padding: 0 6px !important; white-space: nowrap !important; letter-spacing: 0 !important; }
+html:not(#kwc1):not(#kwc2):not(#kwc3) .panel > .row:first-child:has(> #btn-gen) #btn-gen .dice { flex: 0 0 auto; }
+@media (max-width: 379px) {
+  html:not(#kwc1):not(#kwc2):not(#kwc3) .panel > .row:first-child:has(> #btn-gen) { gap: 5px !important; }
+  html:not(#kwc1):not(#kwc2):not(#kwc3) .panel > .row:first-child:has(> #btn-gen) .btn { padding: 0 4px !important; font-size: 11.5px !important; }
+  html:not(#kwc1):not(#kwc2):not(#kwc3) .panel > .row:first-child:has(> #btn-gen) > #word-count { flex: 0 0 52px !important; padding: 0 16px 0 9px !important; background-position: right 5px center !important; }
+  html:not(#kwc1):not(#kwc2):not(#kwc3) .panel > .row:first-child:has(> #btn-gen) #btn-gen .dice { display: none !important; }
+}
+@media (max-width: 339px) {
+  html:not(#kwc1):not(#kwc2):not(#kwc3) .panel > .row:first-child:has(> #btn-gen) { gap: 4px !important; }
+}
 </style>
 <style id="kw-design">
 /* ===== v3.64 design system =====
@@ -5280,6 +5348,7 @@ window.KwDB = (function () {
         if (inp.value.trim().toLowerCase() !== 'yes') return;
         buzz([30, 60, 30, 60, 60]); SND.erase();
         try { KwDB.wipe(); localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+        try { if (window.HarkNative && HarkNative.kwWiped) HarkNative.kwWiped(); } catch (e) {}   /* v3.98.32: Hwallet erases its paired wallets */
         setTimeout(function () { location.reload(); }, 300);
       };
     }
@@ -12451,7 +12520,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98.31';
+const APP_VERSION = '3.98.32';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -15484,6 +15553,7 @@ function wipeAfterExport() {
   if (typeof updateRedoButton === 'function') updateRedoButton();
   if (typeof onImportInput === 'function') onImportInput();
   if (typeof saveStateFlush === 'function') saveStateFlush();
+  try { if (window.KwHwWipe) KwHwWipe(); } catch (e) {}   /* v3.98.32: the Hwallet pairings (they hold the seed) go too */
   if (typeof pushActivity === 'function') pushActivity('wipe', 'All local data wiped after export');
   if (typeof showToast === 'function') showToast('Exported — all local data wiped');
 }
@@ -15601,6 +15671,8 @@ function confirmClear() {
   // write empty state so refresh stays blank (only Clear does this)
   saveStateFlush();
   showEmpty();
+  /* v3.98.32: the Hwallet pairings go too, and Hwallet erases the wallets it paired with this Kwallet */
+  try { if (window.KwHwWipe) KwHwWipe(); } catch (e) {}
   /* Erase everything = factory reset: the PIN, its lock mode and lockout go too, and Kwallet restarts at first launch */
   try { if (window.KwLock) KwLock.reset(); else ['kw-pin-v1', 'kw-pin-lock', 'kw-pin-mode', 'kw-last'].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
   showToast('All data and PIN erased');
@@ -21931,7 +22003,26 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     return teeKey(ub64(o.salt)).then(function (k) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: ub64(o.iv), additionalData: new TextEncoder().encode(SK) }, k, ub64(o.ct)); })
       .then(function (b) { var a = JSON.parse(new TextDecoder().decode(b)); return Array.isArray(a) ? a : null; }, function () { return null; });
   }
-  function save(a) { localStorage.setItem(PK, JSON.stringify(a)); writePub(a); try { if (window.KwDB && KwDB.flush) KwDB.flush(); } catch (e) {} syncStore(a); }
+  function save(a) { localStorage.setItem(PK, JSON.stringify(a)); writePub(a); try { if (window.KwDB && KwDB.flush) KwDB.flush(); } catch (e) {} syncStore(a); kwMirror(a); }
+  /* ---------- v3.98.32: Hwallet wipe link (native side: KwLink.kt) ----------
+     Hwallet keeps only wallets of seeds this Kwallet still holds. It reads this Kwallet's install id and the public seed IDs
+     of the paired seeds from a signature-protected provider; the IDs are mirrored here whenever the pairings change and at
+     start, and only from an authoritative list (the pairings just saved, or a current public index), never from a locked vault. */
+  function kwKid() { try { return window.HarkNative && HarkNative.kwInstallId ? String(HarkNative.kwInstallId() || '') : ''; } catch (e) { return ''; } }
+  function kwMirror(list) {
+    try {
+      if (!window.HarkNative || !HarkNative.kwMirror || !Array.isArray(list)) return;
+      var s = {}, partial = false;
+      list.forEach(function (r) { if (!r) return; var d = String(r.sid || ''); if (/^\d{10}$/.test(d)) s[d] = 1; else partial = true; });
+      HarkNative.kwMirror(JSON.stringify({ sids: Object.keys(s), partial: partial }));
+    } catch (e) {}
+  }
+  function kwMirrorBoot() { var P = jget(PUB, null); if (Array.isArray(P) && (+jget(PUBV, 0) || 0) >= PUBVER) kwMirror(P); }
+  /* an in-app erase: the pairings, their public index and signing copy, the seed names, then Hwallet is told */
+  window.KwHwWipe = function () {
+    [PK, PUB, PUBV, SK, 'kw-seed-names'].forEach(function (x) { try { localStorage.removeItem(x); } catch (e) {} });
+    try { if (window.HarkNative && HarkNative.kwWiped) HarkNative.kwWiped(); } catch (e) {}
+  };
   function setReqPin(on) {
     try { if (on) localStorage.setItem(RQ, '1'); else localStorage.removeItem(RQ); } catch (e) {}
     if (on) { try { localStorage.removeItem(SK); } catch (e) {} } else syncStore();
@@ -21948,6 +22039,9 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   document.addEventListener('kwdb-open', function () { setTimeout(migrate, 400); });
   document.addEventListener('kwallet-unlocked', function () { setTimeout(migrate, 600); });
   window.addEventListener('load', function () { setTimeout(migrate, 900); });
+  /* v3.98.32: the seed ID mirror for Hwallet at start (and again once the vault is open and the index rewritten) */
+  window.addEventListener('load', function () { setTimeout(kwMirrorBoot, 300); });
+  document.addEventListener('kwdb-open', function () { setTimeout(kwMirrorBoot, 1200); });
 
   /* ---------- v3.98.26: seed ID ----------
      A 10-digit public identifier of a seed (9 digits + a Luhn check digit), shown as 4821-0937-52. It is a hash of the seed's
@@ -22066,7 +22160,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   function publicExport(r) {
     /* v3.98: + the primary address (a subaddress pairing still scans the whole wallet) and the restore height when known */
-    return { v: 1, src: 'kwallet', sid: /^\d{10}$/.test(r.sid || '') ? r.sid : undefined, label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null, pks: r.suiPk || r.btcPk ? { sui: r.suiPk || undefined, btc: r.btcPk || undefined } : undefined };
+    return { v: 1, src: 'kwallet', kid: kwKid() || undefined, sid: /^\d{10}$/.test(r.sid || '') ? r.sid : undefined, label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null, pks: r.suiPk || r.btcPk ? { sui: r.suiPk || undefined, btc: r.btcPk || undefined } : undefined };
   }
   /* v3.98: block height for a date, offline (60 s blocks to the v2 fork 1009827, 120 s after; anchor 3,783,000 = 1791875075) */
   function xmrHeightAt(ms) {
@@ -22342,6 +22436,62 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     '.kss-pass{width:100%;max-width:320px;height:52px;border-radius:14px;border:1px solid var(--hp-border);background:var(--hp-card);color:var(--hp-text);padding:0 14px;font-size:17px;margin-bottom:14px;box-sizing:border-box}' +
     '.kss-pok{width:100%;max-width:320px;height:52px;border-radius:26px;border:0;background:var(--hp-acc);color:var(--hp-accI);font:600 16px RobotoE,system-ui}' +
     '.kss-pin .kss-pcan{margin-top:22px;border:0;background:transparent;color:var(--hp-muted);font:600 15px RobotoE,system-ui;padding:10px 18px}' +
+    /* pk32ui B2 (v3.98.32): the sign / pair PIN page in Kwallet's own look (K lime, K wordmark, RobotoE, K keypad), full-bleed */
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp{--ksp-t:#DDF869;--ksp-deep:#CBE84E;--ksp-ink:#223348;--ksp-mut:rgba(34,51,72,.68);--ksp-key:rgba(255,255,255,.52);--ksp-keyb:rgba(255,255,255,.6);--ksp-pr:#223348;--ksp-prI:#DDF869;--ksp-err:#B3261E;--ksp-chip:rgba(34,51,72,.08);--ksp-chipb:rgba(34,51,72,.10);position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483000;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;padding:calc(var(--kw-sat,env(safe-area-inset-top,0px)) + 14px) 24px calc(var(--kw-sab,env(safe-area-inset-bottom,0px)) + 14px);background-color:var(--ksp-t);background-image:radial-gradient(130% 55% at 50% 118%,var(--ksp-deep),rgba(203,232,78,0) 64%),radial-gradient(95% 48% at 50% -10%,rgba(255,255,255,.55),rgba(255,255,255,0) 62%);color:var(--ksp-ink);font-family:RobotoE,Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation;overflow:hidden;animation:kspIn .12s ease-out both}' +
+    '@keyframes kspIn{from{opacity:0}to{opacity:1}}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp[data-kt=dark]{--ksp-t:#0E1117;--ksp-ink:#EDF1F7;--ksp-mut:#8C97AA;--ksp-key:rgba(255,255,255,.055);--ksp-keyb:rgba(255,255,255,.07);--ksp-pr:#DDF869;--ksp-prI:#11160A;--ksp-err:#F2665E;--ksp-chip:rgba(255,255,255,.06);--ksp-chipb:rgba(255,255,255,.08);background-image:radial-gradient(110% 50% at 50% -12%,rgba(221,248,105,.14),rgba(221,248,105,0) 62%),radial-gradient(120% 55% at 50% 118%,rgba(221,248,105,.05),rgba(221,248,105,0) 60%)}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp *{box-sizing:border-box;margin:0}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-top{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:10px}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-brand{display:inline-flex;align-items:baseline;line-height:1;font-family:KwBlack,Roboto,system-ui,sans-serif;font-weight:900;white-space:nowrap;text-rendering:geometricPrecision}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-k{font-size:36px;color:var(--ksp-ink);letter-spacing:-1.2px;position:relative;top:1px}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-w{font-size:31px;margin-left:0;color:#fff;letter-spacing:.4px;-webkit-text-stroke:2.7px var(--ksp-ink);paint-order:stroke fill;text-shadow:.4px 1.6px 0 var(--ksp-ink)}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp[data-kt=dark] .ksp-k{color:#DDF869}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp[data-kt=dark] .ksp-w{color:#0E1117;-webkit-text-stroke-color:#DDF869;text-shadow:.4px 1.6px 0 #DDF869}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-ctx{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px 0 10px;border-radius:15px;background:var(--ksp-chip);box-shadow:inset 0 0 0 1px var(--ksp-chipb);font:500 12.5px/1 RobotoE,Roboto,system-ui,sans-serif;letter-spacing:.2px;color:var(--ksp-ink);white-space:nowrap}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-ctx svg{width:15px;height:15px;flex:0 0 15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp[data-kt=dark] .ksp-ctx svg{stroke:#DDF869}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-mid{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:0;padding:10px 0 18px}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp h3{font:500 22px/28px RobotoE,Roboto,system-ui,sans-serif;letter-spacing:-.1px;text-align:center;color:var(--ksp-ink)}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp #kss-pm{margin-top:6px;min-height:20px;font:400 14px/20px RobotoE,Roboto,system-ui,sans-serif;color:var(--ksp-mut);text-align:center}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp #kss-pm.err{color:var(--ksp-err);font-weight:500}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .kss-dots{display:flex;gap:18px;margin:26px 0 0}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .kss-dots i{display:block;width:14px;height:14px;margin:0;border-radius:50%;border:2px solid var(--ksp-ink);background:transparent;transition:background-color .12s ease,border-color .12s ease,transform .16s cubic-bezier(.34,1.56,.64,1)}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .kss-dots i.on{background:var(--ksp-ink);transform:scale(1.12)}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp[data-kt=dark] .kss-dots i{border-color:rgba(237,241,247,.5)}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp[data-kt=dark] .kss-dots i.on{background:#DDF869;border-color:#DDF869;box-shadow:0 0 12px rgba(221,248,105,.45)}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-pad{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,76px);gap:14px 26px;justify-content:center}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key{width:76px;height:76px;padding:0;border-radius:50%;border:1px solid var(--ksp-keyb);background:var(--ksp-key);color:var(--ksp-ink);font:400 28px/1 RobotoE,Roboto,system-ui,sans-serif;font-variant-numeric:tabular-nums;display:grid;place-items:center;cursor:pointer;outline:none;transition:transform .14s cubic-bezier(.34,1.56,.64,1),background-color .14s ease,color .14s ease,border-radius .14s ease}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key:active{background:var(--ksp-pr);color:var(--ksp-prI);border-color:transparent;transform:scale(.94);transition-duration:.05s}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key.t{background:transparent;border-color:transparent}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key.t:active{background:var(--ksp-chip);color:var(--ksp-ink)}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key.t:disabled{visibility:hidden}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-can{flex:0 0 auto;margin-top:16px;height:44px;min-width:128px;padding:0 24px;border:0;border-radius:22px;background:var(--ksp-chip);box-shadow:inset 0 0 0 1px var(--ksp-chipb);color:var(--ksp-ink);font:500 15px/44px RobotoE,Roboto,system-ui,sans-serif;letter-spacing:.2px;cursor:pointer;outline:none}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-can:active{background:var(--ksp-chipb)}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp.ksp-pw .ksp-mid{flex:0 0 auto;justify-content:flex-start;padding:8vh 0 0}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp.ksp-pw .ksp-can{margin-top:10px}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-in{display:block;width:100%;max-width:340px;height:56px;margin-top:26px;padding:0 18px;border-radius:14px;border:1.5px solid color-mix(in srgb,var(--ksp-ink) 28%,transparent);background:color-mix(in srgb,var(--ksp-ink) 6%,transparent);color:var(--ksp-ink);caret-color:var(--ksp-ink);font:400 17px/1 RobotoE,Roboto,system-ui,sans-serif;letter-spacing:.14em;outline:none;user-select:text;-webkit-user-select:text}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-in:focus{border-color:var(--ksp-ink);box-shadow:0 0 0 1px var(--ksp-ink)}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp[data-kt=dark] .ksp-in:focus{border-color:#DDF869;box-shadow:0 0 0 1px #DDF869}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-ok{display:block;width:100%;max-width:340px;height:52px;margin-top:12px;border:0;border-radius:26px;background:var(--ksp-pr);color:var(--ksp-prI);font:500 16px/52px RobotoE,Roboto,system-ui,sans-serif;letter-spacing:.2px;cursor:pointer}' +
+    'html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-ok:active{transform:scale(.985)}' +
+    'html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp h3{font:400 24px/32px var(--u-font,RobotoE,Roboto,system-ui,sans-serif);letter-spacing:0}' +
+    'html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-pad{grid-template-columns:repeat(3,88px);gap:12px 16px}' +
+    'html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key{width:88px;height:64px;border-radius:32px;font:400 26px/1 var(--u-font,RobotoE,Roboto,system-ui,sans-serif)}' +
+    'html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key:active{border-radius:16px;transform:none}' +
+    'html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-can{height:40px;border-radius:20px;background:transparent;box-shadow:none;font:500 14px/40px var(--u-font,RobotoE,Roboto,system-ui,sans-serif);letter-spacing:.1px}' +
+    'html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-can:active{background:var(--ksp-chip)}' +
+    'html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-ctx,html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp #kss-pm,html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-ok,html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-in{font-family:var(--u-font,RobotoE,Roboto,system-ui,sans-serif)}' +
+    'html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-in{border-radius:12px}' +
+    'html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp h3{font:600 20px/28px var(--u-font,RobotoE,Roboto,system-ui,sans-serif)}' +
+    'html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-pad{grid-template-columns:repeat(3,84px);gap:12px 16px}' +
+    'html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key{width:84px;height:64px;border-radius:20px;font:500 26px/1 var(--u-font,RobotoE,Roboto,system-ui,sans-serif)}' +
+    'html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-can{border-radius:16px}' +
+    'html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-ctx,html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp #kss-pm,html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-ok,html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-in,html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-can{font-family:var(--u-font,RobotoE,Roboto,system-ui,sans-serif)}' +
+    'html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-in{border-radius:16px}' +
+    '@media (max-height:690px){html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-pad{grid-template-columns:repeat(3,66px);gap:10px 24px}html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key{width:66px;height:66px;font-size:25px}html:not(#ksp1):not(#ksp2) #kss-pin.ksp .kss-dots{margin-top:18px}html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-top{gap:10px;padding-top:4px}html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-k{font-size:30px}html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-w{font-size:26px;-webkit-text-stroke-width:2.3px}html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-pad{grid-template-columns:repeat(3,84px);gap:10px 14px}html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key{width:84px;height:56px}html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-pad{grid-template-columns:repeat(3,80px);gap:10px 14px}html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key{width:80px;height:56px}}' +
+    '@media (max-width:340px){html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-pad{grid-template-columns:repeat(3,68px);gap:12px 20px}html:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key{width:68px;height:68px}html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-pad{grid-template-columns:repeat(3,80px);gap:10px 12px}html[data-ui=m3]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key{width:80px}html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-pad{grid-template-columns:repeat(3,78px);gap:10px 12px}html[data-ui=miuix]:not(#ksp1):not(#ksp2) #kss-pin.ksp .ksp-key{width:78px}}' +
+    '@media (prefers-reduced-motion:reduce){html:not(#ksp1):not(#ksp2) #kss-pin.ksp{animation:none}}' +
     '#kss .hp-sheet{max-height:94%}#kss .kss-hp{transform:translate3d(0,100%,0);transition:transform .3s cubic-bezier(.2,.9,.25,1)}#kss.in .kss-hp{transform:translate3d(0,0,0)}' +
     /* v3.96 (#79) pairing page */
     '.hwp-page{position:fixed;top:0;right:0;bottom:0;left:0;z-index:9500;background:var(--bg);color:var(--text);overflow-y:auto;opacity:0;pointer-events:none;transform:translateX(28px);transition:transform .24s cubic-bezier(.2,0,0,1),opacity .16s linear;font-family:RobotoE,Roboto,system-ui,sans-serif}' +
@@ -22415,6 +22565,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   /* ================= sign page (only inside SignActivity) ================= */
   if (!window.__kwSign) return;
   try { var th = localStorage.getItem('wallet-theme') || 'light'; document.body.setAttribute('data-theme', th); } catch (e) {}
+  try { if (document.fonts && document.fonts.load) { document.fonts.load('900 36px KwBlack'); document.fonts.load('400 28px RobotoE'); } } catch (e) {}   /* pk32ui B2 */
   var REQ = null, done = false;
   /* v3.98.15 (Monero 4.1 A): the sign page reports each stage it reaches to SignActivity (KwSign.stage). If the sheet never
      calls KwSign.ready(), the 30 s watchdog answers Hwallet with the last stage reached instead of a generic text, so a
@@ -23001,7 +23152,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
      and a "Manual" Custom section in the coin: Solana priority fee (+ Jito tip where it can be added), EVM max fee /
      priority fee / gas limit in Gwei, Tron fee limit in TRX. Max Cap | Exact Fee picks how the priority fee is used. */
   var FLAB = { evm: { slow: 'Low', medium: 'Normal', fast: 'High' }, sol: { slow: 'Slow', medium: 'Normal', fast: 'Faster', auto: 'Site suggested', x2: 'Faster', x4: 'Fastest' }, trx: { slow: 'Normal', medium: 'Normal', fast: 'Fast', auto: 'Normal', x2: 'Fast' }, btc: { slow: 'Slow', medium: 'Normal', fast: 'Fast' } };
-  function feeLab(c, k) { return ((FLAB[c] || FLAB.btc)[k]) || { slow: 'Slow', medium: 'Normal', fast: 'Fast', custom: 'Custom' }[k] || ''; }
+  function feeLab(c, k) { return ((FLAB[c] || FLAB.btc)[k]) || { slow: 'Slow', medium: 'Normal', fast: 'Fast', custom: 'Custom', manual: 'Custom' }[k] || ''; }
   /* v3.98.7 (push 12): a saved custom EVM fee never falls below what the network takes now: it is raised to the live base fee
      (+12% headroom) instead of being dropped for the default speed. Only maxFee / tip move; gas, nonce, value, data never do. */
   function manFloor(c, st, x) {
@@ -23354,17 +23505,41 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     });
   }
   var pinOpen = null;
-  function closePin(v) { var p = pinOpen; pinOpen = null; var el = $('kss-pin'); if (el) el.remove(); if (p) p(v); }
+  /* pk32ui B2 (v3.98.32): the PIN page wears Kwallet's own look and covers the status / navigation bar areas. It sits on
+     <html> (body is an inset, layout-contained box in the app, which clipped the page and left Hwallet showing in the bar
+     areas). While it shows, the system bars take its colour (theme-color + the native bar sampler); restored on close. */
+  function kspBars(el) {
+    var ms = document.querySelectorAll('meta[name="theme-color"]'), i;
+    if (el) {
+      var t = ''; try { t = String(getComputedStyle(el).getPropertyValue('--ksp-t') || '').trim(); } catch (e) {}
+      if (!/^#[0-9a-f]{6}$/i.test(t)) t = el.getAttribute('data-kt') === 'dark' ? '#0E1117' : '#DDF869';
+      for (i = 0; i < ms.length; i++) { if (ms[i].__kspOld == null) ms[i].__kspOld = ms[i].getAttribute('content') || ''; ms[i].setAttribute('content', t); }
+      try { if (window.HarkNative && typeof HarkNative.setBars === 'function') HarkNative.setBars(t, t); } catch (e) {}
+      try { document.body.classList.add('ksp-on'); } catch (e) {}
+    } else {
+      for (i = 0; i < ms.length; i++) { if (ms[i].__kspOld != null) { ms[i].setAttribute('content', ms[i].__kspOld); ms[i].__kspOld = null; } }
+      try { document.body.classList.remove('ksp-on'); window.dispatchEvent(new Event('kw-insets')); } catch (e) {}
+    }
+  }
+  function closePin(v) { var p = pinOpen; pinOpen = null; var el = $('kss-pin'); if (el) { el.remove(); kspBars(null); } if (p) p(v); }
   function pinSheet(res, msg) {
     var pass = false; try { pass = localStorage.getItem('kw-pin-kind') === 'pass'; } catch (e) {}
-    var tries = 0, entry = '', el = document.createElement('div'); el.className = 'kss-pin'; el.id = 'kss-pin';
-    var BS = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/></svg>';
-    el.innerHTML = '<h3>' + (pass ? 'Enter your Kwallet passcode' : 'Enter your Kwallet PIN') + '</h3><p id="kss-pm">' + esc(msg || 'to sign this transaction') + '</p>' +
-      (pass ? '<input type="password" class="kss-pass" id="kss-pi" autocomplete="off"><button type="button" class="kss-pok" id="kss-pok"><span>Confirm</span></button>'
-        : '<div class="kss-dots" id="kss-dots">' + '<i></i><i></i><i></i><i></i><i></i><i></i></div><div class="kss-pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (n) { return '<button type="button" data-k="' + n + '">' + n + '</button>'; }).join('') +
-          '<button type="button" class="t" tabindex="-1" disabled></button><button type="button" data-k="0">0</button><button type="button" class="t" data-k="del" aria-label="Delete">' + BS + '</button></div>') +
-      '<button type="button" class="kss-pcan" id="kss-pc">Cancel</button>';
-    page.appendChild(el); pinOpen = res;
+    var tries = 0, entry = '', el = document.createElement('div'); el.className = 'ksp' + (pass ? ' ksp-pw' : ''); el.id = 'kss-pin';
+    var dk = ((document.body && document.body.getAttribute('data-theme')) || document.documentElement.getAttribute('data-theme') || 'light') === 'dark';
+    var pair = !!(REQ && REQ.action === 'pair');
+    el.setAttribute('data-kt', dk ? 'dark' : 'light'); el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-label', pass ? 'Enter your Kwallet passcode' : 'Enter your Kwallet PIN');
+    var BS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z"/><path d="M12.5 9.5l5 5M17.5 9.5l-5 5"/></svg>';
+    var LK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.6"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/><path d="M12 14.6v2"/></svg>';
+    el.innerHTML = '<div class="ksp-top"><div class="ksp-brand" aria-hidden="true"><span class="ksp-k">K</span><span class="ksp-w">wallet</span></div>' +
+      '<div class="ksp-ctx">' + LK + '<span>' + (pair ? 'Pairing request from Hwallet' : 'Signing request from Hwallet') + '</span></div></div>' +
+      '<div class="ksp-mid"><h3>' + (pass ? 'Enter your Kwallet passcode' : 'Enter your Kwallet PIN') + '</h3><p id="kss-pm">' + esc(msg || (pair ? 'to pair a seed with Hwallet' : 'to sign this transaction')) + '</p>' +
+      (pass ? '<input type="password" class="ksp-in" id="kss-pi" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Passcode" aria-label="Passcode"><button type="button" class="ksp-ok" id="kss-pok"><span>Confirm</span></button></div>'
+        : '<div class="kss-dots" id="kss-dots" aria-hidden="true">' + '<i></i><i></i><i></i><i></i><i></i><i></i></div></div><div class="ksp-pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (n) { return '<button type="button" class="ksp-key" data-k="' + n + '">' + n + '</button>'; }).join('') +
+          '<button type="button" class="ksp-key t" tabindex="-1" disabled></button><button type="button" class="ksp-key" data-k="0">0</button><button type="button" class="ksp-key t" data-k="del" aria-label="Delete">' + BS + '</button></div>') +
+      '<button type="button" class="ksp-can" id="kss-pc">Cancel</button>';
+    var old = $('kss-pin'); if (old && old !== el) old.remove();
+    (window.__kwSign || !page ? document.documentElement : page).appendChild(el); pinOpen = res; kspBars(el);
     function say(t, err) { var m = $('kss-pm'); if (m) { m.textContent = t; m.classList.toggle('err', !!err); } }
     function paint() { var d = el.querySelectorAll('.kss-dots i'); for (var i = 0; i < d.length; i++) d[i].classList.toggle('on', i < entry.length); }
     function check(v) {
@@ -24123,6 +24298,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var fv = c.fee != null ? '<span class="hp-nw">' + kSig(c.fee, dec, 6) + ' ' + esc(sym) + '</span>' : '\u2014', fs = c.fee != null ? usdTxt(c.fee, dec, gpx) : '';
     if (v.chain === 'sui' && v.sv && v.sv.owner !== v.sv.sender) fs = 'Paid by someone else';
     if (c.atMost) fs = 'At most' + (fs ? ' \u00b7 ' + fs : '');
+    if (v.chain === 'ada') fs = (fs ? fs + ' \u00b7 ' : '') + 'Set by the Cardano protocol';
+    else if (v.chain === 'btc') fs = 'Set by the app' + (fs ? ' \u00b7 ' + fs : '');
     o.main += HWP.rows([['Network fee', fv, fs, { cls: 'hp-fee' }]]);
     if (c.gbal != null) { var after = c.err ? null : c.gbal - c.amount - c.fee; o.det += kv('Balance', fmt(c.gbal, dec, 6) + ' ' + esc(sym), after != null && after >= 0n ? (c.atMost ? 'After: at least ' : 'After: about ') + fmt(after, dec, 6) + ' ' + esc(sym) : ''); }
     o.det += kv('Network', esc(DS.info.name), 'Mainnet');
@@ -24437,6 +24614,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       var ed = DS.c === 'evm' || DS.c === 'trx' || (DS.c === 'sol' && v.feeEdit);
       var fv = c.fee != null ? '<span class="hp-nw">' + (c.fee > 0n && c.fee < 10n ** BigInt(Math.max(0, fdec - 12)) ? '&lt; 0.0\u2081\u20811' : kSig(c.fee, fdec, 5)) + ' ' + sym + '</span>' : '\u2014', fs = c.fee != null ? usdTxt(c.fee, fdec, gpx) : '';
       if (DS.c === 'sol' && v.idx !== 0) fs = 'Paid by someone else';
+      else if (DS.c === 'sol' && !v.feeEdit) fs = (fs ? fs + ' \u00b7 ' : '') + 'Set by the app';
       if (c.atMost) fs = (DS.c === 'trx' ? 'Fee limit' : 'At most') + (fs ? ' \u00b7 ' + fs : '');
       var live = R.live && m === 'eth_sendTransaction' ? '<span class="hp-live hp-ldot' + (stale() ? ' stale' : '') + '" id="kss-live" role="img" aria-label="' + liveText() + '"><i></i></span>' : '';
       var tl = ed ? dappTierLabel() : '', fl2 = tl ? tl + live : '';
