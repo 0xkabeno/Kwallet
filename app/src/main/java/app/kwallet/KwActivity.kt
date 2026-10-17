@@ -337,9 +337,10 @@ open class KwActivity : FragmentActivity() {
             @Suppress("DEPRECATION")
             // v3.98.7: the signer sheet is graphite on every theme; the navigation bar takes the sheet's colour so the
             // wallet behind never shows under Cancel / Confirm (phones that keep a translucent window above the bar)
-            if (Build.VERSION.SDK_INT < 35) { window.statusBarColor = tr; window.navigationBarColor = 0xFF1C1D21.toInt() }
+            if (Build.VERSION.SDK_INT < 35) { window.statusBarColor = tr; window.navigationBarColor = if (android.graphics.Color.alpha(bottom) == 255) bottom else 0xFF1C1D21.toInt() }
             val ic = WindowCompat.getInsetsController(window, window.decorView)
-            if (ic.isAppearanceLightNavigationBars) ic.isAppearanceLightNavigationBars = false
+            /* v3.98.32: the PIN page pushes its own colour (K lime in light); nav icons follow it */
+            val ltN = android.graphics.Color.alpha(bottom) == 255 && isLight(bottom); if (ic.isAppearanceLightNavigationBars != ltN) ic.isAppearanceLightNavigationBars = ltN
             val ltS = isLight(top); if (ic.isAppearanceLightStatusBars != ltS) ic.isAppearanceLightStatusBars = ltS
             return
         } else {
