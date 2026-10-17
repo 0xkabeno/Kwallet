@@ -1,5 +1,10 @@
 # Changelog
 
+## Kwallet v3.98.34 + Hwallet v1.8.36 (2026-10-18)
+
+- Kwallet: the pairing sheet (Pair with Hwallet) is compact and solid: one header row with the Kwallet badge only (no Hwallet logo), seeds as one flat list of 56px one-line rows (name with type, word count and seed ID on a single quiet line, no chips), and the address number with Cancel / Pair pinned in the footer. The sheet fits its content, with no wasted space.
+- Kwallet badge: the K is no longer clipped by the outlined "wallet" on all sheets in both Kwallet and Hwallet.
+
 ## Kwallet v3.98.33 + Hwallet v1.8.35 (2026-10-18)
 
 - Hwallet: Sui dApp requests: Confirm no longer stays greyed out after picking a fee. The SUI balance is read fresh when the sheet opens and a low balance is shown as a warning; the dry run and Kwallet still refuse a gas budget the coins can't cover.
