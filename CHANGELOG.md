@@ -1,5 +1,11 @@
 # Changelog
 
+## Kwallet v3.98.31 + Hwallet v1.8.33 (2026-10-16)
+
+- Kwallet: the Pair Hwallet option is gone from Settings. Pairing starts only from Hwallet (Pair with Kwallet): Kwallet unlocks once with PIN or biometrics, shows every seed, and you pick the seed and any address number.
+- Kwallet: the seed card shows the seed's name and seed ID beside Passphrase, in the same chip style. Tap the name to rename the seed (Hwallet gets the name at the next pairing); tap the ID to copy it. The chips sit out of the way of typing and pasting in Import.
+- Hwallet: xrp.cafe connects again. Its GemWallet button is answered again on xrp.cafe, and WalletConnect XRP sign-ins sent with autofill off are signed as given, so an unactivated account or a slow node no longer breaks xrp.cafe's sign-in.
+
 ## Kwallet v3.98.30 (2026-10-16)
 
 - Add seed now lists every seed Kwallet holds: the seed on screen, every seed in the Gen / Import Undo and Redo history, and the Saved keys seed book (generated and imported), each once with its seed ID. Before, it showed only the seed book and paired seeds.
