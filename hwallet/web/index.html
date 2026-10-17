@@ -3068,6 +3068,10 @@ html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#
 html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet button,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-tap{touch-action:manipulation}
 @media (prefers-reduced-motion: reduce){html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-act .hp-btn,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-wo{transition:none!important}}
 
+
+/* ph36 badge z-order v1: OG badge K painted above the outlined 'wallet' on every H sheet (port of pk34 B17 html:not(#pq1):not(#pq2):not(#pq3):not(#pq4):not(#pq5):not(#pq6):not(#pq7):not(#pq8):not(#pq9):not(#pq10):not(#pq11):not(#pq12):not(#pq13):not(#pq14):not(#pq15):not(#pq16):not(#pq17):not(#pq18):not(#pq19):not(#pq20):not(#pq21):not(#pq22):not(#pq23):not(#pq24):not(#pq25):not(#pq26) rules) */
+html:not(#pq1):not(#pq2):not(#pq3):not(#pq4):not(#pq5):not(#pq6):not(#pq7):not(#pq8):not(#pq9):not(#pq10):not(#pq11):not(#pq12):not(#pq13):not(#pq14):not(#pq15):not(#pq16):not(#pq17):not(#pq18):not(#pq19):not(#pq20):not(#pq21):not(#pq22):not(#pq23):not(#pq24):not(#pq25):not(#pq26) .hp-sheet .hp-kc .kb-k{position:relative!important;z-index:1!important;margin-right:.5px!important}
+html:not(#pq1):not(#pq2):not(#pq3):not(#pq4):not(#pq5):not(#pq6):not(#pq7):not(#pq8):not(#pq9):not(#pq10):not(#pq11):not(#pq12):not(#pq13):not(#pq14):not(#pq15):not(#pq16):not(#pq17):not(#pq18):not(#pq19):not(#pq20):not(#pq21):not(#pq22):not(#pq23):not(#pq24):not(#pq25):not(#pq26) .hp-sheet .hp-kc .kb-w{position:relative!important;z-index:0!important}
 </style>
 </head>
 <body data-theme="light">
@@ -4038,7 +4042,7 @@ window.hwPlayOpening();
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
       var c = String(d.command), dt = d.data || {}, job;
-      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.35' });
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.36' });
       else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
       else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
       else if (c === 'network') job = Promise.resolve({ network: XNET });
@@ -4103,7 +4107,7 @@ window.hwPlayOpening();
       isHwallet: true,
       request: function (method, params) {
         var id = 'hw' + Date.now().toString(36), p = params || {}, job;
-        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.35', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.36', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
         else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
           job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
         else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
@@ -7223,7 +7227,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.35';
+var APP_VERSION = '1.8.36';
 (function () {
   'use strict';
   var BI = window.BigInt;
