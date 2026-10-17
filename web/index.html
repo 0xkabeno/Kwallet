@@ -2101,6 +2101,7 @@
   transition: opacity .45s ease, transform .45s var(--kl-ease);
 }
 #kl-root.kl-out { opacity: 0; transform: scale(1.04); pointer-events: none; }
+#kl-root.kl-sgn, #kl-root.kl-sgn .kl-pinbox, #kl-root.kl-sgn .kl-pill, #kl-root.kl-sgn .kl-aura, #kl-root.kl-sgn .kl-foot { transition: none !important; }   /* pk33 B16 */
 #kl-root * { box-sizing: border-box; margin: 0; padding: 0; }
 #kl-root .kl-aura { position: absolute; left: 50%; top: 47%; width: 150vmin; height: 150vmin; pointer-events: none;
   transform: translate(-50%, -50%) scale(.9); border-radius: 50%; opacity: 0;
@@ -4347,6 +4348,76 @@ html:not(#v16a):not(#v16b):not(#v16c):not(#v16d):not(#v16e):not(#v16f):not(#v16g
 :root{--kw-red:#d93025}
 html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .btn-d,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .btn-k,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .btn.btn-k,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .hp-no:not(:only-child),html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .hp-act.hp-col .hp-no:not(:only-child),html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .kss-pcan,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .row2 .btn[data-x]:not(:only-child),html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .row2 .btn[data-no]:not(:only-child),html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .kwd-act button[data-a="x"],html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) #kl-root .kl-fd-hold,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) #kl-root .kl-fd-go:not(:disabled){background:var(--kw-red)!important;background-color:var(--kw-red)!important;border-color:var(--kw-red)!important;color:#fff!important}
 html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .btn-d:active,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .btn-k:active,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .btn.btn-k:active,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .hp-no:not(:only-child):active,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .hp-act.hp-col .hp-no:not(:only-child):active,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .kss-pcan:active,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .row2 .btn[data-x]:not(:only-child):active,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .row2 .btn[data-no]:not(:only-child):active,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) .kwd-act button[data-a="x"]:active,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) #kl-root .kl-fd-hold:active,html:not(#kr1):not(#kr2):not(#kr3):not(#kr4):not(#kr5):not(#kr6):not(#kr7):not(#kr8):not(#kr9):not(#kr10):not(#kr11) #kl-root .kl-fd-go:not(:disabled):active{background:var(--kw-red)!important;filter:brightness(1.1)!important}
+
+
+/* pk33/ph35 B14+B15 og-sheet v1: OG Kwallet badge on the sign sheets, K OG card system in the sheets' own charcoal palette */
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet{--og-f:'RobotoE','Roboto','InterE',system-ui,sans-serif;--og-m:'RobotoMonoE','Roboto Mono',ui-monospace,monospace;--og-r:18px;--og-r2:13px;--og-hl:var(--hp-acc,#ACF47D);--og-in:var(--hp-card2,#2E2F34);--og-ln:var(--hp-line,rgba(255,255,255,.07))}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet *:not(svg):not(path):not(.hp-mono):not(.mono):not(.kb-k):not(.kb-w):not(.hp-kc):not(.og-m):not(.og-id):not(.kss-nums b):not(#kss-n):not(.og-t){font-family:var(--og-f)!important}
+/* B14: the OG badge, K's header .kbrand values (lime pill, 3D bottom edge, solid navy K, white 'wallet' with navy outline) */
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-top{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;min-height:32px!important;margin:4px 0 14px!important;padding:0!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-kc{flex:0 0 auto!important;display:inline-flex!important;align-items:center!important;height:32px!important;box-sizing:border-box!important;padding:0 7px!important;margin:0!important;border:0!important;border-radius:10px!important;background:#DDF869!important;font:900 14px/1 'RobotoE','Roboto',system-ui,sans-serif!important;letter-spacing:-.35px!important;overflow:visible!important;box-shadow:inset 0 -2px 0 rgba(34,51,72,.1),0 1px 2px rgba(34,51,72,.12)!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-kc .kb-k{display:block!important;font:900 16px/1 'RobotoE','Roboto',system-ui,sans-serif!important;color:#223348!important;letter-spacing:-.6px!important;margin:0!important;transform:translateY(.5px)!important;-webkit-text-stroke:0!important;text-shadow:none!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-kc .kb-w{display:block!important;font:900 15.5px/1 'RobotoE','Roboto',system-ui,sans-serif!important;color:#fff!important;letter-spacing:.25px!important;-webkit-text-stroke:1.4px #223348!important;paint-order:stroke fill!important;text-shadow:0 1px 0 #223348!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-cc{flex:0 1 auto!important;height:32px!important;box-sizing:border-box!important;max-width:60%!important;padding:0 11px 0 5px!important;border-radius:10px!important;background:var(--og-in)!important;border:1px solid var(--og-ln)!important;font:600 13.5px/1 var(--og-f)!important;color:var(--hp-text)!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-cc .hp-cci{width:22px!important;height:22px!important;margin-right:7px!important}
+/* app / request header: icon tile + name */
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-head{gap:12px!important;margin-bottom:12px!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-ic,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-icl{width:48px!important;height:48px!important;min-width:48px!important;border-radius:14px!important;background:var(--og-in)!important;box-shadow:inset 0 -2px 0 rgba(0,0,0,.22)!important;font:900 22px/48px 'KwBlack','RobotoE',system-ui,sans-serif!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-name{font-size:18px!important;line-height:23px!important;font-weight:700!important;letter-spacing:-.2px!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-url,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-sub,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-ownl{font-size:13.5px!important;color:var(--hp-muted)!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-title{font-size:20px!important;line-height:26px!important;font-weight:700!important;letter-spacing:-.25px!important}
+/* stacked panels: rounded card on the sheet, hairline rows inside; balance changes and seeds as inner panels */
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-card{background:var(--hp-card)!important;border:1px solid var(--og-ln)!important;border-radius:var(--og-r)!important;box-shadow:inset 0 -2px 0 rgba(0,0,0,.16)!important;overflow:hidden!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-card+.hp-card,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-card+.hp-det,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-warn+.hp-card{margin-top:10px!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-r+.hp-r{border-top:1px solid var(--og-ln)!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-r .hp-l{font-weight:600!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-r .hp-l small,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-r .hp-v small{font-weight:400!important;color:var(--hp-muted)!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-card.hp-chg{padding:6px!important;display:flex!important;flex-direction:column!important;gap:6px!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-card.hp-chg>.hp-r{background:var(--og-in)!important;border:0!important;border-radius:var(--og-r2)!important;margin:0!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-tk,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-tkl{border-radius:12px!important}
+/* mono for addresses, IDs and amounts; the last characters of an address highlighted like K's address list */
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-mono,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-w em,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .og-m{font-family:var(--og-m)!important;letter-spacing:.15px!important;font-variant-numeric:tabular-nums!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-chg .hp-v>span:first-child,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-nw,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .snd-sheet #fee{font-family:var(--og-m)!important;font-weight:500!important;letter-spacing:-.1px!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .og-t{font-family:var(--og-m)!important;color:var(--og-hl)!important;font-weight:600!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .snd-sheet #to{font-family:var(--og-m)!important;letter-spacing:.2px!important}
+/* chips like K's (12 words / Name / seed ID / Passphrase) */
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-chip,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .og-ch,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .snd-sheet .snd-chip{display:inline-flex!important;align-items:center!important;height:24px!important;box-sizing:border-box!important;padding:0 9px!important;border-radius:999px!important;border:1px solid var(--hp-border,#3A3B41)!important;background:transparent!important;color:var(--hp-text)!important;font:600 12px/1 var(--og-f)!important;letter-spacing:.2px!important;text-decoration:none!important;white-space:nowrap!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .og-ch.og-wc{border-color:transparent!important;background:rgba(52,199,123,.16)!important;color:#7EE2A8!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .og-ch.og-id{font-family:var(--og-m)!important;font-weight:500!important;color:var(--hp-text)!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .og-ch.og-pp{color:var(--hp-muted)!important}
+/* chunky filled buttons */
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-act .hp-btn,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-foot .snd-go{height:52px!important;min-height:52px!important;border-radius:16px!important;font:700 16px/1 var(--og-f)!important;letter-spacing:.1px!important;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)!important;transition:transform .12s cubic-bezier(.2,0,0,1),opacity .15s!important;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-act .hp-btn.hp-no{background:#E3342F!important;color:#fff!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-act .hp-btn.hp-ok,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-foot .snd-go:not(:disabled){background:#ACF47D!important;color:#07090E!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-act .hp-btn:active:not(:disabled),html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-foot .snd-go:active:not(:disabled){transform:scale(.97)!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-act .hp-btn:disabled{opacity:.45!important}
+/* Send sheet: icon tiles + inner fields */
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .snd-sheet .snd-ib{border-radius:12px!important;background:var(--og-in)!important;box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .snd-sheet .snd-j .hp-card.snd-tc .snd-tf{background:var(--og-in)!important;border-radius:var(--og-r2)!important;padding-left:12px!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .snd-sheet .snd-top{margin:0 0 12px!important}
+/* pairing popup: seed rows as K seed cards (name, word-count chip, mono seed-ID chip), stepper as a K pager */
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .hp-card:has(#kss-pl){padding:6px!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp #kss-pl{display:flex!important;flex-direction:column!important;gap:6px!important;padding:0!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-wo{display:flex!important;align-items:center!important;gap:12px!important;width:100%!important;min-height:0!important;margin:0!important;padding:12px 14px!important;box-sizing:border-box!important;border:1.5px solid transparent!important;border-radius:var(--og-r2)!important;background:var(--og-in)!important;text-align:left!important;transition:border-color .15s,background-color .15s!important;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-wo+.kss-wo{border-top:1.5px solid transparent!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-wo.on{border-color:var(--og-hl)!important;background:color-mix(in srgb,var(--og-hl) 9%,var(--og-in))!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-wo>span{flex:1 1 auto!important;min-width:0!important;font-size:16.5px!important;line-height:21px!important;font-weight:700!important;color:var(--hp-text)!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-wo>span>small{display:flex!important;flex-wrap:wrap!important;gap:5px!important;margin-top:7px!important;font-size:0!important;line-height:0!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-wo .kss-new{flex:0 0 auto!important;height:22px!important;padding:0 9px!important;display:inline-flex!important;align-items:center!important;border-radius:999px!important;background:color-mix(in srgb,var(--og-hl) 15%,transparent)!important;color:var(--og-hl)!important;font:700 11px/1 var(--og-f)!important;letter-spacing:.8px!important;text-transform:uppercase!important;font-style:normal!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-wo .kss-nums{display:flex!important;gap:5px!important;font-style:normal!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-wo .kss-nums b{min-width:28px!important;height:28px!important;display:inline-grid!important;place-items:center!important;box-sizing:border-box!important;padding:0 6px!important;border-radius:9px!important;border:1px solid var(--hp-border,#3A3B41)!important;font:500 13px/1 var(--og-m)!important;color:var(--hp-text)!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-nr{background:var(--hp-card)!important;border:1px solid var(--og-ln)!important;border-radius:var(--og-r)!important;box-shadow:inset 0 -2px 0 rgba(0,0,0,.16)!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-stp{height:44px!important;border-radius:22px!important;background:var(--og-in)!important;border:1px solid var(--og-ln)!important;overflow:hidden!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-stp button{width:44px!important;height:44px!important;font:600 20px/1 var(--og-f)!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp #kss-n{font:500 17px/1 var(--og-m)!important}
+/* B14 smoothness: compositor-only sheet motion, contained layout/paint, no scroll chaining to the page behind */
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-ov .hp-sheet{contain:layout paint!important;will-change:transform;backface-visibility:hidden}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-ov.in .hp-sheet,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-ov.out .hp-sheet{transition-property:transform!important}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-ov .hp-dim{will-change:opacity}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-scroll{overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch}
+html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet button,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-tap{touch-action:manipulation}
+@media (prefers-reduced-motion: reduce){html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .hp-sheet .hp-act .hp-btn,html:not(#og1):not(#og2):not(#og3):not(#og4):not(#og5):not(#og6):not(#og7):not(#og8):not(#og9):not(#og10):not(#og11):not(#og12):not(#og13):not(#og14):not(#og15):not(#og16):not(#og17):not(#og18):not(#og19):not(#og20):not(#og21):not(#og22):not(#og23):not(#og24) .kss-hp .kss-wo{transition:none!important}}
+
 </style>
 </head>
 <body data-theme="light">
@@ -4726,8 +4797,11 @@ window.KwDB = (function () {
 </script>
 <script>(function () {
   'use strict';
-  if (/nosplash/.test(location.hash) || window.__klMounted || window.__kwSign) return;
+  if (/nosplash/.test(location.hash) || window.__klMounted) return;
   window.__klMounted = true;
+  /* pk33 B16: in the sign page (#sign, Hwallet requests) the real lock screen is built but stays dormant (no splash, no
+     session stamp, no relock); KwLock.ask() shows it as a one-off PIN overlay for that request only */
+  var SIGNM = !!window.__kwSign, ATTL = false, ASUB = null;
   var ICONS = {"bitcoin":["0 0 24 24","M23.638 14.904c-1.602 6.43-8.113 10.34-14.542 8.736C2.67 22.05-1.244 15.525.362 9.105 1.962 2.67 8.475-1.243 14.9.358c6.43 1.605 10.342 8.115 8.738 14.548v-.002zm-6.35-4.613c.24-1.59-.974-2.45-2.64-3.03l.54-2.153-1.315-.33-.525 2.107c-.345-.087-.705-.167-1.064-.25l.526-2.127-1.32-.33-.54 2.165c-.285-.067-.565-.132-.84-.2l-1.815-.45-.35 1.407s.975.225.955.236c.535.136.63.486.615.766l-1.477 5.92c-.075.166-.24.406-.614.314.015.02-.96-.24-.96-.24l-.66 1.51 1.71.426.93.242-.54 2.19 1.32.327.54-2.17c.36.1.705.19 1.05.273l-.51 2.154 1.32.33.545-2.19c2.24.427 3.93.257 4.64-1.774.57-1.637-.03-2.58-1.217-3.196.854-.193 1.5-.76 1.68-1.93h.01zm-3.01 4.22c-.404 1.64-3.157.75-4.05.53l.72-2.9c.896.23 3.757.67 3.33 2.37zm.41-4.24c-.37 1.49-2.662.735-3.405.55l.654-2.64c.744.18 3.137.524 2.75 2.084v.006z"],"ethereum":["0 0 24 24","M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z"],"solana":["0 0 24 24","m23.8764 18.0313-3.962 4.1393a.9201.9201 0 0 1-.306.2106.9407.9407 0 0 1-.367.0742H.4599a.4689.4689 0 0 1-.2522-.0733.4513.4513 0 0 1-.1696-.1962.4375.4375 0 0 1-.0314-.2545.4438.4438 0 0 1 .117-.2298l3.9649-4.1393a.92.92 0 0 1 .3052-.2102.9407.9407 0 0 1 .3658-.0746H23.54a.4692.4692 0 0 1 .2523.0734.4531.4531 0 0 1 .1697.196.438.438 0 0 1 .0313.2547.4442.4442 0 0 1-.1169.2297zm-3.962-8.3355a.9202.9202 0 0 0-.306-.2106.941.941 0 0 0-.367-.0742H.4599a.4687.4687 0 0 0-.2522.0734.4513.4513 0 0 0-.1696.1961.4376.4376 0 0 0-.0314.2546.444.444 0 0 0 .117.2297l3.9649 4.1394a.9204.9204 0 0 0 .3052.2102c.1154.049.24.0744.3658.0746H23.54a.469.469 0 0 0 .2523-.0734.453.453 0 0 0 .1697-.1961.4382.4382 0 0 0 .0313-.2546.4444.4444 0 0 0-.1169-.2297zM.46 6.7225h18.7815a.9411.9411 0 0 0 .367-.0742.9202.9202 0 0 0 .306-.2106l3.962-4.1394a.4442.4442 0 0 0 .117-.2297.4378.4378 0 0 0-.0314-.2546.453.453 0 0 0-.1697-.196.469.469 0 0 0-.2523-.0734H4.7596a.941.941 0 0 0-.3658.0745.9203.9203 0 0 0-.3052.2102L.1246 5.9687a.4438.4438 0 0 0-.1169.2295.4375.4375 0 0 0 .0312.2544.4512.4512 0 0 0 .1692.196.4689.4689 0 0 0 .2518.0739z"],"monero":["0 0 24 24","M12 0C5.365 0 0 5.373 0 12.015c0 1.335.228 2.607.618 3.81h3.577V5.729L12 13.545l7.805-7.815v10.095h3.577c.389-1.203.618-2.475.618-3.81C24 5.375 18.635 0 12 0zm-1.788 15.307l-3.417-3.421v6.351H1.758C3.87 21.689 7.678 24 12 24s8.162-2.311 10.245-5.764h-5.04v-6.351l-3.386 3.421-1.788 1.79-1.814-1.79h-.005z"],"cardano":["0 0 24 24","M6.5765 11.92c-.0488.8906.6316 1.653 1.5219 1.7056h.0934c.8928-.0006 1.6161-.725 1.6155-1.6178-.0006-.8928-.725-1.6161-1.6178-1.6155-.8578.0006-1.5658.6711-1.613 1.5277Zm-6.025-.416c-.288-.0161-.5345.2042-.5507.4922-.0161.288.2042.5345.4922.5507.2878.0161.5343-.204.5506-.4918.0167-.2876-.2029-.5343-.4905-.5509H.5514Zm5.9226-8.9645c.257-.1309.3593-.4453.2284-.7024-.1309-.257-.4453-.3593-.7024-.2284-.2558.1302-.3585.4424-.2301.6991.13.2582.4448.3622.703.2322.0003-.0002.0007-.0003.001-.0005Zm1.6397 2.8589c.398-.2006.558-.6859.3573-1.0839-.2006-.398-.6859-.558-1.0839-.3573-.3978.2006-.5579.6856-.3575 1.0835.2007.398.686.5581 1.0842.3578ZM2.597 7.3645c.3072.2013.7194.1154.9206-.1918.2013-.3072.1154-.7194-.1918-.9206-.3072-.2013-.7194-.1154-.9206.1918 0 .0001-.0001.0002-.0002.0003-.201.3072-.1151.7191.192.9203Zm.9824 3.8515c-.4453-.0254-.827.3149-.8524.7603s.3149.827.7603.8524c.4453.0254.827-.3149.8524-.7603v-.0006c.0251-.4451-.3152-.8264-.7603-.8518Zm-.8915 5.4221c-.328.1652-.46.565-.2948.893.1652.328.565.46.893.2948.328-.1652.46-.565.2948-.893l-.0002-.0004c-.1645-.3276-.5633-.4598-.8909-.2954-.0006.0003-.0013.0006-.0019.001Zm3.136-7.0931c.4386.2876 1.0274.1653 1.315-.2734.2876-.4386.1653-1.0274-.2734-1.315-.4386-.2876-1.0273-.1653-1.3149.2732-.2878.4381-.166 1.0266.2721 1.3144.0004.0003.0008.0005.0012.0008Zm9.9501-4.2106c.3729.2447.8737.1408 1.1184-.2321.2447-.3729.1408-.8737-.2321-1.1184-.3729-.2447-.8737-.1408-1.1184.2321 0 .0001-.0001.0002-.0002.0003-.2447.3726-.141.8729.2316 1.1176.0003.0002.0005.0003.0008.0005Zm1.6563-2.8499c.2413.1579.565.0904.723-.151s.0904-.565-.151-.723c-.241-.1577-.5642-.0906-.7224.1501-.1584.241-.0915.5648.1495.7233l.0009.0006Zm-1.5296 7.8938c-.8911-.0507-1.6546.6305-1.7053 1.5216-.0507.8911.6305 1.6546 1.5216 1.7053h.0928c.8925 0 1.616-.7235 1.616-1.616 0-.8572-.6693-1.5652-1.5251-1.6134v.0026ZM8.645 9.433c.2737.5459.8331.8896 1.4438.887.8925-.0002 1.6159-.7238 1.6157-1.6163 0-.2526-.0593-.5018-.1731-.7273-.4017-.7971-1.3735-1.1176-2.1706-.7158-.7971.4017-1.1176 1.3735-.7158 2.1706v.0019Zm12.6669-2.0704c.3273-.1666.4575-.567.2909-.8943-.1666-.3273-.567-.4575-.8943-.2909-.3259.1659-.4567.5639-.2927.8908.1652.3284.5653.4607.8937.2956.0008-.0004.0015-.0008.0023-.0012Zm-4.096.5146c-.4683.2362-.6565.8074-.4203 1.2757.2362.4683.8074.6565 1.2757.4203.468-.2361.6563-.8066.4207-1.2749-.2364-.4683-.8074-.6568-1.2762-.4211Zm-5.2768-5.6365c.3667.0205.6806-.2601.7011-.6267s-.2601-.6806-.6267-.7011c-.3655-.0205-.6789.2584-.7009.6238-.0225.3662.2562.6813.6224.7038.0014 0 .0028.0002.0042.0002Zm-.0077 4.1837c.5237.0288.9717-.3724 1.0006-.8961.0288-.5237-.3723-.9717-.8961-1.0006-.5231-.0288-.9707.3714-1.0005.8944-.0298.5237.3706.9724.8943 1.0021h.0017Zm-5.1475 9.6992c.4685-.2359.657-.807.421-1.2755-.2359-.4685-.807-.657-1.2755-.421-.4684.2359-.6569.8069-.4211 1.2754.2362.4682.807.6567 1.2755.4211Zm5.76-8.313c-.4881.7459-.2792 1.7463.4667 2.2344s1.7463.2792 2.2344-.4667.2792-1.7463-.4667-2.2344c-.262-.1715-.5683-.263-.8815-.2635-.5452-.0001-1.0538.2744-1.353.7302Zm2.8109 6.7571c-.4015-.7975-1.3735-1.1185-2.171-.7169-.7975.4015-1.1185 1.3735-.7169 2.171.4015.7975 1.3735 1.1185 2.171.7169.0005-.0002.0009-.0005.0014-.0007.7947-.3952 1.1186-1.3598.7235-2.1545-.0026-.0053-.0053-.0105-.0079-.0158Zm2.8211-.112c-.4386-.2876-1.0274-.1653-1.315.2734-.2876.4386-.1653 1.0274.2734 1.315.4386.2876 1.0273.1653 1.3149-.2732.2877-.4386.1654-1.0274-.2731-1.3151h-.0002Zm3.0963-2.4282c.0254-.4453-.3149-.827-.7603-.8524-.4453-.0254-.827.3149-.8524.7603-.0254.4453.3149.827.7603.8524h.0006c.4451.0251.8264-.3152.8518-.7603Zm2.2349-.5741c-.288-.0161-.5345.2042-.5507.4922s.2042.5345.4922.5507c.2878.0161.5343-.204.5506-.4918.016-.288-.2042-.5345-.4922-.551Zm-2.1043 5.1821c-.3073-.2011-.7194-.115-.9205.1923-.2011.3073-.115.7194.1923.9205.3071.201.719.1151.9202-.1918.2013-.3071.1156-.7193-.1916-.9207l-.0004-.0003ZM6.5695 21.5161c-.2411-.1584-.5649-.0913-.7232.1497-.1584.2411-.0913.5649.1497.7232.2411.1584.5649.0913.7232-.1497.158-.2411.091-.5646-.1498-.7232Zm10.9555-.055c-.257.1309-.3593.4453-.2284.7024.1309.257.4453.3593.7023.2284.2558-.1302.3585-.4424.2301-.6991-.1291-.2579-.4428-.3624-.7007-.2333-.0011.0005-.0022.0011-.0033.0016Zm-6.0691-5.2717c.4892-.7465.2806-1.7482-.4659-2.2374-.7465-.4892-1.7482-.2806-2.2374.4659s-.2806 1.7482.4659 2.2374c.2628.1722.5702.2641.8844.2644.5458.0022 1.0553-.2728 1.353-.7302Zm-3.2301 2.4768c-.3729-.2447-.8737-.1408-1.1184.2321-.2447.3729-.1408.8737.2321 1.1184s.8737.1408 1.1184-.2321c0-.0001.0001-.0002.0002-.0003.2445-.3729.1405-.8734-.2323-1.1181Zm3.7664 3.0931c-.3667-.0209-.6808.2594-.7017.6261s.2594.6808.6261.7017c.3658.0208.6795-.2581.7016-.6238.0222-.3666-.2571-.6817-.6236-.7039-.0008 0-.0015 0-.0023-.0001Zm.007-4.1837c-.5237-.0288-.9717.3724-1.0005.8961-.0288.5237.3724.9717.8961 1.0005.5228.0288.9703-.371 1.0004-.8938.0298-.524-.3709-.973-.8949-1.0028h-.0011Zm3.8861 1.0259c-.3976.2022-.556.6884-.3539 1.086.2022.3976.6884.556 1.086.3539.3961-.2014.5551-.685.3558-1.0821-.2-.3987-.6854-.5598-1.0841-.3597-.0013.0007-.0026.0013-.0039.002Z"],"sui":["0 0 24 24","M17.636 10.009a7.16 7.16 0 0 1 1.565 4.474 7.2 7.2 0 0 1-1.608 4.53l-.087.106-.023-.135a7 7 0 0 0-.07-.349c-.502-2.21-2.142-4.106-4.84-5.642-1.823-1.034-2.866-2.278-3.14-3.693-.177-.915-.046-1.834.209-2.62.254-.787.631-1.446.953-1.843l1.05-1.284a.46.46 0 0 1 .713 0l5.28 6.456zm1.66-1.283L12.26.123a.336.336 0 0 0-.52 0L4.704 8.726l-.023.029a9.33 9.33 0 0 0-2.07 5.872C2.612 19.803 6.816 24 12 24s9.388-4.197 9.388-9.373a9.32 9.32 0 0 0-2.07-5.871zM6.389 9.981l.63-.77.018.142q.023.17.055.34c.408 2.136 1.862 3.917 4.294 5.297 2.114 1.203 3.345 2.586 3.7 4.103a5.3 5.3 0 0 1 .109 1.801l-.004.034-.03.014A7.2 7.2 0 0 1 12 21.67c-3.976 0-7.2-3.218-7.2-7.188 0-1.705.594-3.27 1.587-4.503z"],"xrp":["0 0 512 424","M437 0h74L357 152.48c-55.77 55.19-146.19 55.19-202 0L.94 0H75l117 115.83a91.11 91.11 0 0 0 127.91 0zM74.05 424H0l155-153.42c55.77-55.19 146.19-55.19 202 0L512 424h-74L320 307.23a91.11 91.11 0 0 0-127.91 0z"],"tron":["0 0 64 64","M61.55,19.28c-3-2.77-7.15-7-10.53-10l-.2-.14a3.82,3.82,0,0,0-1.11-.62l0,0C41.56,7,3.63-.09,2.89,0a1.4,1.4,0,0,0-.58.22L2.12.37a2.230,2.230,0,0,0-.52.84l-.05.13v.71l0,.11C5.82,14.05,22.68,53,26,62.14c.2.62.58,1.8,1.29,1.86h.16c.38,0,2-2.14,2-2.14S58.410,26.740,61.34,23a9.46,9.46,0,0,0,1-1.48A2.41,2.41,0,0,0,61.55,19.28ZM36.88,23.37,49.24,13.12l7.25,6.68Zm-4.8-.67L10.8,5.26l34.43,6.35ZM34,27.27l21.78-3.51-24.9,30ZM7.910,7,30.3,26,27.06,53.78Z"]};
   var ORDER = ['bitcoin', 'ethereum', 'solana', 'monero', 'tron', 'xrp', 'cardano', 'sui'];
   for (var _i = ORDER.length - 1; _i > 0; _i--) { var _j = Math.floor(Math.random() * (_i + 1)), _t = ORDER[_i]; ORDER[_i] = ORDER[_j]; ORDER[_j] = _t; }
@@ -4803,7 +4877,7 @@ window.KwDB = (function () {
   function pinMode() { try { return localStorage.getItem(MODE_KEY) || 'open'; } catch (e) { return 'open'; } }
   function graceMs(m) { return m === 'open' ? 60000 : (+m > 0 ? +m * 60000 : 0); }
   function lastActive() { try { return +localStorage.getItem(LAST_KEY) || 0; } catch (e) { return 0; } }
-  function stamp() { try { localStorage.setItem(LAST_KEY, String(Date.now())); } catch (e) {} }
+  function stamp() { if (SIGNM) return; try { localStorage.setItem(LAST_KEY, String(Date.now())); } catch (e) {} }
 
   /* ---------- DOM ---------- */
   var root = el('div'); root.id = 'kl-root'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', 'Kwallet');
@@ -4882,8 +4956,8 @@ window.KwDB = (function () {
   prow.addEventListener('click', function (e) { var b = e.target.closest('[data-p]'); if (b) press(b.getAttribute('data-p')); });
   pinbox.appendChild(title); pinbox.appendChild(sub); pinbox.appendChild(dots); pinbox.appendChild(passf); pinbox.appendChild(pad); pinbox.appendChild(prow); pinbox.appendChild(alt);
   root.appendChild(pinbox);
-  (document.documentElement.classList.contains('kw-e2e') ? document.documentElement : (document.body || document.documentElement)).appendChild(root);
-  try { document.documentElement.style.overflow = 'hidden'; } catch (e) {}
+  ((SIGNM || document.documentElement.classList.contains('kw-e2e')) ? document.documentElement : (document.body || document.documentElement)).appendChild(root);
+  if (SIGNM) { root.style.display = 'none'; root.classList.add('kl-sgn', 'kl-out'); } else try { document.documentElement.style.overflow = 'hidden'; } catch (e) {}
 
   /* ---------- sizing: keep the tall brand, never wider than 90vw ---------- */
   var VW = window.innerWidth, VH = window.innerHeight;
@@ -5060,6 +5134,7 @@ window.KwDB = (function () {
     root.classList.toggle('kl-alpha', alpha);
     title.textContent = mode === 'unlock' ? (purpose === 'verify' ? 'Enter current ' + pinWord() : 'Enter ' + pinWord()) : (purpose === 'create' && s ? 'New ' + pinWord() : 'Create a ' + pinWord());
     say(mode === 'unlock' ? (purpose === 'verify' ? 'Confirm it is you' : '') : (alpha ? 'At least ' + PASS_MIN + ' characters. Tap the eye to check it' : '6 digits to open Kwallet on this device'));
+    if (ATTL && mode === 'unlock') { title.textContent = 'Enter your ' + pinWord(); say(ASUB || ''); }   /* pk33 B16 */
     var fg = document.getElementById('kl-forgot');
     var useBio = mode === 'unlock' && BIO.on() && purpose !== 'bio';
     fg.classList.toggle('kl-txt', !useBio || cancelable);
@@ -5160,6 +5235,7 @@ window.KwDB = (function () {
   function success() {
     say(''); dots.classList.add('kl-ok'); buzz([10, 50, 18]); SND.ok(); try { if (pin_in) pin_in.blur(); } catch (e) {}
     var cb = onOk; onOk = null;
+    if (SIGNM) { setTimeout(function () { unlockDone(); if (cb) cb(); }, 140); return; }   /* pk33 B16: straight on to the pairing picker */
     setTimeout(function () { unlockDone(); if (cb) setTimeout(cb, 520); }, 380);
   }
   function offerBio() {
@@ -5180,6 +5256,8 @@ window.KwDB = (function () {
   }
   var unlockedOnce = false, locked = true;
   function unlockDone() {
+    /* pk33 B16: the sign-page overlay just hides; K's session, stamp and main UI are not touched */
+    if (SIGNM) { locked = false; busy = false; cancelable = false; purpose = null; onCancel = null; ATTL = false; ASUB = null; root.classList.add('kl-out'); root.style.display = 'none'; coinsLive = false; dots.classList.remove('kl-ok'); try { document.documentElement.style.overflow = ''; } catch (e) {} return; }
     root.classList.add('kl-out'); locked = false; busy = false; cancelable = false; purpose = null; stamp();
     try { document.documentElement.style.overflow = ''; } catch (e) {}
     setTimeout(function () {
@@ -5191,7 +5269,7 @@ window.KwDB = (function () {
   /* show the PIN screen again (resume after the grace period, or creating a PIN from settings) */
   function lockNow(opts) {
     if (locked || !window.crypto || !crypto.subtle) return;
-    locked = true; cancelable = !!(opts && opts.cancelable); onCancel = opts && opts.onCancel || null;
+    locked = true; cancelable = !!(opts && opts.cancelable); onCancel = opts && opts.onCancel || null; ATTL = !!(opts && opts.attl); ASUB = opts && opts.asub || null;
     onOk = opts && opts.onOk || null; purpose = opts && opts.purpose || null; first = ''; entry = ''; newKind = (opts && opts.kind) || curKind(); noBioOnce = !!(opts && opts.noBio);
     root.style.display = ''; void root.offsetWidth;
     root.classList.add('kl-done'); brand.classList.add('kl-noshine'); W.style.visibility = 'hidden';
@@ -5204,6 +5282,16 @@ window.KwDB = (function () {
   }
   window.KwLock = {
     mode: pinMode,
+    /* pk33 B16: sign page only. The real PIN page as a one-off overlay: o = { sub, ok(), cancel() }. false = not available */
+    ask: function (o) {
+      o = o || {}; if (!SIGNM || locked || !stored() || !window.crypto || !crypto.subtle) return false;
+      root.style.display = ''; VW = window.innerWidth; VH = window.innerHeight; try { fit(); layout(); sizeCoins(); } catch (e) {}
+      K.style.animation = 'none'; K.style.opacity = '1'; coinT0 = performance.now() - 20000; coinsLive = false;
+      if (!pinPose) { kx = 0; ky = 0; ks = 1; setK(); var kr0 = K.getBoundingClientRect(); kx = VW / 2 - (kr0.left + kr0.width / 2); setK(); }   /* centre the K as the splash leaves it */
+      lockNow({ cancelable: true, purpose: 'verify', noBio: true, attl: true, asub: o.sub || '', onOk: o.ok, onCancel: o.cancel });
+      return true;
+    },
+    abort: function () { if (SIGNM && locked) { onOk = null; onCancel = null; unlockDone(); } },
     hasPin: function () { return !!stored(); },
     lock: function () { relock(); },
     /* ask for the current PIN before a sensitive change; runs ok() only after a correct PIN */
@@ -5254,6 +5342,7 @@ window.KwDB = (function () {
     }
   };
   document.addEventListener('visibilitychange', function () {
+    if (SIGNM) return;
     if (document.hidden) { if (!locked) stamp(); return; }
     var m = pinMode();
     if (locked || m === 'off' || !stored()) return;
@@ -5291,7 +5380,7 @@ window.KwDB = (function () {
     if (k === 'back') { if (entry) { entry = entry.slice(0, -1); SND.back(); buzz(5); } paint(); return; }
     if (entry.length >= PIN_LEN) return;
     entry += k; buzz(6); SND.key(k); paint();
-    if (sub.classList.contains('kl-err')) say('');
+    if (sub.classList.contains('kl-err')) say(ATTL ? (ASUB || '') : '');
     if (entry.length === PIN_LEN) setTimeout(complete, 140);
   }
   pad.addEventListener('pointerdown', function (e) {
@@ -5374,6 +5463,7 @@ window.KwDB = (function () {
   }
   var started = false;
   function go() { if (started) return; started = true; setTimeout(boot, 30); }
+  if (SIGNM) { started = true; locked = false; }   /* pk33 B16: no splash / lock at start in the sign page */
   if (document.fonts && document.fonts.load) {
     Promise.race([document.fonts.load("900 64px KwBlack"), new Promise(function (r) { setTimeout(r, 700); })]).then(go, go);
   } else go();
@@ -12520,7 +12610,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98.32';
+const APP_VERSION = '3.98.33';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -15057,6 +15147,7 @@ async function buildExportPdf(pack, seedPng, qrPng) {
   card(M, cy, PW - 2 * M, cardH, 8);
   doc.setFont('helvetica', 'bold'); doc.setFontSize(11); C(T.text);
   doc.text('Seed Phrase', M + 16, cy + 20);
+  try { var smL = [pack.seed_name, pack.seed_id_formatted].filter(Boolean).join(' \u00b7 '); if (smL) { doc.setFont('courier', 'bold'); doc.setFontSize(8.5); C(T.accent); doc.text(smL, PW - M - 16 - doc.getTextWidth(smL), cy + 20); } } catch (e) {}   /* pk33bak B11 */
   doc.setFont('helvetica', 'normal'); doc.setFontSize(7); C(T.muted);
   doc.text('Image only — keep offline · never share · not selectable text', M + 16, cy + 33);
   doc.addImage(seedPng, seedFmt, M + 14, cy + 44, imgW, imgH);
@@ -15183,6 +15274,8 @@ function seedQrDataUrl() {
   }
 }
 
+/* pk33bak B11: name + seed ID of the seed on screen (cache only; runExport derives it first) */
+function kwExpSeed() { try { return (window.KwSeedMeta && KwSeedMeta.peek()) || null; } catch (e) { return null; } }
 function buildExportPackage() {
   var csv = buildExportCsv();
   var rows = [];
@@ -15211,6 +15304,9 @@ function buildExportPackage() {
     bip39_passphrase_used: !!currentPassphrase,
     bip39_passphrase: currentPassphrase || '',
     app_version: APP_VERSION,
+    seed_id: (kwExpSeed() || {}).sid || '',
+    seed_id_formatted: (kwExpSeed() || {}).id || '',
+    seed_name: (kwExpSeed() || {}).name || '',
     seed: '[image only - see seed_image_png]',
     seed_image_png: (typeof seedToPngDataUrl === 'function' && currentMnemonic) ? seedPngCached(currentMnemonic) : '',
     path_template: tpl,
@@ -15250,14 +15346,15 @@ function buildExportCsv() {
   try { net = currentNetwork || ''; } catch (e) {}
   try { tpl = pathTpl || ''; } catch (e) {}
   function q(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }
-  var lines = ['network,derivation_path,index,address,private_key'];
+  var sm = kwExpSeed() || {}, smc = function (v) { v = String(v || ''); return /^[=+\-@\t\r]/.test(v) ? "'" + v : v; };   /* pk33bak B11 */
+  var lines = ['network,derivation_path,index,address,private_key,seed_id,seed_name'];
   if (!rows.length) {
-    lines.push([q(net), q(tpl), '""', '""', '""'].join(','));
+    lines.push([q(net), q(tpl), '""', '""', '""', q(sm.id || ''), q(smc(sm.name))].join(','));
   } else {
     rows.forEach(function (r) {
       var n = r.idx.replace(/[^0-9]/g, '');
       var path = (tpl && n !== '') ? tpl.replace('{i}', n) : '';
-      lines.push([q(net), q(path), q(r.idx), q(r.addr), q(r.pk)].join(','));
+      lines.push([q(net), q(path), q(r.idx), q(r.addr), q(r.pk), q(sm.id || ''), q(smc(sm.name))].join(','));
     });
   }
   return '﻿' + lines.join('\r\n');
@@ -15582,6 +15679,7 @@ async function runExport() {
   try {
     var seedPng = seedPngCached(currentMnemonic);
     var qrPng = qrMatrixPng(currentMnemonic) || ((typeof qrPngDataUrl === 'function') ? qrPngDataUrl() : '');
+    try { if (window.KwSeedMeta) await KwSeedMeta.cur(); } catch (e) {}   /* pk33bak B11: seed ID ready for the package */
     var pack = buildExportPackage();
     pack.seed = '[image only - see seed PNG in the PDF or seed.png]';
     pack.seed_image_png = seedPng;
@@ -19798,13 +19896,18 @@ function togglePathFind(force){
     var when = ''; try { when = new Date(d.created).toLocaleString(); } catch (e) {}
     return (when ? when + ' · ' : '') + parts.join(' · ');
   }
+  /* pk33bak B11: each seed's name and seed ID ride along (older versions ignore the extra fields; old backups restore as before) */
+  async function withSeedMeta(d){
+    try { if (window.KwSeedMeta) { var x = await KwSeedMeta.collect(d.state); if (x) { d.seeds = x.seeds; d.names = x.names; } } } catch (e) {}
+    return d;
+  }
   window.saveBackup = async function(){
     var p1 = $('bk-pass').value || '', p2 = $('bk-pass2').value || '';
     if ((p1 || p2) && p1 !== p2) { toast('Passwords do not match'); FX.buzz([40, 30, 40]); return; }
     if ((p1 || p2) && p1.length < 8) { toast('Password min 8 characters'); FX.buzz([40, 30, 40]); return; }
     var btn = $('bk-save-btn'); btn.disabled = true; btn.textContent = 'Saving…';
     try {
-      var data = new TextEncoder().encode(JSON.stringify(collect()));
+      var data = new TextEncoder().encode(JSON.stringify(await withSeedMeta(collect())));
       var head = [MAGIC, 'created: ' + new Date().toISOString(), 'app: ' + APP_VERSION];
       var body;
       if (p1) {
@@ -19833,6 +19936,7 @@ function togglePathFind(force){
     try { when = new Date(d.created).toLocaleString(); } catch (e) {}
     var bits = []; if (st.passphrase) bits.push('passphrase'); if (Array.isArray(st.history) && st.history.length) bits.push(st.history.length + ' in history');
     var logs = (st.activityLog || []).length + (st.seedCopyLog || []).length; if (logs) bits.push(logs + (logs === 1 ? ' log entry' : ' log entries'));
+    try { var sc = (Array.isArray(d.seeds) ? d.seeds : []).filter(function(o){ return o && o.refs && o.refs.indexOf('current') !== -1; })[0], nn = Object.keys(d.names && typeof d.names === 'object' ? d.names : {}).length; if (sc) bits.unshift((sc.name ? sc.name + ' ' : '') + (sc.id || '')); if (nn) bits.push(nn + (nn === 1 ? ' seed name' : ' seed names')); } catch (e) {}   /* pk33bak B11 */
     el.className = 'bk-status ok';
     el.innerHTML = '<div class="bk-prev-h">' + (n ? n + '-word seed' : 'No active seed') + '</div><div class="bk-prev-s">' + escH((when ? 'Saved ' + when : '') + (bits.length ? (when ? ' \u00b7 ' : '') + bits.join(' \u00b7 ') : '')) + '</div>';
     var hb = $('bk-hold-btn'); if (hb) hb.disabled = false;
@@ -19879,6 +19983,7 @@ function togglePathFind(force){
       localStorage.removeItem(STORAGE_KEY);
       SETTINGS.forEach(function(k){ try { localStorage.removeItem(k); } catch (e) {} });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(d.state || {}));
+      try { if (window.KwSeedMeta) KwSeedMeta.apply(d); } catch (e) {}   /* pk33bak B11: seed names back by seed ID */
       Object.keys(d.settings || {}).forEach(function(k){ if (SETTINGS.indexOf(k) !== -1) localStorage.setItem(k, String(d.settings[k])); });
       sessionStorage.setItem('bk-restored', '1');
     } catch (e) { toast('Restore failed: ' + (e && e.message ? e.message : e)); return; }
@@ -22298,6 +22403,59 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     }, 120);
   }
   window.kwSidChips = kwSidChips;
+  /* ---------- pk33bak B11 (v3.98.33): seed names + seed IDs travel with every backup and export ---------- */
+  function smName(v) { return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, 24); }
+  function smNorm(m) { return String(m || '').trim().split(/\s+/).filter(Boolean).join(' '); }
+  function smType(m, st) { if (st) return st; try { return detectSeedType(m) || 'bip39'; } catch (e) { return 'bip39'; } }
+  async function smSid(m, p, st) {
+    m = smNorm(m); if (!m) return ''; st = smType(m, st); p = st === 'bip39' && typeof p === 'string' ? p : '';
+    var key = m + '|' + p; if (SIDC[key]) return SIDC[key];
+    var s = ''; try { s = await seedSidOf(m, p, st); } catch (e) { s = ''; }
+    if (/^\d{10}$/.test(s || '')) { SIDC[key] = s; return s; } return '';
+  }
+  function smOnScreen() {
+    var m = ''; try { m = (typeof currentMnemonic !== 'undefined' && currentMnemonic) || ''; } catch (e) {}
+    m = smNorm(m); if (!m) return null;
+    var st = ''; try { st = (typeof currentSeedType !== 'undefined' && currentSeedType) || ''; } catch (e) {} st = smType(m, st);
+    var p = ''; try { p = st === 'bip39' && typeof currentPassphrase === 'string' ? currentPassphrase : ''; } catch (e) {}
+    return { m: m, p: p, st: st };
+  }
+  function smOut(s) { return /^\d{10}$/.test(s || '') ? { sid: s, id: sidFmt(s), name: nameOf(s) } : null; }
+  function smPeek() { var o = smOnScreen(); return o ? smOut(SIDC[o.m + '|' + o.p]) : null; }
+  async function smCur() { var o = smOnScreen(); return o ? smOut(await smSid(o.m, o.p, o.st)) : null; }
+  async function smCollect(st) {
+    st = st && typeof st === 'object' ? st : {};
+    var NM = nGet(), out = [], by = {};
+    function put(o) {
+      if (!o || !/^\d{10}$/.test(String(o.sid || ''))) return; var x = by[o.sid];
+      if (!x) { x = by[o.sid] = { sid: String(o.sid), id: sidFmt(o.sid), name: '', type: '', refs: [] }; out.push(x); }
+      if (!x.name && smName(o.name)) x.name = smName(o.name);
+      if (!x.type && o.type) x.type = String(o.type);
+      if (o.ref && x.refs.indexOf(o.ref) < 0) x.refs.push(o.ref);
+    }
+    var m = smNorm(st.mnemonic);
+    if (m) { var t = smType(m, st.seedType), s = await smSid(m, st.passphrase, t); put({ sid: s, name: NM[s], type: t, ref: 'current' }); }
+    /* Undo / Redo seeds: their ID when it is already known (no slow derivation for a long history) */
+    [['history', st.history], ['redo', st.redo]].forEach(function (h) {
+      (Array.isArray(h[1]) ? h[1] : []).forEach(function (e) {
+        var hm = e && (typeof e === 'string' ? e : e.m); if (!hm) return;
+        var s2 = SIDC[smNorm(hm) + '|']; if (s2) put({ sid: s2, name: NM[s2], type: (e && e.t) || '', ref: h[0] });
+      });
+    });
+    try { pubList().forEach(function (r) { if (r) put({ sid: r.sid, name: NM[r.sid] || r.label, type: r.seedType || 'bip39', ref: 'paired' }); }); } catch (e) {}
+    Object.keys(NM).forEach(function (s3) { put({ sid: s3, name: NM[s3], ref: 'named' }); });
+    var names = {}; out.forEach(function (o) { if (o.name) names[o.sid] = o.name; });
+    return { seeds: out, names: names };
+  }
+  function smApply(d) {
+    if (!d || typeof d !== 'object') return 0;
+    var src = {};
+    (Array.isArray(d.seeds) ? d.seeds : []).forEach(function (o) { if (o && /^\d{10}$/.test(String(o.sid || '')) && smName(o.name)) src[String(o.sid)] = smName(o.name); });
+    if (d.names && typeof d.names === 'object' && !Array.isArray(d.names)) Object.keys(d.names).forEach(function (s) { if (/^\d{10}$/.test(s) && smName(d.names[s])) src[s] = smName(d.names[s]); });
+    var n = 0; Object.keys(src).forEach(function (s) { try { nameSet(s, src[s]); n++; } catch (e) {} });
+    return n;
+  }
+  window.KwSeedMeta = { collect: smCollect, apply: smApply, cur: smCur, peek: smPeek };
   function renameAsk(sid) {
     var d = document.createElement('div'); d.className = 'kwd-ov'; d.style.zIndex = '9700';
     d.innerHTML = '<div class="kwd" role="dialog" aria-modal="true"><h3>Name this seed</h3><input class="kwd-in" maxlength="24" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" placeholder="Main, Savings, Cold\u2026" aria-label="Seed name"><div class="kwd-hint">Seed ID ' + sidFmt(sid) + ' \u00b7 Hwallet shows this name</div>' +
@@ -22748,11 +22906,13 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       pairPick(L);
     })().catch(function (e) { fail('Kwallet could not read its seeds.', (e && e.message) || 'Try again.'); });
   }
+  /* pk33 B15: 'BIP39 \u00b7 12 words + passphrase' -> K chips */
+  function ogChips(k) { return String(k || '').split(/\s+\+\s+|\s+\u00b7\s+/).filter(Boolean).map(function (p) { return '<u class="og-ch' + (/words|^monero|^polyseed/i.test(p) ? ' og-wc' : /passphrase/i.test(p) ? ' og-pp' : '') + '">' + esc(p) + '</u>'; }).join(''); }
   function pairPick(L) {
     var pick = 0; L.some(function (o, i) { if (o.recs.length) { pick = i; return true; } return false; });
     var num = L[pick].recs.length ? L[pick].recs[L[pick].recs.length - 1].index | 0 : 0;
-    function opts() { return L.map(function (o, i) { var id = sidFmt(o.sid); return '<button type="button" class="hp-wo kss-wo' + (i === pick ? ' on' : '') + '" data-i="' + i + '"><i></i><span>' + esc(o.label) + '<small>' + esc(o.kind) + (id ? ' \u00b7 ' + id : '') + '</small></span>' + (o.recs.length ? '<em class="kss-nums">' + o.recs.map(function (x) { return '<b data-n="' + (x.index | 0) + '">' + (x.index | 0) + '</b>'; }).join('') + '</em>' : '<em class="kss-new">New</em>') + '</button>'; }).join(''); }
-    var body = HWP.head({ icon: HWICON, name: 'Hwallet', sub: 'Pairing request' }) + HWP.title('Pair a seed') +
+    function opts() { return L.map(function (o, i) { var id = sidFmt(o.sid); return '<button type="button" class="hp-wo kss-wo' + (i === pick ? ' on' : '') + '" data-i="' + i + '"><i></i><span>' + esc(o.label) + '<small>' + ogChips(o.kind) + (id ? '<u class="og-ch og-id">' + id + '</u>' : '') + '</small></span>' + (o.recs.length ? '<em class="kss-nums">' + o.recs.map(function (x) { return '<b data-n="' + (x.index | 0) + '">' + (x.index | 0) + '</b>'; }).join('') + '</em>' : '<em class="kss-new">New</em>') + '</button>'; }).join(''); }
+    var body = HWP.topBar('') + HWP.head({ icon: HWICON, name: 'Hwallet', sub: 'Pairing request' }) + HWP.title('Pair a seed') +
       HWP.card('<div class="hp-wl" id="kss-pl">' + opts() + '</div>') +
       '<div class="kss-nr"><span>Address number</span><div class="kss-stp"><button type="button" data-ns="-1" aria-label="Previous">\u2212</button><input id="kss-n" type="number" min="0" inputmode="numeric" value="' + num + '" aria-label="Address number"><button type="button" data-ns="1" aria-label="Next">+</button></div></div>' +
       HWP.trust('ok', 'Only public addresses and the Monero view key go to Hwallet');
@@ -23335,6 +23495,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var seg = keys.length > 1 ? '<div class="hp-seg" role="radiogroup">' + keys.map(function (k) { return '<button type="button" data-lv="' + k + '" class="' + (k === S.level ? 'on' : '') + '">' + (LAB[k] || k) + '</button>'; }).join('') + '</div>' : '';
     var coinKey = S.tok ? TOKLOGO[S.sym.toUpperCase()] : (S.c === 'evm' ? TOKLOGO[S.gsym] : S.info.logo), cic = (coinKey && LOGO[coinKey]) || '', nic = LOGO[S.info.logo] || '';
     var warnsL = [], infos = [], det = '';
+    if (S.manFloor && S.level === 'custom') warnsL.push('Your saved custom fee was below the network\u2019s current base fee, so Kwallet raised it for this send. Tap Network fee to change it.');   /* v3.98.33 (B10) */
     if (c.err) warnsL.push(esc(c.err));
     if (feeHigh) warnsL.push('This network fee looks unusually high. Check it before you sign.');
     if (self && !stake && !trust) infos.push('You are sending to your own address.');
@@ -23521,8 +23682,16 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       try { document.body.classList.remove('ksp-on'); window.dispatchEvent(new Event('kw-insets')); } catch (e) {}
     }
   }
-  function closePin(v) { var p = pinOpen; pinOpen = null; var el = $('kss-pin'); if (el) { el.remove(); kspBars(null); } if (p) p(v); }
+  function closePin(v) { if (pinOpen && !$('kss-pin')) { try { KwLock.abort(); } catch (e) {} }   /* pk33 B16 */
+    var p = pinOpen; pinOpen = null; var el = $('kss-pin'); if (el) { el.remove(); kspBars(null); } if (p) p(v); }
   function pinSheet(res, msg) {
+    /* pk33 B16: a pairing request asks for the PIN on Kwallet's real lock screen (same component as the app), one-off */
+    if (REQ && REQ.action === 'pair' && window.KwLock && KwLock.ask) {
+      var po = function (v) { res(v); };
+      var fin = function (v) { if (pinOpen === po) { pinOpen = null; res(v); } };
+      var oldS = $('kss-pin'); if (oldS) oldS.remove();
+      if (KwLock.ask({ sub: msg || 'Pairing request from Hwallet', ok: function () { fin(true); }, cancel: function () { fin(false); } })) { pinOpen = po; return; }
+    }
     var pass = false; try { pass = localStorage.getItem('kw-pin-kind') === 'pass'; } catch (e) {}
     var tries = 0, entry = '', el = document.createElement('div'); el.className = 'ksp' + (pass ? ' ksp-pw' : ''); el.id = 'kss-pin';
     var dk = ((document.body && document.body.getAttribute('data-theme')) || document.documentElement.getAttribute('data-theme') || 'light') === 'dark';
@@ -23918,7 +24087,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       else { t = 'Program ' + esc(short(pid)) + ' (' + ac.length + ' accounts)'; if (unknown.indexOf(pid) < 0) unknown.push(pid); }
       out.ins.push(t);
     });
-    out.unknown = unknown;
+    out.unknown = unknown; out.mayFund = unknown.length > 0 || Object.keys(ops).some(function (q) { return q !== 'transfer'; });   /* v3.98.33 (B14): other instructions may pay SOL to you */
     if (unknown.length) out.notes.push((unknown.length === 1 ? '1 unknown program' : unknown.length + ' unknown programs') + ': ' + unknown.map(function (x) { return esc(short(x)); }).join(', '));
     out.fee = BI(5000 * nsig) + (out.cuPrice * BI(out.cuLimit) + 999999n) / 1000000n;
     /* #82: the priority fee / compute units can be changed only when Kwallet is the one signer and the app set them */
@@ -24086,7 +24255,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (c === 'evm' && !fm2.v.gas) { var g0 = U(((P.tx || {}).gas) || ((P.tx || {}).gasLimit)) || U(R.gasLimit); if (g0 != null) fm2.v.gas = String(g0); }
       DS.last = dappCalc();
       var dx0 = dappCtx(); DS.manFloor = manFloor(c, fm2, dx0); var rm2 = manualToT(c, fm2, dx0);
-      if (!rm2.err) { var T2 = rm2.T; delete T2.jito; if (c === 'sol' && !(DS.view.cbL >= 0)) delete T2.cul; R.cfTxt = T2; DS.level = 'custom'; DS.tier = null; DS.man = fm2; DS.manSaved = true; cfParse(); if (R.cf && R.cf.bad) { DS.level = lv1; delete R.cfTxt; R.cf = null; DS.man = null; DS.manSaved = false; } }
+      if (!rm2.err) { var T2 = rm2.T; delete T2.jito; if (c === 'sol' && !(DS.view.cbL >= 0)) delete T2.cul; R.cfTxt = T2; DS.level = 'custom'; DS.tier = null; DS.man = fm2; DS.manSaved = true; cfParse(); if (R.cf && R.cf.bad) { DS.level = lv1; delete R.cfTxt; R.cf = null; DS.man = null; DS.manSaved = false; } } else DS.manWarn = String(rm2.err || '');
     } catch (e) {} }
     lastFeed = Date.now(); DS.total = Math.max(1000, R.expires - Date.now());
     mount(); dappDraw(); arm(800);
@@ -24321,6 +24490,12 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     else throw new Error('Unsupported request');
     return r;
   }
+  /* v3.98.33 (B14): your net SOL outflow from Hwallet's simulation (null = no simulation) */
+  function solNetOut(R) {
+    var ds = R && R.sim && !R.sim.error && Array.isArray(R.sim.deltas) ? R.sim.deltas : null; if (!ds) return null;
+    var n = 0n; ds.forEach(function (d) { if (!d || !d.nat) return; var v = U(d.v) || 0n; n += d.s === '-' ? v : -v; });
+    return n > 0n ? n : 0n;
+  }
   function dappCalc() {
     var R = DS.R, m = DS.m, c = { err: '', amount: 0n, fee: null }, v = DS.view || {};
     if (m === 'eth_sendTransaction') c = calcDappEvm();
@@ -24328,7 +24503,10 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       var sf = solFee(R, v); c.custom = sf.custom; c.pr = sf.pr; c.lim = sf.lim;
       if (sf.custom && R.cf.bad) c.err = 'Enter a valid network fee.'; else if (sf.custom && (sf.lim < 1000n || sf.lim > 1400000n)) c.err = 'Compute units must be between 1,000 and 1,400,000.';
       c.fee = v.idx === 0 ? sf.fee : 0n; c.gbal = U(R.balance && R.balance.gas); c.amount = v.solOut || 0n;
-      if (!c.err && c.gbal != null && c.fee + c.amount > c.gbal) c.err = 'Not enough SOL for this transaction plus the network fee.';
+      /* v3.98.33 (B14): someone else pays the fee: only your own SOL outflow counts (the simulated net change when there is
+         one; without it, an outflow other instructions of this transaction may fund is not blocked here) */
+      if (v.idx !== 0) { var sno = solNetOut(R); if (sno != null) c.amount = sno; else if (v.mayFund) c.gbal = null; }
+      if (!c.err && c.gbal != null && c.fee + c.amount > c.gbal) c.err = v.idx !== 0 ? 'Not enough SOL for this transaction.' : 'Not enough SOL for this transaction plus the network fee.';
     } else if (P17M[m] && v.p17tx) {
       c.fee = v.fee; c.amount = v.out || 0n; c.atMost = !!v.atMost; c.gbal = U(R.balance && R.balance.gas);
       if (v.chain === 'btc') { c.gbal = null; if (!v.bv.inKnown || v.fee == null) c.err = 'Kwallet cannot see the amount of every input, so it cannot check the fee and will not sign.'; else if (!v.bv.sign.length) c.err = 'Nothing in this PSBT is yours to sign.'; }
@@ -24656,6 +24834,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var notes = '';
     if (stale() && m === 'eth_sendTransaction') notes += HWP.warns(['<b>Waiting for live data.</b> Keep Hwallet open and online. Signing is paused until fresh values arrive.']);
     if (notice) notes += HWP.warns([notice]);
+    if (DS.manFloor && DS.level === 'custom') warnsL.push('Your saved custom fee was below the network\u2019s current base fee, so Kwallet raised it for this transaction. Tap Network fee to change it.');
+    else if (DS.manWarn && DS.level !== 'custom' && !DS.feeUser) warnsL.push('Your saved custom fee can\u2019t be used now (' + esc(String(DS.manWarn).replace(/\.$/, '')) + '), so the normal fee is selected. Tap Network fee to change it.');   /* v3.98.33 (B10) */
     if (c.err) warnsL.unshift(esc(c.err));
     var tl = R.trust === 'bad' ? 'bad' : R.trust === 'ok' ? 'ok' : 'unk';
     /* risks first: right under the title, above the amounts (a phishing sign-in must never sit below the fold) */
@@ -24762,5 +24942,21 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
 })();
 
 </script>
+<script>/* pk33/ph35 B15 og-tail */(function () {
+  if (window.__ogTail) return; window.__ogTail = 1;
+  var Q = '.hp-sheet .hp-mono:not(input):not(textarea), .hp-sheet .hp-w em';
+  function tail() {
+    var l = document.querySelectorAll(Q);
+    for (var i = 0; i < l.length; i++) {
+      var e = l[i]; if (e.children.length) continue;
+      var t = e.textContent, m = t.length > 8 ? /^([\s\S]*?)([0-9A-Za-z]{4})(\W*)$/.exec(t) : null; if (!m || !m[1]) continue;
+      var b = document.createElement('b'); b.className = 'og-t'; b.textContent = m[2];
+      e.textContent = m[1]; e.appendChild(b); if (m[3]) e.appendChild(document.createTextNode(m[3]));
+    }
+  }
+  var pend = 0;
+  function sch() { if (!pend) pend = requestAnimationFrame(function () { pend = 0; try { tail(); } catch (x) {} }); }
+  try { new MutationObserver(function () { if (document.querySelector('.hp-sheet')) sch(); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
+})();</script>
 </body>
 </html>
