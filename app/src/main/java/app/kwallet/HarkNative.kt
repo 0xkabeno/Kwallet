@@ -68,6 +68,17 @@ class HarkNative(
     fun bioClear() { KwKeys.deleteBio() }
 
 
+    /** v3.98.32: Kwallet <-> Hwallet wipe link (see KwLink.kt). The install id goes into each pairing sent to Hwallet;
+     *  kwMirror gets the public seed IDs of every paired seed whenever the pairings change; kwWiped after an in-app erase. */
+    @JavascriptInterface
+    fun kwInstallId(): String = try { KwLinkState.installId(ctx) } catch (_: Exception) { "" }
+
+    @JavascriptInterface
+    fun kwMirror(json: String) { try { KwLinkState.setMirror(ctx, json) } catch (_: Exception) {} }
+
+    @JavascriptInterface
+    fun kwWiped() { try { KwLinkState.wiped(ctx) } catch (_: Exception) {} }
+
     /** Screen Wake Lock for the WebView (Chrome has navigator.wakeLock, WebView doesn't). */
     @JavascriptInterface
     fun keepAwake(on: Boolean) { onAwake(on) }
