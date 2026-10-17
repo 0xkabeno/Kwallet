@@ -31,6 +31,7 @@ import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.webkit.JavaScriptReplyProxy
 import androidx.webkit.WebMessageCompat
+import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import org.json.JSONArray
@@ -83,12 +84,67 @@ class HwBrowser(
         var reloadOnShow = false                          // v1.8.9 (R18): a hidden tab whose user agent changed reloads when shown
         var inc = false                                   // v1.8.13: incognito tab (nothing kept after it closes)
         val incOrigins = HashSet<String>()                // v1.8.13: origins it visited (cleanup when the WebView has no profiles)
+        var ctx: android.view.ContextThemeWrapper? = null // dark pages: the WebView's own theme (its isLightTheme follows the setting)
     }
 
     private val ui = Handler(Looper.getMainLooper())
     private val tabs = HashMap<String, Tab>()
     private var baseUa: String? = null
     init { try { HwShield.init(act); HwUa.init(act) } catch (e: Throwable) { Log.w(TAG, "shield/ua init", e) } }
+    init { try { darkPref = darkNorm(act.getSharedPreferences(DARK_PREFS, android.content.Context.MODE_PRIVATE).getString("mode", darkPref) ?: darkPref) } catch (_: Throwable) {} }
+
+    // ---------------------------------------------------------------- dark pages (Browser ⋮ > Dark pages: Auto / On / Off)
+    // The page sends "on", "off", "auto:dark" or "auto:light" (Auto = Hwallet's theme) through HwNative.brDark; it is kept
+    // here (prefs "hwbr_dark") so tabs opened before the page syncs start right. Hwallet targets SDK 34, so on WebView 105+
+    // (ALGORITHMIC_DARKENING) prefers-color-scheme and darkening follow the WebView context's isLightTheme: every tab's
+    // WebView gets its own ContextThemeWrapper whose theme is switched between Theme.DeviceDefault and .Light (isLightTheme),
+    // and algorithmic darkening is allowed only while dark. Sites with their own dark theme use it; others are darkened.
+    // Older WebViews (no ALGORITHMIC_DARKENING) use the legacy FORCE_DARK + PREFER_WEB_THEME_OVER_USER_AGENT_DARKENING.
+    // Android 7-9 (no isLightTheme attribute) on WebView 105+: pages stay light (WebView limitation).
+    fun dark(v: String) {
+        val n = darkNorm(v); if (n != v) return
+        darkPref = n
+        try { act.getSharedPreferences(DARK_PREFS, android.content.Context.MODE_PRIVATE).edit().putString("mode", n).apply() } catch (_: Throwable) {}
+        post { tabs.values.forEach { t -> t.web?.let { w -> applyDark(t, w); darkCheck(t, w) } } }
+    }
+    private fun darkOn() = darkPref == "on" || darkPref == "auto:dark"
+    /* isLightTheme is set only by the platform's base Theme (false) / Theme.Light (true) lineage, not by the ThemeOverlay.Material.* overlays */
+    private fun darkTheme() = if (darkOn()) android.R.style.Theme_DeviceDefault else android.R.style.Theme_DeviceDefault_Light
+    private fun darkAlgo() = try { WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING) } catch (_: Throwable) { false }
+    @Suppress("DEPRECATION")
+    @SuppressLint("RequiresFeature")
+    private fun applyDark(t: Tab, w: WebView) {
+        val on = darkOn()
+        try { t.ctx?.theme?.applyStyle(darkTheme(), true) } catch (e: Throwable) { Log.w(TAG, "dark theme", e) }
+        try {
+            val s = w.settings
+            if (darkAlgo()) WebSettingsCompat.setAlgorithmicDarkeningAllowed(s, on)
+            else if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+                if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK_STRATEGY))
+                    WebSettingsCompat.setForceDarkStrategy(s, WebSettingsCompat.DARK_STRATEGY_PREFER_WEB_THEME_OVER_USER_AGENT_DARKENING)
+                WebSettingsCompat.setForceDark(s, if (on) WebSettingsCompat.FORCE_DARK_ON else WebSettingsCompat.FORCE_DARK_OFF)
+            }
+        } catch (e: Throwable) { Log.w(TAG, "dark pages", e) }
+    }
+    /** an open page whose prefers-color-scheme did not follow the switch (a WebView that reads the theme only per load)
+     *  reloads: at once on screen, when shown if hidden. Only where this WebView can darken at all. */
+    private fun darkCheck(t: Tab, w: WebView) {
+        val can = (darkAlgo() && Build.VERSION.SDK_INT >= 29) || (!darkAlgo() && (try { WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK) } catch (_: Throwable) { false }))
+        if (!can || t.offline) return
+        val want = darkOn()
+        ui.postDelayed({
+            try {
+                if (t.web !== w || darkOn() != want || !isWeb(w.url)) return@postDelayed
+                w.evaluateJavascript(DARK_JS) { r ->
+                    try {
+                        if ((r == "true" || r == "false") && (r == "true") != want && darkOn() == want && t.web === w) {
+                            if (w.visibility == View.VISIBLE) reloadUa(t, w) else t.reloadOnShow = true
+                        }
+                    } catch (_: Throwable) {}
+                }
+            } catch (_: Throwable) {}
+        }, 400)
+    }
 
     // ---------------------------------------------------------------- v1.8.13: incognito tabs
     // Where the WebView supports profiles (androidx.webkit MULTI_PROFILE, WebView 123+), incognito tabs run in their own
@@ -516,7 +572,8 @@ class HwBrowser(
 
     @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility", "RequiresFeature")
     private fun make(t: Tab): WebView {
-        val w = WebView(act)
+        val ctx = android.view.ContextThemeWrapper(act, darkTheme()); t.ctx = ctx   // dark pages: this tab's own theme
+        val w = WebView(ctx)
         var incProf = false
         if (t.inc && incProfiles) try {
             androidx.webkit.ProfileStore.getInstance().getOrCreateProfile(INC_PROFILE)
@@ -543,6 +600,7 @@ class HwBrowser(
             if (t.inc) { saveFormData = false; if (!incProf) cacheMode = WebSettings.LOAD_NO_CACHE }
         }
         bfcache(w.settings)
+        applyDark(t, w)
         w.isVerticalScrollBarEnabled = false
         if (Build.VERSION.SDK_INT >= 26) w.defaultFocusHighlightEnabled = false
         prio(w, false)
@@ -978,6 +1036,11 @@ class HwBrowser(
     companion object {
         /** v1.7.4 (#108): "og" | "m3" | "miuix", optionally ":dark"; set by the page (HwNative.brPtrUi) */
         @Volatile var ptrUiPref: String = "og"
+        /** dark pages: "on" | "off" | "auto:dark" | "auto:light" (Auto follows Hwallet's theme); set by the page (HwNative.brDark) */
+        @Volatile var darkPref: String = "auto:light"
+        private const val DARK_PREFS = "hwbr_dark"
+        private const val DARK_JS = "(function(){try{return matchMedia('(prefers-color-scheme: dark)').matches}catch(e){return null}})()"
+        fun darkNorm(v: String): String = if (v == "on" || v == "off" || v == "auto:dark" || v == "auto:light") v else "auto:light"
         const val MAX_LIVE = 3   // v1.8.9 (R14): the last 3 tabs stay live; older ones hibernate (saved state + picture)
         const val CAP_TABS = 160L * 1024 * 1024
         const val CAP_ICONS = 400
