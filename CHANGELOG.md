@@ -1,5 +1,18 @@
 # Changelog
 
+## Kwallet v3.98.33 + Hwallet v1.8.35 (2026-10-18)
+
+- Hwallet: Sui dApp requests: Confirm no longer stays greyed out after picking a fee. The SUI balance is read fresh when the sheet opens and a low balance is shown as a warning; the dry run and Kwallet still refuse a gas budget the coins can't cover.
+- Fees stay as you set them, per chain: Send and dApp sheets (now including Sui and XRP Ledger dApp requests) open on the speed or custom fee you last picked for that chain, shown as "Custom · saved". If a saved custom fee is below the network's current minimum it is never replaced silently: Hwallet's Send / dApp sheets and Kwallet's sheet say so and show the minimum.
+- Kwallet: Solana dApp requests where someone else pays the fee: the balance check counts only the SOL that leaves your own wallet and no longer asks for the network fee on top, so these requests are no longer refused by mistake.
+- Hwallet: the Wallets menu shows each seed's chain logo (its most used chain) instead of a letter, and each seed's live total balance, refreshed while the menu is open. Hide balances still hides them.
+- Kwallet: seed names and seed IDs are now kept in backups (encrypted and plain) and in exports (ZIP JSON, PDF, CSV), and restored on import, so restored seeds keep their names and stay matched with their Hwallet pairings. Older backups still restore as before; older Kwallet versions still read new backups.
+- Hwallet Browser: Chromium-style address bar with history and suggestions as you type.
+- Hwallet Browser: native autofill dropdown under login, email and address fields (like Chrome), and a Save / Update password prompt after you sign in. Note: saved passwords now need your phone's screen lock (PIN, pattern, password or biometrics) before they are filled or shown.
+- Send and dApp sheets in both apps carry the OG Kwallet badge, and the sheets open and scroll more smoothly.
+- Kwallet: the pairing, signing and Send sheets use Kwallet's OG card design (stacked panels, K chips, highlighted address ends) in the charcoal palette.
+- Kwallet: pairing from Hwallet now uses Kwallet's real lock screen, opens faster, and does not lock or unlock Kwallet's own session.
+
 ## Kwallet v3.98.32 + Hwallet v1.8.34 (2026-10-17)
 
 - Privacy fix: Hwallet no longer keeps wallets of seeds that Kwallet no longer holds. When Kwallet's data is cleared (Android Settings > Storage > Clear data), Kwallet is uninstalled, Kwallet is erased in the app, or a seed is unpaired in Kwallet, Hwallet erases those wallets: every address number, balances, activity and history, swaps, recent recipients from that history, the Monero view key with its scan state and sync files, Browser site connections and WalletConnect sessions of those addresses.
