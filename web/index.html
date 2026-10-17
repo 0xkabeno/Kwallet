@@ -1635,6 +1635,15 @@
   .seed-wrap .seed { padding-bottom: 24px; }
   .pp-row { position: absolute; right: 5px; bottom: 4px; z-index: 2; }
   .pp-row[hidden] { display: none; }
+  .pp-row { display: inline-flex; align-items: center; gap: 5px; max-width: calc(100% - 90px); }
+  .pp-row .pp-chip[hidden] { display: none; }
+  .pp-chip.kw-nm { max-width: 110px; min-width: 0; }
+  .pp-chip.kw-nm .pp-lb { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pp-chip.kw-sid { font-variant-numeric: tabular-nums; letter-spacing: .4px; }
+  .pp-chip.kw-nm.set { color: var(--text); opacity: .9; }
+  .kwd .kwd-in { display: block; box-sizing: border-box; width: calc(100% - 48px); margin: 4px 24px 0; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: inherit; font: 400 16px/1 inherit; outline: none; }
+  .kwd .kwd-in:focus { border-color: var(--accent); }
+  .kwd .kwd-hint { margin: 8px 24px 0; font-size: 12px; opacity: .65; }
   .pp-chip { height: 18px; padding: 0 7px; gap: 3px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; font: 700 9px/1 system-ui, sans-serif; letter-spacing: .3px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-muted); cursor: pointer; opacity: .75; }
   .pp-chip:active { transform: scale(.92); }
   [data-theme="light"] .pp-chip.on { color: #fff; }
@@ -5405,6 +5414,8 @@ window.FX = (function(){
       <span class="wc-chip" id="seed-wc" hidden></span>
       <div class="imp-hint" id="imp-hint" aria-hidden="true"><b>Import mode</b><span>Type or paste your recovery phrase · tap here to go back</span></div>
       <div class="pp-row" id="pp-row" hidden>
+        <button type="button" class="pp-chip kw-nm" id="kw-nm" aria-label="Seed name, tap to rename"><span class="pp-lb">Name</span></button>
+        <button type="button" class="pp-chip kw-sid" id="kw-sid" aria-label="Seed ID, tap to copy"><span class="pp-lb">ID</span></button>
         <button type="button" class="pp-chip" id="pp-chip" onclick="openPassphraseModal()" title="Optional BIP39 passphrase (25th word)" aria-label="BIP39 passphrase"><span class="pp-lb">Passphrase OFF</span></button>
       </div>
     </div>
@@ -12440,7 +12451,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98.30';
+const APP_VERSION = '3.98.31';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -16298,7 +16309,8 @@ function updatePassphraseChip() {
   var row = document.getElementById('pp-row'), chip = document.getElementById('pp-chip');
   if (!row || !chip) return;
   var show = !!currentMnemonic && currentSeedType === 'bip39';
-  row.hidden = !show;
+  row.hidden = !currentMnemonic; chip.hidden = !show; /* v3.98.31: the row also holds the seed name and seed ID */
+  try { if (window.kwSidChips) kwSidChips(); } catch (e) {}
   var on = show && !!currentPassphrase;
   chip.classList.toggle('on', on);
   chip.title = on ? 'Passphrase ON \u2014 tap to change' : 'Add BIP39 passphrase (optional)';
@@ -16429,7 +16441,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       (window.HarkNative && HarkNative.setAppIcon ? row('kws-icon', 'M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z', 'App icon', null, '<span class="kws-ico" role="radiogroup"><span data-i="lime" role="radio" aria-label="Lime"><b>K</b></span><span data-i="navy" role="radio" aria-label="Navy"><b>K</b></span></span>') : '') +
       row('kws-replay', I.play, 'Play opening screen', null) +
       row('kws-ui', 'M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z', 'UI style', '') + /* v3.98.2 (push 8 #4): UI style sits in Appearance (no one-row Look section) */
-      '</div><div class="kws-sec">Hwallet</div><div class="kws-grp">' + row('kws-hw', 'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z', 'Hwallet signer', '') + row('kws-hwpin', 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z', 'Require PIN to sign', '', '<span class="kws-sw" aria-hidden="true"></span>') +
+      '</div><div class="kws-sec">Hwallet</div><div class="kws-grp">' + row('kws-hwpin', 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z', 'Require PIN to sign', '', '<span class="kws-sw" aria-hidden="true"></span>') +
       '</div><div class="kws-sec">Security</div><div class="kws-grp">' +
       row('kws-lock', I.lock, 'App lock', '', '<span class="kws-sw" aria-hidden="true"></span>') +
       (window.HarkNative && HarkNative.bioStatus ? row('kws-bio', I.fp, 'Biometric unlock', '', '<span class="kws-sw" aria-hidden="true"></span>') : '') +
@@ -16481,7 +16493,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
       try { if (window.KwDB && KwDB.flush) KwDB.flush().then(go, go); else go(); } catch (x) { go(); }
     };
     $('kws-replay').onclick = function () { closeSettings(); if (window.KwLock && KwLock.replay) KwLock.replay(); };
-    $('kws-hw').onclick = function () { tick(); if (window.KwHw) KwHw.open(); };
+    if ($('kws-hw')) $('kws-hw').onclick = function () { tick(); if (window.KwHw) KwHw.open(); };
     $('kws-ui').onclick = function () { tick(); if (window.KwUi) KwUi.choose(function () { sync(); }); };
     $('kws-hwpin').onclick = function () { tick(); if (window.KwHw) { KwHw.setReqPin(!KwHw.reqPin()); try { FX.buzz(10); } catch (x) {} } sync(); };
     document.addEventListener('kwallet-pinmode', sync);
@@ -22004,7 +22016,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
         await new Promise(function (r) { setTimeout(r, 0); });
       }
     }
-    var n = 0;
+    var n = 0, NM = nGet();
+    out.forEach(function (o) { if (o.sid && NM[o.sid]) { o.label = NM[o.sid]; o.named = true; } });
     out.forEach(function (o) { o.kind = seedKind(o.st, o.m) + (o.p ? ' + passphrase' : ''); o.recs.sort(function (a, b) { return (a.index | 0) - (b.index | 0); }); if (!o.label) o.label = 'Seed ' + (++n); });
     return out;
   }
@@ -22153,6 +22166,67 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       };
     });
   }
+  /* ---------- v3.98.31: a name the user gives each seed, kept by seed ID ---------- */
+  var NK = 'kw-seed-names';
+  function nGet() { var o = jget(NK, {}); return o && typeof o === 'object' ? o : {}; }
+  function nameOf(sid) { return sid ? String(nGet()[sid] || '') : ''; }
+  function nameSet(sid, v) {
+    if (!/^\d{10}$/.test(sid || '')) return;
+    v = String(v || '').replace(/\s+/g, ' ').trim().slice(0, 24);
+    var a = nGet(); if (v) a[sid] = v; else delete a[sid];
+    try { localStorage.setItem(NK, JSON.stringify(a)); } catch (e) {}
+    if (!v) return;
+    try { var L = load(), ch = false; L.forEach(function (r) { if (r.sid === sid && r.label !== v) { r.label = v; ch = true; } }); if (ch) save(L); } catch (e) {}
+    try { var P = jget(PUB, []), c2 = false; if (Array.isArray(P)) P.forEach(function (r) { if (r.sid === sid && r.label !== v) { r.label = v; c2 = true; } }); if (c2) localStorage.setItem(PUB, JSON.stringify(P)); } catch (e) {}
+  }
+  var chipK = '', chipS = '', chipT = 0;
+  function chipPaint() {
+    var nb = $('kw-nm'), ib = $('kw-sid'); if (!nb || !ib) return;
+    var nm = nameOf(chipS);
+    nb.querySelector('.pp-lb').textContent = nm || 'Name'; nb.classList.toggle('set', !!nm); nb.title = nm ? nm + ' \u2014 tap to rename' : 'Name this seed';
+    ib.querySelector('.pp-lb').textContent = chipS ? sidFmt(chipS) : 'ID \u2026'; ib.disabled = !chipS;
+    nb.disabled = !chipS;
+  }
+  function kwSidChips() {
+    var nb = $('kw-nm'); if (!nb) return;
+    var m = ''; try { m = (typeof currentMnemonic !== 'undefined' && currentMnemonic) || ''; } catch (e) {}
+    if (!m) { chipK = ''; chipS = ''; chipPaint(); return; }
+    var st = ''; try { st = (typeof currentSeedType !== 'undefined' && currentSeedType) || detectSeedType(m); } catch (e) { st = 'bip39'; }
+    var p = ''; try { p = st === 'bip39' && typeof currentPassphrase === 'string' ? currentPassphrase : ''; } catch (e) {}
+    var mm = String(m).trim().split(/\s+/).join(' '), key = mm + '|' + p;
+    if (key === chipK) { chipPaint(); return; }
+    chipK = key; chipS = SIDC[key] || ''; chipPaint();
+    if (chipS) return;
+    clearTimeout(chipT);
+    chipT = setTimeout(function () {
+      if (chipK !== key) return;
+      Promise.resolve().then(function () { return seedSidOf(mm, p, st); }).then(function (s) { if (s) SIDC[key] = s; if (chipK === key) { chipS = s || ''; chipPaint(); } }, function () {});
+    }, 120);
+  }
+  window.kwSidChips = kwSidChips;
+  function renameAsk(sid) {
+    var d = document.createElement('div'); d.className = 'kwd-ov'; d.style.zIndex = '9700';
+    d.innerHTML = '<div class="kwd" role="dialog" aria-modal="true"><h3>Name this seed</h3><input class="kwd-in" maxlength="24" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" placeholder="Main, Savings, Cold\u2026" aria-label="Seed name"><div class="kwd-hint">Seed ID ' + sidFmt(sid) + ' \u00b7 Hwallet shows this name</div>' +
+      '<div class="kwd-act"><button type="button" data-x>Cancel</button><button type="button" data-ok>Save</button></div></div>';
+    document.body.appendChild(d); void d.offsetWidth; d.classList.add('show');
+    var inp = d.querySelector('.kwd-in'); inp.value = nameOf(sid);
+    setTimeout(function () { try { inp.focus(); inp.select(); } catch (e) {} }, 80);
+    var close = function () { d.classList.remove('show'); setTimeout(function () { d.remove(); }, 160); };
+    var ok = function () { nameSet(sid, inp.value); close(); chipPaint(); buzz(8); toast(inp.value.trim() ? 'Seed named' : 'Name removed'); };
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); ok(); } });
+    d.addEventListener('click', function (e) { if (e.target.closest('[data-ok]')) return ok(); if (e.target === d || e.target.closest('[data-x]')) close(); });
+  }
+  (function chipInit() {
+    var go = function () {
+      var nb = $('kw-nm'), ib = $('kw-sid'); if (!nb || !ib) return;
+      nb.addEventListener('click', function (e) { e.stopPropagation(); if (!chipS) return; buzz(6); renameAsk(chipS); });
+      ib.addEventListener('click', function (e) { e.stopPropagation(); if (!chipS) return; var s = sidFmt(chipS); copyToClipboard(s).then(function () { toast('Seed ID ' + s + ' copied'); buzz(8); }, function () {}); });
+      var sd = $('seed-display'), t = 0;
+      if (sd && window.MutationObserver) new MutationObserver(function () { clearTimeout(t); t = setTimeout(kwSidChips, 40); }).observe(sd, { childList: true, characterData: true, subtree: true });
+      kwSidChips();
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  })();
   /* Kwallet's own small dialog (Settings > UI style look) */
   function kwdAsk(title, opts, cb) {
     var d = document.createElement('div'); d.className = 'kwd-ov'; d.style.zIndex = '9700';
@@ -22572,7 +22646,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var st = function (n, t, s) { return '<div class="kss-st"><b>' + n + '</b><span>' + t + (s ? '<small>' + s + '</small>' : '') + '</span></div>'; };
     page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(HWP.head({ icon: HWICON, name: 'Hwallet', sub: 'Pairing request' }) + HWP.title('Pair a seed first') +
       '<div class="hp-lead">Kwallet has no seed yet. Create or import one, then pair again.</div>' +
-      HWP.card(st(1, 'Open Kwallet', 'From your home screen, not from Hwallet') + st(2, 'Show the seed that holds your funds', 'Generate or import it as usual') + st(3, 'Settings \u203a Hwallet signer \u203a Pair', 'Pick a name and tap Pair') + st(4, 'Come back to Hwallet', 'Tap Pair with Kwallet again')),
+      HWP.card(st(1, 'Open Kwallet', 'From your home screen, not from Hwallet') + st(2, 'Show the seed that holds your funds', 'Generate or import it as usual') + st(3, 'Come back to Hwallet', 'Tap Pair with Kwallet, pick the seed and its address number')),
       '<div class="hp-act"><button type="button" class="hp-btn hp-no" id="kss-close">Got it</button></div>') + '</div>';
     $('kss-close').onclick = page.querySelector('[data-hp-x]').onclick = function () { finish({ status: 'rejected', error: 'nopair' }); };
     buzz([30, 40, 30]);
