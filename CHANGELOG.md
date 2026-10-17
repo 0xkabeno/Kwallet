@@ -1,5 +1,23 @@
 # Changelog
 
+## Kwallet v3.98.32 + Hwallet v1.8.34 (2026-10-17)
+
+- Privacy fix: Hwallet no longer keeps wallets of seeds that Kwallet no longer holds. When Kwallet's data is cleared (Android Settings > Storage > Clear data), Kwallet is uninstalled, Kwallet is erased in the app, or a seed is unpaired in Kwallet, Hwallet erases those wallets: every address number, balances, activity and history, swaps, recent recipients from that history, the Monero view key with its scan state and sync files, Browser site connections and WalletConnect sessions of those addresses.
+- It happens at once, also when Hwallet is closed: a cleared or removed Kwallet is caught by Android's own notice, and Kwallet tells Hwallet itself when it is erased or a seed is unpaired. If Hwallet missed it (closed by force, phone off), it checks with Kwallet each time it opens or comes back, before any wallet is shown.
+- Kwallet being locked, closed or not answering changes nothing in Hwallet; only an erase, a data clear, an uninstall or an unpaired seed does.
+- Addresses typed into Hwallet by hand (watch only) stay, as a Watch-only wallet. With no wallet left, Hwallet opens on Pair with Kwallet.
+- Hwallet says what happened in one short notice, e.g. "Kwallet's data was cleared. Hwallet erased its paired wallets. Pair again to continue." or "Seed 4821-0937-52 was removed in Kwallet. Its wallet was erased from Hwallet."
+- Kwallet: Erase everything and Export with erase now also remove the Hwallet pairings and their public index. Hwallet only learns Kwallet's install ID and the public seed IDs of paired seeds; no PIN, no keys, no addresses. Only the two apps, signed with the same key, can use this link.
+- Kwallet: the "12 words" chip on the seed card keeps its normal size in every UI style; it no longer grows over the last line of words.
+- Kwallet: the signing PIN page (Hwallet asks Kwallet to sign) wears Kwallet's own look in light and dark, opens at once with no intro animation, and covers the status and navigation bar areas with readable bar icons.
+- Kwallet: the word-count picker (12 Standard / 15 / 18 / 21 / 24 Strong / 16 Poly / 25 XMR) is an even, edge-to-edge row in OG, Material and MIUIX, light and dark; on narrow screens it wraps into an even 4 + 3 grid. No more tall bubbles or "Stan…".
+- Kwallet: the review shows Hwallet's custom fee as "Custom" and says when a fee is set by the app (Solana, Bitcoin PSBT) or by the Cardano protocol.
+- Hwallet: Pair with Kwallet page redesigned in Kwallet's look (lime accent, RobotoE, K cards and chips), light and dark. Pair with Kwallet, pair by seed ID, watch-only addresses and the privacy note all stay.
+- Hwallet: Monero scan start is one compact sheet ("Scan from": New · Date · Block · Everything, one input, Start scan). A paired Monero wallet now starts scanning by itself from the restore height Kwallet sends and syncs spent status at the start; the sheet stays as an optional way to change the start.
+- Hwallet: the dark Send sheet and the dApp request sheets are solid and readable in both themes (amount, address, fee and chips no longer vanish), tighter and more polished.
+- Hwallet: the network fee can be changed on Send and on dApp requests: Slow / Normal / Fast plus Custom where the chain allows (Bitcoin sat/vB, XRP drops, Sui gas price and budget, Solana priority fee, EVM gas fields). For an app-built transaction Hwallet rewrites only the fee fields before Kwallet signs; co-signed or pre-signed transactions and Cardano's protocol fee are shown as fixed, with the reason.
+- Hwallet Browser: new Dark pages setting in the ⋮ menu (Auto follows Hwallet's theme / On / Off). Uses the site's own dark theme first, otherwise Android's automatic darkening.
+
 ## Kwallet v3.98.31 + Hwallet v1.8.33 (2026-10-16)
 
 - Kwallet: the Pair Hwallet option is gone from Settings. Pairing starts only from Hwallet (Pair with Kwallet): Kwallet unlocks once with PIN or biometrics, shows every seed, and you pick the seed and any address number.
