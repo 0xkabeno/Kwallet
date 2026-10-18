@@ -666,6 +666,10 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun kwPendingDone(at: String) { try { KwWipe.done(this@HwActivity, at.toLong()) } catch (_: Throwable) {} }
 
+        /** v1.8.38 (B24): Kwallet's seed names {sid: name} as last pushed or answered ("" = none yet); Hwallet shows these */
+        @android.webkit.JavascriptInterface
+        fun kwNames(): String = KwWipe.names(this@HwActivity)
+
         /** the Kwallet-paired wallets (id, seed ID, install id, Monero addresses), so a purge can erase their native copies
          *  even while the page is not running */
         @android.webkit.JavascriptInterface
@@ -966,6 +970,8 @@ class HwActivity : FragmentActivity() {
         HwActDb.listener = { wid, json -> actPatch(wid, json) }
         /* v1.8.34: Kwallet cleared / uninstalled / erased / a seed removed while this screen is up: the page applies it now */
         KwWipe.onPurge = { runOnUiThread { try { if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwKwPurge&&hwKwPurge()", null) } catch (_: Throwable) {} } }
+        /* v1.8.38 (B24): a seed renamed in Kwallet while this screen is up: the page shows the new name now */
+        KwWipe.onNames = { runOnUiThread { try { if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwKwNames&&hwKwNames()", null) } catch (_: Throwable) {} } }
         HwNet.onChange = { runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript("window.hwNetChanged&&hwNetChanged()", null) } catch (_: Throwable) {} } }
         // v1.3 (#42): the always-on listener is NOT started here any more. The page starts it through setLive()
         // after it has loaded, when Hwallet is resumed (see startLiveSafe).
@@ -1320,7 +1326,7 @@ class HwActivity : FragmentActivity() {
         if (pendingLive) ui.postDelayed({ if (pendingLive) startLiveSafe() }, 300)
         ui.postDelayed({ warmKwallet() }, 2500)  // P2a: keep Kwallet's sign sheet quick to open while Hwallet is in use
     }  // OEMs drop back to 60 Hz after resume
-    override fun onDestroy() { try { br?.destroy(); br = null } catch (_: Throwable) {}; try { socks.values.forEach { it.cancel() }; socks.clear(); HwActDb.listener = null; KwWipe.onPurge = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
+    override fun onDestroy() { try { br?.destroy(); br = null } catch (_: Throwable) {}; try { socks.values.forEach { it.cancel() }; socks.clear(); HwActDb.listener = null; KwWipe.onPurge = null; KwWipe.onNames = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
 }
 
 /** Smooth rendering like Chrome: highest refresh rate, no overscroll glow.
