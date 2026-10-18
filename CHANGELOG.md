@@ -1,5 +1,16 @@
 # Changelog
 
+## Kwallet v3.98.35 + Hwallet v1.8.37 (2026-10-18)
+
+- Kwallet: the pairing PIN screen is now Kwallet's real lock screen: "Enter PIN" with no subtitle, the same logo, dots and keypad positions, the fingerprint key and "Forgot PIN?". The fingerprint continues pairing without unlocking Kwallet itself. Android Back cancels pairing and Hwallet is told it was rejected. Forgot PIN? cancels pairing (nothing is erased) and Kwallet's own Forgot PIN dialog opens the next time you open Kwallet.
+- Kwallet: the pairing sheet uses the same design as the Send and dApp signing sheets: the "Request from Hwallet" line, a "Pair" title, the same cards, fonts and rows, and the same Cancel / Pair buttons.
+- Custom fees on every chain that allows them, saved per chain until you change or reset them (shown as "Custom · saved"):
+  - Monero: Custom no longer falls back to Normal; you pick priority 1–4, and it is used to build the transaction.
+  - Cardano: custom fee in ADA (never below the network minimum, at most 5 ADA).
+  - Kwallet's Send sheet can now edit custom fees for Bitcoin, XRP and Sui as well as EVM, Solana and Tron tokens.
+  - A saved custom fee survives restarts, account switches, lock/unlock and live fee updates. If it can't be used for one send, Normal is used with a warning and the saved fee is kept.
+  - Bitcoin PSBT and Cardano dApp transactions keep the dApp's fee, since changing it would break the dApp's transaction.
+
 ## Kwallet v3.98.34 + Hwallet v1.8.36 (2026-10-18)
 
 - Kwallet: the pairing sheet (Pair with Hwallet) is compact and solid: one header row with the Kwallet badge only (no Hwallet logo), seeds as one flat list of 56px one-line rows (name with type, word count and seed ID on a single quiet line, no chips), and the address number with Cancel / Pair pinned in the footer. The sheet fits its content, with no wasted space.
