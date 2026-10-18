@@ -1,5 +1,17 @@
 # Changelog
 
+## Kwallet v3.98.36 + Hwallet v1.8.38 (2026-10-18)
+
+- Kwallet: the pairing sheet is now a clone of the Send sheet. It has the same header, "Request from Hwallet", a "Pair" title, the chosen seed in the asset card, seeds as Send-style rows with aligned values, Address number in the Wallet row, the same note and Details (seed ID, type, words), and Cancel / Pair. The selected seed is highlighted inside the card, never clipped.
+- Hwallet always follows Kwallet: renaming a seed in Kwallet updates Hwallet at once, and Hwallet re-reads the names each time it opens. In Hwallet, names of Kwallet seeds are read-only.
+- Hwallet's real logo (lime circle, navy H, or the navy icon if chosen) now shows in dApp wallet pickers (Solana, EVM, Sui, XRPL, BTC, Cardano) and in WalletConnect.
+- Solana: a token that drops to 0 (e.g. USDC) no longer keeps showing its old balance.
+- Tron Send: the recipient is checked on-chain. A not-yet-activated recipient is shown with the 1 TRX activation fee (+0.1 TRX when staked bandwidth doesn't cover it) in the fee and total, in Hwallet and Kwallet. Token (TRC-20) sends don't activate the recipient, so they show no activation fee.
+- Solana token Send: shows whether the recipient already has a token account. If not, it shows "Opens a token account" with the live rent added to the fee and total, and the account is created in the same transaction.
+- New: ⋮ next to Chains on Hwallet's home opens Solana and Sui cleanup panels.
+  - Solana: lists your token accounts live. For each one, choose Close (empty accounts) or Burn (tokens worth under $0.10), and see the SOL you get back per account and in total. Kwallet signs.
+  - Sui: merge and delete empty coin objects to get the storage SUI back, or burn tokens worth under $0.10 (sent to 0x0). SUI itself is never offered. Kwallet signs.
+
 ## Kwallet v3.98.35 + Hwallet v1.8.37 (2026-10-18)
 
 - Kwallet: the pairing PIN screen is now Kwallet's real lock screen: "Enter PIN" with no subtitle, the same logo, dots and keypad positions, the fingerprint key and "Forgot PIN?". The fingerprint continues pairing without unlocking Kwallet itself. Android Back cancels pairing and Hwallet is told it was rejected. Forgot PIN? cancels pairing (nothing is erased) and Kwallet's own Forgot PIN dialog opens the next time you open Kwallet.
