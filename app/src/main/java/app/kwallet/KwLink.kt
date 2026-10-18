@@ -26,6 +26,10 @@ import java.security.SecureRandom
  * Hwallet reads both through [KwLinkProvider] (exported, signature permission, plus a caller uid + signature check). Kwallet
  * also tells Hwallet at once when seeds go or Kwallet is erased: an explicit broadcast to Hwallet's KwEventReceiver that only
  * an app signed with the Kwallet key can send or receive.
+ *
+ * v3.98.36 (B24): Hwallet always follows Kwallet's seed names. The mirror also holds {seed ID: name} of the paired seeds; a
+ * changed name is pushed at once ("names" event, same broadcast) and the provider's "state" answer carries them too, so
+ * Hwallet re-reads them every time it opens or comes back. Names are public labels the user typed; no keys, no addresses.
  */
 object KwLinkState {
     const val HWALLET = "app.hwallet"
@@ -52,19 +56,41 @@ object KwLinkState {
         return out
     }
 
-    /** from the page: {"sids":["4821093752",...],"partial":false}. Seeds that left the mirror are announced to Hwallet. */
+    /** v3.98.36 (B24): the seed names Hwallet shows, by seed ID ({sid: name}), only for seeds in [keep]. A name is the one the
+     *  user gives the seed in Kwallet (24 chars at most, no control characters). Hwallet keeps no names of its own. */
+    private fun namesOf(o: JSONObject?, keep: Set<String>): JSONObject {
+        val out = JSONObject(); val n = o?.optJSONObject("names") ?: return out
+        for (k in n.keys()) {
+            if (k !in keep || !SID.matches(k)) continue
+            val v = n.optString(k, "").replace(Regex("[\\p{Cntrl}]"), " ").replace(Regex("\\s+"), " ").trim().take(24)
+            if (v.isNotEmpty()) out.put(k, v)
+        }
+        return out
+    }
+
+    /** the names of the stored mirror, for the provider's answer */
+    fun names(c: Context): JSONObject { val m = mirror(c); return namesOf(m, sidsOf(m)) }
+
+    /** from the page: {"sids":["4821093752",...],"partial":false,"names":{"4821093752":"Main"}}. Seeds that left the mirror
+     *  are announced to Hwallet ("gone"); names that changed are pushed to Hwallet at once ("names"). */
     fun setMirror(c: Context, json: String) {
         if (json.length > 64_000) return
         val inp = try { JSONObject(json) } catch (_: Exception) { return }
         val gone: List<String>
+        val renamed = JSONObject()
         synchronized(lock) {
             val old = mirror(c)
             val now = sidsOf(inp)
-            val o = JSONObject().put("sids", JSONArray(now.toList())).put("partial", inp.optBoolean("partial", false)).put("at", System.currentTimeMillis())
+            /* an older page sends no names: keep the stored ones of the seeds that are still paired */
+            val nm = if (inp.has("names")) namesOf(inp, now) else namesOf(old, now)
+            val o = JSONObject().put("sids", JSONArray(now.toList())).put("partial", inp.optBoolean("partial", false)).put("names", nm).put("at", System.currentTimeMillis())
             prefs(c).edit().putString("mirror", o.toString()).commit()
             gone = if (old == null) emptyList() else sidsOf(old).filter { it !in now }
+            val was = namesOf(old, sidsOf(old))
+            for (k in nm.keys()) if (was.optString(k, "") != nm.optString(k)) renamed.put(k, nm.optString(k))
         }
         if (gone.isNotEmpty()) notifyH(c, "gone", gone)
+        if (renamed.length() > 0) notifyH(c, "names", renamed.keys().asSequence().toList(), renamed)
     }
 
     /** an in-app erase (Clear > Erase everything, the forgotten-PIN erase, Export + erase): new install id, empty mirror,
@@ -84,12 +110,13 @@ object KwLinkState {
     } catch (_: Exception) { false }
 
     /** explicit broadcast to Hwallet only (component + package), receivable only with the signature permission */
-    fun notifyH(c: Context, ev: String, sids: List<String>) {
+    fun notifyH(c: Context, ev: String, sids: List<String>, names: JSONObject? = null) {
         if (!hwalletOk(c)) return
         try {
             val i = Intent(EVENT).setClassName(HWALLET, "$HWALLET.KwEventReceiver")
                 .putExtra("ev", ev).putExtra("sids", sids.filter { SID.matches(it) }.take(500).toTypedArray()).putExtra("at", System.currentTimeMillis())
                 .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES or Intent.FLAG_RECEIVER_FOREGROUND)
+            if (names != null) i.putExtra("names", names.toString())
             c.applicationContext.sendBroadcast(i, PERM)
             Log.i("KwLink", "told Hwallet: $ev (${sids.size})")
         } catch (e: Exception) { Log.w("KwLink", "notify failed: $e") }
@@ -118,11 +145,12 @@ class KwLinkProvider : ContentProvider() {
         val sids = ArrayList<String>()
         m?.optJSONArray("sids")?.let { a -> for (i in 0 until a.length()) sids.add(a.optString(i)) }
         return Bundle().apply {
-            putInt("v", 1)
+            putInt("v", 2)
             putString("kid", KwLinkState.installId(c))
             putBoolean("ready", m != null)
             putBoolean("partial", m?.optBoolean("partial", false) ?: false)
             putStringArray("sids", sids.toTypedArray())
+            putString("names", KwLinkState.names(c).toString())   // v3.98.36 (B24): Hwallet shows these names, read on every open / resume
         }
     }
 
