@@ -4042,7 +4042,7 @@ window.hwPlayOpening();
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
       var c = String(d.command), dt = d.data || {}, job;
-      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.36' });
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.37' });
       else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
       else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
       else if (c === 'network') job = Promise.resolve({ network: XNET });
@@ -4107,7 +4107,7 @@ window.hwPlayOpening();
       isHwallet: true,
       request: function (method, params) {
         var id = 'hw' + Date.now().toString(36), p = params || {}, job;
-        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.36', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.37', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
         else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
           job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
         else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
@@ -7106,6 +7106,20 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
       if (sgb > 50000000000n) return { err: 'The gas budget can be at most 50 SUI.' };
       return { fee: sgb, capped: true, T: { gp: String(sgp), gb: mDs(sgb, 9) }, L: { gasPrice: String(sgp), budget: String(sgb) } };
     }
+    /* v1.8.37 (B19): Monero = wallet2 priority 1..4 (fee per byte quoted by the node for each, times the transaction weight,
+       rounded up to the quantization mask: an estimate; wallet2 sets the exact fee when it builds). Cardano = fee in ADA. */
+    if (x.chain === 'xmr') {
+      var pm = /^\s*([1-4])/.exec(String(v.pr == null ? '' : v.pr)); if (!pm) return { err: 'Pick a priority from 1 to 4.' };
+      var pr = +pm[1], fs = x.fees || []; if (!fs.length) return { err: 'Waiting for the Monero node\u2019s fee quote.' };
+      var fpb = B(fs[Math.min(pr, fs.length) - 1]), q = B(x.q || 10000), wt = B(x.w || 1600), xf = fpb * wt; xf = (xf + q - 1n) / q * q;
+      return { fee: xf, T: { pr: String(pr) }, L: { lvl: ['slow', 'medium', 'fast', 'fastest'][pr - 1], prio: pr, fpb: String(fpb), fee: xf.toString() } };
+    }
+    if (x.chain === 'ada') {
+      var af = mPU(v.fee, 6), amn = B(x.min || 0); if (af == null || af <= 0n) return { err: 'Enter a fee in ADA.' };
+      if (af > 5000000n) return { err: 'The fee can be at most 5 ADA.' };
+      if (amn > 0n && af < amn) return { err: 'At least the protocol minimum (about ' + mDs(amn, 6) + ' ADA).' };
+      return { fee: af, T: { fee: mDs(af, 6) }, L: { adaFee: af.toString() } };
+    }
     return { err: 'Custom fees are not available here.' };
   }
   function manSpec(x) {
@@ -7130,6 +7144,14 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
     if (x.chain === 'sui') return { seg: false, fields: [
       { k: 'gp', l: 'Gas price', unit: 'MIST', value: pv.gp != null ? pv.gp : String(x.gp || x.rgp || 750), info: 'Per unit of gas. At least the reference price' + (x.rgp ? ' (' + x.rgp + ' MIST)' : '') + '; a higher price goes first when the network is busy.' },
       { k: 'gb', l: 'Gas budget', unit: 'SUI', value: pv.gb != null ? pv.gb : mDs(BigInt(x.gb || 0), 9), info: 'The most this transaction can cost. Gas not used is not charged.', usd: function (t) { return uo(mPU(t, 9)); } }], total: tot, hint: 'Too low a budget and the transaction fails and still costs gas.' };
+    /* v1.8.37 (B19) */
+    if (x.chain === 'xmr') return { seg: false, fields: [{ k: 'pr', l: 'Priority', unit: '', presets: ['1 Low', '2 Normal', '3 Elevated', '4 Priority'], value: pv.pr != null ? ({ 1: '1 Low', 2: '2 Normal', 3: '3 Elevated', 4: '4 Priority' }[String(pv.pr).charAt(0)] || '2 Normal') : '4 Priority',
+        info: 'Monero\u2019s own fee levels (wallet2). Each level multiplies the fee per byte; miners take higher levels first. The wallet builds the transaction with this level and Kwallet signs that exact fee.',
+        usd: function (t) { var r = manToT(x, { v: { pr: t } }); return r.err ? '' : '\u2248 ' + mFm(r.fee, 12, 8) + ' XMR' + (uo(r.fee) ? ' \u00b7 ' + uo(r.fee) : ''); } }], total: tot,
+      hint: 'Saved for Monero until you change it. Pick a speed above to go back to the default.' };
+    if (x.chain === 'ada') return { seg: false, fields: [{ k: 'fee', l: 'Fee', unit: 'ADA', value: pv.fee != null ? pv.fee : mDs(BigInt(x.est || x.min || 170000), 6),
+        info: 'Cardano needs at least the protocol minimum for the transaction size. You can pay more; Kwallet never signs less than the exact minimum.', usd: function (t) { return uo(mPU(t, 6)); } }], total: tot,
+      hint: 'Saved for Cardano until you change it. Pick Normal above to go back to the protocol minimum.' };
     return null;
   }
   function manSub(x, st) { var r = st ? manToT(x, st) : null; return r && !r.err ? (r.capped ? 'Up to ' : '') + mFm(r.fee, x.dec, x.dec) + ' ' + x.sym : ''; }
@@ -7227,7 +7249,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.36';
+var APP_VERSION = '1.8.37';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -9136,7 +9158,7 @@ var APP_VERSION = '1.8.36';
      Send: Bitcoin (sat/vB), XRP (drops) and Sui (gas price + budget) get Custom next to their speeds; Kwallet receives the
      custom values as the fee level "manual" (it builds and signs with exactly that level and shows its fee). Cardano and a
      plain TRX transfer have no fee to set: the row says why. */
-  var CMCH = { btc: 1, xrp: 1, sui: 1 };
+  var CMCH = { btc: 1, xrp: 1, sui: 1, xmr: 1, ada: 1 };   /* v1.8.37 (B19): + Monero (wallet2 priority), Cardano (fee) */
   function sndCmSync() {
     if (!SND || !SND.d || !SND.d.levels || !CMCH[SND.ch]) return;
     var d = SND.d;
@@ -9357,7 +9379,7 @@ var APP_VERSION = '1.8.36';
       if (SND.ch === 'sol') { ks = ks.filter(function (k) { return k !== 'slow'; }); ks.push('x4'); }
       if (SND.ch === 'trx' && man) { ks = ks.slice(0, 1); ks.push('x2'); }
       if (ks.length < 2 && !man) { buzz(4); toast(sndLockWhy()); return; }
-      var gas = gasAsset(), gp = px(gas.cg), ETA = { eth: { slow: '~1 min', medium: '~30 sec', fast: '~15 sec' }, sol: { medium: '~5 sec', fast: '~3 sec', x4: '~1 sec' }, btc: { slow: '~1 hour', medium: '~30 min', fast: '~10 min' }, xrp: { slow: 'Base fee', medium: 'Open ledger', fast: 'Front of the queue' }, sui: { medium: 'Reference price', fast: 'First when busy' }, xmr: { slow: 'Low priority', medium: 'Normal priority', fast: 'High priority' } }[SND.ch] || {};
+      var gas = gasAsset(), gp = px(gas.cg), ETA = { eth: { slow: '~1 min', medium: '~30 sec', fast: '~15 sec' }, sol: { medium: '~5 sec', fast: '~3 sec', x4: '~1 sec' }, btc: { slow: '~1 hour', medium: '~30 min', fast: '~10 min' }, xrp: { slow: 'Base fee', medium: 'Open ledger', fast: 'Front of the queue' }, sui: { medium: 'Reference price', fast: 'First when busy' }, xmr: { slow: 'Low priority', medium: 'Normal priority', fast: 'High priority' }, ada: { medium: 'Protocol minimum' } }[SND.ch] || {};   /* v1.8.37 (B19): + ada */
       var cur = SND.lv === 'custom' ? (SND.tier || 'custom') : SND.lv;
       var spec = man ? HWP.manFee.spec(man) : null; if (spec) { spec.on = cur === 'custom'; spec.sub = spec.on ? HWP.manFee.sub(man, SND.man) : ''; }
       buzz(4); HWP.picker({ title: 'Network fee', rows: ks.map(function (k) { var f = feeOf(k), L = lv[k] || {}, sub = ETA[k] || '';
@@ -9431,7 +9453,13 @@ var APP_VERSION = '1.8.36';
   /* Kwallet's sheet reports the speed picked there ({ dapp, c, level, tier, man }) */
   function fpFromK(req, fp) {
     if (!fp || typeof fp !== 'object' || !req) return;
-    var ch = req.chain === 'evm' ? 'eth' : req.chain; if (!ch || ch === 'xmr' || req.kind === 'xmr-ki' || fp.level === 'manual') return;
+    var ch = req.chain === 'evm' ? 'eth' : req.chain; if (!ch || ch === 'xmr' || req.kind === 'xmr-ki') return;
+    if (fp.level === 'manual') {   /* v1.8.37 (B19): a custom fee typed in Kwallet's sheet (Bitcoin / XRP / Sui / Cardano) */
+      if (fp.dapp || !CMCH[ch] || !fp.man || typeof fp.man !== 'object') return;
+      fpSet(ch, null, 'custom', fp.man);
+      if (SND && SND.ch === ch && $('sndov') && !SND.busy) { var t9 = fpToSend(ch, fpGet(ch, null)); if (t9) { SND.lv = t9.lv; SND.tier = null; SND.man = t9.man || null; SND.cm = null; try { validate(); } catch (e) {} } }
+      return;
+    }
     var net = ch === 'eth' ? (req.network || (SND && SND.net) || '') : null;
     var sp = fp.dapp ? fpFromDapp(ch, { lv: fp.level === 'auto' ? 'medium' : fp.level, tier: fp.tier, man: fp.man }) : fpFromSend(ch, fp.level, fp.tier);
     fpSet(ch, net, sp, fp.man);
@@ -9473,6 +9501,9 @@ var APP_VERSION = '1.8.36';
     if (SND.ch === 'btc' && L.rate) return { chain: 'btc', sym: 'BTC', dec: 8, px: px(gas.cg), rate: L.rate, prev: SND.man, feeAt: function (rate) { var L0 = d.levels; d.levels = Object.assign({}, L0, { manual: { rate: rate } }); try { return d.feeFor('manual'); } finally { d.levels = L0; } } };
     if (SND.ch === 'xrp' && L.drops) return { chain: 'xrp', sym: 'XRP', dec: 6, px: px(gas.cg), drops: L.drops, prev: SND.man };
     if (SND.ch === 'sui' && d.price) return { chain: 'sui', sym: 'SUI', dec: 9, px: px(gas.cg), rgp: BI(d.price), gp: d.price, gb: d.budgetFor ? d.budgetFor(d.price) : d.budget, prev: SND.man };
+    /* v1.8.37 (B19) */
+    if (SND.ch === 'xmr' && d.fees4 && d.fees4.length) return { chain: 'xmr', sym: 'XMR', dec: 12, px: px(gas.cg), fees: d.fees4, q: d.q, w: d.w, prev: SND.man };
+    if (SND.ch === 'ada' && d.params && d.feeMin) return { chain: 'ada', sym: 'ADA', dec: 6, px: px(gas.cg), min: BI(d.params.minFeeB) + BI(d.params.minFeeA) * 250n, est: d.feeMin(), prev: SND.man };
     return null;
   }
   function feeOf(lv) {
@@ -9725,8 +9756,9 @@ var APP_VERSION = '1.8.36';
       d.levels = { medium: {} }; d.gbal = utxos.filter(function (u) { return !u.assets; }).reduce(function (s, u) { return s + BI(u.lovelace); }, 0n); d.tbal = d.gbal;
       d.minAmt = 1000000n;
       if (!S.r.gas) { var tk = S.r.a; d.tbal = utxos.reduce(function (s, u) { return s + (u.assets || []).filter(function (x) { return x.p + '.' + x.n === tk; }).reduce(function (q, x) { return q + BI(x.q); }, 0n); }, 0n); d.minAmt = 0n; d.extra = 1400000n; d.gbal = utxos.reduce(function (s, u) { return s + BI(u.lovelace); }, 0n); }
-      d.feeFor = function () { return BI(d.params.minFeeA) * BI(utxos.length > 1 ? 400 : 300) + BI(d.params.minFeeB); }; d.approx = true;
-      d.maxAmt = function () { var v = d.gbal - d.feeFor(); return v > 0n ? v : 0n; };
+      d.feeMin = function () { return BI(d.params.minFeeA) * BI(utxos.length > 1 ? 400 : 300) + BI(d.params.minFeeB); }; d.approx = true;
+      d.feeFor = function (lv) { var m = d.feeMin(), L = lv && d.levels[lv], cf = L && L.adaFee != null ? BI(L.adaFee) : 0n; return cf > m ? cf : m; };   /* v1.8.37 (B19): custom fee (level manual) */
+      d.maxAmt = function (lv) { var v = d.gbal - d.feeFor(lv); return v > 0n ? v : 0n; };
       d.req = function () { return { ada: { utxos: d.utxos, params: d.params, ttl: d.ttl } }; };
       d.feed = function () { return { ada: { ttl: d.ttl, utxos: d.utxos }, balance: { token: String(d.tbal), gas: String(d.gbal) } }; };
       return d;
@@ -16085,6 +16117,7 @@ window.hwCrashPrompt = crashPrompt;
       var lv = function (i) { var f = BI(r.fees[i]) * w; f = (f + q - 1n) / q * q; return { fpb: String(r.fees[i]), fee: f.toString() }; };
       var st = XS.st || {}, unl = BI(st.unl || 0), bal = BI(st.bal || 0);
       var d = { levels: { slow: lv(0), medium: lv(1), fast: lv(2) }, approx: true, tbal: bal, gbal: bal, unl: unl };
+      d.fees4 = (r.fees || []).slice(0, 4).map(String); d.q = String(q); d.w = String(w);   /* v1.8.37 (B19): wallet2 priorities 1..4 */
       d.feeFor = function (k) { var L = d.levels[k] || d.levels.medium; return BI(L.fee); };
       /* v1.8.4: Max sweeps account 0 (the paired account): its own unlocked balance */
       var unl0 = BI(st.unl0 != null ? st.unl0 : st.unl || 0);
@@ -16095,11 +16128,11 @@ window.hwCrashPrompt = crashPrompt;
     });
   };
   function xmrReview() {
-    var r = SND.r, to = SND.to, now = Date.now(), lvl = SND.lv === 'custom' ? 'medium' : SND.lv;
+    var r = SND.r, to = SND.to, now = Date.now(), lvl = SND.lv === 'custom' ? (function () { try { sndCmSync(); } catch (e) {} return SND.cm && SND.cm.lvl ? SND.cm.lvl : 'medium'; })() : SND.lv, xfk = SND.lv === 'custom' && SND.cm && SND.d && SND.d.levels.manual ? 'manual' : lvl;   /* v1.8.37 (B19): Custom = its wallet2 priority (was: always Normal) */
     if (!xmrCanSend()) { toast(XS.st ? 'Pair Monero with Kwallet to send' : 'Wait for the first Monero scan'); return; }
     if (xmrSyncing()) { toast('Monero is syncing (' + xmrLeftTxt() + '). Sending unlocks when it\u2019s done'); buzz([30, 40, 30]); return; }
     var st = XS.st || {}, unl = BI(st.unl || 0);
-    if (!SND.max && SND.amt != null && SND.amt + SND.d.feeFor(lvl) > unl) { toast(unl < BI(st.bal || 0) ? 'Some XMR is still locked (about 20 min after it arrives)' : 'Not enough XMR for this amount plus the fee'); buzz([30, 40, 30]); return; }
+    if (!SND.max && SND.amt != null && SND.amt + SND.d.feeFor(xfk) > unl) { toast(unl < BI(st.bal || 0) ? 'Some XMR is still locked (about 20 min after it arrives)' : 'Not enough XMR for this amount plus the fee'); buzz([30, 40, 30]); return; }
     SND.busy = true; validate(); $('go').textContent = 'Preparing\u2026';
     var built = null, me = SND;
     /* v1.8.8 (push 13, R9d): the build can always be cancelled (the engine is stopped and restarted from its saved cache, so the
@@ -16133,7 +16166,7 @@ window.hwCrashPrompt = crashPrompt;
       built = b;
       var req = { v: 2, id: rid(16), action: 'sign', chain: 'xmr', from: xmrPrimary(), to: to, token: 'native', tokenSym: 'XMR', tokenDec: 12,
         amount: SND.max ? 'max' : SND.amt.toString(), balance: { token: String(st.bal || '0'), gas: String((SND.max && st.unl0 != null ? st.unl0 : st.unl) || '0') },
-        fee: { level: lvl, levels: (function () { var o = {}; o[lvl] = { fee: b.fee }; return o; })() },
+        fee: { level: lvl, levels: (function () { var o = {}; o[lvl] = { fee: b.fee }; return o; })(), custom: SND.lv === 'custom' && !!SND.cm, prio: SND.lv === 'custom' && SND.cm ? SND.cm.prio : undefined },   /* v1.8.37 (B19) */
         prices: { gasUsd: px('monero'), tokenUsd: px('monero'), ts: C.pt }, firstTime: RCP.indexOf(to.toLowerCase()) < 0, live: false, toName: toName('xmr', to),
         xmr: { unsigned: b.unsigned, outputs: b.outputs, fee: b.fee, amount: b.amount, n: b.n },
         created: now, expires: Date.now() + 120000 };
