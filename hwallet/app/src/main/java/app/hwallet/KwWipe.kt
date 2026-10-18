@@ -37,6 +37,8 @@ object KwWipe {
 
     /** set by the open activity: apply the pending purge in the page now */
     @Volatile var onPurge: (() -> Unit)? = null
+    /** v1.8.38 (B24): set by the open activity: Kwallet's seed names changed, the page re-reads [names] now */
+    @Volatile var onNames: (() -> Unit)? = null
 
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences(PREF, Context.MODE_PRIVATE)
 
@@ -62,10 +64,37 @@ object KwWipe {
             val wasAll = p.optBoolean("all")
             val o = JSONObject().put("at", System.currentTimeMillis()).put("all", all || wasAll)
                 .put("why", if (all) why else if (wasAll) p.optString("why", why) else why).put("sids", JSONArray(set.toList()))
-            prefs(c).edit().putString("pend", o.toString()).commit()   // commit: a receiver's process may die right after
+            prefs(c).edit().putString("pend", o.toString()).apply { if (all) remove("names") }.commit()   // v1.8.38: a full erase also drops the seed names; commit: a receiver's process may die right after
         }
         try { eraseNative(c, all, clean) } catch (e: Throwable) { HwApp.write(c, "note: kwallet wipe (native) failed", e.toString()) }
         try { onPurge?.invoke() } catch (_: Throwable) {}
+    }
+
+    /* ---------- v1.8.38 (B24): Kwallet's seed names. Hwallet keeps no names of its own for Kwallet's seeds: the last names
+       Kwallet pushed or answered ({sid: name}) are kept here, the page applies them at start, at once when Kwallet pushes a
+       rename, and again from every open / resume check ([query]). ---------- */
+    private fun cleanNames(o: JSONObject?): JSONObject {
+        val out = JSONObject(); if (o == null) return out
+        for (k in o.keys()) {
+            if (!SID.matches(k)) continue
+            val v = o.optString(k, "").replace(Regex("[\\p{Cntrl}]"), " ").replace(Regex("\\s+"), " ").trim().take(24)
+            if (v.isNotEmpty()) out.put(k, v)
+        }
+        return out
+    }
+    fun names(c: Context): String = try { prefs(c).getString("names", "") ?: "" } catch (_: Throwable) { "" }
+
+    /** merge: Kwallet pushed a rename (a few seeds), or answered with all of them ([all] = replace) */
+    fun setNames(c: Context, json: String?, all: Boolean) {
+        if (json == null || json.length > 64_000) return
+        val inp = cleanNames(try { JSONObject(json) } catch (_: Throwable) { return })
+        if (!all && inp.length() == 0) return
+        synchronized(lock) {
+            val o = if (all) JSONObject() else try { JSONObject(names(c).ifEmpty { "{}" }) } catch (_: Throwable) { JSONObject() }
+            for (k in inp.keys()) o.put(k, inp.optString(k))
+            prefs(c).edit().putString("names", o.toString()).commit()
+        }
+        if (!all) try { onNames?.invoke() } catch (_: Throwable) {}
     }
 
     /* ---------- which wallets came from Kwallet (written by the page whenever its wallets change) ----------
@@ -134,8 +163,12 @@ object KwWipe {
                 val b = cl.call("state", null, null) ?: return@submit JSONObject().put("st", "unreachable").put("why", "empty")
                 val kid = b.getString("kid") ?: ""
                 if (kid.length != 32) return@submit JSONObject().put("st", "unreachable").put("why", "kid")
+                /* v1.8.38 (B24): the seed names (Kwallet 3.98.36+; an older Kwallet sends none and the names stay as they are) */
+                val nm = b.getString("names")?.let { n -> try { cleanNames(JSONObject(n)) } catch (_: Throwable) { null } }
+                if (nm != null) setNames(app, nm.toString(), true)
                 JSONObject().put("st", "ok").put("kid", kid).put("ready", b.getBoolean("ready", false)).put("partial", b.getBoolean("partial", false))
                     .put("sids", JSONArray((b.getStringArray("sids") ?: emptyArray()).filter { SID.matches(it) }))
+                    .apply { if (nm != null) put("names", nm) }
             } finally { try { cl.close() } catch (_: Throwable) {} }
         }
         return try { f.get(ms, TimeUnit.MILLISECONDS) } catch (e: Throwable) { f.cancel(true); JSONObject().put("st", "unreachable").put("why", e.javaClass.simpleName) }
@@ -159,7 +192,8 @@ class KwPkgReceiver : BroadcastReceiver() {
     }
 }
 
-/** Kwallet: "wipe" (erased in the app) or "gone" (paired seeds removed). Signature permission: only Kwallet can send it. */
+/** Kwallet: "wipe" (erased in the app), "gone" (paired seeds removed) or "names" (v1.8.38, B24: seeds renamed in Kwallet,
+ *  extra "names" = {sid: name}). Signature permission: only Kwallet can send it. */
 class KwEventReceiver : BroadcastReceiver() {
     override fun onReceive(c: Context, i: Intent) {
         try {
@@ -172,6 +206,7 @@ class KwEventReceiver : BroadcastReceiver() {
                     when (ev) {
                         "wipe" -> KwWipe.mark(c, true, sids, "wipe")
                         "gone" -> KwWipe.mark(c, false, sids, "gone")
+                        "names" -> KwWipe.setNames(c, i.getStringExtra("names"), false)
                     }
                 } catch (e: Throwable) { HwApp.write(c, "note: kwallet event failed", e.toString()) }
                 finally { r.finish() }
