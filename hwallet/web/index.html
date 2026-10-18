@@ -3401,7 +3401,7 @@ window.hwPlayOpening();
   var B = window.hwBridge;
   if (!B || typeof B.postMessage !== 'function') return;
   Object.defineProperty(window, '__hwProv', { value: 1 });
-  var ICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5NiA5NiI+PHJlY3Qgd2lkdGg9Ijk2IiBoZWlnaHQ9Ijk2IiByeD0iMjgiIGZpbGw9IiNEREY4NjkiLz48cGF0aCBmaWxsPSIjMTAxNDBhIiBkPSJNMzAgMjRoMTB2MjBoMTZWMjRoMTB2NDhINTZWNTNINDB2MTlIMzB6Ii8+PC9zdmc+';
+  var ICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMTEuNSAxMS41IDg1IDg1Ij48Y2lyY2xlIGN4PSI1NCIgY3k9IjU0IiByPSI0Mi41IiBmaWxsPSIjRERGODY5Ii8+PHBhdGggZmlsbD0iIzIyMzM0OCIgZD0iTTY1LjI2IDQ5LjQ3VjU3LjYzSDQyLjY4VjQ5LjQ3Wk00Ni4yMiAzMlY3NkgzNS42MVYzMlpNNzIuMzkgMzJWNzZINjEuODFWMzJaIi8+PC9zdmc+';   /* ph38sync B22: Hwallet's real logo (launcher artwork) */
   var NAME = 'Hwallet', RDNS = 'app.hwallet';
   /* v1.8.15 (4.2): chains switched off in Hwallet > Chains are never announced to the page. Hwallet fills this in when it
      hands the script to the Browser (brProvPush); a new tab picks up a change. */
@@ -4042,7 +4042,7 @@ window.hwPlayOpening();
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
       var c = String(d.command), dt = d.data || {}, job;
-      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.37' });
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.38' });
       else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
       else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
       else if (c === 'network') job = Promise.resolve({ network: XNET });
@@ -4107,7 +4107,7 @@ window.hwPlayOpening();
       isHwallet: true,
       request: function (method, params) {
         var id = 'hw' + Date.now().toString(36), p = params || {}, job;
-        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.37', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.38', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
         else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
           job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
         else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
@@ -7249,7 +7249,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.37';
+var APP_VERSION = '1.8.38';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -7589,6 +7589,28 @@ var APP_VERSION = '1.8.37';
     try { HwNative.kwPendingDone(String(p.at || 0)); } catch (e) {}
     return true;
   }
+  /* ph38sync B24 (v1.8.38): Hwallet always follows Kwallet's seed names ({seed ID: name}). Kwallet pushes a rename at once
+     (native store + hwKwNames), every open / resume check answers them too (hwKwState). Hwallet keeps no names of its own
+     for Kwallet's seeds; a hand-added watch-only wallet keeps the name it was given here. */
+  function kwNamesGet() { try { if (window.HwNative && HwNative.kwNames) { var s = String(HwNative.kwNames() || ''); if (s) { var o = JSON.parse(s); return o && typeof o === 'object' ? o : null; } } } catch (e) {} return null; }
+  function kwNameClean(v) { return String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 24); }
+  function kwNameLock(w) { return !!(w && w.A && /^\d{10}$/.test(String(w.A.sid || '')) && kwMine(w)); }
+  function kwNamesApply(map, live) {
+    if (!map || typeof map !== 'object') return 0;
+    var L = live ? W : jget('hw-wallets', null); if (!Array.isArray(L)) return 0;
+    var n = 0;
+    L.forEach(function (w) {
+      if (!kwNameLock(w)) return; var v = kwNameClean(map[String(w.A.sid)]); if (!v || w.label === v) return;
+      w.label = v; w.A.label = v; if (w.X) Object.keys(w.X).forEach(function (k) { if (w.X[k]) w.X[k].label = v; }); n++;
+    });
+    if (!n) return 0;
+    if (!live) { jset('hw-wallets', L); return n; }
+    try { var c = curW(); if (c && A) A.label = c.label; } catch (e) {}
+    saveWallets();
+    try { if (V && (V.v === 'home' || V.v === 'wallets') && !document.querySelector('.sheet-ov, .kwd-ov')) render(); } catch (e) {}
+    return n;
+  }
+  window.hwKwNames = function () { try { kwNamesApply(kwNamesGet(), !!started); } catch (e) { try { console.error('kw names', e); } catch (x) {} } };
   window.hwKwPurge = function () { try { kwApply(!!started); } catch (e) { try { console.error('kw purge', e); } catch (x) {} } };
   /* the backstop: ask Kwallet on every start and resume (only when a Kwallet wallet is here) */
   function kwAsk() {
@@ -7605,6 +7627,7 @@ var APP_VERSION = '1.8.37';
     /* installed but no answer (process start failed, timeout, an older Kwallet): nothing is erased, ask again later */
     if (r.st !== 'ok' || !/^[0-9a-f]{32}$/.test(String(r.kid || ''))) { if (KWL.tries < 3) { KWL.tries++; clearTimeout(KWL.t); KWL.t = setTimeout(kwAsk, 20000 * KWL.tries); } return; }
     KWL.tries = 0;
+    try { if (r.names) kwNamesApply(r.names, true); } catch (e) {}   /* ph38sync B24 */
     var have = {}; (Array.isArray(r.sids) ? r.sids : []).forEach(function (s) { have[String(s)] = 1; });
     var sure = !!r.ready && !r.partial, now = Date.now(), reset = {}, gone = {}, nr = 0, ng = 0, adopt = false;
     W.forEach(function (w) {
@@ -7812,9 +7835,14 @@ var APP_VERSION = '1.8.37';
     var calls = [['getBalance', [a, { commitment: 'confirmed' }]], ['getTokenAccountsByOwner', [a, { programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' }, { encoding: 'jsonParsed', commitment: 'confirmed' }]], ['getTokenAccountsByOwner', [a, { programId: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PazQaGZ3cx6CKBvkm7' }, { encoding: 'jsonParsed', commitment: 'confirmed' }]]];
     var one = function (i) { return rpc(c.rpc, calls[i][0], calls[i][1], 8000).then(function (r) { return { result: r }; }, function () { return null; }); };
     return batch(c.rpc, calls, 8000).catch(function () { return Promise.all([one(0), one(1), one(2)]).then(function (x) { if (!x[0]) throw new Error('sol'); return x; }); }).then(function (r) {
-      var o = { n: String(r[0].result.value), t: {}, at: Date.now() }, sums = {}, ok = 0;
-      [r[1], r[2]].forEach(function (x) { if (!x || !x.result) return; ok++; (x.result.value || []).forEach(function (acc) { try { var i = acc.account.data.parsed.info; sums[i.mint] = (sums[i.mint] || 0n) + BI(i.tokenAmount.amount); } catch (e) {} }); });
-      mints.forEach(function (m) { if (sums[m] != null) o.t[m] = String(sums[m]); else if (ok === 2) o.t[m] = '0'; else if (prev[m] != null) o.t[m] = prev[m]; });
+      /* ph38send:b23sol rel38 (B23): a token-program call the batch refused is asked again on its own, so one refused call no longer keeps a stale balance */
+      return Promise.all([1, 2].map(function (i) { return r[i] && r[i].result && Array.isArray(r[i].result.value) ? r[i] : one(i); })).then(function (x) { return [r[0], x[0], x[1]]; });
+    }).then(function (r) {
+      var o = { n: String(r[0].result.value), t: {}, at: Date.now(), tp: Object.assign({}, (pvS || {}).tp || {}) }, sums = {}, ok = 0, okP = {}, pins = {};
+      (CHBY.sol.tokens || []).forEach(function (t) { pins[t[1]] = 0; });   /* the pinned stablecoins are classic SPL */
+      [r[1], r[2]].forEach(function (x, j) { if (!x || !x.result || !Array.isArray(x.result.value)) return; ok++; okP[j] = 1; x.result.value.forEach(function (acc) { try { var i = acc.account.data.parsed.info; sums[i.mint] = (sums[i.mint] || 0n) + BI(i.tokenAmount.amount); o.tp[i.mint] = j; } catch (e) {} }); });
+      /* a mint absent from a successful fetch of its own token program (or of both) is 0; only a failed call keeps the last value */
+      mints.forEach(function (m) { var pj = o.tp[m] != null ? o.tp[m] : pins[m]; if (sums[m] != null) o.t[m] = String(sums[m]); else if (ok === 2 || (pj != null && okP[pj])) o.t[m] = '0'; else if (prev[m] != null) o.t[m] = prev[m]; });
       /* any other mint with a balance (SPL or Token-2022) is added to the list with its metadata, and counted at once */
       Object.keys(sums).forEach(function (m) { if (mints.indexOf(m) < 0 && sums[m] > 0n) { o.t[m] = String(sums[m]); solAutoAdd(m); } });
       return o;
@@ -8212,7 +8240,7 @@ var APP_VERSION = '1.8.37';
       '<button class="ib" data-act="search" aria-label="Search">' + sv('gsearch') + '</button></header>' +
       '<section class="hero"><button class="tot" data-act="hide" data-money data-v="total" aria-label="Total balance. Tap to hide"></button><div class="chg" data-v="chg"></div></section>' + actions() +
       /* v1.8.14: Chains lives here now (Trust Wallet style header over the coin list), not in Settings */
-      '<button type="button" class="chh tap" data-act="chains" aria-label="Chains"><svg class="chh-i" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg><span>Chains</span><svg class="chh-c" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8.6 16.6 13.2 12 8.6 7.4 10 6l6 6-6 6z"/></svg></button>' +
+      '<div class="chh-row">' + '<button type="button" class="chh tap" data-act="chains" aria-label="Chains"><svg class="chh-i" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg><span>Chains</span><svg class="chh-c" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8.6 16.6 13.2 12 8.6 7.4 10 6l6 6-6 6z"/></svg></button>' + tcDots() + '</div>' +
       '<div class="lst" id="alist">' + listInner() + '</div>' +
       (A.paired && Object.keys(A.paired).length ? '' : '<p class="hint">Watch only. Pair with Kwallet to send: Settings &gt; Pair with Kwallet.</p>');
   }
@@ -8371,6 +8399,7 @@ var APP_VERSION = '1.8.37';
     if (a === 'scan') { scanQr(); return; }
     if (a === 'wsheet') { walletSheet(); return; }
     if (a === 'chains') { try { window.hwChainsOpen(); } catch (e) {} return; }
+    if (a === 'tokclean') { tcMenu(); return; }   /* pd38tok */
     if (a === 'send') {
       if (V.v === 'home') { go({ v: 'pick', mode: 'send' }); return; }
       if (V.v === 'nets') { pickNet(function (net) { go({ v: 'send', ch: 'eth', net: net, tk: 'native' }); }, 'Send ETH on'); return; }
@@ -8617,12 +8646,14 @@ var APP_VERSION = '1.8.37';
   }
   function walletMenu(id) {
     var w = W.filter(function (x) { return x.id === id; })[0]; if (!w) return;
-    sheet('<h3>' + esc(w.label) + '</h3><div class="lbl">Name</div><div class="inp"><input id="wn" maxlength="24" value="' + esc(w.label) + '" autocomplete="off"></div>' +
-      '<div class="row2"><button class="btn" data-ed>' + sv('edit') + ' Addresses</button><button class="btn pri" data-sv>Save name</button></div>' +
+    var nmK = kwNameLock(w);   /* ph38sync B24: a Kwallet seed is named in Kwallet only */
+    sheet('<h3>' + esc(w.label) + '</h3><div class="lbl">Name</div><div class="inp"><input id="wn" maxlength="24" value="' + esc(w.label) + '" autocomplete="off"' + (nmK ? ' readonly aria-readonly="true"' : '') + '></div>' +
+      (nmK ? '<p class="hint">Named in Kwallet. Rename the seed there and Hwallet follows.</p><div class="row2"><button class="btn wide" data-ed>' + sv('edit') + ' Addresses</button></div>' :
+      '<div class="row2"><button class="btn" data-ed>' + sv('edit') + ' Addresses</button><button class="btn pri" data-sv>Save name</button></div>') +
       (sidFmt(w.A.sid) ? '<div class="lbl">Seed ID</div><div class="wm-id"><span>' + sidFmt(w.A.sid) + '</span><button class="pb" data-cid aria-label="Copy seed ID">' + sv('copy') + '</button></div>' : '') +
       (w.X && accts(w).length > 1 ? '<div class="lbl">Address numbers</div><div class="wm-acc">' + accts(w).map(function (n) { return '<span class="wch' + (String(w.ai) === n ? ' on' : '') + '">' + n + (String(w.ai) === n ? '' : '<button data-arm-acc="' + n + '" aria-label="Remove address ' + n + '">' + sv('close') + '</button>') + '</span>'; }).join('') + '</div>' : '') +
       '<button class="btn dng wide" data-rm>' + sv('del') + ' Remove wallet</button><p class="hint">Removing only forgets the addresses in Hwallet. Funds and keys stay safe in Kwallet.</p>', function (ov, close) {
-      ov.querySelector('[data-sv]').onclick = function () { var v = ov.querySelector('#wn').value.trim().slice(0, 24); if (!v) return; w.label = v; if (w.id === WID) A.label = v; saveWallets(); close(); toast('Saved'); buzz(8); render(); };
+      var svN = ov.querySelector('[data-sv]'); if (svN) svN.onclick = function () { var v = ov.querySelector('#wn').value.trim().slice(0, 24); if (!v || kwNameLock(w)) return; w.label = v; if (w.id === WID) A.label = v; saveWallets(); close(); toast('Saved'); buzz(8); render(); };
       ov.querySelector('[data-ed]').onclick = function () { close(); if (w.id !== WID) switchWallet(w.id); go({ v: 'setup', edit: 1 }); };
       var cid = ov.querySelector('[data-cid]'); if (cid) cid.onclick = function () { copy(sidFmt(w.A.sid)).then(function () { toast('Seed ID copied'); buzz(8); }); };
       ov.querySelectorAll('[data-arm-acc]').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); var n = b.getAttribute('data-arm-acc'); if (!w.X || !w.X[n] || String(w.ai) === n) return;
@@ -9341,7 +9372,9 @@ var APP_VERSION = '1.8.37';
       '<div class="snd-bkrow" id="bkrow" hidden><span id="bkname"></span><button type="button" class="snd-bks" id="bksave">Save to address book</button></div>' +
       '<div class="note warn" id="poison" hidden></div><div class="note" id="newad" hidden></div>' +
       '<div class="hp-card"><div class="hp-r sm"><span class="hp-l">Network</span><span class="hp-v snd-nv">' + logo(n ? n.logo : c.logo, name, '', 'xs') + esc(name) + '</span></div>' +
-      '<button type="button" class="hp-r sm hp-tap snd-fee" id="feechip" aria-expanded="false"><span class="hp-l">Network fee<small id="lvt">Normal</small></span><span class="hp-v"><span id="fee">Checking\u2026</span><small id="feeu"></small></span>' + sv('chev', 'ic snd-chev') + '</button></div>' +
+      '<button type="button" class="hp-r sm hp-tap snd-fee" id="feechip" aria-expanded="false"><span class="hp-l">Network fee<small id="lvt">Normal</small></span><span class="hp-v"><span id="fee">Checking\u2026</span><small id="feeu"></small></span>' + sv('chev', 'ic snd-chev') + '</button>' +
+      /*ph38send:ui*/ '<div class="hp-r sm" id="sndx" style="display:none"><span class="hp-l" id="sndxl"></span><span class="hp-v"><span id="sndxv"></span><small id="sndxu"></small></span></div>' +
+      '<div class="hp-r sm" id="sndt" style="display:none"><span class="hp-l">Total</span><span class="hp-v"><span id="sndtv"></span><small id="sndtu"></small></span></div></div>' +
       '<div class="note warn" id="err" hidden></div><div class="note" id="sim" hidden></div></section></div>' +
       '<div class="hp-foot"><button class="btn pri wide big snd-go" id="go" disabled>Continue</button></div>';
   }
@@ -9550,10 +9583,30 @@ var APP_VERSION = '1.8.37';
       /* v1.8.1 (#2): the fee on one line, its $ value (and what comes with it) on the line under it */
       var f = feeOf(SND.lv), fu = $('feeu');
       $('fee').textContent = SND.ch === 'trx' && f === 0n ? 'Free' : (SND.d.approx ? '≈ ' : SND.d.atMost ? 'Up to ' : '') + fmtA(f, gas.d) + ' ' + gas.s;
-      if (fu) fu.textContent = [SND.ch === 'trx' && f === 0n ? 'Covered by your bandwidth' : px(gas.cg) ? fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '', SND.d.extra ? (SND.ch === 'ada' ? '+ ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : '+ account rent') : '', SND.ch === 'trx' && SND.d.burnE ? 'energy burn' : ''].filter(Boolean).join(' \u00b7 ');
+      if (fu) fu.textContent = [SND.ch === 'trx' && f === 0n ? 'Covered by your bandwidth' : px(gas.cg) ? fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '', SND.d.extra ? (SND.ch === 'ada' ? '+ ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : '+ ' + fmtA(SND.d.extra, gas.d) + ' ' + gas.s + ' token account' /*ph38send:feeu*/) : '', SND.ch === 'trx' && SND.d.burnE ? 'energy burn' : ''].filter(Boolean).join(' \u00b7 ');
       if (fu) { if (SND.fpWarn) fu.textContent = SND.fpWarn; fu.style.color = SND.fpWarn ? '#e5484d' : ''; fu.style.whiteSpace = SND.fpWarn ? 'normal' : ''; }   /* v1.8.35 (B10) */
+      try { sndXRows(f); } catch (e) {}   /*ph38send:val*/
     }
     if (SND.d) { var lv = SND.d.levels; if (SND.lv !== 'custom' && !lv[SND.lv]) SND.lv = lv.medium ? 'medium' : Object.keys(lv)[0]; var fc = $('feechip'); if (fc) fc.classList.toggle('snd-one', Object.keys(lv).length < 2 && !sndManCtx()); if ($('lvt')) $('lvt').textContent = SND.lv === 'custom' ? (SND.tier ? sndLab(SND.tier) : 'Custom \u00b7 saved') : (Object.keys(lv).length < 2 && !sndManCtx()) ? sndLockWhy(true) : sndLab(SND.lv); }
+  }
+  /* ph38send:xrows rel38 (B25/B26): what the recipient side adds (Tron activation, Solana token account) and the total that leaves the wallet */
+  function sndXRows(f) {
+    var x = $('sndx'), t = $('sndt'); if (!x || !t || !SND || !SND.d) return;
+    var d = SND.d, r = SND.r, gas = gasAsset(), ok = validAddr(SND.ch, SND.to) && d.toFor === SND.to, lab = '', v = '', u = '', extra = 0n;
+    if (ok && SND.ch === 'sol' && !r.gas && d.extra > 0n) {
+      extra = BI(d.extra); lab = 'Opens a token account'; v = '+ ' + fmtA(extra, 9) + ' SOL';
+      u = (d.ataKnown === false ? 'Couldn\u2019t check the recipient \u00b7 ' : '') + 'Rent for the recipient\u2019s ' + r.s + ' account';
+    } else if (ok && SND.ch === 'trx' && d.toNew) {
+      lab = 'Recipient not activated';
+      if (r.gas) { v = '+ ' + fmtA(BI(d.act || 0n) + BI(d.actBw || 0n), 6) + ' TRX'; u = fmtA(d.act || 0n, 6) + ' TRX activation' + (d.actBw > 0n ? ' + ' + fmtA(d.actBw, 6) + ' TRX bandwidth' : '') + ' \u00b7 in the fee'; }
+      else { v = 'No activation fee'; u = 'Tokens don\u2019t activate it \u00b7 its extra energy is in the fee'; }
+    }
+    x.style.display = lab ? '' : 'none'; t.style.display = lab ? '' : 'none'; if (!lab) return;
+    $('sndxl').textContent = lab; $('sndxv').textContent = v; $('sndxu').textContent = u;
+    var kc = sendCheck(), amt = kc && kc.amount != null ? kc.amount : null, fee = BI(f || 0n) + extra, gp = px(gas.cg), tp = rpx(r);
+    var tv = r.gas ? (amt != null ? fmtA(amt + fee, gas.d) + ' ' + gas.s : '\u2014') : (amt != null ? fmtA(amt, r.d) + ' ' + r.s + ' + ' : '') + fmtA(fee, gas.d) + ' ' + gas.s;
+    var usd = (amt != null ? toNum(amt, r.d) * (r.gas ? gp : tp) : 0) + toNum(fee, gas.d) * gp;
+    $('sndtv').textContent = (d.approx ? '\u2248 ' : '') + tv; $('sndtu').textContent = gp && (r.gas || tp || amt == null) ? fmtUsd(usd) : '';
   }
   /* chain data for the request (and the live feed): one module per chain */
   var PREP = {};
@@ -9613,6 +9666,31 @@ var APP_VERSION = '1.8.37';
     throw new Error('no pda');
   }
   var SPL = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', SPL22 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PazQaGZ3cx6CKBvkm7', ATAP = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+  /* ph38send:b26help rel38 (B26): live rent of a token account (getMinimumBalanceForRentExemption, 165 bytes for SPL; a Token-2022
+     associated account carries the ImmutableOwner extension = 170 bytes). Cached 10 min; the rent formula only if the node fails. */
+  var SOLRENT = {};
+  function solRent(size) {
+    var k = SOLRENT[size]; if (k && Date.now() - k.at < 600000) return Promise.resolve(k.v);
+    return rpcF(CHBY.sol.rpc, 'getMinimumBalanceForRentExemption', [size], 6000).then(function (v) { v = BI(v); if (!(v > 0n)) throw new Error('rent'); SOLRENT[size] = { v: v, at: Date.now() }; return v; }, function () { return k ? k.v : BI((size + 128) * 6960); });
+  }
+  /* does the recipient already hold the associated token account for this mint? Both programs' ATAs and the mint are
+     read in one call, so the mint's real program decides (a Token-2022 mint never counts a classic account, or back).
+     d.ataKnown = false when the node did not answer: Kwallet then adds the idempotent create (a no-op if it exists). */
+  async function solAtaChk(d, to, mint) {
+    var t = b58d(to), m = b58d(mint), ap = b58d(ATAP);
+    var a1 = await pda([t, b58d(SPL), m], ap), a2 = await pda([t, b58d(SPL22), m], ap);
+    if (to !== d.toFor) { d.ataExists = false; d.ataKnown = false; }
+    d.toFor = to; d.ataAt = Date.now();
+    var mi = await rpcF(CHBY.sol.rpc, 'getMultipleAccounts', [[mint, a1, a2], { encoding: 'base64', dataSlice: { offset: 0, length: 0 }, commitment: 'confirmed' }], 6000).catch(function () { return null; });
+    var v = mi && mi.value;
+    if (Array.isArray(v) && v.length === 3) {
+      if (v[0] && v[0].owner) d.prog = d.progLive = v[0].owner === SPL22 ? SPL22 : SPL;
+      var acc = d.prog === SPL22 ? v[2] : v[1];
+      d.ataExists = !!(acc && acc.owner === d.prog); d.ataKnown = true;
+    } else { d.ataKnown = false; d.ataExists = false; }
+    d.ata = d.prog === SPL22 ? a2 : a1;
+    d.rent = await solRent(d.prog === SPL22 ? 170 : 165);
+  }
   PREP.sol = function (S) {
     var c = CHBY.sol, r = S.r, tok = !r.gas, to = validAddr('sol', S.to) ? S.to : null;
     var calls = [['getLatestBlockhash', [{ commitment: 'confirmed' }]], ['getRecentPrioritizationFees', [tok ? [r.a] : []]], ['getBalance', [A.sol, { commitment: 'confirmed' }]]];
@@ -9633,16 +9711,15 @@ var APP_VERSION = '1.8.37';
         if (Array.isArray(ta)) { var sum = 0n; ta.forEach(function (a) { try { sum += BI(a.account.data.parsed.info.tokenAmount.amount); } catch (e) {} }); d.tbal = sum; d.tbalOk = true; }
         else d.tbal = d.tbalOk && d.tbal0 != null ? d.tbal0 : (U(r.raw) != null ? U(r.raw) : null);
         d.tbal0 = d.tbal;
-        if (to && to !== d.toFor) {
-          var ata = await pda([b58d(to), b58d(d.prog), b58d(r.a)], b58d(ATAP));
-          var info = await rpcF(c.rpc, 'getAccountInfo', [ata, { encoding: 'base64', dataSlice: { offset: 0, length: 0 } }]).catch(function () { return null; });
-          d.toFor = to; d.ataExists = !!(info && info.value);
-        }
-        d.extra = to && !d.ataExists ? 2039280n : 0n;
+        /* ph38send:b26prep rel38 (B26): checked live (again every 15 s, every 3 s while the node does not answer) */
+        if (to && (to !== d.toFor || Date.now() - (d.ataAt || 0) > (d.ataKnown ? 15000 : 3000))) await solAtaChk(d, to, r.a);
+        else if (!to) { d.toFor = null; d.ataExists = false; d.ataKnown = false; }
+        if (d.progLive) d.prog = d.progLive;   /* the mint's program as read live, even when this round's mint read failed */
+        d.extra = to && !d.ataExists ? (d.rent || 2039280n) : 0n;
       }
       d.cu = tok ? (d.extra ? 60000 : 30000) : 1000;
       d.feeFor = function (lv) { return KwSend.solFee(d.levels[lv].cuPrice, d.cu, 1); };
-      d.req = function () { return { sol: { blockhash: d.blockhash, cuLimit: d.cu, toAtaExists: !!d.ataExists, tokenProgram: tok ? d.prog : undefined, ataRent: '2039280' } }; };
+      d.req = function () { return { sol: { blockhash: d.blockhash, cuLimit: d.cu, toAtaExists: !!d.ataExists, tokenProgram: tok ? d.prog : undefined, ataRent: String(d.rent || 2039280n) /*ph38send:b26req*/ } }; };
       d.feed = function () { return { fee: { levels: d.levels }, sol: { blockhash: d.blockhash }, balance: { token: String(d.tbal), gas: String(d.gbal) } }; };
       return d;
     });
@@ -9654,17 +9731,26 @@ var APP_VERSION = '1.8.37';
     var r = S.r, tok = !r.gas, to = validAddr('trx', S.to) ? S.to : null;
     var d = S.d && S.d.chain === 'trx' ? S.d : { chain: 'trx' };
     /* every second only the newest block is read; balances and fee inputs every 15 s */
-    if (d.at && Date.now() - d.at < 15000 && d.toFor === to) {
+    if (d.at && Date.now() - d.at < 15000 && d.toFor === to && !d.toUnk /*ph38send:b25unk*/) {
       return tronF('/wallet/getnowblock', {}).then(function (blk) { var hd = blk.block_header.raw_data; d.refBlock = { number: hd.number, hash: blk.blockID, ts: hd.timestamp }; return d; });
     }
     var P = TRXP ? Promise.resolve(TRXP) : tronF('/wallet/getchainparameters', {}).then(function (j) { var o = {}; (j.chainParameter || []).forEach(function (p) { o[p.key] = p.value; }); TRXP = o; return o; });
     return P.then(function (P) {
-      return Promise.all([tronF('/wallet/getnowblock', {}), tronF('/wallet/getaccountresource', { address: A.trx, visible: true }), tronF('/v1/accounts/' + A.trx), to ? tronF('/wallet/getaccount', { address: to, visible: true }).catch(function () { return {}; }) : Promise.resolve(null)]).then(function (x) {
+      return Promise.all([tronF('/wallet/getnowblock', {}), tronF('/wallet/getaccountresource', { address: A.trx, visible: true }), tronF('/v1/accounts/' + A.trx), to ? tronF('/wallet/getaccount', { address: to, visible: true }).catch(function () { return null; /*ph38send:b25get*/ }) : Promise.resolve(null)]).then(function (x) {
         var blk = x[0], hd = blk.block_header.raw_data, res = x[1] || {}, acc = ((x[2].data || [])[0]) || {};
         var bwPrice = BI(P.getTransactionFee || 1000), enPrice = BI(P.getEnergyFee || 210), create = BI(P.getCreateAccountFee || 100000) + BI(P.getCreateNewAccountFeeInSystemContract || 1000000);
         var freeBw = BI(Math.max(0, (res.freeNetLimit || 0) - (res.freeNetUsed || 0))) + BI(Math.max(0, (res.NetLimit || 0) - (res.NetUsed || 0)));
-        var size = tok ? 350n : 270n, fee = freeBw >= size ? 0n : size * bwPrice, toNew = !!(to && x[3] && !x[3].address);
-        if (!tok && toNew) fee += create;
+        var size = tok ? 350n : 270n, fee = freeBw >= size ? 0n : size * bwPrice, acT = x[3];
+        /* ph38send:b25fee rel38 (B25): the recipient read live; a failed read is "unknown" (retried), never "not activated" */
+        var toNew = !!(to && acT && typeof acT === 'object' && !acT.address && !acT.Error && !acT.code);
+        d.toUnk = !!(to && !(acT && typeof acT === 'object' && !acT.Error && !acT.code)); d.toNew = toNew; d.act = 0n; d.actBw = 0n;
+        if (!tok && toNew) {
+          /* activating an account: 1 TRX (CreateNewAccountFeeInSystemContract) + its bandwidth, which only staked bandwidth can
+             cover (free daily bandwidth can't); otherwise 0.1 TRX (CreateAccountFee) is burned instead of the usual bandwidth fee */
+          var stBw = BI(Math.max(0, (res.NetLimit || 0) - (res.NetUsed || 0)));
+          d.act = BI(P.getCreateNewAccountFeeInSystemContract || 1000000); d.actBw = stBw >= size ? 0n : BI(P.getCreateAccountFee || 100000);
+          fee = d.act + d.actBw; void create;
+        }
         d.refBlock = { number: hd.number, hash: blk.blockID, ts: hd.timestamp };
         d.gbal = BI(acc.balance || 0); d.tbal = d.gbal;
         if (tok) { var tb = 0n; (acc.trc20 || []).forEach(function (m) { if (m[r.a] != null) tb = BI(m[r.a]); }); d.tbal = tb; }
@@ -9676,7 +9762,7 @@ var APP_VERSION = '1.8.37';
           C.res.trx = res; C.res.trxAt = Date.now();
           d.fee = fee; d.levels = { medium: {} }; d.approx = true; d.at = Date.now(); d.toFor = to;
           d.feeFor = function () { return d.fee; };
-          d.req = function () { return { trx: { refBlock: d.refBlock, estFee: d.fee.toString(), feeLimit: d.feeLimit } }; };
+          d.req = function () { return { trx: { refBlock: d.refBlock, estFee: d.fee.toString(), feeLimit: d.feeLimit, toInactive: !!d.toNew, activation: d.toNew && !tok ? String(d.act) : undefined, activationBw: d.toNew && !tok ? String(d.actBw) : undefined /*ph38send:b25req*/ } }; };
           d.feed = function () { return { trx: { refBlock: d.refBlock }, balance: { token: String(d.tbal), gas: String(d.gbal) } }; };
           return d;
         });
@@ -11738,6 +11824,7 @@ window.hwCrashPrompt = crashPrompt;
           if (pr[2] && pr[2].error) pr[2] = co ? null : { error: pvErr(pr[2].error, 'sol'), plain: 1 };
           if (pr[3] && pr[3].err) pr[2] = { error: pr[3].err, plain: 1 };
           var req = kReq(Object.assign(base, { chain: 'sol', method: m, from: A.sol, params: { tx: P.tx, alts: pr[0] }, balance: { gas: gb }, prices: { gasUsd: px('solana') }, tokens: tokMap(ns), swap: q.swap }));
+          if (q.clean) req.clean = q.clean;   /* pd38tok */
           if (pr[1] != null) req.feeMin = { cuPrice: pr[1] };
           if (pr[2]) req.sim = pr[2]; if (pr[3]) req.pv = pr[3];
           solBox.id = req.id; if (!req.pv && solBox.v) req.pv = solBox.v;
@@ -11931,7 +12018,7 @@ window.hwCrashPrompt = crashPrompt;
     WC.init = Promise.resolve().then(function () {
       var L = wcLib();
       var core = new L.Core({ projectId: '{{K:reown}}', relayUrl: 'wss://relay.walletconnect.org', telemetryEnabled: false, customStoragePrefix: 'hwallet' });
-      return L.WalletKit.init({ core: core, metadata: { name: 'Hwallet', description: 'Watch-only wallet. Kwallet signs offline on the same phone.', url: 'https://github.com/0xkabeno/Kwallet', icons: ['https://raw.githubusercontent.com/0xkabeno/Kwallet/main/hwallet/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png'], redirect: { native: 'hwallet://wc' } } });
+      return L.WalletKit.init({ core: core, metadata: { name: 'Hwallet', description: 'Watch-only wallet. Kwallet signs offline on the same phone.', url: 'https://github.com/0xkabeno/Kwallet', icons: [hwLogo(), 'https://raw.githubusercontent.com/0xkabeno/Kwallet/main/hwallet/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png'], redirect: { native: 'hwallet://wc' } } });
     }).then(function (wk) {
       WC.wk = wk;
       try { kwWcDrop(); } catch (e) {}   /* v1.8.34 */
@@ -12378,10 +12465,15 @@ window.hwCrashPrompt = crashPrompt;
     var o = {}; ['eth', 'sol', 'trx', 'sui', 'ada', 'xrp', 'btc'].forEach(function (c) { if (!chainOn(c) || (c === 'eth' && !EVM.length)) o[c] = 1; });
     return o;
   }
+  /* ph38sync B22 (v1.8.38): Hwallet's logo for dApps, the same artwork as the app icon the user picked (lime / navy) */
+  var HW_LOGO = { lime: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMTEuNSAxMS41IDg1IDg1Ij48Y2lyY2xlIGN4PSI1NCIgY3k9IjU0IiByPSI0Mi41IiBmaWxsPSIjRERGODY5Ii8+PHBhdGggZmlsbD0iIzIyMzM0OCIgZD0iTTY1LjI2IDQ5LjQ3VjU3LjYzSDQyLjY4VjQ5LjQ3Wk00Ni4yMiAzMlY3NkgzNS42MVYzMlpNNzIuMzkgMzJWNzZINjEuODFWMzJaIi8+PC9zdmc+',
+    navy: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMTEuNSAxMS41IDg1IDg1Ij48Y2lyY2xlIGN4PSI1NCIgY3k9IjU0IiByPSI0Mi41IiBmaWxsPSIjMjIzMzQ4Ii8+PHBhdGggZmlsbD0iI0RERjg2OSIgZD0iTTY1LjI2IDQ5LjQ3VjU3LjYzSDQyLjY4VjQ5LjQ3Wk00Ni4yMiAzMlY3NkgzNS42MVYzMlpNNzIuMzkgMzJWNzZINjEuODFWMzJaIi8+PC9zdmc+' };
+  function hwLogo() { var i = 'lime'; try { if (window.HarkNative && HarkNative.appIcon) i = String(HarkNative.appIcon()); } catch (e) {} return HW_LOGO[i] || HW_LOGO.lime; }
+  function hwLogoProv(t) { var l = hwLogo(); return l === HW_LOGO.lime ? t : t.split(HW_LOGO.lime).join(l); }
   function brProvPush() {
     var p = document.getElementById('hw-prov'); if (!p) return;
     var t = p.textContent, off = JSON.stringify(brProvOff());
-    brNat('brInit', t.replace('var OFF = {}; /*@HWOFF*/', 'var OFF = ' + off + '; /*@HWOFF*/'));
+    brNat('brInit', hwLogoProv(t.replace('var OFF = {}; /*@HWOFF*/', 'var OFF = ' + off + '; /*@HWOFF*/')));
   }
   function brInit() {
     if (brInited || !brN()) return; brInited = true;
@@ -17037,6 +17129,348 @@ window.hwCrashPrompt = crashPrompt;
     });
   }
 
+  /* ---------- pd38tok F1/F2 (v1.8.38): Home > Chains ⋮ > Solana / Sui: clean up token accounts and dust coins ----------
+     Solana: every SPL and Token-2022 account of the active address, live; per row Keep / Close (empty) / Burn and close
+     (only when the balance is worth under $0.10 at a live price). Batched burnChecked + closeAccount, rent to the owner,
+     signed in Kwallet through the usual Solana request (via 'clean', titled "Close 3 token accounts · +0.0061 SOL").
+     Sui: every coin object of the active address by type (never SUI itself); per type Keep / Clean up (merge the coins,
+     destroy the empty ones: storage rebate) / Burn (merge, then send the one coin to 0x0) when worth under $0.10.
+     One PTB, signed in Kwallet through the usual Sui request. Built only from HWP sheet / card / row parts. */
+  var TC_SITE = { name: 'Hwallet', host: 'hwallet.app', origin: 'https://hwallet.app' };
+  var TC_DUST = 0.10, TC_DOTS = 'M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z';
+  function tcCss() {
+    if (document.getElementById('pd38tok-css')) return;
+    var st = document.createElement('style'); st.id = 'pd38tok-css';
+    st.textContent = '.chh-row{display:flex;align-items:flex-start}.chh-row .chh{flex:0 1 auto;min-width:0}' +
+      '.chh-row .chh-dots{flex:0 0 auto;margin:12px 0 0 auto;color:var(--text);opacity:.72;background:none;border:0}.chh-row .chh-dots svg{width:22px;height:22px}' +
+      '.br-row .lg.tc-lg{width:36px!important;height:36px!important;margin:0!important;flex:0 0 auto}.br-row[disabled]{opacity:.45}';
+    (document.head || document.documentElement).appendChild(st);
+  }
+  function tcDots() { tcCss(); return '<button type="button" class="ib chh-dots tap" data-act="tokclean" aria-label="Token cleanup">' + '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="' + TC_DOTS + '"/></svg></button>'; }
+  function tcMenu() {
+    tcCss();
+    function row(k, ch, name, sub) {
+      var on = !!A[ch] && chainOn(ch), why = !A[ch] ? 'No ' + name + ' address in this wallet' : !chainOn(ch) ? name + ' is turned off in Chains' : sub;
+      return '<button class="br-row" data-tc="' + k + '"' + (on ? '' : ' disabled') + '>' + logo(CHBY[ch].logo, CHBY[ch].sym, '', 'tc-lg') + '<span class="am"><span class="an">' + esc(name) + '</span><span class="ap">' + esc(why) + '</span></span></button>';
+    }
+    brSheet('<div class="lst">' + row('sol', 'sol', 'Solana', 'Close token accounts, burn dust') + row('sui', 'sui', 'Sui', 'Clean up coins, burn dust') + '</div>', function (ov, close) {
+      ov.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-tc]'); if (!b || b.disabled) return; var k = b.getAttribute('data-tc'); buzz(4); close();
+        setTimeout(function () { if (k === 'sol') tcSolOpen(); else tcSuiOpen(); }, 200);
+      });
+    });
+  }
+  function tcSolS(l) { return fmtU(l, 9, 5); }
+  function tcPl(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+  function tcChunks(a, n) { var o = []; for (var i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o; }
+  /* the panel frame: HWP.overlay with the chain chip, Hwallet's own header line, a title; body / foot repainted in place */
+  function tcPanel(ch, sub, title) {
+    var ov = HWP.overlay(HWP.topBar(CHBY[ch].name, LOGO[CHBY[ch].logo] || '') + HWP.headOwn(sub) + HWP.title(title) + '<div data-tcb>' + HWP.cap('Loading live from the network\u2026') + '</div>', '<div data-tcf></div>');
+    var el = ov.el, P = { el: ov.el, close: ov.close, open: true };
+    el.querySelector('[data-hp-x]').onclick = function () { P.open = false; ov.close(); };
+    el._close = function () { P.open = false; ov.close(); };
+    P.body = function (h) { var b = el.querySelector('[data-tcb]'); if (b) b.innerHTML = h; };
+    P.foot = function (h) { var f = el.querySelector('[data-tcf]'); if (f) f.innerHTML = h; };
+    return P;
+  }
+  /* a row's action picker (HWP.picker): Keep plus what the row allows */
+  function tcPick(title, cur, opts, cb) { HWP.picker({ title: title, rows: opts.map(function (o) { return { k: o.k, l: o.l, sub: o.sub || '', v: o.v || '', vs: o.vs || '', on: o.k === cur }; }), onPick: cb }); }
+
+  /* ----- Solana ----- */
+  function tcSolLoad() {
+    var a = A.sol;
+    return Promise.all([SPL, SPL22].map(function (pg) {
+      return rpcF(CHBY.sol.rpc, 'getTokenAccountsByOwner', [a, { programId: pg }, { encoding: 'jsonParsed', commitment: 'confirmed' }], 12000).then(function (r) { return ((r && r.value) || []).map(function (x) { x._pg = pg; return x; }); });
+    })).then(function (two) {
+      var rows = [];
+      two[0].concat(two[1]).forEach(function (x) {
+        try {
+          var i = x.account.data.parsed.info, ta = i.tokenAmount || {}, ext = i.extensions || [], wh = false;
+          ext.forEach(function (e) { if (e && e.extension === 'transferFeeAmount' && e.state && U(e.state.withheldAmount) > 0n) wh = true; });
+          rows.push({ k: x.pubkey, pg: x._pg, mint: i.mint, raw: U(ta.amount) || 0n, dec: +ta.decimals || 0, lam: U(x.account.lamports) || 0n, nat: !!i.isNative, st: String(i.state || ''), ca: i.closeAuthority || '', wh: wh, act: 'keep', px: 0, usd: null });
+        } catch (e) {}
+      });
+      var mints = [], seen = {}; rows.forEach(function (r) { if (!seen[r.mint]) { seen[r.mint] = 1; mints.push(r.mint); } });
+      var priced = rows.filter(function (r) { return r.raw > 0n && !r.nat; }).map(function (r) { return r.mint; }).filter(function (m, i, s) { return s.indexOf(m) === i; });
+      var px = {}, meta = {};
+      var pxJ = Promise.all(tcChunks(priced, 50).map(function (c) {
+        return http('https://lite-api.jup.ag/price/v3?ids=' + c.join(','), { timeout: 8000 }).then(function (j) { c.forEach(function (m) { var v = j && j[m] && +(j[m].usdPrice || j[m].price); if (v > 0) px[m] = v; }); }, function () {});
+      }));
+      var known = function (m) { var t = (TOK.sol || []).filter(function (x) { return x.a === m; })[0], mm = META[metaKey('sol', null, m)]; return t ? { s: t.s, icon: t.icon || tokIcon('sol', null, t) } : mm && mm.s ? { s: mm.s, icon: mm.icon || '' } : null; };
+      var unk = mints.filter(function (m) { var k = known(m); if (k) meta[m] = k; return !k; });
+      var mtJ = Promise.all(tcChunks(unk, 100).map(function (c) {
+        return http('https://lite-api.jup.ag/tokens/v2/search?query=' + encodeURIComponent(c.join(',')), { timeout: 8000 }).then(function (j) { (Array.isArray(j) ? j : []).forEach(function (t) { if (t && t.id && c.indexOf(t.id) >= 0) meta[t.id] = { s: String(t.symbol || '').slice(0, 12), icon: t.icon || '' }; }); }, function () {});
+      }));
+      return Promise.all([pxJ, mtJ]).then(function () {
+        rows.forEach(function (r) {
+          var m = meta[r.mint] || {}; r.sym = r.nat ? 'WSOL' : m.s || r.mint.slice(0, 4) + '\u2026'; r.icon = r.nat ? (LOGO.solana || '') : m.icon || '';
+          r.px = px[r.mint] || 0; r.usd = r.raw === 0n ? 0 : r.px ? toNum(r.raw, r.dec) * r.px : null;
+          var own = !r.ca || r.ca === a, ok = r.st !== 'frozen' && !r.wh && own;
+          r.canClose = ok && (r.raw === 0n || r.nat);
+          r.canBurn = ok && !r.nat && r.raw > 0n && r.px > 0 && r.usd < TC_DUST;
+          r.why = r.st === 'frozen' ? 'Frozen by the token issuer' : r.wh ? 'Holds withheld transfer fees' : !own ? 'Another account can close it' : r.canClose || r.canBurn ? '' :
+            !r.px ? 'No live price, so it can\u2019t be burned here' : 'Worth ' + fmtUsd(r.usd) + ', over $0.10';
+        });
+        rows.sort(function (x, y) { var g = function (r) { return r.canClose ? 0 : r.canBurn ? 1 : 2; }; return g(x) - g(y) || (y.lam > x.lam ? 1 : y.lam < x.lam ? -1 : 0); });
+        return rows;
+      });
+    });
+  }
+  function tcSolOpen() {
+    if (!A.sol) return;
+    var P = tcPanel('sol', 'Hwallet \u00b7 Token accounts', 'Clean up token accounts'), rows = [], busy = false;
+    var paired = !!(A.paired && A.paired.sol);
+    function sel() { return rows.filter(function (r) { return r.act !== 'keep'; }); }
+    function paint() {
+      if (!P.open) return;
+      var s = sel(), tot = s.reduce(function (t, r) { return t + r.lam; }, 0n), nb = s.filter(function (r) { return r.act === 'burn'; }).length, empt = rows.filter(function (r) { return r.canClose; });
+      var gpx = px('solana');
+      var h = HWP.cap('Closing an empty token account returns its rent to your SOL balance. Burn is offered only for tokens worth under $0.10 at the live price, and it can\u2019t be undone.');
+      if (!paired) h += HWP.warns(['This address is watch only. Pair it with Kwallet to sign.']);
+      if (!rows.length) h += HWP.card(HWP.kv('Token accounts', 'None', '', { sm: true }));
+      else {
+        if (empt.length) h += HWP.card(HWP.kv('Select all empty accounts', String(empt.length), '+' + tcSolS(empt.reduce(function (t, r) { return t + r.lam; }, 0n)) + ' SOL', { sm: true, tap: true, chev: true, attr: ' data-tcall' }));
+        h += HWP.changes(rows.map(function (r) {
+          var bal = r.raw === 0n ? 'Empty' : fmtA(r.raw, r.dec) + ' ' + r.sym + (r.usd != null ? ' \u00b7 ' + fmtUsd(r.usd) : '');
+          var note = r.act === 'close' ? 'Close \u00b7 ' + bal : r.act === 'burn' ? 'Burn and close \u00b7 ' + bal : r.canClose || r.canBurn ? bal + ' \u00b7 tap to choose' : bal + ' \u00b7 ' + r.why;
+          return { icon: r.icon, sym: 'SOL', lbl: r.sym + (r.pg === SPL22 ? ' \u00b7 2022' : ''), note: note, sign: r.act !== 'keep' ? '+' : '', amt: tcSolS(r.lam), usd: gpx ? fmtUsd(toNum(r.lam, 9) * gpx) : '' };
+        }));
+        h += HWP.rows([['Selected', esc(tcPl(s.length, 'account')) + (nb ? ' \u00b7 ' + nb + ' burn' : '')], ['SOL to reclaim', '<span class="hp-pos">+' + tcSolS(tot) + ' SOL</span>', gpx ? fmtUsd(toNum(tot, 9) * gpx) : '']]);
+        h += HWP.cap('Network fees are paid from your SOL. Kwallet shows every account before you sign.');
+      }
+      P.body(h);
+      var okT = s.length ? (nb ? 'Burn and close ' : 'Close ') + tcPl(s.length, 'account') : 'Select accounts';
+      P.foot(HWP.foot({ no: 'Close', ok: busy ? 'Waiting for Kwallet\u2026' : okT, okId: 'tc-ok', noId: 'tc-no', disabled: busy || !s.length || !paired }));
+      bindP();
+    }
+    function bindP() {
+      var el = P.el, all = el.querySelector('[data-tcall]');
+      if (all) all.onclick = function () { buzz(4); var on = rows.some(function (r) { return r.canClose && r.act !== 'close'; }); rows.forEach(function (r) { if (r.canClose) r.act = on ? 'close' : 'keep'; }); paint(); };
+      var rr = el.querySelectorAll('.hp-chg > .hp-r');
+      for (var i = 0; i < rr.length; i++) (function (r, n) {
+        n.classList.add('hp-tap');
+        n.onclick = function () {
+          buzz(4); if (busy) return;
+          if (!r.canClose && !r.canBurn) { toast(r.why || 'Nothing to clean up here'); return; }
+          var o = [{ k: 'keep', l: 'Keep', sub: 'Leave this account as it is' }];
+          if (r.canClose) o.push({ k: 'close', l: r.nat ? 'Close (unwrap)' : 'Close account', sub: r.nat && r.raw > 0n ? 'Unwraps ' + fmtA(r.raw, 9) + ' WSOL and returns the rent' : 'Returns the rent to your SOL', v: '+' + tcSolS(r.lam) + ' SOL' });
+          if (r.canBurn) o.push({ k: 'burn', l: 'Burn and close', sub: 'Burns ' + fmtA(r.raw, r.dec) + ' ' + r.sym + ' (' + fmtUsd(r.usd) + '), can\u2019t be undone', v: '+' + tcSolS(r.lam) + ' SOL' });
+          tcPick(r.sym, r.act, o, function (k) { r.act = k; paint(); });
+        };
+      })(rows[i], rr[i]);
+      var no = el.querySelector('#tc-no'), ok = el.querySelector('#tc-ok');
+      if (no) no.onclick = function () { P.open = false; P.close(); };
+      if (ok) ok.onclick = function () { if (ok.disabled || busy) return; buzz(8); go(); };
+    }
+    function load() {
+      busy = false; P.body(HWP.cap('Loading live from the network\u2026')); P.foot('');
+      tcSolLoad().then(function (r) { rows = r; paint(); }, function (e) { if (!P.open) return; P.body(HWP.warns([esc('Could not read your token accounts: ' + String(e && e.message || e).slice(0, 120))], true) + HWP.card(HWP.kv('Try again', '', '', { sm: true, tap: true, chev: true, attr: ' data-tcre' }))); var b = P.el.querySelector('[data-tcre]'); if (b) b.onclick = load; });
+    }
+    function go() {
+      var s = sel(); if (!s.length) return;
+      busy = true; paint();
+      tcSolRun(s).then(function (n) {
+        toast(n > 1 ? n + ' transactions sent' : 'Sent'); buzz([10, 40, 10]);
+        try { refreshChain('sol'); } catch (e) {}
+        if (P.open) load();
+      }, function (e) {
+        busy = false; toast(String(e && e.message || e).slice(0, 90));
+        if (P.open) load();   /* a batch that went through before the error shows as closed */
+      });
+    }
+    load();
+  }
+  /* rows -> instruction groups -> transactions under Solana's 1232-byte limit; each one signed in Kwallet, then sent */
+  function tcSolIx(r, me) {
+    var acc = { pubkey: r.k, isSigner: false, isWritable: true }, own = { pubkey: me, isSigner: true, isWritable: true }, out = [];
+    if (r.act === 'burn') out.push({ programId: r.pg, accounts: [acc, { pubkey: r.mint, isSigner: false, isWritable: true }, own], data: b64e(Uint8Array.from([15].concat(le(r.raw, 8), [r.dec]))) });
+    out.push({ programId: r.pg, accounts: [acc, { pubkey: me, isSigner: false, isWritable: true }, own], data: b64e(Uint8Array.from([9])) });
+    return out;
+  }
+  function tcSolPack(s, me) {
+    var dummy = '11111111111111111111111111111111', packs = [], cur = [];
+    s.forEach(function (r) {
+      var nx = cur.concat([r]), ix = [].concat.apply([], nx.map(function (x) { return tcSolIx(x, me); }));
+      var size = b64d(solCompile(me, [ixCuLimit(1400000), ixCuPrice(100000)].concat(ix), dummy, {})).length;
+      if (cur.length && (size > 1232 || nx.length > 20)) { packs.push(cur); cur = [r]; } else cur = nx;
+    });
+    if (cur.length) packs.push(cur);
+    return packs;
+  }
+  function tcSolTitle(p) {
+    var nb = p.filter(function (r) { return r.act === 'burn'; }).length, tot = p.reduce(function (t, r) { return t + r.lam; }, 0n);
+    return 'Close ' + tcPl(p.length, 'token account') + (nb ? ', burn ' + nb : '') + ' \u00b7 +' + tcSolS(tot) + ' SOL';
+  }
+  function tcSolWait(sig) {
+    var k = 0;
+    function poll() {
+      return rpcF(CHBY.sol.rpc, 'getSignatureStatuses', [[sig]], 6000).then(function (r) {
+        var x = r && r.value && r.value[0];
+        if (x && x.err) throw new Error('The transaction failed on chain');
+        if (x && (x.confirmationStatus === 'confirmed' || x.confirmationStatus === 'finalized')) return true;
+        if (++k > 20) return false; return sleep(1500).then(poll);
+      }, function () { if (++k > 20) return false; return sleep(1500).then(poll); });
+    }
+    return poll();
+  }
+  function tcSolRun(s) {
+    var me = A.sol, packs = tcSolPack(s, me), SS = packs.length > 1 ? swSteps(packs.map(tcSolTitle)) : null, done = 0;
+    var chain = packs.reduce(function (p, pk, i) {
+      return p.then(function () {
+        if (SS) SS.at(i);
+        return Promise.all([rpcF(CHBY.sol.rpc, 'getLatestBlockhash', [{ commitment: 'confirmed' }], 6000), solCuMin()]).then(function (x) {
+          var bh = x[0].value.blockhash, price = Math.max(5000, +(x[1] || 0)), ix = [].concat.apply([], pk.map(function (r) { return tcSolIx(r, me); }));
+          var est = Math.min(1400000, 5000 + ix.length * 8000);
+          return solCu(solCompile(me, [ixCuLimit(1400000), ixCuPrice(price)].concat(ix), bh, {})).catch(function () { return est; }).then(function (cu) { return solCompile(me, [ixCuLimit(cu), ixCuPrice(price)].concat(ix), bh, {}); });
+        }).then(function (b64) {
+          return dappRun({ site: TC_SITE, via: 'clean', ns: 'solana', method: 'solana_signTransaction', params: { tx: b64 }, send: true, skipAsk: true, clean: { title: tcSolTitle(pk) }, step: SS ? SS.step(i) : undefined });
+        }).then(function (r) { done++; if (SS) SS.at(i, 'busy', 'Waiting for the network\u2026'); return tcSolWait(r.signature); });
+      });
+    }, Promise.resolve());
+    return chain.then(function () { if (SS) SS.end(); return done; }, function (e) { if (SS) SS.end(); if (done) { try { refreshChain('sol'); } catch (x) {} } throw e; });
+  }
+
+  /* ----- Sui ----- */
+  function tcSuiNat(t) { return /^0x0*2::sui::SUI$/i.test(String(t)); }
+  function tcSuiLoad() {
+    var a = A.sui, coins = [];
+    function page(cur, n) {
+      return rpcF(CHBY.sui.rpc, 'suix_getAllCoins', [a, cur || null, 50], 10000).then(function (r) {
+        (r && r.data || []).forEach(function (c) { if (!tcSuiNat(c.coinType)) coins.push({ id: c.coinObjectId, t: String(c.coinType), bal: U(c.balance) || 0n, reb: 0n }); });
+        if (r && r.hasNextPage && r.nextCursor && n < 20) return page(r.nextCursor, n + 1);
+      });
+    }
+    return page(null, 0).then(function () {
+      return Promise.all(tcChunks(coins, 50).map(function (c) {
+        return rpcF(CHBY.sui.rpc, 'sui_multiGetObjects', [c.map(function (x) { return x.id; }), { showStorageRebate: true }], 10000).then(function (r) { (r || []).forEach(function (o, i) { var d = o && o.data; if (d && d.storageRebate != null) c[i].reb = U(d.storageRebate) || 0n; }); }, function () {});
+      }));
+    }).then(function () {
+      var by = {}, types = [];
+      coins.forEach(function (c) { if (!by[c.t]) { by[c.t] = { t: c.t, coins: [], act: 'keep' }; types.push(by[c.t]); } by[c.t].coins.push(c); });
+      var meta = {}, px = {};
+      var mt = Promise.all(types.map(function (g) {
+        var t = (TOK.sui || []).filter(function (x) { return String(x.a).toLowerCase() === g.t.toLowerCase(); })[0];
+        if (t) { meta[g.t] = { s: t.s, d: +t.d, icon: t.icon || '', px: rpx(t) }; return null; }
+        return HwSui.coinMeta(g.t, SUIC).then(function (m) { if (m) meta[g.t] = { s: String(m.symbol || '').slice(0, 12), d: +m.decimals, icon: m.iconUrl || '' }; }, function () {});
+      }));
+      var pj = Promise.all(tcChunks(types.map(function (g) { return g.t; }), 40).map(function (c) {
+        return http('https://coins.llama.fi/prices/current/' + c.map(function (t) { return 'sui:' + t; }).join(','), { timeout: 8000 }).then(function (j) { c.forEach(function (t) { var v = j && j.coins && j.coins['sui:' + t] && +j.coins['sui:' + t].price; if (v > 0) px[t] = v; }); }, function () {});
+      }));
+      return Promise.all([mt, pj]).then(function () {
+        types.forEach(function (g) {
+          var m = meta[g.t] || {}, nz = g.coins.filter(function (c) { return c.bal > 0n; }).sort(function (x, y) { return y.bal > x.bal ? 1 : y.bal < x.bal ? -1 : 0; }), zc = g.coins.filter(function (c) { return c.bal === 0n; });
+          g.sym = m.s || g.t.split('::').pop().slice(0, 12); g.dec = m.d >= 0 ? m.d : 9; g.icon = m.icon || ''; g.nz = nz; g.zc = zc;
+          g.raw = nz.reduce(function (t, c) { return t + c.bal; }, 0n);
+          g.px = px[g.t] || m.px || 0; g.usd = g.raw === 0n ? 0 : g.px ? toNum(g.raw, g.dec) * g.px : null;
+          /* what deleting returns: the merged coins and the empty ones (99% of their storage rebate) */
+          g.del = nz.slice(1).concat(zc); g.reb = g.del.reduce(function (t, c) { return t + c.reb; }, 0n) * 99n / 100n;
+          g.canClean = g.del.length > 0;
+          g.canBurn = g.raw > 0n && g.px > 0 && g.usd < TC_DUST;
+          g.why = g.canClean || g.canBurn ? '' : g.raw > 0n && !g.px ? 'One coin, no live price' : 'One coin, worth ' + fmtUsd(g.usd);
+        });
+        types.sort(function (x, y) { var r = function (g) { return g.canClean || g.canBurn ? 0 : 1; }; return r(x) - r(y) || (y.reb > x.reb ? 1 : y.reb < x.reb ? -1 : 0); });
+        return types;
+      });
+    });
+  }
+  function tcSuiOpen() {
+    if (!A.sui) return;
+    var P = tcPanel('sui', 'Hwallet \u00b7 Coin objects', 'Clean up coins'), rows = [], busy = false, paired = !!(A.paired && A.paired.sui);
+    function sel() { return rows.filter(function (g) { return g.act !== 'keep'; }); }
+    function paint() {
+      if (!P.open) return;
+      var s = sel(), tot = s.reduce(function (t, g) { return t + g.reb; }, 0n), nb = s.filter(function (g) { return g.act === 'burn'; }).length, cl = rows.filter(function (g) { return g.canClean; }), gpx = px('sui');
+      var h = HWP.cap('Merging coins and removing empty ones returns their storage rebate in SUI. Burn sends a token worth under $0.10 to 0x0, where nobody can use it again. SUI itself is never touched.');
+      if (!paired) h += HWP.warns(['This address is watch only. Pair it with Kwallet to sign.']);
+      if (!rows.length) h += HWP.card(HWP.kv('Coins other than SUI', 'None', '', { sm: true }));
+      else {
+        if (cl.length) h += HWP.card(HWP.kv('Select all clean-ups', String(cl.length), '\u2248 +' + fmtU(cl.reduce(function (t, g) { return t + g.reb; }, 0n), 9, 6) + ' SUI', { sm: true, tap: true, chev: true, attr: ' data-tcall' }));
+        h += HWP.changes(rows.map(function (g) {
+          var bal = (g.raw === 0n ? 'Empty' : fmtA(g.raw, g.dec) + ' ' + g.sym + (g.usd != null ? ' \u00b7 ' + fmtUsd(g.usd) : '')) + ' \u00b7 ' + tcPl(g.coins.length, 'coin');
+          var note = g.act === 'clean' ? 'Clean up \u00b7 ' + bal : g.act === 'burn' ? 'Burn \u00b7 ' + bal : g.canClean || g.canBurn ? bal + ' \u00b7 tap to choose' : bal + ' \u00b7 ' + g.why;
+          return { icon: g.icon, sym: 'SUI', lbl: g.sym, note: note, sign: g.act !== 'keep' ? '+' : '', pre: '\u2248', amt: fmtU(g.reb, 9, 6), usd: gpx && g.reb ? fmtUsd(toNum(g.reb, 9) * gpx) : '' };
+        }));
+        h += HWP.rows([['Selected', esc(tcPl(s.length, 'coin type')) + (nb ? ' \u00b7 ' + nb + ' burn' : '')], ['Storage rebate', '<span class="hp-pos">\u2248 +' + fmtU(tot, 9, 6) + ' SUI</span>', 'Before the network fee']]);
+        h += HWP.cap('Kwallet shows the simulated balance changes, the fee included, before you sign.');
+      }
+      P.body(h);
+      var okT = s.length ? (nb ? 'Burn and clean up ' : 'Clean up ') + tcPl(s.length, 'coin type') : 'Select coins';
+      P.foot(HWP.foot({ no: 'Close', ok: busy ? 'Waiting for Kwallet\u2026' : okT, okId: 'tc-ok', noId: 'tc-no', disabled: busy || !s.length || !paired }));
+      bindP();
+    }
+    function bindP() {
+      var el = P.el, all = el.querySelector('[data-tcall]');
+      if (all) all.onclick = function () { buzz(4); var on = rows.some(function (g) { return g.canClean && g.act === 'keep'; }); rows.forEach(function (g) { if (g.canClean && (on ? g.act === 'keep' : g.act === 'clean')) g.act = on ? 'clean' : 'keep'; }); paint(); };
+      var rr = el.querySelectorAll('.hp-chg > .hp-r');
+      for (var i = 0; i < rr.length; i++) (function (g, n) {
+        n.classList.add('hp-tap');
+        n.onclick = function () {
+          buzz(4); if (busy) return;
+          if (!g.canClean && !g.canBurn) { toast(g.why || 'Nothing to clean up here'); return; }
+          var o = [{ k: 'keep', l: 'Keep', sub: 'Leave these coins as they are' }];
+          if (g.canClean) o.push({ k: 'clean', l: 'Clean up', sub: [g.nz.length > 1 ? 'Merge ' + g.nz.length + ' coins' : '', g.zc.length ? 'remove ' + tcPl(g.zc.length, 'empty coin') : ''].filter(Boolean).join(', '), v: '\u2248 +' + fmtU(g.reb, 9, 6) + ' SUI' });
+          if (g.canBurn) o.push({ k: 'burn', l: 'Burn', sub: 'Sends ' + fmtA(g.raw, g.dec) + ' ' + g.sym + ' (' + fmtUsd(g.usd) + ') to 0x0, can\u2019t be undone', v: g.reb ? '\u2248 +' + fmtU(g.reb, 9, 6) + ' SUI' : '' });
+          tcPick(g.sym, g.act, o, function (k) { g.act = k; paint(); });
+        };
+      })(rows[i], rr[i]);
+      var no = el.querySelector('#tc-no'), ok = el.querySelector('#tc-ok');
+      if (no) no.onclick = function () { P.open = false; P.close(); };
+      if (ok) ok.onclick = function () { if (ok.disabled || busy) return; buzz(8); go(); };
+    }
+    function load() {
+      busy = false; P.body(HWP.cap('Loading live from the network\u2026')); P.foot('');
+      tcSuiLoad().then(function (r) { rows = r; paint(); }, function (e) { if (!P.open) return; P.body(HWP.warns([esc('Could not read your coins: ' + String(e && e.message || e).slice(0, 120))], true) + HWP.card(HWP.kv('Try again', '', '', { sm: true, tap: true, chev: true, attr: ' data-tcre' }))); var b = P.el.querySelector('[data-tcre]'); if (b) b.onclick = load; });
+    }
+    function go() {
+      var s = sel(); if (!s.length) return;
+      busy = true; paint();
+      tcSuiRun(s).then(function () {
+        toast('Sent'); buzz([10, 40, 10]);
+        try { refreshChain('sui'); } catch (e) {}
+        if (P.open) load();
+      }, function (e) { busy = false; toast(String(e && e.message || e).slice(0, 90)); if (P.open) paint(); });
+    }
+    load();
+  }
+  /* one PTB (Transaction JSON v2, objects resolved by the SDK): per type MergeCoins into the largest coin,
+     0x2::coin::destroy_zero for every empty coin, and for a burn TransferObjects of the merged coin to 0x0 */
+  function tcSuiPtb(s) {
+    var inputs = [], cmds = [], zero = null, n = 0;
+    function obj(id) { inputs.push({ UnresolvedObject: { objectId: id } }); return { Input: inputs.length - 1 }; }
+    s.forEach(function (g) {
+      if (n > 400) return;
+      var dest = g.nz.length ? obj(g.nz[0].id) : null;
+      if (g.nz.length > 1) cmds.push({ MergeCoins: { destination: dest, sources: g.nz.slice(1).map(function (c) { return obj(c.id); }) } });
+      g.zc.forEach(function (c) { cmds.push({ MoveCall: { package: '0x2', module: 'coin', function: 'destroy_zero', typeArguments: [g.t], arguments: [obj(c.id)] } }); });
+      if (g.act === 'burn' && dest) {
+        if (!zero) { inputs.push({ Pure: { bytes: b64e(new Uint8Array(32)) } }); zero = { Input: inputs.length - 1 }; }
+        cmds.push({ TransferObjects: { objects: [dest], address: zero } });
+      }
+      n += g.coins.length;
+    });
+    return JSON.stringify({ version: 2, sender: A.sui, expiration: null, gasData: { budget: null, price: null, owner: null, payment: null }, inputs: inputs, commands: cmds });
+  }
+  function tcSuiRun(s) {
+    if (typeof HwSui === 'undefined') return Promise.reject(new Error('The Sui builder is missing from this build'));
+    var nb = s.filter(function (g) { return g.act === 'burn'; }).length, nc = s.length - nb, tot = s.reduce(function (t, g) { return t + g.reb; }, 0n);
+    var title = (nb ? 'Burn ' + tcPl(nb, 'coin type') + (nc ? ', clean up ' + nc : '') : 'Clean up ' + tcPl(nc, 'coin type')) + ' \u00b7 \u2248 +' + fmtU(tot, 9, 6) + ' SUI';
+    toast('Preparing\u2026');
+    var b64;
+    return HwSui.build(tcSuiPtb(s), A.sui, SUIC).catch(function (e) { throw new Error('Could not prepare the Sui transaction: ' + String(e && e.message || e).slice(0, 120)); }).then(function (b) {
+      b64 = b;
+      return HwSui.dryRun(b, SUIC).then(function (dr) { var st = dr.status || {}; return suiDeltas(dr).then(function (d) { return st.status === 'failure' ? { error: String(st.error || 'The transaction would fail').slice(0, 160), plain: 1 } : d.length ? { deltas: d } : null; }); }, function () { return null; });
+    }).then(function (sim) {
+      return p17K(TC_SITE, 'sui', 'sui_signTransaction', { tx: b64 }, Object.assign({ via: 'clean', clean: { title: title } }, sim ? { sim: sim } : {}));
+    }).then(function (r) {
+      if (r && r.publicKey) jset('hw-suipk:' + A.sui, r.publicKey);
+      return HwSui.execute(r.bytes, r.signature, SUIC);
+    }).then(function (x) {
+      try { dappLog('sui', x.digest, TC_SITE); } catch (e) {}
+      if (x.effects && x.effects.status && x.effects.status.status !== 'success') throw new Error('The transaction failed on chain: ' + String(x.effects.status.error || '').slice(0, 100));
+      return x.digest;
+    });
+  }
+
   /* ---------- Cardano ---------- */
   /* v1.8.25 (CIP-95): the DRep and stake public keys, shared once by Kwallet (a Share sheet) and kept for this address */
   function adaGov(site) {
@@ -17561,6 +17995,7 @@ window.hwCrashPrompt = crashPrompt;
     var th = 'light'; try { th = localStorage.getItem('wallet-theme') || 'light'; } catch (e) {} document.body.setAttribute('data-theme', th);
     if (jget('hw-hide', false)) document.body.classList.add('hw-hide');
     try { kwApply(false); } catch (e) { try { console.error('kw purge', e); } catch (x) {} }   /* v1.8.34: before any wallet is read */
+    try { kwNamesApply(kwNamesGet(), false); } catch (e) {}   /* ph38sync B24: Kwallet's seed names */
     loadAll(); applyTheme(); window.__hwCap = capGet();
     try { kwMapSync(W); } catch (e) {}
     try { if (!hasAny() && localStorage.getItem('kw-vault-data')) { ['kw-vault-v1', 'kw-vault-data', 'kw-vault-data-prev', 'kw-pin-v1', 'kw-pin-mode', 'kw-bio', 'kw-pin-kind'].forEach(function (k) { localStorage.removeItem(k); }); setTimeout(function () { toast('Hwallet no longer has its own lock. Pair with Kwallet again'); }, 800); } } catch (e) {}
