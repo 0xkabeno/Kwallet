@@ -24733,13 +24733,15 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     }
     /* transactions: balance changes (Hwallet's simulation when there is one, else what Kwallet decoded) */
     var sim = R.sim && Array.isArray(R.sim.deltas) ? R.sim.deltas : null, rows, lines = [], needBlind = false;
-    if (sim) { rows = chgRows(sim); o.main += HWP.cap('Balance changes are estimated by Hwallet\u2019s simulation. Kwallet checked the transaction itself; amounts are not guaranteed.') + kHero(rows); }
+    if (sim) { rows = chgRows(sim); o.main += kHero(rows); o.det += '<div class="hp-note">Balance changes come from Hwallet\u2019s simulation; Kwallet checked the transaction itself. Amounts are estimates.</div>'; }   /* v3.98.39: clean main view like Solana */
     else if (v.out > 0n) { rows = chgRows([{ s: '-', v: v.out, nat: 1 }]); o.main += HWP.cap('Amounts decoded from the transaction.') + kHero(rows); }
     if (R.sim && R.sim.error) o.warn.push(esc(String(R.sim.error).slice(0, 160)));
     if (v.chain === 'sui') {
-      var sv = v.sv; lines = sv.cmds.slice(0, 12); if (sv.cmds.length > 12) lines.push('\u2026 and ' + (sv.cmds.length - 12) + ' more steps');
+      var sv = v.sv, sl = sv.cmds.slice(0, 12); if (sv.cmds.length > 12) sl.push('\u2026 and ' + (sv.cmds.length - 12) + ' more steps');
+      /* v3.98.39: the raw Move steps go in Details (main view = balance changes, fee, wallet, like Solana); without a simulation they stay visible */
+      if (sim) sl.forEach(function (t, i) { o.det += kv(i ? '' : 'Steps', '<span class="hp-mono">' + esc(t) + '</span>', ''); }); else lines = sl;
       sv.to.forEach(function (a) { o.det += addrKv('To', a, ''); });
-      if (sv.calls.length) { needBlind = !sim; sv.calls.slice(0, 6).forEach(function (f) { o.det += kv('Calls', '<span class="hp-mono">' + esc(f.length > 44 ? f.slice(0, 22) + '\u2026' + f.slice(-20) : f) + '</span>', ''); }); }
+      if (sv.calls.length) { needBlind = !sim; if (!sim) sv.calls.slice(0, 6).forEach(function (f) { o.det += kv('Calls', '<span class="hp-mono">' + esc(f.length > 44 ? f.slice(0, 22) + '\u2026' + f.slice(-20) : f) + '</span>', ''); }); }
       o.det += kv('Gas budget', fmt(sv.budget, 9, 9) + ' SUI', 'Gas price ' + esc(String(sv.price)) + ' MIST') + (sv.exp ? kv('Valid', esc(sv.exp)) : '');
       v.warn.forEach(function (w) { if (/sponsored|All your SUI|publishes|upgrades/.test(w)) o.warn.push(w); else o.det += '<div class="hp-note">' + w + '</div>'; });
     } else if (v.chain === 'ada') {
