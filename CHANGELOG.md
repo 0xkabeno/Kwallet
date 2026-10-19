@@ -1,5 +1,12 @@
 # Changelog
 
+## Hwallet v1.8.41 (2026-10-19)
+
+- Swap screen tightened: both token cards and Details now share one width, the flip button sits on the seam between them, and the Details sheet rows are shorter.
+- SOL sent to a brand-new address (a cross-chain swap deposit, such as NEAR Intents SOL→TRX) now shows in Kwallet as SOL you send. It no longer shows as one-time "Rent" with "No change to your balances".
+- Saved Sui custom fee on app requests: your gas price is kept, and only the gas budget (a cap) is raised when the app's transaction needs more. Before, it fell back to the app's fee.
+- Swap: the default network fee reads "Normal" (it was "Site suggested"), and for chains whose fee is set in Kwallet it reads "Your saved fee".
+
 ## Kwallet v3.98.39 (2026-10-19)
 
 - Monero Send sheet in Kwallet has the Kwallet badge and Monero chip again, like every other sheet.
