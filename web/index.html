@@ -4416,6 +4416,9 @@ html:not(#b21a):not(#b21b):not(#b21c):not(#b21d):not(#b21e):not(#b21f) .kss-hp .
 html:not(#b21a):not(#b21b):not(#b21c):not(#b21d):not(#b21e):not(#b21f) .kss-hp .kss-stp{flex:0 0 auto!important;height:34px!important;max-width:none!important;overflow:hidden!important;box-sizing:border-box!important;border-radius:10px!important;background:var(--og-in)!important;border:1px solid var(--og-ln)!important}
 html:not(#b21a):not(#b21b):not(#b21c):not(#b21d):not(#b21e):not(#b21f) .kss-hp .kss-stp button{width:34px!important;height:32px!important;padding:0!important;font:600 18px/1 var(--og-f)!important;color:var(--hp-text)!important}
 html:not(#b21a):not(#b21b):not(#b21c):not(#b21d):not(#b21e):not(#b21f) .kss-hp .kss-stp input{width:46px!important;height:32px!important;padding:0!important;border-color:var(--og-ln)!important;font:500 15px/1 var(--og-m)!important;color:var(--hp-text)!important}
+/* pk39 B28 pair sheet: the title always sits above the asset card (never under / clipped by it) */
+html:not(#b28a):not(#b28b):not(#b28c):not(#b28d):not(#b28e):not(#b28f) .kss-hp.kss-pair .hp-title{position:relative!important;z-index:2!important;overflow:visible!important;flex:0 0 auto!important}
+html:not(#b28a):not(#b28b):not(#b28c):not(#b28d):not(#b28e):not(#b28f) .kss-hp.kss-pair #kss-pa{position:relative;z-index:1;margin-top:0!important;flex:0 0 auto!important}
 
 </style>
 </head>
@@ -12647,7 +12650,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.98.36';
+const APP_VERSION = '3.98.37';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -12810,6 +12813,47 @@ function pushActivity(kind, detail) {
   try { if (typeof saveState === 'function') saveState(); } catch (e) {}
 }
 
+/* pk39tx (B29/B31): every request Kwallet signs for Hwallet is one structured entry in the Activity log: chain, type,
+   amount, fee, counterparty / contract, the dApp's origin, tx hash and status. Kwallet is offline, so the status comes from
+   Hwallet: each request carries the chain status Hwallet read from the RPCs (txSync) and the entries follow it
+   (Signed -> Pending -> Confirmed / Failed). Rendered with the existing log-item rows. */
+function kw39H(h) { h = String(h == null ? '' : h).trim(); return /^(0x)?[0-9a-f]{16,}$/i.test(h) ? h.replace(/^0x/i, '').toLowerCase() : h; }
+function kw39Tx(o, detail) {
+  try {
+    o = o || {}; var tx = {};
+    ['ch', 'net', 'type', 'amt', 'fee', 'to', 'origin', 'site', 'hash', 'm'].forEach(function (k) { if (o[k] != null && o[k] !== '') tx[k] = String(o[k]).replace(/<[^>]*>/g, '').slice(0, k === 'origin' ? 200 : 140); });
+    tx.st = o.hash ? 'signed' : 'done';
+    activityLog.push({ t: logStamp(), kind: 'tx', detail: String(detail || '').slice(0, 300), tx: tx });
+    if (activityLog.length > MAX_LOG) activityLog = activityLog.slice(-MAX_LOG);
+    try { if (typeof saveState === 'function') saveState(); } catch (e) {}
+  } catch (e) { try { pushActivity('act', detail); } catch (x) {} }
+}
+function kw39Sync(list) {
+  if (!Array.isArray(list) || !list.length) return;
+  var by = {}; list.slice(0, 200).forEach(function (x) { if (x && x.h && /^(pending|ok|fail)$/.test(x.st)) by[kw39H(x.h)] = x; });
+  var chg = false;
+  activityLog.forEach(function (e) {
+    var t = e && e.kind === 'tx' && e.tx; if (!t || !t.hash) return;
+    var x = by[kw39H(t.hash)]; if (!x) return;
+    if (t.st !== x.st) { t.st = x.st; chg = true; }
+    if (x.f && !t.feeChain) { t.feeChain = String(x.f).slice(0, 60); chg = true; }
+  });
+  if (chg) { try { if (typeof saveState === 'function') saveState(); } catch (e) {} }
+}
+/* the saved log is read on window load (loadState): sync after it, never into an empty log */
+function kw39SyncSoon(list) {
+  if (document.readyState === 'complete') { setTimeout(function () { try { kw39Sync(list); } catch (e) {} }, 0); return; }
+  window.addEventListener('load', function () { setTimeout(function () { try { kw39Sync(list); } catch (e) {} }, 0); });
+}
+function kw39Note(e) {
+  var t = e && e.kind === 'tx' && e.tx; if (!t) return '';
+  var stl = { signed: 'Signed \u00b7 handed to Hwallet', pending: 'Pending', ok: 'Confirmed', fail: 'Failed', done: 'Done' }[t.st] || '';
+  var sh = function (h) { h = String(h || ''); return h.length > 20 ? h.slice(0, 10) + '\u2026' + h.slice(-8) : h; };
+  var p = [stl, t.type, t.amt, (t.feeChain || t.fee) ? 'Fee ' + (t.feeChain || t.fee) : '', t.to ? 'To ' + sh(t.to) : '', t.origin ? String(t.origin).replace(/^https?:\/\//, '') : (t.site || ''), t.hash ? 'Tx ' + sh(t.hash) : ''].filter(Boolean);
+  return p.length ? '<div class="log-note">' + esc(p.join(' \u00b7 ')) + '</div>' : '';
+}
+/* pk39tx */
+
 function pushSeedCopy(seed, type, note) {
   if (!seed) return;
   seedCopyLog.push({
@@ -12847,7 +12891,7 @@ function renderActivityLog() {
     var map = {
       copy: 'COPY', seed: 'SEED', chain: 'CHAIN', path: 'PATH',
       page: 'PAGE', gen: 'GEN', import: 'IMPORT', export: 'EXPORT',
-      clear: 'CLEAR', undo: 'UNDO', redo: 'REDO', wipe: 'WIPE', act: 'ACTION'
+      clear: 'CLEAR', undo: 'UNDO', redo: 'REDO', wipe: 'WIPE', act: 'ACTION', tx: 'TX'
     };
     return map[k] || k.toUpperCase();
   }
@@ -12866,7 +12910,7 @@ function renderActivityLog() {
           + '<span class="ts">' + esc(e.t || '') + '</span>'
           + '<span class="kind ' + esc(k) + '">' + esc(kindLabel(k)) + '</span>'
           + '</div>'
-          + '<div class="detail">' + esc(detail) + '</div>'
+          + '<div class="detail">' + esc(detail) + '</div>' + kw39Note(e)
           + '</div>';
       }
       act.innerHTML = html;
@@ -20955,7 +20999,7 @@ window.__KWLOGO={"bitcoin":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAA
 
   /* =================== Solana (+SPL) =================== */
   var SOL = {
-    SYS: '11111111111111111111111111111111', TOKEN: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', TOKEN22: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PazQaGZ3cx6CKBvkm7', ATA: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL', CB: 'ComputeBudget111111111111111111111111111111'
+    SYS: '11111111111111111111111111111111', TOKEN: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', TOKEN22: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb', ATA: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL', CB: 'ComputeBudget111111111111111111111111111111'
   };
   function solAddr(s) { var b = b58dec(String(s)); need(b.length === 32, 'Not a valid Solana address'); return b; }
   function solBuild(req, level, privB58) {
@@ -22175,7 +22219,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   function kwMirrorBoot() { var P = jget(PUB, null); if (Array.isArray(P) && (+jget(PUBV, 0) || 0) >= PUBVER) kwMirror(P); }
   /* an in-app erase: the pairings, their public index and signing copy, the seed names, then Hwallet is told */
   window.KwHwWipe = function () {
-    [PK, PUB, PUBV, SK, 'kw-seed-names'].forEach(function (x) { try { localStorage.removeItem(x); } catch (e) {} });
+    [PK, PUB, PUBV, SK, 'kw-seed-names', 'kw-hw-bal'].forEach(function (x) { try { localStorage.removeItem(x); } catch (e) {} });
     try { if (window.HarkNative && HarkNative.kwWiped) HarkNative.kwWiped(); } catch (e) {}
   };
   function setReqPin(on) {
@@ -22914,6 +22958,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     started = true; STG.t0 = Date.now();
     stage('request read (' + Math.round(raw.length / 1024) + ' KB)');
     try { REQ = JSON.parse(raw || 'null'); } catch (e) { REQ = null; }
+    try { if (REQ && REQ.txSync) kw39SyncSoon(REQ.txSync); } catch (e) {}   /* pk39tx */
     raw = '';
     stage('request parsed' + (REQ && REQ.chain ? ' (' + String(REQ.chain).slice(0, 8) + (REQ.kind ? ' ' + String(REQ.kind).slice(0, 16) : '') + ')' : ''));
     document.documentElement.classList.add('kw-sheet'); page.classList.add('kss-sh');
@@ -22967,6 +23012,36 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   function pairType(o) { return String(o.kind || '').split(/\s+\+\s+/)[0]; }
   function pairChip(o) { var x = o.st === 'xmr' || o.st === 'poly'; return { n: x ? 'Monero' : 'All chains', i: x ? (LOGO.monero || '') : '' }; }
   function pairWords(o) { var n = o.m ? String(o.m).trim().split(/\s+/).filter(Boolean).length : 0, w; if (!n) { w = /(\d+)\s*words/.exec(o.kind || ''); n = w ? +w[1] : o.st === 'xmr' ? 25 : o.st === 'poly' ? 16 : 0; } return n; }
+  /* pk39 B28: what Hwallet already sends in every Send / dApp request (native balance + price), kept per seed, chain and
+     address number, so the pairing sheet can show the seed's most active chain. Public data only; erased with the pairings. */
+  var PBAL = 'kw-hw-bal';
+  function pbKey(r) { return r && /^\d{10}$/.test(String(r.sid || '')) ? String(r.sid) : r && r.id ? 'r' + r.id : ''; }
+  function pairSeen(R, c, inf, rec) { try {
+    if (!R || !inf || !rec || rec.e2e) return; var k = pbKey(rec); if (!k) return;
+    var all = jget(PBAL, {}); if (!all || typeof all !== 'object' || Array.isArray(all)) all = {};
+    var ck = c === 'evm' ? 'evm:' + (+R.chainId) : String(c), e = all[k] || (all[k] = {}), x = e[ck] || (e[ck] = { a: {}, k: 0 }), g = U(R.balance && R.balance.gas), px = +((R.prices || {}).gasUsd) || 0;
+    x.n = inf.name; x.l = inf.logo; x.s = inf.sym; x.d = c === 'evm' ? 18 : (inf.dec | 0); x.k = (x.k | 0) + 1; x.t = Date.now(); if (px > 0) x.px = px;
+    if (!x.a || typeof x.a !== 'object') x.a = {}; if (g != null && g >= 0n) x.a[rec.index | 0] = g.toString();
+    localStorage.setItem(PBAL, JSON.stringify(all));
+  } catch (e) {} }
+  /* the seed's most active chain: highest USD, else most requests, else first with a balance, else its primary chain at 0 */
+  function pairAsset(o) {
+    var all = jget(PBAL, {}) || {}, keys = [], m = {};
+    if (o.sid) keys.push(o.sid); (o.recs || []).forEach(function (r) { var k = pbKey(r); if (k && keys.indexOf(k) < 0) keys.push(k); });
+    keys.forEach(function (k) { var e = all[k]; if (!e || typeof e !== 'object') return; Object.keys(e).forEach(function (ck) { var x = e[ck]; if (!x || !x.n) return;
+      var y = m[ck] || (m[ck] = { n: x.n, l: x.l, s: x.s, d: x.d | 0, px: 0, k: 0, t: 0, a: {} }); y.k += x.k | 0;
+      if ((x.t || 0) >= y.t) { y.t = x.t || 0; if (x.px > 0) y.px = x.px; y.n = x.n; y.l = x.l; y.s = x.s; y.d = x.d | 0; }
+      Object.keys(x.a || {}).forEach(function (i) { y.a[i] = x.a[i]; }); }); });
+    var L2 = Object.keys(m).map(function (ck) { var y = m[ck], b = 0n; Object.keys(y.a).forEach(function (i) { var v = U(y.a[i]); if (v != null && v > 0n) b += v; }); y.b = b;
+      y.usd = y.px > 0 ? Number(b) / Math.pow(10, y.d) * y.px : 0; return y; });
+    var best = null;
+    L2.forEach(function (y) { if (y.usd > 0 && (!best || y.usd > best.usd)) best = y; });
+    if (!best) L2.forEach(function (y) { if (!best || y.k > best.k || (y.k === best.k && best.b === 0n && y.b > 0n)) best = y; });
+    if (!best) L2.forEach(function (y) { if (!best && y.b > 0n) best = y; });
+    var xm = o.st === 'xmr' || o.st === 'poly';
+    if (!best) best = xm ? { n: 'Monero', l: 'monero', s: 'XMR', d: 12, px: 0, b: 0n } : { n: EVM[1].name, l: EVM[1].logo, s: EVM[1].sym, d: 18, px: 0, b: 0n };
+    return { n: best.n, i: LOGO[best.l] || '', s: best.s, amt: fmt(best.b, best.d, 6), usd: best.px > 0 ? usdTxt(best.b, best.d, best.px) : best.b === 0n ? '$0.00' : '' };
+  }
   /* pk37 B20: 'BIP39 \u00b7 12 words + passphrase' + seed ID -> one plain muted meta line (escaped text) */
   function pairMeta(k, id) { return String(k || '').split(/\s+\+\s+|\s+\u00b7\s+/).filter(Boolean).concat(id ? [id] : []).map(esc).join(' \u00b7 '); }
   function pairPick(L) {
@@ -22975,18 +23050,24 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* pk38 B21: Send's layout. Asset card (hp-chg) = the selected seed; seed list = To / Network fee rows (hp-cmp, hp-tap,
        label + type, address number(s) + Paired on the right, the selected row .on); Address number = the Wallet row (hp-wr);
        the note = Send's hp-cap; Details (hp-det) = seed ID, type, words; footer = Cancel / Pair */
-    function asset() { var o = L[pick]; return '<div class="hp-r">' + HWP.icon('', o.label, 'hp-tk', 'hp-tkl') + '<span class="hp-l">' + esc(o.label) + '</span><span class="hp-v"><span>' + esc(pairType(o)) + '</span>' + (o.p ? '<small>+ passphrase</small>' : '') + '</span></div>'; }
-    function opts() { return L.map(function (o, i) { return HWP.kv(esc(o.label), o.recs.length ? o.recs.map(function (x) { return '<span data-n="' + (x.index | 0) + '">#' + (x.index | 0) + '</span>'; }).join(', ') : 'New', o.recs.length ? 'Paired' : 'Not paired yet',
-      { tap: true, cls: 'kss-pr' + (i === pick ? ' on' : ''), lsub: esc(pairType(o)), attr: ' data-i="' + i + '" role="radio" aria-checked="' + (i === pick ? 'true' : 'false') + '"' }); }).join(''); }
+    /* pk39 B28: the asset card is Send's (HWP.changes): the selected seed's most active chain logo + name and its balance
+       there (amount + $); the chip names that chain. Seed rows are one-line selectors (name | #n or New). No helper note:
+       what goes to Hwallet is a Details row with the seed ID, type and words */
+    function asset() { var a = pairAsset(L[pick]); return HWP.changes([{ icon: a.i, sym: a.s, lbl: a.n, sign: '', amt: a.amt, usd: a.usd }]).replace('<div class="hp-card hp-chg"', '<div class="hp-card hp-chg" id="kss-pa"'); }
+    function chip() { var a = pairAsset(L[pick]); return { n: a.n, i: a.i }; }
+    function opts() { return L.map(function (o, i) { return HWP.kv(esc(o.label), o.recs.length ? o.recs.map(function (x) { return '<span data-n="' + (x.index | 0) + '">#' + (x.index | 0) + '</span>'; }).join(', ') : 'New', '',
+      { tap: true, cls: 'kss-pr' + (i === pick ? ' on' : ''), attr: ' data-i="' + i + '" role="radio" aria-checked="' + (i === pick ? 'true' : 'false') + '"' }); }).join(''); }
     function det() { var o = L[pick], id = sidFmt(o.sid), n = pairWords(o);
-      return (id ? HWP.kv('Seed ID', '<span class="hp-mono">' + esc(id) + '</span>', '', { sm: true }) : '') + HWP.kv('Type', o.st === 'xmr' ? 'Monero' : o.st === 'poly' ? 'Polyseed' : 'BIP39', o.p ? 'With passphrase' : '', { sm: true }) + (n ? HWP.kv('Words', String(n), '', { sm: true }) : ''); }
-    var body = HWP.card(asset(), 'hp-chg', 'kss-pa') + HWP.card(opts(), 'hp-cmp kss-ls', 'kss-pl') +
+      return (id ? HWP.kv('Seed ID', '<span class="hp-mono">' + esc(id) + '</span>', '', { sm: true }) : '') + HWP.kv('Type', o.st === 'xmr' ? 'Monero' : o.st === 'poly' ? 'Polyseed' : 'BIP39', o.p ? 'With passphrase' : '', { sm: true }) + (n ? HWP.kv('Words', String(n), '', { sm: true }) : '') +
+        HWP.kv('Goes to Hwallet', 'Public addresses', 'Monero view key', { sm: true }); }
+    var body = asset() + HWP.card(opts(), 'hp-cmp kss-ls', 'kss-pl') +
       HWP.card(HWP.kv('Address number', '<div class="kss-stp"><button type="button" data-ns="-1" aria-label="Previous">\u2212</button><input id="kss-n" type="number" min="0" inputmode="numeric" value="' + num + '" aria-label="Address number"><button type="button" data-ns="1" aria-label="Next">+</button></div>', '', { cls: 'hp-wr kss-nrr' })) +
-      HWP.cap('Only public addresses and the Monero view key go to Hwallet') + HWP.details(det(), false, 'kss-det');
-    page.innerHTML = pairSheet(body, HWP.foot({ no: 'Cancel', ok: 'Pair', okId: 'kss-go', noId: 'kss-no', hint: '' }), 'Pair', pairChip(L[pick]));
+      HWP.details(det(), false, 'kss-det');
+    page.innerHTML = pairSheet(body, HWP.foot({ no: 'Cancel', ok: 'Pair', okId: 'kss-go', noId: 'kss-no', hint: '' }), 'Pair', chip());
+    try { page.querySelector('.kss-hp').classList.add('kss-pair'); } catch (e) {}
     /* a new pick redraws the parts that show it (rows, asset card, chip, Details) in place; the stepper keeps its node */
-    function redraw() { $('kss-pl').innerHTML = opts(); $('kss-pa').innerHTML = asset(); var dc = $('kss-det'), cc = dc && dc.querySelector('.hp-card'); if (cc) cc.innerHTML = det();
-      var tp = page.querySelector('.hp-top'), ch = pairChip(L[pick]); if (tp) tp.outerHTML = HWP.topBar(ch.n, ch.i); wire(); }
+    function redraw() { $('kss-pl').innerHTML = opts(); $('kss-pa').outerHTML = asset(); var dc = $('kss-det'), cc = dc && dc.querySelector('.hp-card'); if (cc) cc.innerHTML = det();
+      var tp = page.querySelector('.hp-top'), ch = chip(); if (tp) tp.outerHTML = HWP.topBar(ch.n, ch.i); wire(); }
     $('kss-no').onclick = page.querySelector('[data-hp-x]').onclick = function () { finish({ status: 'rejected' }); };
     var ni = $('kss-n');
     function wire() { page.querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function (e) { var i = +b.getAttribute('data-i'), nb = e.target.closest('[data-n]'); if (i !== pick) { pick = i; ni.value = L[i].recs.length ? L[i].recs[L[i].recs.length - 1].index | 0 : 0; } if (nb) ni.value = nb.getAttribute('data-n'); buzz(6); redraw(); }; }); }
@@ -23243,7 +23324,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (!bad && feeSum > (U(X.fee) || 0n) + (U(X.fee) || 0n) / 10n) bad = 'has a fee of ' + fmt(feeSum, 12, 12) + ' XMR, more than shown';
       if (!bad && !(sum > 0n)) bad = 'sends nothing';
       if (bad) { r = null; setBusy(false); return fail('Not signed: this Monero transaction ' + bad + '.', 'Nothing was sent. Start the send again in Hwallet.'); }
-      try { pushActivity('act', 'Hwallet: send ' + fmt(sum, 12, 8) + ' XMR on Monero'); } catch (e) {}
+      try { kw39Tx({ ch: 'xmr', net: 'Monero', type: 'Send', amt: fmt(sum, 12, 8) + ' XMR', fee: fmt(feeSum, 12, 8) + ' XMR', to: R.to || '', hash: (r.hashes || [])[0] || '' }, 'Hwallet: send ' + fmt(sum, 12, 8) + ' XMR on Monero'); } catch (e) {}   /* pk39tx */
       success({ status: 'signed', chain: 'xmr', signed: r.signed, hashes: r.hashes || [], ki: r.ki || [], kiOffset: r.kiOffset | 0, amount: sum.toString(), fee: feeSum.toString(), level: S.level, kind: 'transfer' }, 'Signed');
     } catch (e) { keys = null; kxStop(); setBusy(false); fail('Signing failed: ' + (e && e.message || e)); }
   }
@@ -23308,6 +23389,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       var fk = { mode: 'cap', v: {}, en: {} }; ['rate', 'drops', 'gp', 'gb', 'fee'].forEach(function (q) { var m1 = R.feeManual.v || {}; if (m1[q] != null && String(m1[q]).length < 24) fk.v[q] = String(m1[q]); });
       S.man = fk; S.manSaved = true;
     } catch (e) {} }
+    pairSeen(R, c, info, rec);   /* pk39 B28 */
     mount(); draw(); arm(600);
     setInterval(tickLive, 1000); setInterval(tickExp, 250);
   }
@@ -23616,13 +23698,30 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   /* pk38send:xtot rel38 (B25/B26): the Total row (same kv row as Network fee) when the recipient side adds a cost:
      Solana token account rent, or a Tron recipient that is not activated */
   function kXTot(c, gpx, tpx) {
-    var R = S.R; if ((R.kind || 'transfer') !== 'transfer' || c.err || c.amount == null || c.fee == null) return '';
-    var ex = U(c.extra) || 0n, sol = S.c === 'sol' && S.tok && ex > 0n, trx = S.c === 'trx' && R.trx && R.trx.toInactive;
+    var R = S.R; if ((R.kind || 'transfer') !== 'transfer') return '';
+    /*pk39send:xtot rel39 (B33/B34): one clean row for what the recipient side adds (value + short dollars), then Total */
+    var ex = U(c.extra) || 0n, sol = S.c === 'sol' && S.tok && ex > 0n, ka = kTrxAct(false), trx = S.c === 'trx' && !S.tok && R.trx && (ka > 0n || !!R.trx.toUnk);
     if (!sol && !trx) return '';
+    var xr = sol ? HWP.kv('New token account', HWP.subz('+' + fmt(ex, 9, 9) + ' SOL'), usdTxt(ex, 9, gpx))
+      : ka > 0n ? HWP.kv('Activates recipient', HWP.subz('+' + fmt(ka, 6, 6) + ' TRX'), usdTxt(ka, 6, gpx)) : HWP.kv('Activates recipient', 'Not checked', 'Up to +1.1 TRX if new');
+    if (c.err || c.amount == null || c.fee == null) return xr;
     var fee = c.fee + ex, v = S.tok ? fmt(c.amount, S.dec, 8) + ' ' + esc(S.sym) + ' + ' + fmt(fee, S.gdec, S.gdec) + ' ' + esc(S.gsym) : fmt(c.amount + fee, S.gdec, S.gdec) + ' ' + esc(S.gsym);
     var uv = Number(fee) / Math.pow(10, S.gdec) * (gpx || 0) + Number(c.amount) / Math.pow(10, S.tok ? S.dec : S.gdec) * ((S.tok ? tpx : gpx) || 0);
     var us = gpx > 0 && (!S.tok || tpx > 0) && isFinite(uv) ? (uv > 0 && uv < 0.01 ? HWP.tinyUsd(uv) : '$' + uv.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: uv < 1 ? 3 : 2 })) : '';
-    return HWP.kv('Total', HWP.subz((c.approx ? '\u2248 ' : '') + v), us);
+    return xr + HWP.kv('Total', HWP.subz((c.approx ? '\u2248 ' : '') + v), us);   /*pk39send:totr*/
+  }
+  /* pk39send:helpers rel39 (B34): the Tron activation Hwallet measured (TRX sends to an account that does not exist yet) */
+  function kTrxAct(skip) {
+    var R = S.R, t = R && R.trx; if (skip || S.c !== 'trx' || S.tok || (R.kind || 'transfer') !== 'transfer' || !t || !t.toInactive) return 0n;
+    var a = U(t.activation) || 0n, f = U(t.estFee); return f != null && a > f ? 0n : a;
+  }
+  /* the network fee's subline: dollars + what it pays for; "Covered" only when the network part is really 0 */
+  function kTrxSub(fN, gpx, skip) {
+    var t = (S.R && S.R.trx) || {}, fp = t.feeParts || {};
+    if (fN == null) return '';
+    if (fN === 0n) return skip || t.netFee == null ? 'Covered by your bandwidth' : S.tok ? 'Covered by your energy and bandwidth' : t.toInactive ? 'Covered by your staked bandwidth' : 'Covered by your bandwidth';
+    var parts = [U(fp.bw) > 0n ? 'Bandwidth' : '', U(fp.e) > 0n ? 'Energy' : '', U(fp.memo) > 0n ? 'Memo' : ''].filter(Boolean).join(' + ');
+    return [usdTxt(fN, 6, gpx), parts].filter(Boolean).join(' \u00b7 ');
   }
   var KINDS = { transfer: 'Send', 'trx-freeze': 'Stake TRX', 'trx-unfreeze': 'Unstake TRX', 'trx-withdraw': 'Withdraw TRX', 'xrp-trustset': 'Add token', 'xmr-ki': 'Sync spent status' };
   function draw() {
@@ -23663,7 +23762,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
         note: kind === 'trx-freeze' ? 'Staked for ' + (R.resource === 'ENERGY' ? 'energy' : 'bandwidth') : kind === 'trx-unfreeze' ? 'Unstaking takes 14 days' : kind === 'trx-withdraw' ? 'Unstaked TRX back to you' : '' }];
       /* v3.98.1 (#4): the recipient's token-account rent is one small grey line (info icon), not a red amount row */
       /* v3.98.3 (push 9 #2): the recipient's token-account rent is a "Rent" row in the card (SOL icon, red amount, $ under it) */
-      var rentR = c.extra && S.c === 'sol' ? [{ icon: nic, sym: 'SOL', lbl: 'Rent', note: 'Opens a token account' /*pk38send:rent*/, sign: '-', amt: kSig(c.extra, 9, 4), usd: usdTxt(c.extra, 9, gpx), rk: 'to' }] : [];
+      var rentR = [];   /* pk39send:rent rel39 (B33): the token account is one row next to the network fee (kXTot) */
       if (c.extra && S.c === 'ada') rows.push({ icon: nic, sym: 'ADA', sign: '-', amt: fmt(c.extra, 6, 6), usd: usdTxt(c.extra, 6, gpx), note: 'Cardano requires this minimum with tokens' });
       /* v3.98.1 (#6): Jupiter-style hero card */
       var hs = rows.filter(function (r) { return r.sign !== '+'; }), hr = rows.filter(function (r) { return r.sign === '+'; });
@@ -23675,14 +23774,11 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (stake && kind !== 'trx-withdraw') toRows += HWP.kv('Resource', R.resource === 'ENERGY' ? 'Energy' : 'Bandwidth', kind === 'trx-freeze' ? 'Stake 2.0' : 'Available after 14 days');
     if (S.c === 'xrp' && R.xrp && R.xrp.destinationTag != null && R.xrp.destinationTag !== '') toRows += HWP.kv('Destination tag', esc(R.xrp.destinationTag), '');
     /* pk38send:trxrow rel38 (B25): Hwallet read the recipient live; activation (+ its bandwidth) is already inside the Tron fee */
-    if (!stake && !trust && S.c === 'trx' && R.trx && R.trx.toInactive) {
-      var ka = U(R.trx.activation), kb = U(R.trx.activationBw) || 0n;
-      toRows += HWP.kv('Recipient not activated', S.tok ? 'No activation fee' : ka != null ? '+ ' + HWP.subz(fmt(ka + kb, 6, 6)) + ' TRX' : '',
-        S.tok ? 'Tokens don\u2019t activate it \u00b7 its extra energy is in the fee' : ka != null ? fmt(ka, 6, 6) + ' TRX activation' + (kb > 0n ? ' + ' + fmt(kb, 6, 6) + ' TRX bandwidth' : '') + ' \u00b7 in the fee' : 'Activation is in the fee');
-    }
+    /* pk39send:trxrow rel39 (B34): the activation is its own row after the network fee (kXTot) */
     /* network fee: tap to change (Slow / Normal / Fast / Custom) */
-    var fv = S.c === 'trx' && c.fee === 0n ? 'Free' : (c.approx ? '\u2248 ' : '') + fmt(c.fee, S.gdec, S.gdec) + ' ' + esc(S.gsym);
-    var fs = [c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : S.c === 'trx' ? 'Covered by your bandwidth' : '', c.atMost ? 'at most' : ''].filter(Boolean).join(' \u00b7 ');
+    var kAct = kTrxAct(stake || trust), fN = c.fee != null && kAct > 0n ? c.fee - kAct : c.fee;   /*pk39send:fee (B34)*/
+    var fv = S.c === 'trx' && fN === 0n ? 'Free' : (c.approx ? '\u2248 ' : '') + fmt(fN, S.gdec, S.gdec) + ' ' + esc(S.gsym);
+    var fs = [S.c === 'trx' ? kTrxSub(fN, gpx, stake || trust) : c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : '', c.atMost ? 'at most' : ''].filter(Boolean).join(' \u00b7 ');
     var live = R.live ? '<span class="hp-live hp-ldot' + (stale() ? ' stale' : '') + '" id="kss-live" role="img" aria-label="' + liveText() + '"><i></i></span>' : '';
     var ed = keys.length > 1, fopen = false;
     var ed = ed || (kcfOk() && (S.c === 'evm' || S.c === 'sol' || S.c === 'trx')) || kmanOk();   /* v3.98.36 (B19) */
@@ -23934,7 +24030,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
         out.kind = R.kind || 'transfer';
       }
       if (lvl === 'custom') out.feeCustom = R.fee.levels.custom;
-      try { pushActivity('act', 'Hwallet: ' + (KINDS[R.kind || 'transfer'] || 'Send').toLowerCase() + ' ' + fmt(U(out.amount), S.dec, 8) + ' ' + S.sym + ' on ' + S.info.name); } catch (e) {}
+      try { kw39Tx({ ch: S.c === 'evm' ? 'eth' : S.c, net: S.info.name, type: KINDS[R.kind || 'transfer'] || 'Send', amt: fmt(U(out.amount), S.dec, 8) + ' ' + S.sym, fee: out.fee != null ? fmt(U(out.fee), S.gdec, 8) + ' ' + S.gsym : '', to: R.to || '', hash: out.hash || '' }, 'Hwallet: ' + (KINDS[R.kind || 'transfer'] || 'Send').toLowerCase() + ' ' + fmt(U(out.amount), S.dec, 8) + ' ' + S.sym + ' on ' + S.info.name); } catch (e) {}   /* pk39tx */
       success(out, 'Signed');
     } catch (e) { setBusy(false); fail('Signing failed: ' + (e && e.message || e)); }
   }
@@ -24417,6 +24513,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (!rm2.err) { var T2 = rm2.T; delete T2.jito; if (c === 'sol' && !(DS.view.cbL >= 0)) delete T2.cul; R.cfTxt = T2; DS.level = 'custom'; DS.tier = null; DS.man = fm2; DS.manSaved = true; cfParse(); if (R.cf && R.cf.bad) { DS.level = lv1; delete R.cfTxt; R.cf = null; DS.man = null; DS.manSaved = false; } } else DS.manWarn = String(rm2.err || '');
     } catch (e) {} }
     lastFeed = Date.now(); DS.total = Math.max(1000, R.expires - Date.now());
+    pairSeen(R, c, inf, rec);   /* pk39 B28 (dApp) */
     mount(); dappDraw(); arm(800);
     setInterval(tickLive, 1000); setInterval(tickExp, 250);
   }
@@ -25096,7 +25193,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
         if (nraw) { out.result.raw_data_hex = bhex(nraw); out.result.fee_limit = U(R.cf.fl).toString(); }
       }
       sec = null;
-      try { pushActivity('act', 'Hwallet: ' + (DM[m] || m).toLowerCase() + ' for ' + DS.site + ' on ' + DS.info.name); } catch (e) {}
+      try { var v39 = DS.view || {}, r39 = out.result || {}, op39 = /sign.*message|personal_sign|signData/i.test(m) ? 'Sign message' : /TypedData/i.test(m) ? 'Sign typed data' : /PublicKey|PubKeys|nearAccount/i.test(m) ? 'Share key' : v39.appr ? (v39.title || 'Token approval') : (v39.op || v39.title || DM[m] || m);
+        kw39Tx({ ch: DS.c === 'evm' ? 'eth' : DS.c, net: DS.info.name, type: op39, m: m, amt: v39.hero && v39.hero.a ? v39.hero.a : '', fee: out.fee != null ? fmt(U(out.fee), DS.gdec, 8) + ' ' + DS.gsym : '', to: (P.tx && P.tx.to) || '', origin: R.origin || '', site: DS.site, hash: typeof r39 === 'object' ? (r39.hash || (DS.c === 'sol' && /Transaction/.test(m) ? r39.signature : '') || r39.txID || r39.digest || '') : '' }, 'Hwallet: ' + (DM[m] || m).toLowerCase() + ' for ' + DS.site + ' on ' + DS.info.name); } catch (e) {}   /* pk39tx */
       success(out, m === 'kw_nearAccount' ? 'Shared' : 'Signed');
     } catch (e) { setBusy(false); fail('Signing failed: ' + (e && e.message || e)); }
   }
