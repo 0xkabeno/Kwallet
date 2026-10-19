@@ -4042,7 +4042,7 @@ window.hwPlayOpening();
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data; if (ev.source !== window || !d || d.type !== 'request' || !d.id || !d.command || d.response || d.source) return;
       var c = String(d.command), dt = d.data || {}, job;
-      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.38' });
+      if (c === 'ping' || c === 'version') job = Promise.resolve({ version: '1.8.39' });
       else if (c === 'isConnected') job = Promise.resolve({ isConnected: !!xrpAddr });
       else if (c === 'isLocked') job = Promise.resolve({ isLocked: false });
       else if (c === 'network') job = Promise.resolve({ network: XNET });
@@ -4107,7 +4107,7 @@ window.hwPlayOpening();
       isHwallet: true,
       request: function (method, params) {
         var id = 'hw' + Date.now().toString(36), p = params || {}, job;
-        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.38', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
+        if (method === 'getInfo') job = Promise.resolve({ version: '1.8.39', methods: ['getInfo', 'getAccounts', 'getAddresses', 'wallet_connect', 'wallet_requestPermissions', 'wallet_getAccount', 'getBalance', 'signMessage', 'signPsbt', 'sendTransfer'], supports: [] });
         else if (method === 'getAccounts' || method === 'getAddresses' || method === 'wallet_connect' || method === 'wallet_requestPermissions' || method === 'wallet_getAccount')
           job = (btcAddr ? Promise.resolve() : bConn()).then(sAccs).then(function (a) { return method === 'getAccounts' ? a : method === 'wallet_requestPermissions' ? true : { addresses: a, walletType: 'software', id: 'hwallet', network: { bitcoin: { name: 'Mainnet' } } }; });
         else if (method === 'wallet_disconnect' || method === 'wallet_renouncePermissions') { btcAddr = null; job = Promise.resolve(null); }
@@ -7249,7 +7249,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.38';
+var APP_VERSION = '1.8.39';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -7832,7 +7832,7 @@ var APP_VERSION = '1.8.38';
     var pvS = C.b.sol;   /* ph35menu B9 */
     var mints = tokList('sol').map(function (t) { return t.a; }), prev = (C.b.sol || {}).t || {};
     /* wave B (#107): every SPL and Token-2022 account of the wallet in two calls (by token program), summed per mint */
-    var calls = [['getBalance', [a, { commitment: 'confirmed' }]], ['getTokenAccountsByOwner', [a, { programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' }, { encoding: 'jsonParsed', commitment: 'confirmed' }]], ['getTokenAccountsByOwner', [a, { programId: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PazQaGZ3cx6CKBvkm7' }, { encoding: 'jsonParsed', commitment: 'confirmed' }]]];
+    var calls = [['getBalance', [a, { commitment: 'confirmed' }]], ['getTokenAccountsByOwner', [a, { programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' }, { encoding: 'jsonParsed', commitment: 'confirmed' }]], ['getTokenAccountsByOwner', [a, { programId: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' }, { encoding: 'jsonParsed', commitment: 'confirmed' }]]];
     var one = function (i) { return rpc(c.rpc, calls[i][0], calls[i][1], 8000).then(function (r) { return { result: r }; }, function () { return null; }); };
     return batch(c.rpc, calls, 8000).catch(function () { return Promise.all([one(0), one(1), one(2)]).then(function (x) { if (!x[0]) throw new Error('sol'); return x; }); }).then(function (r) {
       /* ph38send:b23sol rel38 (B23): a token-program call the batch refused is asked again on its own, so one refused call no longer keeps a stale balance */
@@ -9018,9 +9018,10 @@ var APP_VERSION = '1.8.38';
   }
   function callK(req) {
     req.theme = req.theme || hwTheme();
+    try { if (!req.txSync) req.txSync = tx39KSync(); } catch (e) {}   /* ph39tx */
     if (SIGN) { var old = SIGN; SIGN = null; try { old({ status: 'rejected' }); } catch (e) {} }
     return new Promise(function (res) {
-      var done = false, fin = function (o) { if (done) return; done = true; kUp(false); kwWait(null); try { if (o && o.feePick) fpFromK(req, o.feePick); } catch (e) {} try { if (o && o.sid && req.action !== 'pair') sidLearn(String(o.sid)); } catch (e) {} res(o); };
+      var done = false, fin = function (o) { if (done) return; done = true; try { ev39K(req, o); } catch (e) {}   /* ph39tx */ kUp(false); kwWait(null); try { if (o && o.feePick) fpFromK(req, o.feePick); } catch (e) {} try { if (o && o.sid && req.action !== 'pair') sidLearn(String(o.sid)); } catch (e) {} res(o); };
       SIGN = fin; SIGNID = String(req.id || '');
       var body; try { body = JSON.stringify(req, function (k, v) { return typeof v === 'bigint' ? v.toString() : v; }); } catch (e) { SIGN = null; fin({ status: 'error', message: 'Could not prepare the request' }); return; }
       kUp(true); kwWait({ st: 'received', d: 'Opening Kwallet\u2026' });
@@ -9393,7 +9394,7 @@ var APP_VERSION = '1.8.38';
     SND.fpCm = SND.lv === 'custom' && !SND.tier && !!SND.man; SND.fpWarn = '';   /* v1.8.35 (B10): checked by sndSavedChk */
     try { if (window.HwNative && HwNative.warmK) HwNative.warmK(); } catch (e) {}  /* wave A: Kwallet pre-loads its sign sheet while the user types */
     var to = $('to'), am = $('amt');
-    to.oninput = function () { SND.to = to.value.trim(); checkTo(); validate(); if (SND.ch === 'sol' && SND.r.a) prep(true); };
+    to.oninput = function () { SND.to = to.value.trim(); checkTo(); validate(); if (SND.ch === 'sol' && SND.r.a) prep(true); else if (SND.ch === 'trx') { clearTimeout(SND.t39); SND.t39 = setTimeout(function () { if (SND && SND.ch === 'trx' && validAddr('trx', SND.to)) prep(true); }, 250); } /*ph39send:inp*/ };
     am.oninput = function () { SND.max = false; validate(); };
     var box = $('sndov') || document;
     var bkb = box.querySelector('[data-bk]'); if (bkb) bkb.onclick = function () { buzz(4); bookPick(SND.ch, function (a) { to.value = a; to.oninput(); }); };
@@ -9582,8 +9583,9 @@ var APP_VERSION = '1.8.38';
     if (SND.d) {
       /* v1.8.1 (#2): the fee on one line, its $ value (and what comes with it) on the line under it */
       var f = feeOf(SND.lv), fu = $('feeu');
-      $('fee').textContent = SND.ch === 'trx' && f === 0n ? 'Free' : (SND.d.approx ? '≈ ' : SND.d.atMost ? 'Up to ' : '') + fmtA(f, gas.d) + ' ' + gas.s;
-      if (fu) fu.textContent = [SND.ch === 'trx' && f === 0n ? 'Covered by your bandwidth' : px(gas.cg) ? fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '', SND.d.extra ? (SND.ch === 'ada' ? '+ ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : '+ ' + fmtA(SND.d.extra, gas.d) + ' ' + gas.s + ' token account' /*ph38send:feeu*/) : '', SND.ch === 'trx' && SND.d.burnE ? 'energy burn' : ''].filter(Boolean).join(' \u00b7 ');
+      var fN = SND.ch === 'trx' && SND.d.actFee ? f - BI(SND.d.actFee) : f;   /*ph39send:fee (B33/B34)*/
+      $('fee').textContent = SND.ch === 'trx' && fN === 0n ? 'Free' : (SND.d.approx ? '≈ ' : SND.d.atMost ? 'Up to ' : '') + fmtA(fN, gas.d) + ' ' + gas.s;
+      if (fu) fu.textContent = SND.ch === 'trx' ? trxFeeSub(SND.d, fN, gas) : [px(gas.cg) ? fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '', SND.d.extra && SND.ch === 'ada' ? '+ ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : ''].filter(Boolean).join(' \u00b7 ');
       if (fu) { if (SND.fpWarn) fu.textContent = SND.fpWarn; fu.style.color = SND.fpWarn ? '#e5484d' : ''; fu.style.whiteSpace = SND.fpWarn ? 'normal' : ''; }   /* v1.8.35 (B10) */
       try { sndXRows(f); } catch (e) {}   /*ph38send:val*/
     }
@@ -9594,12 +9596,12 @@ var APP_VERSION = '1.8.38';
     var x = $('sndx'), t = $('sndt'); if (!x || !t || !SND || !SND.d) return;
     var d = SND.d, r = SND.r, gas = gasAsset(), ok = validAddr(SND.ch, SND.to) && d.toFor === SND.to, lab = '', v = '', u = '', extra = 0n;
     if (ok && SND.ch === 'sol' && !r.gas && d.extra > 0n) {
-      extra = BI(d.extra); lab = 'Opens a token account'; v = '+ ' + fmtA(extra, 9) + ' SOL';
-      u = (d.ataKnown === false ? 'Couldn\u2019t check the recipient \u00b7 ' : '') + 'Rent for the recipient\u2019s ' + r.s + ' account';
-    } else if (ok && SND.ch === 'trx' && d.toNew) {
-      lab = 'Recipient not activated';
-      if (r.gas) { v = '+ ' + fmtA(BI(d.act || 0n) + BI(d.actBw || 0n), 6) + ' TRX'; u = fmtA(d.act || 0n, 6) + ' TRX activation' + (d.actBw > 0n ? ' + ' + fmtA(d.actBw, 6) + ' TRX bandwidth' : '') + ' \u00b7 in the fee'; }
-      else { v = 'No activation fee'; u = 'Tokens don\u2019t activate it \u00b7 its extra energy is in the fee'; }
+      extra = BI(d.extra); lab = 'New token account'; v = '+' + fmtA(extra, 9) + ' SOL';   /*ph39send:xrows*/
+      u = [d.ataKnown === false ? 'Not checked' : '', px(gas.cg) ? fmtUsd(toNum(extra, 9) * px(gas.cg)) : ''].filter(Boolean).join(' \u00b7 ');
+    } else if (ok && SND.ch === 'trx' && r.gas && (d.actFee > 0n || d.toUnk)) {
+      lab = 'Activates recipient';
+      if (d.actFee > 0n) { v = '+' + fmtA(BI(d.actFee), 6) + ' TRX'; u = px(gas.cg) ? fmtUsd(toNum(d.actFee, 6) * px(gas.cg)) : ''; }
+      else { v = 'Not checked'; u = 'Up to +' + fmtA(BI(d.actMax || 1100000n), 6) + ' TRX if new'; }
     }
     x.style.display = lab ? '' : 'none'; t.style.display = lab ? '' : 'none'; if (!lab) return;
     $('sndxl').textContent = lab; $('sndxv').textContent = v; $('sndxu').textContent = u;
@@ -9665,7 +9667,7 @@ var APP_VERSION = '1.8.38';
     }
     throw new Error('no pda');
   }
-  var SPL = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', SPL22 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PazQaGZ3cx6CKBvkm7', ATAP = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+  var SPL = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', SPL22 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb', ATAP = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
   /* ph38send:b26help rel38 (B26): live rent of a token account (getMinimumBalanceForRentExemption, 165 bytes for SPL; a Token-2022
      associated account carries the ImmutableOwner extension = 170 bytes). Cached 10 min; the rent formula only if the node fails. */
   var SOLRENT = {};
@@ -9727,7 +9729,7 @@ var APP_VERSION = '1.8.38';
   /* TRON: recent block, bandwidth / energy estimate (burned TRX), TRC-20 fee limit */
   function trxHex(a) { var b = b58d(a); return Array.prototype.map.call(b.slice(0, 21), function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); }
   var TRXP = null;
-  PREP.trx = function (S) {
+  PREP.trx38 = function (S) {   /* ph39send:old superseded by the rel39 (B34) estimator below */
     var r = S.r, tok = !r.gas, to = validAddr('trx', S.to) ? S.to : null;
     var d = S.d && S.d.chain === 'trx' ? S.d : { chain: 'trx' };
     /* every second only the newest block is read; balances and fee inputs every 15 s */
@@ -9764,6 +9766,102 @@ var APP_VERSION = '1.8.38';
           d.feeFor = function () { return d.fee; };
           d.req = function () { return { trx: { refBlock: d.refBlock, estFee: d.fee.toString(), feeLimit: d.feeLimit, toInactive: !!d.toNew, activation: d.toNew && !tok ? String(d.act) : undefined, activationBw: d.toNew && !tok ? String(d.actBw) : undefined /*ph38send:b25req*/ } }; };
           d.feed = function () { return { trx: { refBlock: d.refBlock }, balance: { token: String(d.tbal), gas: String(d.gbal) } }; };
+          return d;
+        });
+      });
+    });
+  };
+  /* ph39send:new rel39 (B34): Tron fee from live chain data.
+     - chain parameters (getTransactionFee, getEnergyFee, getCreateAccountFee, getCreateNewAccountFeeInSystemContract,
+       getMemoFee) cached 5 min
+     - bandwidth = the exact byte size of the transaction Kwallet signs (trxBuild) + 65-byte signature + 64 (result slot);
+       java-tron takes it whole from staked bandwidth, else whole from free bandwidth, else burns bytes x getTransactionFee
+     - TRC20: energy of the real transfer(to, amount) call (triggerconstantcontract, then estimateenergy); the part above
+       the sender's energy is burned at getEnergyFee
+     - TRX to a recipient that does not exist yet: getCreateNewAccountFeeInSystemContract (1 TRX) + the creation's bandwidth,
+       which only staked bandwidth can pay (else getCreateAccountFee, 0.1 TRX); TRC20 never activates (energy covers it)
+     - recipient read via TronGrid getaccount, then TronGrid /v1/accounts, then PublicNode; no answer = "unknown", never "new" */
+  var TRXP39 = null, TRXP39at = 0;
+  function trxParams39() {
+    if (TRXP39 && Date.now() - TRXP39at < 300000) return Promise.resolve(TRXP39);
+    return tronF('/wallet/getchainparameters', {}).then(function (j) {
+      var o = {}; (j && j.chainParameter || []).forEach(function (p) { o[p.key] = p.value; });
+      if (!o.getTransactionFee && !o.getEnergyFee) throw new Error('params');
+      TRXP39 = o; TRXP39at = Date.now(); TRXP = o; return o;
+    }).catch(function () { return TRXP39 || TRXP || {}; });
+  }
+  function trxAcct39(to) {
+    function ok(j) { if (!j || typeof j !== 'object' || Array.isArray(j) || j.Error || j.code) throw new Error('bad'); return j; }
+    return tronF('/wallet/getaccount', { address: to, visible: true }).then(ok)
+      .catch(function () { return tronF('/v1/accounts/' + to).then(function (j) { if (!j || !Array.isArray(j.data)) throw new Error('bad'); return j.data[0] ? { address: j.data[0].address || to } : {}; }); })
+      .catch(function () { return http('https://tron-rpc.publicnode.com/wallet/getaccount', { method: 'POST', body: JSON.stringify({ address: to, visible: true }), timeout: 6000 }).then(ok); })
+      .catch(function () { return null; });
+  }
+  function vlen39(n) { n = BI(n); var k = 1; while (n >= 128n) { n >>= 7n; k++; } return k; }
+  function fl39(tl, len) { return tl + vlen39(len) + len; }
+  /* the byte size java-tron charges for the transaction trxBuild (Kwallet) makes: TransferContract or TriggerSmartContract */
+  function trxBytes39(tok, amt, feeLimit, ts, memoLen) {
+    var inner = tok ? 23 + 23 + fl39(1, 68) : 23 + 23 + 1 + vlen39(amt > 0n ? amt : 1n);
+    var any = fl39(1, tok ? 49 : 45) + fl39(1, inner), contract = 2 + fl39(1, any), t = BI(ts || Date.now());
+    var raw = 4 + 10 + 1 + vlen39(t + 120000n) + fl39(1, contract) + 1 + vlen39(t) + (feeLimit > 0n ? 2 + vlen39(feeLimit) : 0) + (memoLen ? fl39(1, memoLen) : 0);
+    return BI(fl39(1, raw) + fl39(1, 65) + 64);
+  }
+  function trxEnergy39(r, to, amt) {
+    var body = { owner_address: A.trx, contract_address: r.a, function_selector: 'transfer(address,uint256)', parameter: pad32(trxHex(to).slice(2)) + pad32(BI(amt).toString(16)), visible: true };
+    return tronF('/wallet/triggerconstantcontract', body).then(function (j) {
+      var rv = j && j.transaction && j.transaction.ret && j.transaction.ret[0] && j.transaction.ret[0].ret;
+      if (!(j && j.result && j.result.result) || /REVERT|FAIL/i.test(String(rv || '')) || !(j.energy_used > 0)) throw new Error('est');
+      return { e: BI(j.energy_used) };
+    }).catch(function () {
+      return tronF('/wallet/estimateenergy', body).then(function (j) { if (!(j && j.result && j.result.result && j.energy_required > 0)) throw new Error('est'); return { e: BI(j.energy_required) }; });
+    }).catch(function () { return null; });
+  }
+  function trxFeeSub(d, fN, gas) {
+    var tok = !!(SND && SND.r && !SND.r.gas);
+    if (fN === 0n) return tok ? 'Covered by your energy and bandwidth' : d.toNew ? 'Covered by your staked bandwidth' : 'Covered by your bandwidth';
+    var p = px(gas.cg), parts = [d.burnBw > 0n || d.actBw > 0n ? 'Bandwidth' : '', d.burnEv > 0n ? 'Energy' : '', d.memoFee > 0n ? 'Memo' : ''].filter(Boolean).join(' + ');
+    return [p ? fmtUsd(toNum(fN, 6) * p) : '', parts].filter(Boolean).join(' \u00b7 ');
+  }
+  PREP.trx = function (S) {
+    var r = S.r, tok = !r.gas, to = validAddr('trx', S.to) ? S.to : null;
+    var d = S.d && S.d.chain === 'trx' ? S.d : { chain: 'trx' };
+    /* within 15 s only the newest block is read, unless the recipient changed or could not be read */
+    if (d.at && Date.now() - d.at < 15000 && d.toFor === to && !d.toUnk) {
+      return tronF('/wallet/getnowblock', {}).then(function (blk) { var hd = blk.block_header.raw_data; d.refBlock = { number: hd.number, hash: blk.blockID, ts: hd.timestamp }; return d; });
+    }
+    return trxParams39().then(function (P) {
+      return Promise.all([tronF('/wallet/getnowblock', {}), tronF('/wallet/getaccountresource', { address: A.trx, visible: true }), tronF('/v1/accounts/' + A.trx), to ? trxAcct39(to) : Promise.resolve(null)]).then(function (x) {
+        var blk = x[0], hd = blk.block_header.raw_data, res = x[1] || {}, acc = ((x[2] && x[2].data || [])[0]) || {}, acT = x[3];
+        var bwPrice = BI(P.getTransactionFee || 1000), enPrice = BI(P.getEnergyFee || 210), crAcc = BI(P.getCreateAccountFee || 100000), crSys = BI(P.getCreateNewAccountFeeInSystemContract || 1000000), memoP = BI(P.getMemoFee || 0);
+        var freeLeft = BI(Math.max(0, (res.freeNetLimit || 0) - (res.freeNetUsed || 0))), stLeft = BI(Math.max(0, (res.NetLimit || 0) - (res.NetUsed || 0))), enLeft = BI(Math.max(0, (res.EnergyLimit || 0) - (res.EnergyUsed || 0)));
+        var toNew = !!(to && acT && !acT.address && !acT.create_time);
+        d.toUnk = !!(to && !acT); d.toNew = toNew; d.actMax = crSys + crAcc;
+        d.refBlock = { number: hd.number, hash: blk.blockID, ts: hd.timestamp };
+        d.gbal = BI(acc.balance || 0); d.tbal = d.gbal;
+        if (tok) { var tb = 0n; (acc.trc20 || []).forEach(function (m) { if (m[r.a] != null) tb = BI(m[r.a]); }); d.tbal = tb; }
+        var amt = S.amt != null && BI(S.amt) > 0n ? BI(S.amt) : (d.tbal > 0n ? d.tbal : 1n);
+        var eAmt = tok ? (amt <= d.tbal ? amt : d.tbal > 0n ? d.tbal : 1n) : 0n;
+        return (tok ? trxEnergy39(r, to || A.trx, eAmt) : Promise.resolve(null)).then(function (est) {
+          var energy = tok ? (est ? est.e : BI(toNew || !to ? 130000 : 65000)) : 0n;
+          var feeLimit = tok ? energy * enPrice * 13n / 10n + 1000000n : 0n;
+          var memoLen = S.memo ? new TextEncoder().encode(String(S.memo)).length : 0;
+          var bytes = trxBytes39(tok, amt, feeLimit, hd.timestamp, memoLen);
+          var act = 0n, actBw = 0n, burnBw = 0n, burnE = 0n, memo = memoLen ? memoP : 0n;
+          if (!tok && toNew) { act = crSys; actBw = stLeft >= bytes ? 0n : crAcc; }
+          else burnBw = stLeft >= bytes || freeLeft >= bytes ? 0n : bytes * bwPrice;
+          if (tok) burnE = energy > enLeft ? (energy - enLeft) * enPrice : 0n;
+          var fee = act + actBw + burnBw + burnE + memo;
+          d.act = act; d.actBw = actBw; d.actFee = act; d.burnBw = burnBw; d.burnEv = burnE; d.burnE = burnE > 0n; d.memoFee = memo;
+          d.bytes = bytes; d.energy = energy; d.eGuess = tok && !est;
+          if (tok) d.feeLimit = feeLimit.toString(); else delete d.feeLimit;
+          C.res.trx = res; C.res.trxAt = Date.now();
+          d.fee = fee; d.levels = { medium: {} }; d.approx = true; d.at = Date.now(); d.toFor = to;
+          d.feeFor = function () { return d.fee; };
+          /* what Kwallet's sheet shows: the total (estFee), the activation on its own row, what the network part is made of */
+          var info = function () { return { estFee: d.fee.toString(), toInactive: !!d.toNew, toUnk: !!d.toUnk, activation: d.toNew && !tok ? String(d.act) : undefined, activationBw: d.toNew && !tok ? String(d.actBw) : undefined, netFee: String(d.fee - d.act), feeParts: { bw: String(d.burnBw + d.actBw), e: String(d.burnEv), memo: String(d.memoFee) }, bytes: String(d.bytes), energy: String(d.energy) }; };
+          d.req = function () { return { trx: Object.assign({ refBlock: d.refBlock, feeLimit: d.feeLimit }, info()) }; };
+          /* the live feed carries the fee too (never feeLimit: Kwallet's custom fee limit stays Kwallet's) */
+          d.feed = function () { return { trx: Object.assign({ refBlock: d.refBlock }, info()), balance: { token: String(d.tbal), gas: String(d.gbal) } }; };
           return d;
         });
       });
@@ -9883,7 +9981,12 @@ var APP_VERSION = '1.8.38';
     if (kindReq && kindReq.target) kindReq = null;
     var r = SND.r, d = SND.d, gas = gasAsset(), to = SND.to;
     if (!(window.HwNative && HwNative.sign)) { toast('Signing works in the Hwallet app with Kwallet on the same phone'); return; }
-    if (SND.ch === 'xmr') return xmrReview();   /* v1.8: Monero = unsigned set built here, cold-signed by Kwallet */
+    if (SND.ch === 'xmr') return xmrReview();
+    if (SND.ch === 'trx' && !kindReq && validAddr('trx', to) && (d.toFor !== to || d.toUnk) && SND.trxChk !== to) {   /* ph39send:rev (B34) */
+      var me39 = SND; SND.trxChk = to; SND.busy = true; validate(); $('go').textContent = 'Checking recipient\u2026';
+      PREP.trx(SND).then(function (d2) { if (me39 === SND) SND.d = d2; }, function () {}).then(function () { if (me39 !== SND) return; SND.busy = false; if ($('go')) $('go').textContent = 'Continue'; validate(); review(kindReq); });
+      return;
+    }   /* v1.8: Monero = unsigned set built here, cold-signed by Kwallet */
     var now = Date.now(), ch = SND.ch;
     var req = Object.assign({ v: 2, id: rid(16), action: 'sign', chain: ch === 'eth' ? 'evm' : ch, from: curAddr(), to: to,
       token: r.gas ? 'native' : r.a, tokenSym: r.s, tokenDec: r.d, amount: sendAmt(),
@@ -10006,7 +10109,8 @@ var APP_VERSION = '1.8.38';
     if (ch === 'ada') return race(CHBY.ada.rest, function (u) { return http(u + '/submittx', { method: 'POST', body: res.raw, ctype: 'application/cbor;hex', text: true, timeout: 12000 }); }).then(function (t) { return String(t).replace(/"/g, '').trim() || res.hash; });
     return Promise.reject(new Error('unsupported'));
   }
-  function setSt(hash, st) { var x = ACT.filter(function (a) { return a.hash === hash; })[0]; if (x && x.st !== st) { x.st = st; saveActs(); histRefresh(); } }
+  function setSt(hash, st) { try { if (st === 'ok' || st === 'fail') { tx39Feed(hash, st); if (typeof TX39D !== 'undefined') { var x0 = ACT.filter(function (a) { return a.hash === hash; })[0]; if (x0) TX39D[x0.ch + ':' + tx39N(hash)] = st; } } } catch (e) {}   /* ph39tx */
+    var x = ACT.filter(function (a) { return a.hash === hash; })[0]; if (x && x.st !== st) { x.st = st; saveActs(); histRefresh(); } }
   /* v1.7.2 (S17): status notifications for transactions sent from this phone: "Pending" (only while Hwallet is in the
      background), then "Confirmed" or "Failed" with a plain reason. The text names the amount and token when known. */
   var WTX = {};
@@ -10030,7 +10134,7 @@ var APP_VERSION = '1.8.38';
     k = k || 0; if (!txHashOk(ch, hash) || k > 90 || !chainOnFor(ch, net)) return;
     if (!k) txNote(ch, net, hash, 'pending');
     setTimeout(function () {
-      var p;
+      var p; if (TX39D[ch + ':' + tx39N(hash)]) return;   /* ph39tx: already settled by the sweep */
       if (ch === 'eth') p = rpcF(EVMBY[net].rpc, 'eth_getTransactionReceipt', [hash]).then(function (r) { return r ? (r.status === '0x1' ? 'ok' : 'fail') : null; });
       else if (ch === 'sol') p = rpcF(CHBY.sol.rpc, 'getSignatureStatuses', [[hash], { searchTransactionHistory: true }]).then(function (r) { var s = r && r.value && r.value[0]; return s ? (s.err ? (WTX[hash] = s.err, 'fail') : (s.confirmationStatus === 'confirmed' || s.confirmationStatus === 'finalized') ? 'ok' : null) : null; });
       else if (ch === 'btc') p = race(CHBY.btc.rest, function (u) { return http(u + '/tx/' + hash + '/status'); }).then(function (j) { return j && j.confirmed ? 'ok' : null; });
@@ -10040,12 +10144,130 @@ var APP_VERSION = '1.8.38';
       else if (ch === 'ada') p = koios('/tx_status', { _tx_hashes: [hash] }).then(function (j) { var s = (j || [])[0]; return s && s.num_confirmations > 0 ? 'ok' : null; });
       p.then(function (st) {
         if (!st) { watchTx(ch, net, hash, k + 1); return; }
+        if (TX39D[ch + ':' + tx39N(hash)]) return; TX39D[ch + ':' + tx39N(hash)] = st;   /* ph39tx */
         var why = st === 'fail' ? failWhy(ch, WTX[hash]) : '';
         setSt(hash, st); buzz(st === 'ok' ? [10, 40, 10] : [30, 40, 30]); snd(st === 'ok' ? 'step' : 'erase'); toast(st === 'ok' ? 'Confirmed' : 'Transaction failed' + (why ? ': ' + why.split('.')[0] : '')); txNote(ch, net, hash, st, why);
         refreshChain(ch);
       }, function () { watchTx(ch, net, hash, k + 1); });
     }, k < 10 ? 2500 : ch === 'btc' ? 30000 : 6000);
   }
+
+  /* ph39tx (B29/B30): every chain's real tx status, read from its RPC (with that chain's fallback nodes), for every local
+     Pending entry and every Pending row on screen, whether or not its watchTx is still alive (app restart, watcher gave up,
+     Kwallet-signed dApp tx). Pending flips to Completed / Failed in ACT, in the Activity feed, in the native cache and in the
+     notification; the chain's balances refresh. A node that errors / 403 / 429 / times out is skipped by race() and the
+     next sweep asks again, so nothing sticks on stale state. Monero stays with its own engine. */
+  var TX39D = {}, TX39S = {}, TX39T = 0, TX39B = false;
+  function tx39N(h) { h = String(h == null ? '' : h).trim(); return /^(0x)?[0-9a-f]{16,}$/i.test(h) ? h.replace(/^0x/i, '').toLowerCase() : h; }
+  function tx39Nat(ch, net) { if (ch === 'eth') { var n = EVMBY[net] || EVM[0]; return { s: n.sym, d: 18 }; } var c = CHBY[ch] || {}; return { s: c.sym || '', d: c.dec != null ? c.dec : 0 }; }
+  /* -> { st: 'ok' | 'fail' | null (not final yet), fee: raw string | '', why } ; rejects when no node answered */
+  function tx39Status(ch, net, h) {
+    var B = function (v) { try { return BigInt(v || 0); } catch (e) { return 0n; } };
+    if (ch === 'eth') { var n = EVMBY[net]; if (!n) return Promise.resolve({ st: null });
+      return rpcF(n.rpc, 'eth_getTransactionReceipt', [h], 7000).then(function (r) { if (!r || !r.blockNumber) return { st: null }; return { st: r.status === '0x1' || r.status === 1 ? 'ok' : 'fail', fee: String(B(r.gasUsed) * B(r.effectiveGasPrice || r.gasPrice)) }; }); }
+    if (ch === 'sol') return rpcF(CHBY.sol.rpc, 'getSignatureStatuses', [[h], { searchTransactionHistory: true }], 7000).then(function (r) { var x = r && r.value && r.value[0]; if (!x) return { st: null }; if (x.err) { WTX[h] = x.err; return { st: 'fail', why: x.err }; } return { st: x.confirmationStatus === 'confirmed' || x.confirmationStatus === 'finalized' ? 'ok' : null }; });
+    if (ch === 'sui') return rpcF(CHBY.sui.rpc, 'sui_getTransactionBlock', [h, { showEffects: true }], 7000).then(function (r) {
+      var e = r && r.effects, x = e && e.status; if (!x) return { st: null }; var g = e.gasUsed || {};
+      return { st: x.status === 'success' ? 'ok' : 'fail', why: x.error || '', fee: String(B(g.computationCost) + B(g.storageCost) - B(g.storageRebate)) };
+    }, function (e) { if (/could not find|not ?found|does not exist/i.test(String(e && e.message || e))) return { st: null }; throw e; });
+    if (ch === 'trx') return tronF('/wallet/gettransactioninfobyid', { value: h }).then(function (j) { if (!j || !j.id) return { st: null }; var bad = j.receipt && j.receipt.result && j.receipt.result !== 'SUCCESS'; if (bad) WTX[h] = j.receipt.result; return { st: bad || j.result === 'FAILED' ? 'fail' : 'ok', fee: String(j.fee || 0) }; });
+    if (ch === 'btc') return race(CHBY.btc.rest, function (u) { return http(u + '/tx/' + h); }).then(function (j) { return { st: j && j.status && j.status.confirmed ? 'ok' : null, fee: j && j.fee != null ? String(j.fee) : '' }; }, function (e) { if (/404|not found/i.test(String(e && (e.status || e.message) || e))) return { st: null }; throw e; });
+    if (ch === 'xrp') return xrpc('tx', { transaction: h }).then(function (r) { if (!r || !r.validated) return { st: null }; var m = r.meta || r.metaData || {}, tj = r.tx_json || r; return { st: m.TransactionResult === 'tesSUCCESS' ? 'ok' : 'fail', why: m.TransactionResult || '', fee: String(tj.Fee || r.Fee || '') }; });
+    if (ch === 'ada') return koios('/tx_status', { _tx_hashes: [h] }).then(function (j) { var x = (j || [])[0]; return { st: x && x.num_confirmations > 0 ? 'ok' : null }; });
+    return Promise.resolve({ st: null });
+  }
+  /* the Activity feed follows: a local Pending row of this tx flips (or goes, when the chain's own row is already there) */
+  function tx39Feed(hash, st) {
+    var F = HB; if (!F || !F.items) return; var h = tx39N(hash), chain = false, chg = false, put = [];
+    F.items.forEach(function (x) { if (tx39N(x.hash) === h && x.st !== 'pending' && !x.loc) chain = true; });
+    F.items = F.items.filter(function (x) {
+      if (tx39N(x.hash) !== h || x.st !== 'pending') return true;
+      chg = true; if (chain && (x.loc || x.dir === 'out')) { delete F.seen[x.k]; return false; }
+      x.st = st; x.loc = 1; put.push(x); return true;
+    });
+    if (put.length) actStore(put);
+    if (chg) { F.dirty = true; try { schedule(F); } catch (e) {} }
+  }
+  /* merge(): a chain row replaces the local row of the same tx; a local row never doubles a chain row (ph39tx) */
+  function tx39Dup(F, x) {
+    var h = tx39N(x.hash); if (!h) return false;
+    var mine = x.loc || (x.st === 'pending' && ACT.some(function (a) { return tx39N(a.hash) === h; }));
+    if (mine) return F.items.some(function (y) { return tx39N(y.hash) === h && !y.loc && y.st !== 'pending'; });
+    if (x.st === 'pending') return false;
+    var gone = function (y) { return tx39N(y.hash) === h && y.k !== x.k && (y.loc || (y.st === 'pending' && y.dir === 'out')); };
+    if (!F.items.some(gone)) return false;
+    F.items = F.items.filter(function (y) { if (gone(y)) { delete F.seen[y.k]; return false; } return true; }); F.dirty = true;
+    return false;
+  }
+  function tx39Final(ch, net, hash, r, a) {
+    var key = ch + ':' + tx39N(hash), st = r.st; if (TX39D[key]) return; TX39D[key] = st;
+    if (a && r.fee && /^\d+$/.test(r.fee)) { var nt = tx39Nat(ch, a.net); a.fee = r.fee; a.feeTxt = fmtA(r.fee, nt.d) + ' ' + nt.s; }
+    var why = st === 'fail' ? failWhy(ch, WTX[hash] || r.why) : '';
+    if (a) { if (a.st !== st) setSt(a.hash, st); else { saveActs(); tx39Feed(a.hash, st); } } else tx39Feed(hash, st);
+    if (a && Date.now() - (a.t || 0) < 30 * 60000) { buzz(st === 'ok' ? [10, 40, 10] : [30, 40, 30]); toast(st === 'ok' ? 'Confirmed' : 'Transaction failed' + (why ? ': ' + why.split('.')[0] : '')); }
+    try { txNote(ch, net, hash, st, why); } catch (e) {}
+    try { refreshChain(ch); } catch (e) {}
+  }
+  function tx39Sweep() {
+    if (!WID || document.hidden) return;
+    var now = Date.now(), list = {}, wid = WID;
+    ACT.forEach(function (a) { if (a && a.st === 'pending' && a.ch !== 'xmr' && txHashOk(a.ch, a.hash) && chainOnFor(a.ch, a.net)) list[a.ch + ':' + tx39N(a.hash)] = { ch: a.ch, net: a.net, hash: a.hash, t: a.t || now, a: a }; });
+    if (HB && HB.items) HB.items.forEach(function (x) { var k = x.ch + ':' + tx39N(x.hash); if (x.st === 'pending' && x.ch !== 'xmr' && !list[k] && txHashOk(x.ch, x.hash) && chainOnFor(x.ch, x.net)) list[k] = { ch: x.ch, net: x.net, hash: x.hash, t: x.t || now, a: null }; });
+    Object.keys(list).slice(0, 10).forEach(function (k) {
+      var o = list[k], s = TX39S[k] || (TX39S[k] = { at: 0, err: 0 }), age = now - o.t;
+      if (TX39D[k]) { if (o.a && o.a.st === 'pending') setSt(o.a.hash, TX39D[k]); else tx39Feed(o.hash, TX39D[k]); return; }
+      var gap = (o.ch === 'btc' ? 60000 : age < 120000 ? 8000 : age < 3600000 ? 30000 : 120000) * Math.min(8, 1 + s.err);
+      if (s.busy || now - s.at < gap) return; s.at = now; s.busy = true;
+      tx39Status(o.ch, o.net, o.hash).then(function (r) { s.busy = false; s.err = 0; if (wid !== WID || !r || !r.st) return; tx39Final(o.ch, o.net, o.hash, r, o.a); },
+        function () { s.busy = false; s.err++; });   /* every node of this chain failed: asked again next sweep, slower */
+    });
+  }
+  function tx39Boot() {
+    if (TX39B) return; TX39B = true;
+    setTimeout(tx39Sweep, 2500); TX39T = setInterval(tx39Sweep, 8000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(tx39Sweep, 400); });
+  }
+  /* ph39tx (B31): what no tx id carries, kept per wallet: dApp connects / disconnects, signed messages, shared keys (with the
+     app's origin). Shown in Activity with the same rows; sends, receives, fees, contract calls, approvals, swaps and
+     closes / burns already come from ACT (dappLog / send / swap) and from each chain's history streams. */
+  function ev39Get() { return jget('hw-ev39:' + wk(), []) || []; }
+  function ev39Add(o) {
+    try {
+      var L = ev39Get(); o.t = o.t || Date.now(); o.id = o.id || ('ev' + o.t.toString(36) + Math.random().toString(36).slice(2, 7));
+      L.unshift(o); jset('hw-ev39:' + wk(), L.slice(0, 300));
+      if (HB && HB.items && !HB.dead) ev39Merge(HB);
+    } catch (e) {}
+  }
+  function ev39Ch(ns, o) { var ch = { eip155: 'eth', solana: 'sol', tron: 'trx', sui: 'sui', cardano: 'ada', xrpl: 'xrp', btc: 'btc' }[ns] || ''; var net = null; if (ch === 'eth') { try { var n = EVMID[brCid(o)]; net = n ? n.id : (EVM[0] || {}).id; } catch (e) { net = (EVM[0] || {}).id; } } return { ch: ch, net: net }; }
+  function ev39Conn(o, site, nss, off) {
+    (nss || []).forEach(function (ns) { var c = ev39Ch(ns, o); if (!c.ch) return; ev39Add({ ch: c.ch, net: c.net, dir: off ? 'disconnect' : 'connect', lbl: off ? 'Disconnected' : 'Connected', site: String((site && (site.name || site.host)) || o || '').slice(0, 60), origin: String(o || '').slice(0, 200) }); });
+  }
+  /* from callK(): a Kwallet answer to a dApp request */
+  function ev39K(req, o) {
+    if (!req || req.action !== 'dapp' || !o || o.status !== 'signed') return;
+    var m = String(req.method || ''), ch = req.chain === 'evm' ? 'eth' : String(req.chain || ''), net = ch === 'eth' ? req.network : null;
+    if (!CHBY[ch] && ch !== 'eth') return;
+    var site = String((req.site && req.site.name) || '').slice(0, 60), origin = String(req.origin || '').slice(0, 200), res = o.result || {};
+    if (/sign(Personal)?Message|personal_sign|signTypedData|signData$/i.test(m)) { ev39Add({ ch: ch, net: net, dir: 'sign', lbl: /Typed/i.test(m) ? 'Signed typed data' : 'Signed message', site: site, origin: origin, m: m }); return; }
+    if (/getPublicKey|getPubKeys|nearAccount/i.test(m)) { ev39Add({ ch: ch, net: net, dir: 'connect', lbl: 'Shared public key', site: site, origin: origin, m: m }); return; }
+    /* a transaction the app may broadcast itself (Solana / Tron signTransaction): its id is known, so it is tracked like ours */
+    var h = ch === 'sol' ? res.signature : ch === 'trx' ? res.txID : '';
+    if (h && /signTransaction/.test(m) && txHashOk(ch, h)) setTimeout(function () {
+      if (ACT.some(function (a) { return tx39N(a.hash) === tx39N(h); })) return;
+      actAdd({ t: Date.now(), ch: ch, net: net || undefined, key: 'native', s: 'App', amt: site, site: site, origin: origin, to: '', hash: h, st: 'pending', kind: 'dapp', fee: o.fee || '' });
+    }, 6000);
+  }
+  function ev39Merge(F) {
+    if (!F || !F.items) return;
+    merge(F, ev39Get().filter(function (e) { return e && e.ch && (e.ch === 'eth' ? !e.net || chainOnFor('eth', e.net) : chainOnFor(e.ch)); }).map(function (e) {
+      return itm({ ch: e.ch, net: e.ch === 'eth' ? e.net : undefined, hash: e.id, t: e.t, dir: e.dir, key: 'native', s: '', amt: '', cp: '', st: 'ok', ev: 1, lbl: e.lbl, site: e.site, origin: e.origin });
+    }));
+  }
+  /* to Kwallet with every request: the status (and fee paid) of recent transactions, so Kwallet's own history follows the chain */
+  function tx39KSync() {
+    return ACT.filter(function (a) { return a && a.hash && txHashOk(a.ch, a.hash); }).slice(0, 60).map(function (a) { return { h: String(a.hash), c: a.ch, st: a.st === 'ok' || a.st === 'fail' ? a.st : 'pending', f: a.feeTxt || '' }; });
+  }
+  /* ph39tx */
 
   /* ---------- on-chain activity (#28 / #33): sent AND received, every chain except XMR, endless scroll ----------
      Each chain is one or more paged "streams" (explorer cursor). Streams are merged by time without jumps:
@@ -10458,6 +10680,7 @@ var APP_VERSION = '1.8.38';
       if (!scopeOk(F.scope, x)) return;
       var old = F.seen[x.k];
       if (old) { if (old !== true && (old.st !== x.st || (x.m && !old.m) || (x.ap && !old.ap) || (x.sw && !old.sw))) { Object.assign(old, x); F.dirty = true; } return; }
+      try { if (tx39Dup(F, x)) return; } catch (e) {}   /* ph39tx */
       F.seen[x.k] = x; F.items.push(x); add++;
     });
     if (add) { F.fresh = true; F.dirty = true; }
@@ -10576,7 +10799,8 @@ var APP_VERSION = '1.8.38';
   }
   function local2(F) {
     var local = ACT.filter(function (x) { return x.st === 'pending' && actShown(x) && scopeOk(F.scope, { ch: x.ch, net: x.net, key: x.key || 'native' }); });
-    if (local.length) merge(F, local.map(function (x) { return itm({ ch: x.ch, net: x.net, hash: x.hash, t: x.t, dir: 'out', key: x.key || 'native', s: x.s, amt: x.amt, cp: x.to, st: 'pending' }); }));
+    if (local.length) merge(F, local.map(function (x) { return itm({ ch: x.ch, net: x.net, hash: x.hash, t: x.t, dir: 'out', key: x.key || 'native', s: x.s, amt: x.amt, cp: x.to, st: 'pending', loc: 1 }); }));
+    try { ev39Merge(F); } catch (e) {}   /* ph39tx */
   }
   function finishFeed(F) {
     if (F.ldr) F.ldr.style.display = 'none';
@@ -10662,6 +10886,7 @@ var APP_VERSION = '1.8.38';
     return app ? 'Used ' + app : 'Transaction';
   }
   function txDetail(x) {
+    if (x && x.ev) { toast((x.lbl || 'App') + (x.origin ? ' \u00b7 ' + String(x.origin).replace(/^https?:\/\//, '') : '')); return; }   /* ph39tx */
     var netName = x.ch === 'eth' ? (EVMBY[x.net] || {}).name : CHBY[x.ch].name, nat = dtNat(x), url = expFor(x.ch, x.net, x.hash);
     function body(D, loading) {
       var rows = dtRows(x, D), st = D ? (D.ok ? 'ok' : 'fail') : x.st === 'pending' ? 'pending' : x.st === 'fail' ? 'fail' : 'ok';
@@ -10694,7 +10919,7 @@ var APP_VERSION = '1.8.38';
       /* v1.8.9 (R17): the network's own coin (BNB on BNB Chain, POL on Polygon), never a fixed ETH logo */
       var nsym = x.ch === 'eth' ? (EVMBY[x.net] || EVM[0]).sym : x.s;
       var lg0 = alogo(x.ch, x.ch === 'eth' ? x.net : null, sp ? { s: sp.r, gas: false, logo: TOKLOGO[sp.r] || '', a: '' } : { s: x.key === 'native' ? nsym : x.s, gas: x.key === 'native', logo: x.key === 'native' ? natLogo(x.ch, x.net) : '', a: x.key }, 'md').replace(/class="lg /g, 'class="lg md ');
-      var st0 = x.st === 'pending' ? 'pending' : x.st === 'fail' || la.st === 'fail' ? 'fail' : 'ok';
+      var st0 = x.st === 'pending' && la.st !== 'ok' && la.st !== 'fail' ? 'pending' : x.st === 'fail' || la.st === 'fail' ? 'fail' : 'ok';   /* ph39tx */
       var t0 = sp ? 'Swap ' + sp.s + ' \u2192 ' + sp.r : actTitle(la, x);   /* v1.8.9 (R17): the decoded action, the app's name goes underneath */
       if (st0 === 'fail') t0 += ' \u00b7 failed';
       var sub0 = sp ? '\u2212' + sp.a + ' ' + sp.s + (PROVN[la.prov] ? ' \u00b7 ' + PROVN[la.prov] : '') : ((x.ch === 'eth' ? (EVMBY[x.net] || {}).name : CHBY[x.ch].name) || '') + (la.site || la.amt ? ' \u00b7 ' + String(la.site || la.amt) : '');
@@ -10703,7 +10928,8 @@ var APP_VERSION = '1.8.38';
       return '<button class="ar sm tap" data-hx="' + (i < 0 ? '' : i) + '">' + lg0 + '<span class="am"><span class="an">' + esc(t0) + '</span><span class="ap">' + esc(sub0) + '</span></span>' +
         '<span class="ax"><span class="aa ' + (sp && st0 !== 'fail' ? 'up' : '') + '" data-money>' + money(sp ? '+' + esc(sp.b) + ' ' + esc(sp.r) : '') + '</span><span class="au">' + r0 + '</span></span></button>';
     }
-    var dir = x.dir, title = { in: 'Received', out: 'Sent', self: 'To yourself', call: 'App interaction', stake: 'Staked', unstake: 'Unstaked', withdraw: 'Withdrew', trust: 'Trust line', tx: 'Transaction' }[dir] || 'Transaction';
+    var dir = x.dir, title = { in: 'Received', out: 'Sent', self: 'To yourself', call: 'App interaction', stake: 'Staked', unstake: 'Unstaked', withdraw: 'Withdrew', trust: 'Trust line', tx: 'Transaction', connect: 'Connected', disconnect: 'Disconnected', sign: 'Signed message' }[dir] || 'Transaction';
+    if (x.ev && x.lbl) title = x.lbl;   /* ph39tx */
     /* #71: decoded EVM calls: approvals, swaps, named methods */
     var callTxt = '';
     if (dir === 'call' && x.ch === 'eth') {
@@ -10720,10 +10946,11 @@ var APP_VERSION = '1.8.38';
     var lg = alogo(x.ch, x.ch === 'eth' ? x.net : null, r, 'md').replace(/class="lg /g, 'class="lg md ');
     var sub = x.ap ? 'Spender ' + short(x.ap.sp, 4) : x.sw && dir !== 'call' ? 'Swap \u00b7 ' + (EVMBY[x.net] || {}).name : dir === 'call' && x.ch === 'eth' && x.m && !x.sw ? (EVMBY[x.net] || {}).name + ' \u00b7 ' + short(x.cp, 4) : dir === 'in' ? 'From ' + short(x.cp, 4) : dir === 'out' ? 'To ' + short(x.cp, 4) : dir === 'stake' || dir === 'unstake' ? (x.res === 'ENERGY' ? 'Energy' : 'Bandwidth') : x.ch === 'eth' ? (EVMBY[x.net] || {}).name : CHBY[x.ch].name;
     if (x.ch === 'xmr') sub = x.st === 'pending' ? 'Monero \u00b7 waiting for a block' : x.conf != null && x.conf < 10 ? 'Monero \u00b7 ' + x.conf + '/10 confirmations' : x.dir === 'out' && x.cp ? 'To ' + short(x.cp, 4) : 'Monero';
+    if (x.ev) sub = (x.site || x.origin || '') + ' \u00b7 ' + ((x.ch === 'eth' ? (EVMBY[x.net] || {}).name : (CHBY[x.ch] || {}).name) || '');   /* ph39tx */
     var when = new Date(x.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     var right2 = x.st === 'pending' ? '<span class="st-pending pend">' + sv('clock', 'ic xs') + 'Pending</span>' : x.st === 'fail' ? '<span class="st-fail">Failed</span>' : when;
     return '<button class="ar sm tap" data-hx="' + (i < 0 ? '' : i) + '">' + lg + '<span class="am"><span class="an">' + esc(title) + '</span><span class="ap">' + esc(sub || '') + '</span></span>' +
-      '<span class="ax"><span class="aa ' + (dir === 'in' && x.st !== 'fail' ? 'up' : '') + '" data-money>' + money(dir === 'call' && x.ch === 'eth' ? esc(callTxt) : dir === 'trust' || dir === 'tx' ? (dir === 'tx' ? 'Details' : esc(x.s)) : (sign + esc(amt) + ' ' + esc(x.s))) + '</span><span class="au">' + right2 + '</span></span></button>';
+      '<span class="ax"><span class="aa ' + (dir === 'in' && x.st !== 'fail' ? 'up' : '') + '" data-money>' + money(dir === 'call' && x.ch === 'eth' ? esc(callTxt) : dir === 'trust' || dir === 'tx' || x.ev ? (dir === 'tx' ? 'Details' : x.ev ? '' : esc(x.s)) : (sign + esc(amt) + ' ' + esc(x.s))) + '</span><span class="au">' + right2 + '</span></span></button>';
   }
   function activityHtml() {
     return '<header class="bar"><div class="bt l">Activity</div><button class="ib" data-act="hrefresh" aria-label="Refresh">' + sv('refresh') + '</button></header><div id="feed"></div>';
@@ -11947,7 +12174,7 @@ window.hwCrashPrompt = crashPrompt;
   }
   function dappLog(net, hash, site, swap, meta) {
     /* v1.8.9 (R17): called only after a node returned the tx id; actAdd refuses an entry without one */
-    try { var ch = net === 'sol' || net === 'trx' || net === 'sui' || net === 'ada' || net === 'xrp' ? net : 'eth'; var o = Object.assign({ t: Date.now(), ch: ch, net: ch === 'eth' ? net : undefined, key: 'native', s: swap ? 'Swap' : 'App', amt: swap ? swap.text : String(site.name || site.host || '').slice(0, 60), site: String(site.name || site.host || '').slice(0, 60), to: '', hash: hash, st: 'pending', kind: swap ? 'swap' : 'dapp' }, meta || {}); if (actAdd(o) && !swap) watchTx(ch, ch === 'eth' ? net : null, hash); } catch (e) {}
+    try { var ch = net === 'sol' || net === 'trx' || net === 'sui' || net === 'ada' || net === 'xrp' ? net : 'eth'; var o = Object.assign({ t: Date.now(), ch: ch, net: ch === 'eth' ? net : undefined, key: 'native', s: swap ? 'Swap' : 'App', amt: swap ? swap.text : String(site.name || site.host || '').slice(0, 60), site: String(site.name || site.host || '').slice(0, 60), origin: String(site.origin || site.host || '').slice(0, 200), to: '', hash: hash, st: 'pending', kind: swap ? 'swap' : 'dapp' }, meta || {}); if (actAdd(o) && !swap) watchTx(ch, ch === 'eth' ? net : null, hash); } catch (e) {}
   }
 
 
@@ -12978,6 +13205,7 @@ window.hwCrashPrompt = crashPrompt;
       if (ok && ok.wallet) { switchWallet(ok.wallet, true); return brConnect(o, site, ns); }
       if (!ok) throw dErr(4001, 'User rejected the request');
       var S = brSites(), r = S[o] || { ns: {}, cid: cid, since: Date.now() };
+      try { ev39Conn(o, site, [ns]); } catch (e) {}   /* ph39tx */
       r.ns[ns] = 1; r.name = String(site.name || site.host).slice(0, 60); if (site.icon) r.icon = site.icon; r.cid = r.cid || cid; S[o] = r; brSitesSet(S);
       return addr;
     }, function (e) { delete brAsk[k]; throw e; });
@@ -13006,6 +13234,7 @@ window.hwCrashPrompt = crashPrompt;
       if (ok && ok.wallet) { switchWallet(ok.wallet, true); return brConnectMany(o, site, list, false); }
       if (!ok) throw dErr(4001, 'User rejected the request');
       var S = brSites(), r = S[o] || { ns: {}, cid: cid, since: Date.now() };
+      try { ev39Conn(o, site, need); } catch (e) {}   /* ph39tx */
       need.forEach(function (n) { r.ns[n] = 1; }); r.name = String(site.name || site.host).slice(0, 60); if (site.icon) r.icon = site.icon; r.cid = r.cid || cid; S[o] = r; brSitesSet(S);
       return out();
     }, function (e) { delete brAsk[k]; throw e; });
@@ -13013,6 +13242,7 @@ window.hwCrashPrompt = crashPrompt;
   }
   function brRevoke(o, ns) {
     var S = brSites(), r = S[o]; if (!r) return;
+    try { ev39Conn(o, { name: r.name }, ns ? [ns] : Object.keys(r.ns || {}), true); } catch (e) {}   /* ph39tx */
     (ns ? [ns] : Object.keys(r.ns || {})).forEach(function (n) { delete r.ns[n]; brEmit(o, n, n === 'eip155' ? 'accountsChanged' : 'disconnect', n === 'eip155' ? [] : null); });
     if (!Object.keys(r.ns || {}).length) delete S[o]; brSitesSet(S);
   }
@@ -15454,7 +15684,7 @@ window.hwCrashPrompt = crashPrompt;
      createWithSeed(findProgramAddress([], program), "anchor:idl", program); data = 8-byte discriminator, 32-byte authority,
      u32 length, zlib-compressed JSON. Name = metadata.name (Anchor >= 0.30) or name; the instruction is matched by its
      discriminator (new IDLs) or sha256("global:" + snake_case(name))[0..8] (old IDLs). Cached per program for the session. */
-  var PVIDL = {}, PVSYS = { '11111111111111111111111111111111': 1, 'ComputeBudget111111111111111111111111111111': 1, 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA': 1, 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PazQaGZ3cx6CKBvkm7': 1, 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL': 1, 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr': 1, 'Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo': 1, 'AddressLookupTab1e1111111111111111111111111': 1, 'Vote111111111111111111111111111111111111111': 1, 'Stake11111111111111111111111111111111111111': 1 };
+  var PVIDL = {}, PVSYS = { '11111111111111111111111111111111': 1, 'ComputeBudget111111111111111111111111111111': 1, 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA': 1, 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb': 1, 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL': 1, 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr': 1, 'Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMNo': 1, 'AddressLookupTab1e1111111111111111111111111': 1, 'Vote111111111111111111111111111111111111111': 1, 'Stake11111111111111111111111111111111111111': 1 };
   function pvIdlName(t) { t = String(t || '').replace(/[_-]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; }
   function pvSnake(t) { return String(t).replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase(); }
   function pvInflate(bytes) {
@@ -16959,7 +17189,7 @@ window.hwCrashPrompt = crashPrompt;
     var first = !jget('hw-p14-clean', false), n = 0;
     try { n = p14Clean(); } catch (e) {}
     if (first) jset('hw-p14-clean', { t: Date.now(), n: n });
-    setTimeout(pendSweep, 8000); setInterval(pendSweep, 120000);
+    setTimeout(pendSweep, 8000); setInterval(pendSweep, 120000); try { tx39Boot(); } catch (e) {}   /* ph39tx */
   }
   /* ---------- v1.8.9 (R20): Kwallet's sheet never waits on, or misses, a slow preview ----------
      The preview (balance changes, decoded method, contract names, token metadata) runs in parallel with the fee read and
@@ -17143,7 +17373,7 @@ window.hwCrashPrompt = crashPrompt;
     var st = document.createElement('style'); st.id = 'pd38tok-css';
     st.textContent = '.chh-row{display:flex;align-items:flex-start}.chh-row .chh{flex:0 1 auto;min-width:0}' +
       '.chh-row .chh-dots{flex:0 0 auto;margin:12px 0 0 auto;color:var(--text);opacity:.72;background:none;border:0}.chh-row .chh-dots svg{width:22px;height:22px}' +
-      '.br-row .lg.tc-lg{width:36px!important;height:36px!important;margin:0!important;flex:0 0 auto}.br-row[disabled]{opacity:.45}';
+      '.sheet .ar.tc-ar[disabled]{opacity:.45}';   /* ph39clean B32 */
     (document.head || document.documentElement).appendChild(st);
   }
   function tcDots() { tcCss(); return '<button type="button" class="ib chh-dots tap" data-act="tokclean" aria-label="Token cleanup">' + '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="' + TC_DOTS + '"/></svg></button>'; }
@@ -17151,9 +17381,13 @@ window.hwCrashPrompt = crashPrompt;
     tcCss();
     function row(k, ch, name, sub) {
       var on = !!A[ch] && chainOn(ch), why = !A[ch] ? 'No ' + name + ' address in this wallet' : !chainOn(ch) ? name + ' is turned off in Chains' : sub;
-      return '<button class="br-row" data-tc="' + k + '"' + (on ? '' : ' disabled') + '>' + logo(CHBY[ch].logo, CHBY[ch].sym, '', 'tc-lg') + '<span class="am"><span class="an">' + esc(name) + '</span><span class="ap">' + esc(why) + '</span></span></button>';
+      /* ph39clean B32: the row of Send's network sheet (pickNet): md logo, name over a grey line, amount over $ */
+      var r0 = null; try { r0 = A[ch] ? assets(ch)[0] : null; } catch (e) {}
+      var b = r0 ? U(r0.raw) || 0n : 0n, u = r0 && r0.raw != null ? usdOf(r0) : 0;
+      return '<button class="ar sm tap tc-ar" data-tc="' + k + '"' + (on ? '' : ' disabled') + '>' + alogo(ch, null, { gas: 1, s: CHBY[ch].sym }, 'md').replace(/class="lg /g, 'class="lg md ') + '<span class="am"><span class="an">' + esc(name) + '</span><span class="ap">' + esc(why) + '</span></span>' +
+        (r0 ? '<span class="ax"><span class="aa">' + money(b > 0n ? esc(fmtA(b, CHBY[ch].dec) + ' ' + CHBY[ch].sym) : '0') + '</span><span class="au">' + money(u ? fmtUsd(u) : '') + '</span></span>' : '') + '</button>';
     }
-    brSheet('<div class="lst">' + row('sol', 'sol', 'Solana', 'Close token accounts, burn dust') + row('sui', 'sui', 'Sui', 'Clean up coins, burn dust') + '</div>', function (ov, close) {
+    sheet('<h3>Clean up</h3><div class="lst">' + row('sol', 'sol', 'Solana', 'Close token accounts, burn dust') + row('sui', 'sui', 'Sui', 'Clean up coins, burn dust') + '</div>', function (ov, close) {
       ov.addEventListener('click', function (e) {
         var b = e.target.closest('[data-tc]'); if (!b || b.disabled) return; var k = b.getAttribute('data-tc'); buzz(4); close();
         setTimeout(function () { if (k === 'sol') tcSolOpen(); else tcSuiOpen(); }, 200);
@@ -17176,12 +17410,43 @@ window.hwCrashPrompt = crashPrompt;
   /* a row's action picker (HWP.picker): Keep plus what the row allows */
   function tcPick(title, cur, opts, cb) { HWP.picker({ title: title, rows: opts.map(function (o) { return { k: o.k, l: o.l, sub: o.sub || '', v: o.v || '', vs: o.vs || '', on: o.k === cur }; }), onPick: cb }); }
 
+  /* ph39clean B27: the cleanup panels' RPC path. H's own endpoint list (kx: the keyed Helius node first when the user has a
+     key, then the chain's public nodes), tried one after another; any failure (HTTP 403 "personal token", 429, an rpc error,
+     a timeout) moves on to the next node. Indexed Solana lookups try publicnode last (it refuses them without a token).
+     When a node was only busy, one more pass after a short wait. */
+  function tcRpc(ch, method, params, ms) {
+    var us = (kx(CHBY[ch].rpc) || []).slice(), last = null, busy = false;
+    if (ch === 'sol' && /^(getTokenAccountsBy|getProgramAccounts)/.test(method)) us = us.filter(function (u) { return !/publicnode/.test(u); }).concat(us.filter(function (u) { return /publicnode/.test(u); }));
+    function rank(e) { var st = e && e.status, m = String(e && (e.body || e.message) || ''); return st === -1 ? 0 : st === 403 || /personal token|api[ -]?key|upgrade|forbidden/i.test(m) ? 1 : st === 429 || /too many|rate.?limit|timeout/i.test(m) ? 2 : 3; }
+    function pass(i) {
+      if (i >= us.length) return Promise.reject(last || new Error('No ' + CHBY[ch].name + ' node answered'));
+      return http(us[i], { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params || [] }), timeout: ms || 8000 }).then(function (j) {
+        if (j && j.error) { var e = new Error(j.error.message || 'rpc error'); e.rpc = true; e.code = j.error.code; if (j.error.code === -32029 || j.error.code === 429) e.status = 429; throw e; }
+        return j ? j.result : null;
+      }).catch(function (e) {
+        var rk = rank(e); if (!last || rk >= rank(last)) last = e; if (rk === 2) busy = true;
+        return pass(i + 1);
+      });
+    }
+    return pass(0).catch(function (e) { if (!busy) throw e; busy = false; return sleep(1200).then(function () { return pass(0); }); });
+  }
+  /* a failed lookup in words (never the raw JSON of a node) */
+  function tcErr(e, ch) {
+    var net = CHBY[ch].name, m = String(e && (e.body || e.message) || e || ''), st = e && e.status;
+    if (st === 403 || /personal token|api[ -]?key|upgrade|forbidden/i.test(m)) return 'The public ' + net + ' nodes refused this lookup.' + (ch === 'sol' ? ' A Helius key in Settings \u203a API keys avoids this.' : '') + ' Try again later.';
+    if (st === 429 || /too many|rate.?limit/i.test(m)) return 'The ' + net + ' network is busy. Try again in a moment.';
+    if (/timeout|abort/i.test(m)) return 'The ' + net + ' network did not answer in time.';
+    return String(e && e.message || e).replace(/^HTTP \d+: ?/, '').slice(0, 120);
+  }
   /* ----- Solana ----- */
   function tcSolLoad() {
     var a = A.sol;
     return Promise.all([SPL, SPL22].map(function (pg) {
-      return rpcF(CHBY.sol.rpc, 'getTokenAccountsByOwner', [a, { programId: pg }, { encoding: 'jsonParsed', commitment: 'confirmed' }], 12000).then(function (r) { return ((r && r.value) || []).map(function (x) { x._pg = pg; return x; }); });
+      return tcRpc('sol', 'getTokenAccountsByOwner', [a, { programId: pg }, { encoding: 'jsonParsed', commitment: 'confirmed' }], 12000).then(function (r) { return ((r && r.value) || []).map(function (x) { x._pg = pg; return x; }); }, function (e) { return { err: e }; });
     })).then(function (two) {
+      if (two[0].err && two[1].err) throw two[0].err;   /* ph39clean B27 */
+      var miss = two[0].err ? 'SPL' : two[1].err ? 'Token-2022' : '';
+      two = two.map(function (x) { return x.err ? [] : x; });
       var rows = [];
       two[0].concat(two[1]).forEach(function (x) {
         try {
@@ -17207,11 +17472,12 @@ window.hwCrashPrompt = crashPrompt;
           r.px = px[r.mint] || 0; r.usd = r.raw === 0n ? 0 : r.px ? toNum(r.raw, r.dec) * r.px : null;
           var own = !r.ca || r.ca === a, ok = r.st !== 'frozen' && !r.wh && own;
           r.canClose = ok && (r.raw === 0n || r.nat);
-          r.canBurn = ok && !r.nat && r.raw > 0n && r.px > 0 && r.usd < TC_DUST;
+          r.unp = !(r.px > 0); r.canBurn = ok && !r.nat && r.raw > 0n && (r.unp || r.usd < TC_DUST);   /* ph39clean B27: unpriced can burn */
           r.why = r.st === 'frozen' ? 'Frozen by the token issuer' : r.wh ? 'Holds withheld transfer fees' : !own ? 'Another account can close it' : r.canClose || r.canBurn ? '' :
-            !r.px ? 'No live price, so it can\u2019t be burned here' : 'Worth ' + fmtUsd(r.usd) + ', over $0.10';
+'Worth ' + fmtUsd(r.usd) + ', over $0.10';
         });
         rows.sort(function (x, y) { var g = function (r) { return r.canClose ? 0 : r.canBurn ? 1 : 2; }; return g(x) - g(y) || (y.lam > x.lam ? 1 : y.lam < x.lam ? -1 : 0); });
+        rows.miss = miss;
         return rows;
       });
     });
@@ -17225,13 +17491,16 @@ window.hwCrashPrompt = crashPrompt;
       if (!P.open) return;
       var s = sel(), tot = s.reduce(function (t, r) { return t + r.lam; }, 0n), nb = s.filter(function (r) { return r.act === 'burn'; }).length, empt = rows.filter(function (r) { return r.canClose; });
       var gpx = px('solana');
-      var h = HWP.cap('Closing an empty token account returns its rent to your SOL balance. Burn is offered only for tokens worth under $0.10 at the live price, and it can\u2019t be undone.');
+      var h = HWP.cap('Closing an empty token account returns its rent to your SOL balance. Burn is offered for tokens worth under $0.10 at the live price, or with no live price, and it can\u2019t be undone.');
+      var unb = s.filter(function (r) { return r.act === 'burn' && r.unp; }).length;   /* ph39clean B27 */
+      if (unb) h += HWP.warns([esc(tcPl(unb, 'token') + ' with no live price selected to burn. Hwallet can\u2019t tell what ' + (unb === 1 ? 'it is' : 'they are') + ' worth: burn only what you know is worthless. This can\u2019t be undone.')], true);
+      if (rows.miss) h += HWP.warns([esc((rows.miss === 'SPL' ? 'Classic SPL' : 'Token-2022') + ' accounts could not be read right now, so they are not listed. Try again later.')]);
       if (!paired) h += HWP.warns(['This address is watch only. Pair it with Kwallet to sign.']);
       if (!rows.length) h += HWP.card(HWP.kv('Token accounts', 'None', '', { sm: true }));
       else {
         if (empt.length) h += HWP.card(HWP.kv('Select all empty accounts', String(empt.length), '+' + tcSolS(empt.reduce(function (t, r) { return t + r.lam; }, 0n)) + ' SOL', { sm: true, tap: true, chev: true, attr: ' data-tcall' }));
         h += HWP.changes(rows.map(function (r) {
-          var bal = r.raw === 0n ? 'Empty' : fmtA(r.raw, r.dec) + ' ' + r.sym + (r.usd != null ? ' \u00b7 ' + fmtUsd(r.usd) : '');
+          var bal = r.raw === 0n ? 'Empty' : fmtA(r.raw, r.dec) + ' ' + r.sym + (r.usd != null ? ' \u00b7 ' + fmtUsd(r.usd) : ' \u00b7 no live price');
           var note = r.act === 'close' ? 'Close \u00b7 ' + bal : r.act === 'burn' ? 'Burn and close \u00b7 ' + bal : r.canClose || r.canBurn ? bal + ' \u00b7 tap to choose' : bal + ' \u00b7 ' + r.why;
           return { icon: r.icon, sym: 'SOL', lbl: r.sym + (r.pg === SPL22 ? ' \u00b7 2022' : ''), note: note, sign: r.act !== 'keep' ? '+' : '', amt: tcSolS(r.lam), usd: gpx ? fmtUsd(toNum(r.lam, 9) * gpx) : '' };
         }));
@@ -17254,7 +17523,7 @@ window.hwCrashPrompt = crashPrompt;
           if (!r.canClose && !r.canBurn) { toast(r.why || 'Nothing to clean up here'); return; }
           var o = [{ k: 'keep', l: 'Keep', sub: 'Leave this account as it is' }];
           if (r.canClose) o.push({ k: 'close', l: r.nat ? 'Close (unwrap)' : 'Close account', sub: r.nat && r.raw > 0n ? 'Unwraps ' + fmtA(r.raw, 9) + ' WSOL and returns the rent' : 'Returns the rent to your SOL', v: '+' + tcSolS(r.lam) + ' SOL' });
-          if (r.canBurn) o.push({ k: 'burn', l: 'Burn and close', sub: 'Burns ' + fmtA(r.raw, r.dec) + ' ' + r.sym + ' (' + fmtUsd(r.usd) + '), can\u2019t be undone', v: '+' + tcSolS(r.lam) + ' SOL' });
+          if (r.canBurn) o.push({ k: 'burn', l: 'Burn and close', sub: r.unp ? 'No live price, its value is unknown. Burns ' + fmtA(r.raw, r.dec) + ' ' + r.sym + ', can\u2019t be undone' : 'Burns ' + fmtA(r.raw, r.dec) + ' ' + r.sym + ' (' + fmtUsd(r.usd) + '), can\u2019t be undone', v: '+' + tcSolS(r.lam) + ' SOL' });
           tcPick(r.sym, r.act, o, function (k) { r.act = k; paint(); });
         };
       })(rows[i], rr[i]);
@@ -17264,7 +17533,7 @@ window.hwCrashPrompt = crashPrompt;
     }
     function load() {
       busy = false; P.body(HWP.cap('Loading live from the network\u2026')); P.foot('');
-      tcSolLoad().then(function (r) { rows = r; paint(); }, function (e) { if (!P.open) return; P.body(HWP.warns([esc('Could not read your token accounts: ' + String(e && e.message || e).slice(0, 120))], true) + HWP.card(HWP.kv('Try again', '', '', { sm: true, tap: true, chev: true, attr: ' data-tcre' }))); var b = P.el.querySelector('[data-tcre]'); if (b) b.onclick = load; });
+      tcSolLoad().then(function (r) { rows = r; paint(); }, function (e) { if (!P.open) return; P.body(HWP.warns([esc('Could not read your token accounts. ' + tcErr(e, 'sol'))], true) + HWP.card(HWP.kv('Try again', '', '', { sm: true, tap: true, chev: true, attr: ' data-tcre' }))); var b = P.el.querySelector('[data-tcre]'); if (b) b.onclick = load; });
     }
     function go() {
       var s = sel(); if (!s.length) return;
@@ -17304,7 +17573,7 @@ window.hwCrashPrompt = crashPrompt;
   function tcSolWait(sig) {
     var k = 0;
     function poll() {
-      return rpcF(CHBY.sol.rpc, 'getSignatureStatuses', [[sig]], 6000).then(function (r) {
+      return tcRpc('sol', 'getSignatureStatuses', [[sig]], 6000).then(function (r) {
         var x = r && r.value && r.value[0];
         if (x && x.err) throw new Error('The transaction failed on chain');
         if (x && (x.confirmationStatus === 'confirmed' || x.confirmationStatus === 'finalized')) return true;
@@ -17318,7 +17587,7 @@ window.hwCrashPrompt = crashPrompt;
     var chain = packs.reduce(function (p, pk, i) {
       return p.then(function () {
         if (SS) SS.at(i);
-        return Promise.all([rpcF(CHBY.sol.rpc, 'getLatestBlockhash', [{ commitment: 'confirmed' }], 6000), solCuMin()]).then(function (x) {
+        return Promise.all([tcRpc('sol', 'getLatestBlockhash', [{ commitment: 'confirmed' }], 6000), solCuMin()]).then(function (x) {
           var bh = x[0].value.blockhash, price = Math.max(5000, +(x[1] || 0)), ix = [].concat.apply([], pk.map(function (r) { return tcSolIx(r, me); }));
           var est = Math.min(1400000, 5000 + ix.length * 8000);
           return solCu(solCompile(me, [ixCuLimit(1400000), ixCuPrice(price)].concat(ix), bh, {})).catch(function () { return est; }).then(function (cu) { return solCompile(me, [ixCuLimit(cu), ixCuPrice(price)].concat(ix), bh, {}); });
@@ -17335,14 +17604,14 @@ window.hwCrashPrompt = crashPrompt;
   function tcSuiLoad() {
     var a = A.sui, coins = [];
     function page(cur, n) {
-      return rpcF(CHBY.sui.rpc, 'suix_getAllCoins', [a, cur || null, 50], 10000).then(function (r) {
+      return tcRpc('sui', 'suix_getAllCoins', [a, cur || null, 50], 10000).then(function (r) {
         (r && r.data || []).forEach(function (c) { if (!tcSuiNat(c.coinType)) coins.push({ id: c.coinObjectId, t: String(c.coinType), bal: U(c.balance) || 0n, reb: 0n }); });
         if (r && r.hasNextPage && r.nextCursor && n < 20) return page(r.nextCursor, n + 1);
       });
     }
     return page(null, 0).then(function () {
       return Promise.all(tcChunks(coins, 50).map(function (c) {
-        return rpcF(CHBY.sui.rpc, 'sui_multiGetObjects', [c.map(function (x) { return x.id; }), { showStorageRebate: true }], 10000).then(function (r) { (r || []).forEach(function (o, i) { var d = o && o.data; if (d && d.storageRebate != null) c[i].reb = U(d.storageRebate) || 0n; }); }, function () {});
+        return tcRpc('sui', 'sui_multiGetObjects', [c.map(function (x) { return x.id; }), { showStorageRebate: true }], 10000).then(function (r) { (r || []).forEach(function (o, i) { var d = o && o.data; if (d && d.storageRebate != null) c[i].reb = U(d.storageRebate) || 0n; }); }, function () {});
       }));
     }).then(function () {
       var by = {}, types = [];
@@ -17365,7 +17634,7 @@ window.hwCrashPrompt = crashPrompt;
           /* what deleting returns: the merged coins and the empty ones (99% of their storage rebate) */
           g.del = nz.slice(1).concat(zc); g.reb = g.del.reduce(function (t, c) { return t + c.reb; }, 0n) * 99n / 100n;
           g.canClean = g.del.length > 0;
-          g.canBurn = g.raw > 0n && g.px > 0 && g.usd < TC_DUST;
+          g.unp = !(g.px > 0); g.canBurn = g.raw > 0n && (g.unp || g.usd < TC_DUST);   /* ph39clean B27 */
           g.why = g.canClean || g.canBurn ? '' : g.raw > 0n && !g.px ? 'One coin, no live price' : 'One coin, worth ' + fmtUsd(g.usd);
         });
         types.sort(function (x, y) { var r = function (g) { return g.canClean || g.canBurn ? 0 : 1; }; return r(x) - r(y) || (y.reb > x.reb ? 1 : y.reb < x.reb ? -1 : 0); });
@@ -17380,13 +17649,15 @@ window.hwCrashPrompt = crashPrompt;
     function paint() {
       if (!P.open) return;
       var s = sel(), tot = s.reduce(function (t, g) { return t + g.reb; }, 0n), nb = s.filter(function (g) { return g.act === 'burn'; }).length, cl = rows.filter(function (g) { return g.canClean; }), gpx = px('sui');
-      var h = HWP.cap('Merging coins and removing empty ones returns their storage rebate in SUI. Burn sends a token worth under $0.10 to 0x0, where nobody can use it again. SUI itself is never touched.');
+      var h = HWP.cap('Merging coins and removing empty ones returns their storage rebate in SUI. Burn sends a token worth under $0.10, or with no live price, to 0x0, where nobody can use it again. SUI itself is never touched.');
+      var unb = s.filter(function (g) { return g.act === 'burn' && g.unp; }).length;   /* ph39clean B27 */
+      if (unb) h += HWP.warns([esc(tcPl(unb, 'coin type') + ' with no live price selected to burn. Hwallet can\u2019t tell what ' + (unb === 1 ? 'it is' : 'they are') + ' worth: burn only what you know is worthless. This can\u2019t be undone.')], true);
       if (!paired) h += HWP.warns(['This address is watch only. Pair it with Kwallet to sign.']);
       if (!rows.length) h += HWP.card(HWP.kv('Coins other than SUI', 'None', '', { sm: true }));
       else {
         if (cl.length) h += HWP.card(HWP.kv('Select all clean-ups', String(cl.length), '\u2248 +' + fmtU(cl.reduce(function (t, g) { return t + g.reb; }, 0n), 9, 6) + ' SUI', { sm: true, tap: true, chev: true, attr: ' data-tcall' }));
         h += HWP.changes(rows.map(function (g) {
-          var bal = (g.raw === 0n ? 'Empty' : fmtA(g.raw, g.dec) + ' ' + g.sym + (g.usd != null ? ' \u00b7 ' + fmtUsd(g.usd) : '')) + ' \u00b7 ' + tcPl(g.coins.length, 'coin');
+          var bal = (g.raw === 0n ? 'Empty' : fmtA(g.raw, g.dec) + ' ' + g.sym + (g.usd != null ? ' \u00b7 ' + fmtUsd(g.usd) : ' \u00b7 no live price')) + ' \u00b7 ' + tcPl(g.coins.length, 'coin');
           var note = g.act === 'clean' ? 'Clean up \u00b7 ' + bal : g.act === 'burn' ? 'Burn \u00b7 ' + bal : g.canClean || g.canBurn ? bal + ' \u00b7 tap to choose' : bal + ' \u00b7 ' + g.why;
           return { icon: g.icon, sym: 'SUI', lbl: g.sym, note: note, sign: g.act !== 'keep' ? '+' : '', pre: '\u2248', amt: fmtU(g.reb, 9, 6), usd: gpx && g.reb ? fmtUsd(toNum(g.reb, 9) * gpx) : '' };
         }));
@@ -17409,7 +17680,7 @@ window.hwCrashPrompt = crashPrompt;
           if (!g.canClean && !g.canBurn) { toast(g.why || 'Nothing to clean up here'); return; }
           var o = [{ k: 'keep', l: 'Keep', sub: 'Leave these coins as they are' }];
           if (g.canClean) o.push({ k: 'clean', l: 'Clean up', sub: [g.nz.length > 1 ? 'Merge ' + g.nz.length + ' coins' : '', g.zc.length ? 'remove ' + tcPl(g.zc.length, 'empty coin') : ''].filter(Boolean).join(', '), v: '\u2248 +' + fmtU(g.reb, 9, 6) + ' SUI' });
-          if (g.canBurn) o.push({ k: 'burn', l: 'Burn', sub: 'Sends ' + fmtA(g.raw, g.dec) + ' ' + g.sym + ' (' + fmtUsd(g.usd) + ') to 0x0, can\u2019t be undone', v: g.reb ? '\u2248 +' + fmtU(g.reb, 9, 6) + ' SUI' : '' });
+          if (g.canBurn) o.push({ k: 'burn', l: 'Burn', sub: g.unp ? 'No live price, its value is unknown. Sends ' + fmtA(g.raw, g.dec) + ' ' + g.sym + ' to 0x0, can\u2019t be undone' : 'Sends ' + fmtA(g.raw, g.dec) + ' ' + g.sym + ' (' + fmtUsd(g.usd) + ') to 0x0, can\u2019t be undone', v: g.reb ? '\u2248 +' + fmtU(g.reb, 9, 6) + ' SUI' : '' });
           tcPick(g.sym, g.act, o, function (k) { g.act = k; paint(); });
         };
       })(rows[i], rr[i]);
@@ -17419,7 +17690,7 @@ window.hwCrashPrompt = crashPrompt;
     }
     function load() {
       busy = false; P.body(HWP.cap('Loading live from the network\u2026')); P.foot('');
-      tcSuiLoad().then(function (r) { rows = r; paint(); }, function (e) { if (!P.open) return; P.body(HWP.warns([esc('Could not read your coins: ' + String(e && e.message || e).slice(0, 120))], true) + HWP.card(HWP.kv('Try again', '', '', { sm: true, tap: true, chev: true, attr: ' data-tcre' }))); var b = P.el.querySelector('[data-tcre]'); if (b) b.onclick = load; });
+      tcSuiLoad().then(function (r) { rows = r; paint(); }, function (e) { if (!P.open) return; P.body(HWP.warns([esc('Could not read your coins. ' + tcErr(e, 'sui'))], true) + HWP.card(HWP.kv('Try again', '', '', { sm: true, tap: true, chev: true, attr: ' data-tcre' }))); var b = P.el.querySelector('[data-tcre]'); if (b) b.onclick = load; });
     }
     function go() {
       var s = sel(); if (!s.length) return;
