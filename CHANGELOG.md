@@ -1,5 +1,10 @@
 # Changelog
 
+## Kwallet v3.98.39 (2026-10-19)
+
+- Monero Send sheet in Kwallet has the Kwallet badge and Monero chip again, like every other sheet.
+- Recipient on Kwallet's Send sheets (Monero and the other chains): first and last 6 characters in white with a muted ellipsis in between. The full address is still under Details.
+
 ## Kwallet v3.98.38 + Hwallet v1.8.40 (2026-10-19)
 
 - Solana signing preview stays live: while Kwallet's sheet is open, Hwallet re-simulates the transaction every 4 seconds and the sheet updates when the result changes (Approve re-arms after a change). Polling stops on approve, reject or cancel.
