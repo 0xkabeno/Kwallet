@@ -1,5 +1,15 @@
 # Changelog
 
+## Kwallet v3.98.37 + Hwallet v1.8.39 (2026-10-19)
+
+- Kwallet pairing: the big card shows only the selected seed's most active chain (logo, name, balance and USD), and the header chip names that chain. Seed rows are compact one-line selectors. The title no longer overlaps the card, and the extra note moved into Details. Balances come from Hwallet's latest requests for that seed.
+- Solana cleanup fixed: the Token-2022 program id was wrong (caused "String is the wrong size"). Lookups now go through Hwallet's working Solana nodes with fallback, so a 403 from one node no longer breaks the panel. Tokens with no live price can be burned, with a warning. Sui cleanup uses the same fallback. Token-2022 balances and sends now work too.
+- Chains ⋮ menu: clean "Clean up" sheet using the Send network rows, with spacing fixed and balances shown.
+- Transaction status on every chain (EVM, Solana, Sui, Tron, Bitcoin, XRP, Cardano): pending transactions are checked on-chain every few seconds and flip to Completed or Failed, with the real fee saved and balances refreshed. Nodes that fail or refuse are skipped. Kwallet's activity follows the statuses Hwallet sends.
+- Activity history: dApp connects, disconnects and signatures are logged with the dApp's name and origin; every transaction Kwallet signs is logged with chain, type, amount, fee, recipient or contract, origin, hash and status.
+- Tron fees rebuilt from live chain data: real bandwidth and energy left, current burn prices, energy estimated for the actual token transfer, and +1 TRX (+0.1 TRX) activation for new recipients in its own row. "Free" appears only when the fee really is 0. The fee updates as you type the address, and Kwallet now receives the updated fee.
+- Solana token send: the new token account cost shows once, as a clean "New token account" row, instead of being repeated in the fee line.
+
 ## Kwallet v3.98.36 + Hwallet v1.8.38 (2026-10-18)
 
 - Kwallet: the pairing sheet is now a clone of the Send sheet. It has the same header, "Request from Hwallet", a "Pair" title, the chosen seed in the asset card, seeds as Send-style rows with aligned values, Address number in the Wallet row, the same note and Details (seed ID, type, words), and Cancel / Pair. The selected seed is highlighted inside the card, never clipped.
