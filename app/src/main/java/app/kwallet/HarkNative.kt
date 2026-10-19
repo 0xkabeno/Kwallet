@@ -145,6 +145,13 @@ class HarkNative(
     @JavascriptInterface
     fun systemDark(): Boolean = (ctx.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
 
+    /** v3.98.38: the last crash report written on this phone ("" when none), and clearing it */
+    @JavascriptInterface
+    fun crashLog(): String = KwCrash.read(ctx)
+
+    @JavascriptInterface
+    fun crashClear() { KwCrash.clear(ctx) }
+
     /** System bar and cutout insets in CSS px: {"t":..,"r":..,"b":..,"l":..} */
     @JavascriptInterface
     fun insets(): String = insetsJson()

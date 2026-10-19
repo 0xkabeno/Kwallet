@@ -21,6 +21,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # v3.98.38: every inline script of both pages must parse before anything is built
+      - name: JavaScript syntax check (node --check)
+        run: python3 ci/js_check.py web/index.html hwallet/web/index.html
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

@@ -78,6 +78,7 @@ open class KwActivity : FragmentActivity() {
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
         )
         super.onCreate(savedInstanceState)
+        KwCrash.install(applicationContext)   // v3.98.38: local crash report, offered on the next launch
         if (BuildConfig.DEBUG || BuildConfig.E2E) WebView.setWebContentsDebuggingEnabled(true) // v3.97 P0: emulator check only
         // Material You chosen in Settings: the window behind the page uses the wallpaper colour, never a lime flash
         val kwp = getSharedPreferences("kw", MODE_PRIVATE)

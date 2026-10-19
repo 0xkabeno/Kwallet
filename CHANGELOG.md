@@ -1,5 +1,18 @@
 # Changelog
 
+## Kwallet v3.98.38 + Hwallet v1.8.40 (2026-10-19)
+
+- Solana signing preview stays live: while Kwallet's sheet is open, Hwallet re-simulates the transaction every 4 seconds and the sheet updates when the result changes (Approve re-arms after a change). Polling stops on approve, reject or cancel.
+- Solana preview runs one simulation instead of two (the older balance-only check runs only if the preview can't be built). Address lookup tables are read through Helius with fallback and one retry; if a table still can't be read, the preview says it may be incomplete. When the node gives no answer, the sheet says so in plain words instead of showing nothing.
+- Send: the recipient address shows its first and last 6 characters in white and the middle muted and shortened, whenever the field isn't being edited (helps spot look-alike addresses). Typing and pasting are unchanged.
+- Sign and send sheets tightened: smaller gaps and paddings and shorter rows on Solana, EVM, Sui, XRP, Monero and every Send sheet. Same design: badge, chain chip, nested cards, button edge, colours and sizes unchanged.
+- Sui and XRP dApp sheets show the chain chip like the others; Sui balance changes show the real token icon (USDC etc.) instead of a letter.
+- Send XMR: the close button sits inside the sheet edge, in line with the chain chip.
+- Monero: coin page shows how much XMR is still unlocking (received in the last 10 blocks).
+- Activity: export as CSV (Download/Hwallet).
+- Kwallet: crash reports are saved on the phone and offered once on the next launch (copy to send yourself; no keys, seeds or addresses; nothing leaves the phone).
+- Build: every inline script of both pages is syntax-checked (`node --check`) before the APKs are built. New docs/VERIFY.md on checking downloads, signatures and building it yourself.
+
 ## Kwallet v3.98.37 + Hwallet v1.8.39 (2026-10-19)
 
 - Kwallet pairing: the big card shows only the selected seed's most active chain (logo, name, balance and USD), and the header chip names that chain. Seed rows are compact one-line selectors. The title no longer overlaps the card, and the extra note moved into Details. Balances come from Hwallet's latest requests for that seed.
