@@ -675,7 +675,7 @@ body.md3 .scn-pl { background: var(--md-primary, var(--acc)); }
 .br-txt.pri{color:var(--text)}
 .br-txt:active{background:var(--card)}
 .br-grid{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 12px 20px;align-content:start}
-.br-card{background:var(--card);border-radius:18px;overflow:hidden;border:2px solid transparent;display:flex;flex-direction:column;cursor:pointer}
+.br-card{background:var(--card);border-radius:18px;overflow:hidden;border:2px solid transparent;display:flex;flex-direction:column;cursor:pointer;touch-action:pan-y}
 .br-card.on{border-color:var(--accT)}
 .br-ch{display:flex;align-items:center;gap:8px;padding:8px 4px 8px 10px;min-width:0}
 .br-ct{flex:1;min-width:0;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -4376,6 +4376,7 @@ window.hwPlayOpening();
         p.then(function (v) { try { sig.removeEventListener('abort', f); } catch (e) {} res(v); }, function (e) { try { sig.removeEventListener('abort', f); } catch (x) {} rej(e); });
       });
     }
+    try { call('icp', 'icp_iiWarm', {}).catch(function () {}); } catch (e) {}   /* v1.9.13 */
     var PKC = window.PublicKeyCredential;
     if (typeof PKC !== 'function') {
       PKC = function PublicKeyCredential() { throw new TypeError('Illegal constructor'); };
@@ -7543,7 +7544,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.12';
+var APP_VERSION = '1.9.13';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8414,15 +8415,23 @@ var APP_VERSION = '1.9.12';
   }
   function iiKey() { return 'hw-ii:' + (A.icp || ''); }
   /* per seed: { ids: { rp: [credHex x20] }, reg: { 'rp|i': anchor }, names: { anchor: name } } */
-  function iiState() { var s = jget(iiKey(), null); return s && typeof s === 'object' ? { ids: s.ids || {}, reg: s.reg || {}, names: s.names || {} } : { ids: {}, reg: {}, names: {} }; }
+  function iiState() { var s = jget(iiKey(), null); return s && typeof s === 'object' ? { ids: s.ids || {}, reg: s.reg || {}, names: s.names || {}, at: s.at || {} } : { ids: {}, reg: {}, names: {}, at: {} }; }
   function iiSave(s) { if (A.icp) jset(iiKey(), s); }
   /* every passkey ID Kwallet gave us for this relying party, looked up on II (20 small public queries in parallel) */
   function iiScan(rp) {
     var S = iiState(), L = S.ids[rp] || []; if (!L.length) return Promise.resolve(S);
     return Promise.all(L.map(function (h, i) { return iiLookup(h).then(function (a) { return { i: i, a: a, ok: true }; }, function () { return { i: i, ok: false }; }); })).then(function (R) {
       var S2 = iiState(); R.forEach(function (x) { var k = rp + '|' + x.i; if (!x.ok) return; if (x.a) S2.reg[k] = x.a; else delete S2.reg[k]; });
-      iiSave(S2); return S2;
+      S2.at[rp] = Date.now(); iiSave(S2); return S2;
     });
+  }
+  /* v1.9.13: a scan from the last 10 minutes is used as is (the sheet opens at once) and refreshed quietly; older ones get 4 s */
+  var IIRUN = {};
+  function iiFresh(rp) {
+    var S = iiState(); if (!(S.ids[rp] || []).length) return Promise.resolve(S);
+    var job = IIRUN[rp] || (IIRUN[rp] = iiScan(rp).then(function (x) { delete IIRUN[rp]; return x; }, function () { delete IIRUN[rp]; return iiState(); }));
+    if (Date.now() - (+S.at[rp] || 0) < 600000) return Promise.resolve(S);
+    return Promise.race([job, new Promise(function (res) { setTimeout(function () { res(iiState()); }, 4000); })]);
   }
   function iiKnown(S, rp) { return Object.keys(S.reg).filter(function (k) { return k.indexOf(rp + '|') === 0; }).map(function (k) { var a = S.reg[k]; return { i: +k.split('|')[1], a: a, n: S.names[a] || '' }; }); }
   /* identities II has but whose names this phone never saw: one Kwallet approval reads them all (identity_info is private to the identity) */
@@ -13704,6 +13713,33 @@ window.hwCrashPrompt = crashPrompt;
           '<div class="br-th">' + (th ? '<img alt="" src="' + esc(th) + '">' : '<span class="br-thf">' + brFav(t, 'br-favb') + '<span>' + esc(brHostOf(t.url)) + '</span></span>') + '</div></div>';
       }).join('') : '<div class="wc-empty br-none"><b>No open tabs</b><span>Open a site from the address bar.</span></div>') + '</div>';
   }
+  /* v1.9.13: swipe a tab card left or right to close it (Chrome-style). A tick when the swipe passes the point of no return,
+     a firmer one when the tab closes; a short swipe springs back; vertical scrolling of the grid is untouched. */
+  var BRSW = null, brSwJust = 0;
+  document.addEventListener('touchstart', function (e) {
+    var c = e.target && e.target.closest && e.target.closest('.br-grid .br-card'); if (!c || e.touches.length !== 1 || e.target.closest('.br-cx')) { BRSW = null; return; }
+    var t = e.touches[0]; BRSW = { c: c, x: t.clientX, y: t.clientY, dx: 0, on: false, past: false, w: c.offsetWidth || 160 };
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    var S = BRSW; if (!S) return; var t = e.touches[0], dx = t.clientX - S.x, dy = t.clientY - S.y;
+    if (!S.on) { if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { BRSW = null; return; } if (Math.abs(dx) < 10) return; S.on = true; S.c.style.transition = 'none'; S.c.style.willChange = 'transform,opacity'; }
+    if (e.cancelable) e.preventDefault();
+    S.dx = dx; var f = Math.min(1, Math.abs(dx) / S.w);
+    S.c.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / S.w * 4) + 'deg)'; S.c.style.opacity = String(1 - f * 0.75);
+    var past = Math.abs(dx) > S.w * 0.38; if (past !== S.past) { S.past = past; buzz(past ? 10 : 4); }
+  }, { passive: false });
+  function brSwEnd() {
+    var S = BRSW; BRSW = null; if (!S || !S.on) return; brSwJust = Date.now();
+    var c = S.c, id = c.getAttribute('data-tab-id');
+    c.style.transition = 'transform .2s cubic-bezier(.2,.8,.2,1), opacity .2s';
+    if (S.past) {
+      c.style.transform = 'translateX(' + (S.dx > 0 ? 1 : -1) * (S.w * 1.6) + 'px)'; c.style.opacity = '0'; buzz([14, 30, 8]);
+      setTimeout(function () { brClose(id); }, 180);
+    } else { c.style.transform = ''; c.style.opacity = ''; setTimeout(function () { c.style.willChange = ''; c.style.transition = ''; }, 220); }
+  }
+  document.addEventListener('touchend', brSwEnd, { passive: true });
+  document.addEventListener('touchcancel', brSwEnd, { passive: true });
+  document.addEventListener('click', function (e) { if (Date.now() - brSwJust < 400 && e.target.closest && e.target.closest('.br-grid .br-card')) { e.stopPropagation(); e.preventDefault(); } }, true);
   function brPaint() {
     var el = brEl(); if (el.hidden) return;
     var t = brCur();
@@ -18861,7 +18897,8 @@ window.hwCrashPrompt = crashPrompt;
        every identity), read missing names once with Kwallet's approval, and tell Kwallet: the chooser lists them and a new
        identity skips their numbers. II unreachable: Kwallet works from what this phone knows, as before. */
     var rpK = /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai)$/.test(rp) ? rp : 'id.ai';
-    var scan = Promise.race([iiScan(rpK).catch(function () { return null; }), new Promise(function (res) { setTimeout(function () { res(null); }, 10000); })]);
+    try { if (window.HwNative && HwNative.warmK) HwNative.warmK(); } catch (e) {}
+    var scan = iiFresh(rpK);
     return scan.then(function (S) { S = S || iiState(); return op === 'get' ? iiFetchNames(site, rpK, S) : S; }).then(function (S) {
       S = S || iiState(); var kn = iiKnown(S, rpK);
       if (kn.length) { q.known = kn.slice(0, 50); q.taken = kn.map(function (x) { return x.i; }); }
@@ -18940,6 +18977,7 @@ window.hwCrashPrompt = crashPrompt;
       if (m === 'icp_disconnect') { brRevoke(o, 'icp'); return Promise.resolve(null); }
       if (m === 'icp_iiLogin') return iiLogin(site, p);   /* v1.9.7 (F6) */
       if (m === 'icp_passkey') return iiPasskey(site, p);   /* v1.9.10 (F6b) */
+      if (m === 'icp_iiWarm') { var hw = (/^https:\/\/([a-z0-9.-]+)$/.exec(String(site.origin || ('https://' + site.host))) || [])[1] || ''; if (/^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai|www\.id\.ai|beta\.id\.ai)$/.test(hw) && p17Paired('icp')) { try { if (window.HwNative && HwNative.warmK) HwNative.warmK(); } catch (e) {} iiFresh(/^(id\.ai|www\.id\.ai|beta\.id\.ai)$/.test(hw) ? 'id.ai' : hw).catch(function () {}); } return Promise.resolve(null); }   /* v1.9.13: II page opened: warm Kwallet and the identity list */
       if (!brIs(o, 'icp') || !addr) return Promise.reject(dErr(4100, 'Connect to this site first'));
       return icpRun(o, site, m, p);
     }

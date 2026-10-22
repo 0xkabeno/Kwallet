@@ -12789,7 +12789,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.12';
+const APP_VERSION = '3.99.13';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -25268,29 +25268,30 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     }
     /* v3.99.12: Internet Identity passkeys get the same cards as every other request: what, which identity, and a free cap */
     if (m === 'icp_passkey' || m === 'icp_iiNames') {
-      var when = function (u) { if (!u) return ''; var d = Math.floor((Date.now() - u) / 86400000); return d <= 0 ? 'Used today' : d === 1 ? 'Used yesterday' : d < 30 ? 'Used ' + d + ' days ago' : 'Used ' + new Date(u).toLocaleDateString(); };
+      var when = function (u) { if (!u) return ''; var d = Math.floor((Date.now() - u) / 86400000); return d <= 0 ? 'Today' : d === 1 ? 'Yesterday' : d < 30 ? d + ' days ago' : new Date(u).toLocaleDateString(); };
       var idName = function (r) { return r.n ? esc(r.n) : r.a ? 'Identity ' + esc(r.a) : 'Passkey #' + (r.i + 1); };
+      var dot = function (on) { return '<span aria-hidden="true" style="display:inline-block;flex:0 0 auto;width:18px;height:18px;border-radius:50%;box-sizing:border-box;margin-right:12px;vertical-align:-3px;border:' + (on ? '5px solid #a8f07a' : '2px solid rgba(160,160,160,.6)') + '"></span>'; };
       if (m === 'icp_iiNames') {
-        o.main += HWP.card(DS.nmList.map(function (x) { return HWP.kv('Identity ' + esc(x.a), 'Passkey #' + (x.i + 1), 'Found on Internet Identity', { sm: true }); }).join(''));
-        o.main += HWP.cap('Free \u00b7 read-only. Each passkey signs one request so II shows its name. Nothing is changed or approved.');
-        o.det += kv('Site', esc(DS.pkRp), 'Internet Identity') + kv('Call', '<span class="hp-mono">identity_info</span>', 'Read-only, one per identity');
+        o.main += HWP.card(DS.nmList.map(function (x) { return HWP.kv('Identity ' + esc(x.a), 'Passkey #' + (x.i + 1), '', { sm: true }); }).join(''));
+        o.main += HWP.cap('Free \u00b7 read-only. Nothing changes on Internet Identity.');
+        o.det += kv('Site', esc(DS.pkRp), 'Internet Identity') + kv('Request', '<span class="hp-mono">identity_info</span>', 'One per identity');
       } else if (DS.pkOp === 'create') {
-        o.main += HWP.card(HWP.kv('Identity name', DS.pkName ? esc(DS.pkName) : 'No name', 'Exactly as Internet Identity sent it') + HWP.kv('Passkey', '#' + (DS.pkCands[0] + 1) + ' of this seed', 'Your seed restores it on any phone', { sm: true }));
-        o.main += HWP.cap('Free \u00b7 making a passkey sends no funds.');
-        o.det += kv('Site', esc(DS.pkRp), 'Internet Identity') + kv('Key', 'P-256 (ES256)', 'Made from your seed, never leaves Kwallet');
+        o.main += HWP.card(HWP.kv('Name', DS.pkName ? esc(DS.pkName) : 'Untitled', '') + HWP.kv('Passkey', '#' + (DS.pkCands[0] + 1), 'Restores with your seed', { sm: true }));
+        o.main += HWP.cap('Free \u00b7 no funds move.');
+        o.det += kv('Site', esc(DS.pkRp), 'Internet Identity') + kv('Key', 'P-256 (ES256)', 'Never leaves Kwallet');
       } else {
         var rws = DS.pkRows || [];
         if (rws.length > 1) {
           o.main += HWP.cap('Choose an identity');
           o.main += HWP.card(rws.map(function (r) {
-            var on = r.i === DS.pkSel, sub = (r.a && r.n ? 'Identity ' + esc(r.a) + ' \u00b7 ' : '') + 'Passkey #' + (r.i + 1) + (r.u ? ' \u00b7 ' + when(r.u) : r.r ? ' \u00b7 Restored' : '');
-            return HWP.kv((on ? '\u25c9 ' : '\u25cb ') + idName(r), '', sub, { tap: true, cls: 'kw-pk' + (on ? ' on' : ''), attr: ' data-pk="' + r.i + '" style="' + (on ? 'background:rgba(127,127,127,.12);border-radius:10px' : '') + '"' });
+            var on = r.i === DS.pkSel, sub = 'Passkey #' + (r.i + 1) + (r.u ? ' \u00b7 ' + when(r.u) : r.r ? ' \u00b7 Restored' : '');
+            return HWP.kv(dot(on) + idName(r), r.a && r.n ? '<span class="hp-mono">' + esc(r.a) + '</span>' : '', sub, { tap: true, cls: 'kw-pk' + (on ? ' on' : ''), attr: ' role="radio" aria-checked="' + on + '" data-pk="' + r.i + '"' + (on ? ' style="background:rgba(168,240,122,.08)"' : '') });
           }).join(''));
         } else if (rws[0]) {
           var r1 = rws[0];
-          o.main += HWP.card(HWP.kv('Identity', idName(r1), (r1.a && r1.n ? 'Identity ' + esc(r1.a) + ' \u00b7 ' : '') + 'Passkey #' + (r1.i + 1) + (r1.u ? ' \u00b7 ' + when(r1.u) : '')));
+          o.main += HWP.card(HWP.kv('Identity', idName(r1), (r1.a && r1.n ? esc(r1.a) + ' \u00b7 ' : '') + 'Passkey #' + (r1.i + 1)));
         }
-        o.main += HWP.cap('Free \u00b7 Internet Identity then signs you in to the app.');
+        o.main += HWP.cap('Free \u00b7 no funds move.');
         o.det += kv('Site', esc(DS.pkRp), 'Internet Identity');
       }
       return o;

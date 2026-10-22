@@ -1,6 +1,12 @@
 # Changelog
 
-## Kwallet v3.99.12 / Hwallet v1.9.12 (test build, not released)
+## Kwallet v3.99.13 / Hwallet v1.9.13
+
+- Passkey sheets: shorter, cleaner text. Create shows Name and Passkey number; sign-in shows a radio chooser (name, identity number, passkey number, last used).
+- Faster Internet Identity: opening id.ai warms Kwallet and refreshes the identity list in the background; a list checked in the last 10 minutes is used at once, an older one waits at most 4 s.
+- Browser: swipe a tab card left or right to close it, with haptic feedback (a tick at the point of no return, a firmer one on close).
+
+## Kwallet v3.99.12 / Hwallet v1.9.12 (test build)
 
 - Internet Identity, several identities on one seed (F6c). Hwallet now asks II which of this seed's Kwallet passkeys (#1 to #20) are registered, with II's public `lookup_device_key` query (signs nothing). A fresh phone with the same seed finds every identity again.
 - Names exactly as II has them (hen, hen1, hen2). II keeps names private, so the first time Hwallet finds identities whose names it never saw, Kwallet shows one "Restore identities" sheet; each passkey signs one read-only `identity_info` call. Declining it just shows identity numbers.
