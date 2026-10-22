@@ -7369,7 +7369,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.2';
+var APP_VERSION = '1.9.3';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8210,7 +8210,7 @@ var APP_VERSION = '1.9.2';
       d.extra = 0n; d.storage = false; d.storageDeposit = '1250000000000000000000';
       if (tok || wrap) { if (tok) d.tbal = x[3] != null && /^\d+$/.test(String(x[3])) ? BI(x[3]) : null; d.storage = x[4] == null; d.toFor = to; var bb = x[5] && x[5].min; if (bb && /^\d+$/.test(String(bb))) d.storageDeposit = String(bb); d.extra = 1n + (d.storage ? BI(d.storageDeposit) : 0n); }
       d.wrap = wrap; if (wrap) { d.approx = false; d.atMost = true; }
-      d.feeFor = function () { return BI(d.gasPrice) * (tok ? 30000000000000n * (d.storage ? 2n : 1n) : wrap ? 30000000000000n * (d.storage ? 3n : 2n) : 450000000000n); };
+      d.feeFor = function () { return BI(d.gasPrice) * (tok ? 30000000000000n * (d.storage ? 2n : 1n) : wrap ? 30000000000000n * (d.storage ? 3n : 2n) : (/^[0-9a-f]{64}$/.test(to) || /^0x[0-9a-f]{40}$/.test(to) || !to ? 1000000000000n : 600000000000n)); };   /* v1.9.3: same upfront transfer cost as Kwallet */
       d.req = function () { return { near: { nonce: d.nonce, blockHash: d.blockHash, gasPrice: d.gasPrice, reserve: d.reserve.toString(), storage: d.storage, storageDeposit: d.storageDeposit, wrap: d.wrap || undefined } }; };
       d.feed = function () { return { near: { nonce: d.nonce, blockHash: d.blockHash, gasPrice: d.gasPrice, reserve: d.reserve.toString(), storage: d.storage, storageDeposit: d.storageDeposit }, balance: { token: String(d.tbal != null ? d.tbal : ''), gas: String(d.gbal) } }; };
       return d;

@@ -1,5 +1,11 @@
 # Changelog
 
+## Kwallet v3.99.3 / Hwallet v1.9.3 (test build, not released)
+
+- Pairing: dismissing or failing the unlock ends the request; the seed list never opens without it.
+- NEAR Max: the fee covers NEAR's upfront transfer cost (creating a new implicit account too), so Max sends everything except the account's storage minimum.
+- Opening and PIN screens: NEAR and ICP marks join the floating coins.
+
 ## Kwallet v3.99.2 / Hwallet v1.9.2 (test build, not released)
 
 - Pair sheet: the connected wallet is its own card under "Connected to Hwallet"; the other seeds follow in a second card under "Other wallets".
