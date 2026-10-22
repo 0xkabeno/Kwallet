@@ -1,5 +1,16 @@
 # Changelog
 
+## Kwallet v3.99.5 / Hwallet v1.9.5 (test build, not released)
+
+- NEAR dApps: Hwallet registers with NEAR Connect (the "near-wallet-injected" event) as Hwallet, HOT Wallet, Meteor Wallet and NEAR Mobile. Every action is signed in Kwallet.
+- Transaction details: the Network fee is read from the chain on every network (NEAR, Bitcoin, Sui, XRP, Cardano and ICP join XMR, Solana, EVM and TRON) and saved by hash, so it shows at once next time.
+- Browser: a monochrome search engine logo in the address bar. Each tap switches Google, DuckDuckGo, Brave.
+- Chains: two tabs, Chains and EVM networks. The same rows and switches, regrouped; the last tab is remembered.
+- Hwallet's send sheet shows "needs X NEAR available", like Kwallet's.
+- Kwallet ignores NEAR fee data from Hwallet that falls outside sane limits, and flags any network fee over $50 as unusually high.
+- More fallback endpoints: Base, Arbitrum, Optimism, BNB Chain, Linea, Bitcoin, TRON.
+- CI: builds on pushes to wip-* branches, checks that the NEAR fee code is identical in both apps and gives the protocol's numbers, and starts both pages in headless Chrome, failing on any uncaught error.
+
 ## Kwallet v3.99.4 / Hwallet v1.9.4 (test build, not released)
 
 - NEAR fees follow today's protocol: gas is bought up front at 0.001 NEAR per Tgas and partly refunded, and creating a new account costs 0.007 NEAR. The send sheet shows the real fee plus "needs X NEAR available" when more must be held for a few seconds. Max subtracts the upfront amount, so "Not enough NEAR" no longer happens after Max.

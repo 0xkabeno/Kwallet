@@ -2,7 +2,7 @@ name: Build APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, "wip-*"]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
@@ -24,6 +24,14 @@ jobs:
       # v3.98.38: every inline script of both pages must parse before anything is built
       - name: JavaScript syntax check (node --check)
         run: python3 ci/js_check.py web/index.html hwallet/web/index.html
+
+      # v3.99.5 (S2/S6): same NEAR fee code in both apps, giving the protocol's numbers
+      - name: Fee code check
+        run: node ci/fee_check.js
+
+      # v3.99.5 (S1): both pages start in headless Chrome with no uncaught error (catches init-order white screens)
+      - name: Boot check (headless Chrome)
+        run: bash ci/boot_check.sh
 
       - uses: actions/setup-java@v4
         with:

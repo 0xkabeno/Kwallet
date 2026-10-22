@@ -128,6 +128,8 @@ button.kv:active{background:var(--card2)}
 .seg button.on{background:var(--card);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.14)}
 body[data-theme="dark"] .seg button.on{background:var(--sel)}
 .seg button[hidden]{display:none}
+.kws-chn-tw{display:flex;justify-content:center;margin:2px 0 12px}.kws-chn-tabs{width:100%;max-width:420px;display:flex}.kws-chn-tabs button{flex:1}
+.kws-chn-p[hidden]{display:none}
 .ver{color:var(--soft);font-size:13px;text-align:center;margin:12px 0 4px;line-height:1.5}
 /* ---------- coin page ---------- */
 .chero{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0 0}
@@ -631,6 +633,8 @@ body.md3 .scn-pl { background: var(--md-primary, var(--acc)); }
 .br-lk{display:grid;place-items:center;color:var(--muted);flex:0 0 auto}
 .br-lk .ic{width:18px;height:18px}
 .br-lk.s{color:var(--up)}
+.br-engb{flex:0 0 auto;display:grid;place-items:center;width:28px;height:28px;margin-right:-6px;border:0;border-radius:50%;background:none;color:var(--muted);opacity:.85;padding:0;-webkit-tap-highlight-color:transparent;transition:opacity .15s ease,transform .15s ease}
+.br-engb svg{width:17px;height:17px;display:block}.br-engb:active{transform:scale(.88);opacity:1}
 .br-cap{flex:0 0 auto;font-size:11.5px;font-weight:700;color:var(--warn);background:var(--warnBg);border-radius:999px;padding:3px 8px}
 .br-tc{width:44px;height:44px;display:grid;place-items:center;flex:0 0 auto;color:var(--text);border-radius:50%}
 .br-tc span{min-width:22px;height:22px;padding:0 4px;border:2px solid currentColor;border-radius:6px;display:grid;place-items:center;font-size:12.5px;font-weight:700;line-height:1}
@@ -4246,6 +4250,38 @@ window.hwPlayOpening();
     getRpc: function () { return Promise.resolve({ network: 'mainnet', rpcUrl: 'https://rpc.mainnet.fastnear.com' }); }
   };
   if (!OFF.near) { try { if (!window.near) Object.defineProperty(window, 'near', { value: nearW, configurable: true, writable: true }); } catch (e) {} }
+  /* v1.9.5 (Task B): NEAR Connect (@hot-labs/near-connect, used by near.com, Rhea, Meteor's dApps...) finds in-app wallets through
+     the "near-wallet-injected" event. Hwallet answers as itself and, for dApps that only list fixed wallets, as HOT Wallet, Meteor
+     and NEAR Mobile (owner-approved name borrowing). The connector swaps its sandboxed entry with the same id for ours, so every
+     tap on those names opens Kwallet's signing sheet. */
+  if (!OFF.near) (function () {
+    var F = { signMessage: true, signTransaction: false, signAndSendTransaction: true, signAndSendTransactions: true, signInWithoutAddKey: true, signInAndSignMessage: true, signInWithFunctionCallKey: false, signDelegateActions: false, mainnet: true, testnet: false };
+    function acc() { return nearAcct ? [{ accountId: nearAcct, publicKey: nearPkS || undefined }] : []; }
+    function signIn() { return nearAcct ? Promise.resolve(acc()) : nearW.requestSignIn({}).then(function () { return acc(); }); }
+    function bad(r) { if (r && r.error) { var e = new Error(r.error.message || 'Rejected'); e.code = r.error.code; throw e; } return r; }
+    function sMsg(p) { p = p || {}; return nearW.signMessage({ message: p.message, nonce: p.nonce, recipient: p.recipient }).then(function (r) { return { accountId: r.accountId || nearAcct, publicKey: r.publicKey || nearPkS, signature: r.signature }; }); }
+    function mk(id, name, icon, web) {
+      return {
+        manifest: { id: id, name: name, icon: icon, description: 'Hwallet, signed in Kwallet', website: web, version: '1.0.0', executor: '', type: 'injected', platform: [], permissions: {}, features: F },
+        signIn: signIn,
+        signInAndSignMessage: function (d) { return signIn().then(function (a) { return sMsg((d && d.messageParams) || {}).then(function (m) { return a.map(function (x) { return Object.assign({ signedMessage: m }, x); }); }); }); },
+        signOut: function () { return nearW.signOut().then(function () {}); },
+        getAccounts: function () { return Promise.resolve(acc()); },
+        signAndSendTransaction: function (p) { return nearW.signAndSendTransaction({ receiverId: p.receiverId, actions: p.actions }).then(bad).then(function (r) { return (r.response || [])[0] || r; }); },
+        signAndSendTransactions: function (p) { return nearW.signAndSendTransactions({ transactions: p.transactions }).then(bad).then(function (r) { return r.response || []; }); },
+        signMessage: sMsg
+      };
+    }
+    var WS = [
+      mk('hwallet', NAME, ICON, 'https://github.com/0xkabeno/Kwallet'),
+      mk('hot-wallet', 'HOT Wallet', 'https://app.hot-labs.org/images/hot/hot-icon.png', 'https://hot-labs.org/wallet'),
+      mk('meteor-wallet', 'Meteor Wallet', 'https://raw.githubusercontent.com/Meteor-Wallet/meteor_wallet_sdk/main/assets/meteor-logo-svg.svg', 'https://wallet.meteorwallet.app'),
+      mk('near-mobile', 'NEAR Mobile', 'https://storage.herewallet.app/upload/179839f01189bc54afea2fd34eb092ddb6d63c97b5c8c9e418317285fd751f0c.webp', 'https://nearmobile.app')
+    ];
+    function inject() { WS.slice().reverse().forEach(function (w) { try { window.dispatchEvent(new CustomEvent('near-wallet-injected', { detail: w })); } catch (e) {} }); }
+    window.addEventListener('near-selector-ready', inject);
+    inject();
+  })();
   /* ---------- v1.9.0: Internet Computer (Plug-compatible window.ic.plug: connect, balance, ICP / ICRC transfers, canister calls with Kwallet) ---------- */
   var icpP = '', icpA = '';
   function prinObj(t) { return { toText: function () { return t; }, toString: function () { return t; }, _isPrincipal: true }; }
@@ -7369,7 +7405,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.4';
+var APP_VERSION = '1.9.5';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -7469,17 +7505,17 @@ var APP_VERSION = '1.9.4';
   var EVM = [
     { id: 'ethereum', name: 'Ethereum', chainId: 1, gem: 'ethereum', ws: 'wss://ethereum-rpc.publicnode.com', sym: 'ETH', cg: 'ethereum', logo: 'ethereum', tw: 'ethereum', cgp: 'ethereum', rpc: ['https://ethereum-rpc.publicnode.com', 'https://eth.drpc.org', 'https://rpc.flashbots.net'], exp: 'https://etherscan.io', bs: 'https://eth.blockscout.com',
       tokens: [['USDT', '0xdAC17F958D2ee523a2206206994597C13D831ec7', 6, 'tether', 'Tether USD'], ['USDC', '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 6, 'usd-coin', 'USD Coin']] },
-    { id: 'base', name: 'Base', chainId: 8453, gem: 'base', ws: 'wss://base-rpc.publicnode.com', sym: 'ETH', cg: 'ethereum', logo: 'base', tw: 'base', cgp: 'base', l1: 'op', rpc: ['https://base-rpc.publicnode.com', 'https://mainnet.base.org'], exp: 'https://basescan.org', bs: 'https://base.blockscout.com',
+    { id: 'base', name: 'Base', chainId: 8453, gem: 'base', ws: 'wss://base-rpc.publicnode.com', sym: 'ETH', cg: 'ethereum', logo: 'base', tw: 'base', cgp: 'base', l1: 'op', rpc: ['https://base-rpc.publicnode.com', 'https://mainnet.base.org', 'https://base.drpc.org'], exp: 'https://basescan.org', bs: 'https://base.blockscout.com',
       tokens: [['USDC', '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', 6, 'usd-coin', 'USD Coin']] },
-    { id: 'arbitrum', name: 'Arbitrum', chainId: 42161, gem: 'arbitrum', ws: 'wss://arbitrum-one-rpc.publicnode.com', sym: 'ETH', cg: 'ethereum', logo: 'arbitrum', tw: 'arbitrum', cgp: 'arbitrum-one', rpc: ['https://arbitrum-one-rpc.publicnode.com', 'https://arb1.arbitrum.io/rpc'], exp: 'https://arbiscan.io', bs: 'https://arbitrum.blockscout.com',
+    { id: 'arbitrum', name: 'Arbitrum', chainId: 42161, gem: 'arbitrum', ws: 'wss://arbitrum-one-rpc.publicnode.com', sym: 'ETH', cg: 'ethereum', logo: 'arbitrum', tw: 'arbitrum', cgp: 'arbitrum-one', rpc: ['https://arbitrum-one-rpc.publicnode.com', 'https://arb1.arbitrum.io/rpc', 'https://arbitrum.drpc.org'], exp: 'https://arbiscan.io', bs: 'https://arbitrum.blockscout.com',
       tokens: [['USDT', '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', 6, 'tether', 'Tether USD'], ['USDC', '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', 6, 'usd-coin', 'USD Coin']] },
-    { id: 'optimism', name: 'Optimism', chainId: 10, gem: 'optimism', ws: 'wss://optimism-rpc.publicnode.com', sym: 'ETH', cg: 'ethereum', logo: 'optimism', tw: 'optimism', cgp: 'optimistic-ethereum', l1: 'op', rpc: ['https://optimism-rpc.publicnode.com', 'https://mainnet.optimism.io'], exp: 'https://optimistic.etherscan.io', bs: 'https://optimism.blockscout.com',
+    { id: 'optimism', name: 'Optimism', chainId: 10, gem: 'optimism', ws: 'wss://optimism-rpc.publicnode.com', sym: 'ETH', cg: 'ethereum', logo: 'optimism', tw: 'optimism', cgp: 'optimistic-ethereum', l1: 'op', rpc: ['https://optimism-rpc.publicnode.com', 'https://mainnet.optimism.io', 'https://optimism.drpc.org'], exp: 'https://optimistic.etherscan.io', bs: 'https://optimism.blockscout.com',
       tokens: [['USDT', '0x01bFF41798a0BcF287b996046Ca68b395DbC1071', 6, 'tether', 'Tether USD'], ['USDC', '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', 6, 'usd-coin', 'USD Coin']] },
     { id: 'polygon', name: 'Polygon', chainId: 137, gem: 'polygon', ws: 'wss://polygon-bor-rpc.publicnode.com', sym: 'POL', cg: 'polygon-ecosystem-token', logo: 'polygon', tw: 'polygon', cgp: 'polygon-pos', rpc: ['https://polygon-bor-rpc.publicnode.com', 'https://polygon.drpc.org'], exp: 'https://polygonscan.com', bs: 'https://polygon.blockscout.com',
       tokens: [['USDT', '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', 6, 'tether', 'Tether USD'], ['USDC', '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', 6, 'usd-coin', 'USD Coin']] },
-    { id: 'bsc', name: 'BNB Chain', chainId: 56, gem: 'smartchain', ws: 'wss://bsc-rpc.publicnode.com', sym: 'BNB', cg: 'binancecoin', logo: 'smartchain', tw: 'smartchain', cgp: 'binance-smart-chain', rpc: ['https://bsc-rpc.publicnode.com', 'https://bsc-dataseed.bnbchain.org'], exp: 'https://bscscan.com', bs: '',
+    { id: 'bsc', name: 'BNB Chain', chainId: 56, gem: 'smartchain', ws: 'wss://bsc-rpc.publicnode.com', sym: 'BNB', cg: 'binancecoin', logo: 'smartchain', tw: 'smartchain', cgp: 'binance-smart-chain', rpc: ['https://bsc-rpc.publicnode.com', 'https://bsc-dataseed.bnbchain.org', 'https://bsc.drpc.org'], exp: 'https://bscscan.com', bs: '',
       tokens: [['USDT', '0x55d398326f99059fF775485246999027B3197955', 18, 'tether', 'Tether USD'], ['USDC', '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', 18, 'usd-coin', 'USD Coin']] },
-    { id: 'linea', name: 'Linea', chainId: 59144, gem: 'linea', ws: 'wss://linea-rpc.publicnode.com', sym: 'ETH', cg: 'ethereum', logo: 'linea', tw: 'linea', cgp: 'linea', rpc: ['https://linea-rpc.publicnode.com', 'https://rpc.linea.build'], exp: 'https://lineascan.build', bs: '',
+    { id: 'linea', name: 'Linea', chainId: 59144, gem: 'linea', ws: 'wss://linea-rpc.publicnode.com', sym: 'ETH', cg: 'ethereum', logo: 'linea', tw: 'linea', cgp: 'linea', rpc: ['https://linea-rpc.publicnode.com', 'https://rpc.linea.build', 'https://linea.drpc.org'], exp: 'https://lineascan.build', bs: '',
       tokens: [['USDC', '0x176211869cA2b568f2A7D4EE941E073a821EE1ff', 6, 'usd-coin', 'USD Coin']] },
     /* Robinhood Chain (Arbitrum Orbit L2): chain 4663, gas ETH. USDG contract from docs.robinhood.com/chain/contracts, checked on-chain (symbol USDG, 6 decimals) */
     { id: 'robinhood', name: 'Robinhood Chain', chainId: 4663, gem: 'robinhood', sym: 'ETH', cg: 'ethereum', logo: 'robinhoodchain', tw: '', cgp: '', rpc: ['https://rpc.mainnet.chain.robinhood.com', 'https://robinhood-rpc.publicnode.com'], exp: 'https://robinhoodchain.blockscout.com', bs: 'https://robinhoodchain.blockscout.com',
@@ -7493,8 +7529,8 @@ var APP_VERSION = '1.9.4';
     { id: 'eth', name: 'Ethereum', sym: 'ETH', dec: 18, cg: 'ethereum', logo: 'ethereum' },
     { id: 'sol', name: 'Solana', sym: 'SOL', dec: 9, cg: 'solana', logo: 'solana', cgp: 'solana', gem: 'solana', ws: 'wss://solana-rpc.publicnode.com', rpc: ['https://solana-rpc.publicnode.com', 'https://api.mainnet-beta.solana.com'], exp: 'https://solscan.io', tx: 'https://solscan.io/tx/', acct: 'https://solscan.io/account/',
       tokens: [['USDC', 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', 6, 'usd-coin', 'USD Coin'], ['USDT', 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', 6, 'tether', 'Tether USD']] },
-    { id: 'btc', name: 'Bitcoin', sym: 'BTC', dec: 8, cg: 'bitcoin', logo: 'bitcoin', rest: ['https://mempool.space/api', 'https://blockstream.info/api'], tx: 'https://mempool.space/tx/', acct: 'https://mempool.space/address/', tokens: [] },
-    { id: 'trx', name: 'TRON', sym: 'TRX', dec: 6, cg: 'tron', logo: 'tron', cgp: 'tron', gem: 'tron', rest: ['https://api.trongrid.io'], tx: 'https://tronscan.org/#/transaction/', acct: 'https://tronscan.org/#/address/',
+    { id: 'btc', name: 'Bitcoin', sym: 'BTC', dec: 8, cg: 'bitcoin', logo: 'bitcoin', rest: ['https://mempool.space/api', 'https://blockstream.info/api', 'https://mempool.emzy.de/api'], tx: 'https://mempool.space/tx/', acct: 'https://mempool.space/address/', tokens: [] },
+    { id: 'trx', name: 'TRON', sym: 'TRX', dec: 6, cg: 'tron', logo: 'tron', cgp: 'tron', gem: 'tron', rest: ['https://api.trongrid.io', 'https://tron-rpc.publicnode.com'], tx: 'https://tronscan.org/#/transaction/', acct: 'https://tronscan.org/#/address/',
       tokens: [['USDT', 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', 6, 'tether', 'Tether USD']] },
     { id: 'sui', name: 'Sui', sym: 'SUI', dec: 9, cg: 'sui', logo: 'sui', cgp: 'sui', gem: 'sui', rpc: ['https://sui-rpc.publicnode.com', 'https://fullnode.mainnet.sui.io'], tx: 'https://suiscan.xyz/mainnet/tx/', acct: 'https://suiscan.xyz/mainnet/account/',
       tokens: [['USDC', '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC', 6, 'usd-coin', 'USD Coin']] },
@@ -10075,7 +10111,7 @@ var APP_VERSION = '1.9.4';
       var f = feeOf(SND.lv), fu = $('feeu');
       var fN = SND.ch === 'trx' && SND.d.actFee ? f - BI(SND.d.actFee) : f;   /*ph39send:fee (B33/B34)*/
       $('fee').textContent = SND.ch === 'trx' && fN === 0n ? 'Free' : (SND.d.approx ? '≈ ' : SND.d.atMost ? 'Up to ' : '') + fmtA(fN, gas.d) + ' ' + gas.s;
-      if (fu) fu.textContent = SND.ch === 'trx' ? trxFeeSub(SND.d, fN, gas) : [px(gas.cg) ? fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '', SND.d.extra && SND.ch === 'ada' ? '+ ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : ''].filter(Boolean).join(' \u00b7 ');
+      if (fu) fu.textContent = SND.ch === 'trx' ? trxFeeSub(SND.d, fN, gas) : [px(gas.cg) ? fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '', SND.d.extra && SND.ch === 'ada' ? '+ ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : '', SND.ch === 'near' && SND.d.needFor && SND.d.needFor() > f ? 'needs ' + fmtA(SND.d.needFor(), 24) + ' NEAR available' : ''].filter(Boolean).join(' \u00b7 ');   /* v1.9.5 (S2): same line as Kwallet's sheet */
       if (fu) { if (SND.fpWarn) fu.textContent = SND.fpWarn; fu.style.color = SND.fpWarn ? '#e5484d' : ''; fu.style.whiteSpace = SND.fpWarn ? 'normal' : ''; }   /* v1.8.35 (B10) */
       try { sndXRows(f); } catch (e) {}   /*ph38send:val*/
     }
@@ -11377,9 +11413,36 @@ var APP_VERSION = '1.9.4';
         Object.keys(agg).forEach(function (k) { if (agg[k] !== 0n) ch.push({ a: k, raw: agg[k] }); });
         return { ch: ch, fee: from === me ? fee : 0n, ok: rc.status === '0x1', appr: appr };
       }); }
+    /* v1.9.5 (B35): the fee actually paid, read from each chain (it was only read for XMR, SOL, EVM and TRON) */
+    var meX = String(curAddrFor(x) || '').toLowerCase();
+    if (x.ch === 'near') return nearRpc('tx', { tx_hash: x.hash, sender_account_id: x.dir === 'in' && x.cp ? x.cp : A.near, wait_until: 'NONE' }, 9000).then(function (r) {
+      if (!r || !r.transaction_outcome) return null; var burnt = 0n, ok = !(r.status && r.status.Failure);
+      [r.transaction_outcome].concat(r.receipts_outcome || []).forEach(function (o) { burnt += BI(String((o.outcome && o.outcome.tokens_burnt) || '0')); (o.outcome && o.outcome.status && o.outcome.status.Failure) && (ok = false); });
+      return { ch: null, fee: String(r.transaction.signer_id || '').toLowerCase() === meX ? burnt : 0n, ok: ok };
+    });
+    if (x.ch === 'btc') return race(CHBY.btc.rest, function (u) { return http(u + '/tx/' + x.hash, { timeout: 8000 }); }).then(function (t) {
+      if (!t || t.fee == null) return null; var mine = (t.vin || []).some(function (v) { return String((v.prevout || {}).scriptpubkey_address || '').toLowerCase() === meX; });
+      return { ch: null, fee: mine ? BI(String(t.fee)) : 0n, ok: true, time: t.status && t.status.block_time ? t.status.block_time * 1000 : 0 };
+    });
+    if (x.ch === 'sui') return rpc(CHBY.sui.rpc, 'sui_getTransactionBlock', [x.hash, { showEffects: true, showInput: true }], 9000).then(function (t) {
+      var e = t && t.effects; if (!e || !e.gasUsed) return null; var g = e.gasUsed, f = BI(String(g.computationCost || 0)) + BI(String(g.storageCost || 0)) - BI(String(g.storageRebate || 0));
+      var snd = String((((t.transaction || {}).data) || {}).sender || '').toLowerCase();
+      return { ch: null, fee: snd === meX ? f : 0n, ok: !e.status || e.status.status === 'success', time: t.timestampMs ? +t.timestampMs : 0 };
+    });
+    if (x.ch === 'xrp') return rpc(CHBY.xrp.rpc, 'tx', [{ transaction: x.hash }], 9000).then(function (t) {
+      if (!t || t.Fee == null) return null; var ok = !t.meta || t.meta.TransactionResult === 'tesSUCCESS';
+      return { ch: null, fee: String(t.Account || '').toLowerCase() === meX ? BI(String(t.Fee)) : 0n, ok: ok };
+    });
+    if (x.ch === 'ada') return http(CHBY.ada.rest[0] + '/tx_info', { method: 'POST', body: JSON.stringify({ _tx_hashes: [x.hash] }), timeout: 9000 }).then(function (j) {
+      var t = j && j[0]; if (!t || t.fee == null) return null; var mine = (t.inputs || []).some(function (i) { return String(((i.payment_addr || {}).bech32) || '').toLowerCase() === meX; });
+      return { ch: null, fee: mine ? BI(String(t.fee)) : 0n, ok: true, time: t.tx_timestamp ? t.tx_timestamp * 1000 : 0 };
+    });
+    if (x.ch === 'icp') return Promise.resolve({ ch: null, fee: x.dir === 'out' && (x.key || 'native') === 'native' ? 10000n : x.dir === 'in' ? 0n : null, ok: x.st !== 'fail', time: x.t });
     if (x.ch === 'trx') return tron('/wallet/gettransactioninfobyid', { value: x.hash }).then(function (j) { if (!j || !j.id) return null; return { ch: null, fee: BigInt(j.fee || 0), ok: !(j.receipt && j.receipt.result && j.receipt.result !== 'SUCCESS'), time: j.blockTimeStamp || 0 }; });
     return Promise.resolve(null);
   }
+  /* v1.9.5 (B35/S5): paid fees are kept by hash, so the detail shows them at once and they survive a refresh */
+  function feeMemo(h, f) { var m = jget('hw-txfee', {}) || {}; if (f === undefined) return m[h] != null ? BI(m[h]) : null; m[h] = String(f); var k = Object.keys(m); if (k.length > 600) k.slice(0, k.length - 600).forEach(function (q) { delete m[q]; }); jset('hw-txfee', m); }
   function curAddrFor(x) { var k = x.ch === 'eth' ? 'eth' : x.ch; return A && A[k] ? A[k] : ''; }
   function dtRows(x, D) {
     var nat = dtNat(x), list = [];
@@ -11416,7 +11479,9 @@ var APP_VERSION = '1.9.4';
       var chip = st === 'conf' ? '<span class="td-chip pend">' + (xc ? 'Confirming' : 'Waiting for a block') + '</span>' : st === 'pending' ? '<span class="td-chip pend">Pending</span>' : st === 'fail' ? '<span class="td-chip fail">Failed</span>' : '<span class="td-chip ok">Completed</span>';
       var ch = rows.map(function (r) { var up = r.raw > 0n; return '<div class="td-r">' + r.lg + '<span class="td-s">' + esc(r.s) + '</span><span class="td-v"><b class="' + (up ? 'up' : 'dn') + '" data-money>' + money((up ? '+' : '\u2212') + esc(fmtA(r.raw < 0n ? -r.raw : r.raw, r.d))) + '</b><small data-money>' + money(dtUsd(r.raw, r.d, r.p)) + '</small></span></div>'; }).join('');
       var t = (D && D.time) || x.t, dt = t ? new Date(t).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-      var fee = D && D.fee != null && D.fee > 0n ? fmtA(D.fee, nat.d) + ' ' + nat.s + (px(nat.cg) ? ' \u00b7 ' + dtUsd(D.fee, nat.d, px(nat.cg)) : '') : D && D.fee === 0n ? 'None for you' : loading ? 'Checking\u2026' : '\u2014';
+      var fM = D && D.fee != null ? D.fee : feeMemo(x.hash); if (D && D.fee == null && fM != null) D = Object.assign({}, D, { fee: fM }); if (!D && fM != null) D = null;
+      var fD = D && D.fee != null ? D.fee : fM;
+      var fee = fD != null && fD > 0n ? fmtA(fD, nat.d) + ' ' + nat.s + (px(nat.cg) ? ' \u00b7 ' + dtUsd(fD, nat.d, px(nat.cg)) : '') : fD === 0n ? 'None for you' : loading ? 'Checking\u2026' : '\u2014';
       return '<div class="sh-h"><span class="sh-sp"></span><h3>Transaction</h3><button class="sh-rb" data-x aria-label="Close">' + si('x') + '</button></div>' +
         '<div class="td-hd"><div class="td-t">' + esc(dtHead(x, D, rows)) + '</div>' + chip + '</div>' +
         (ch ? '<div class="sw-l">Balance changes</div><div class="dg td-ch">' + ch + '</div>' : loading ? '<div class="dg td-ch"><div class="td-r td-ld"><span class="spin"></span><span class="td-s">Reading the chain\u2026</span></div></div>' : '') +
@@ -11428,7 +11493,7 @@ var APP_VERSION = '1.9.4';
     var D0 = null, done = false;
     var ov = sheet('<div class="td-b">' + body(null, true) + '</div>', function (ov) { ov.querySelector('.sheet').classList.add('sw-sh'); bind(ov); });
     function bind(o) { var e = o.querySelector('[data-ex]'); if (e) e.onclick = function () { buzz(6); openExt(url); }; var hb = o.querySelector('.td-hash'); if (hb) hb.onclick = function () { copy(x.hash).then(function () { toast('Hash copied'); }); }; }
-    dtFetch(x).then(function (D) { D0 = D; }, function () {}).then(function () { done = true; var b = ov.querySelector('.td-b'); if (b && ov.isConnected) { b.innerHTML = body(D0, false); bind(ov); } });
+    dtFetch(x).then(function (D) { D0 = D; try { if (D && D.fee != null && x.st !== 'pending') feeMemo(x.hash, D.fee); } catch (e) {} }, function () {}).then(function () { done = true; var b = ov.querySelector('.td-b'); if (b && ov.isConnected) { b.innerHTML = body(D0, false); bind(ov); } });
   }
   function swapParts(t) { var m = String(t || '').match(/^\s*([\d.,]+)\s+(\S+)\s+\u2192\s+([\d.,]+)\s+(\S+)/); return m ? { a: m[1], s: m[2], b: m[3], r: m[4] } : null; }
   function actRow(x, i) {
@@ -11737,8 +11802,18 @@ var APP_VERSION = '1.9.4';
     var main = CH_ALL.map(function (c) { return chnRow(c.id, c.logo, c.id === 'eth' ? 'Ethereum & EVM networks' : c.name, ''); }).join('');
     var evm = EVM_ALL.map(function (n) { return chnRow('evm-' + n.id, n.logo, n.name, '', 'kws-chn-sub'); }).join('');
     return '<p class="hw-kp kws-chn-h">Turn a chain off to stop its network use and hide it.</p>' +
-      '<div class="kws-grp kws-chn-g">' + main + '</div><div class="kws-sec">EVM networks</div><div class="kws-grp kws-chn-g">' + evm + '</div>';
+      /* v1.9.5 (F4): Chains | EVM networks as two tabs (same rows and switches, regrouped); the last tab is remembered */
+      chnTabsHtml() + '<div class="kws-chn-p" data-chp="main"' + (chnTab() === 'evm' ? ' hidden' : '') + '><div class="kws-grp kws-chn-g">' + main + '</div></div>' +
+      '<div class="kws-chn-p" data-chp="evm"' + (chnTab() === 'evm' ? '' : ' hidden') + '><div class="kws-grp kws-chn-g">' + evm + '</div></div>';
   }
+  function chnTab() { return jget('hw-chn-tab', 'main') === 'evm' ? 'evm' : 'main'; }
+  function chnTabsHtml() { var t = chnTab(); return '<div class="kws-chn-tw"><div class="seg kws-chn-tabs" role="tablist"><button type="button" role="tab" data-chtab="main"' + (t === 'main' ? ' class="on" aria-selected="true"' : ' aria-selected="false"') + '>Chains</button><button type="button" role="tab" data-chtab="evm"' + (t === 'evm' ? ' class="on" aria-selected="true"' : ' aria-selected="false"') + '>EVM networks</button></div></div>'; }
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest && e.target.closest('[data-chtab]'); if (!b) return;
+    var t = b.getAttribute('data-chtab'), root = b.closest('.kws') || document; jset('hw-chn-tab', t); buzz(4);
+    root.querySelectorAll('[data-chtab]').forEach(function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on ? 'true' : 'false'); });
+    root.querySelectorAll('[data-chp]').forEach(function (p) { p.hidden = p.getAttribute('data-chp') !== t; });
+  });
   function chnId(id) { return /^evm-/.test(id) ? 'evm:' + id.slice(4) : id; }
   function chnSync() {
     var xo = chnXmrOnly();
@@ -13213,6 +13288,14 @@ window.hwCrashPrompt = crashPrompt;
   function brN() { return !!(window.HwNative && HwNative.brOpen); }
   function brNat(f) { try { if (window.HwNative && HwNative[f]) return HwNative[f].apply(HwNative, Array.prototype.slice.call(arguments, 1)); } catch (e) { console.error(e); } return null; }
   function brEng() { return jget('hw-br-eng', 'ddg'); }
+  /* v1.9.5 (F3): the search engine as a small monochrome logo in the address bar; each tap = the next one (Google, DuckDuckGo, Brave) */
+  var ENGI = {
+    google: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.35 11.1H12v2.98h5.35c-.23 1.4-1.66 4.1-5.35 4.1-3.22 0-5.85-2.67-5.85-5.96S8.78 6.26 12 6.26c1.83 0 3.06.78 3.76 1.45l2.57-2.47C16.68 3.7 14.55 2.75 12 2.75 6.89 2.75 2.75 6.89 2.75 12S6.89 21.25 12 21.25c5.34 0 8.88-3.75 8.88-9.04 0-.61-.07-1.07-.15-1.53z"/></svg>',
+    ddg: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.6"/><path fill="currentColor" d="M10.2 6.6c1.9-.5 3.8.4 4.3 2.4.3 1.2-.1 2.3-.2 3.4-.1 1.3.4 2.7 1 3.9-.9.5-2 .8-3.1.8-1 0-1.8-.2-2.6-.6.5-1.5.6-3 .3-4.6-.3-1.4-1-2.6-1.4-3.6.5-.8 1-1.4 1.7-1.7z"/><circle cx="13.1" cy="9.4" r=".75" fill="var(--card,#16191f)"/><path fill="currentColor" d="M13.7 12.4c.9-.3 2-.4 2.7-.2.3.1.2.5-.1.6-.8.3-1.7.5-2.6.4z"/></svg>',
+    brave: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M8.2 3.2h7.6l1.4 1.7 2.1-.3.9 1.6-.8 2.1.5 1.6-2.9 8.1L12 21.2l-5-3.2-2.9-8.1.5-1.6-.8-2.1.9-1.6 2.1.3z"/><path fill="currentColor" d="M12 15.2l-1.8 1.3h3.6zM8.4 9.4l2.2.7.6 2.3-1.9 1.1zm7.2 0l-2.2.7-.6 2.3 1.9 1.1z"/></svg>'
+  };
+  var ENGO = ['google', 'ddg', 'brave'];
+  function brEngBtn() { var e = brEng(); if (!ENGI[e]) e = 'ddg'; return '<button type="button" class="br-engb" data-br="eng" aria-label="Search engine: ' + BR_ENG[e][0] + '. Tap to change">' + ENGI[e] + '</button>'; }
   function brCur() { return BR.act ? BRM.get(BR, BR.act) : null; }
   /* v1.8.15 (4.2): the provider script carries the chains switched off in Chains (they are never announced); sent again
      when Chains change, so every new tab gets the current set */
@@ -13299,7 +13382,7 @@ window.hwCrashPrompt = crashPrompt;
     return '<header class="br-bar' + (t && t.inc ? ' br-inc' : '') + '"><form class="br-u" id="br-f" autocomplete="off">' + (t && t.inc ? '<span class="br-incb" title="Incognito tab" aria-label="Incognito tab">' + brSvg(INCI) + '</span>' : '') + '<span class="br-lk' + (sec ? ' s' : '') + '">' + sv(sec ? 'lock' : 'globe') + '</span>' +
       '<input id="br-in" type="text" inputmode="url" enterkeyhint="go" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="' + (t && t.inc ? 'Incognito \u00b7 search or type a site' : 'Search or type a site') + '" value="' + esc(t ? brHostOf(t.url) || t.url : '') + '" aria-label="Address">' +
       /* v1.8.10 (push 15, R4): the same pill, now a switch: tap = data limit off / on again (the speed you set is kept) */
-      capPillHtml() + '</form>' +
+      capPillHtml() + brEngBtn() + '</form>' +
       /* v1.8.8 (push 13, R4f): [URL bar][Translate][Tabs][menu], equal gaps; the icon flashes on a page that is not in your language */
       (window.HwNative && HwNative.brEval && window.hwTr ? '<button class="ib br-trb" data-br="tr" aria-label="Translate">' + brSvg(hwTr.icon) + '</button>' : '') +
       '<button class="br-tc" data-br="tabs" aria-label="' + n + ' tabs"><span>' + (n > 99 ? ':D' : n) + '</span></button>' +
@@ -13526,6 +13609,7 @@ window.hwCrashPrompt = crashPrompt;
       else if (k === 'menu') brMenu();
       else if (k === 'cap') { e.preventDefault(); buzz(6); capToggle(); var nh = capPillHtml(); if (nh) b.outerHTML = nh; else b.remove(); }
       else if (k === 'tr') { if (Date.now() - brTrLp < 700) return; if (window.hwTr) hwTr.tap(); }
+      else if (k === 'eng') { e.preventDefault(); buzz(4); var e1 = ENGO[(ENGO.indexOf(brEng()) + 1) % ENGO.length]; jset('hw-br-eng', e1); b.outerHTML = brEngBtn(); toast('Search with ' + BR_ENG[e1][0]); }
       else if (k === 'bm') { buzz(4); brBmSheet(); }
       else if (k === 'sites') brSitesSheet();
     });

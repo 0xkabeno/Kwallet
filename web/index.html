@@ -12789,7 +12789,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.4';
+const APP_VERSION = '3.99.5';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -21549,6 +21549,15 @@ window.__KWLOGO={"near":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3d
      max(gas_price, min_gas_purchase_price = 0.001 NEAR/Tgas) and burnt at gas_price; the rest comes back a block later.
      Creating an implicit account costs a fixed 0.007 NEAR (account_creation_charge), kept from that refund.
      need = what must be in the account (Max subtracts this); fee = what it really costs. Same function in Kwallet and Hwallet. */
+  /* v3.99.5 (S3): Kwallet doesn't take Hwallet's NEAR fee numbers blindly: values outside sane limits are dropped for the protocol defaults */
+  function nearCfgSafe(d) {
+    var c = Object.assign({}, (d && d.cfg) || {}), n = function (v) { return /^\d+$/.test(String(v == null ? '' : v)) ? BigInt(String(v)) : null; }, bad = false;
+    if (n(c.buy) != null && (n(c.buy) > 10000000000n || n(c.buy) < 1000000n)) { delete c.buy; bad = true; }
+    if (n(c.charge) != null && n(c.charge) > 10000000000000000000000n) { delete c.charge; bad = true; }
+    ['rs', 'rx', 'ts', 'tx', 'cs', 'cx', 'ks', 'kx'].forEach(function (k) { if (n(c[k]) != null && n(c[k]) > 20000000000000n) { delete c[k]; bad = true; } });
+    var gp = n(d && d.gasPrice), dd = Object.assign({}, d || {}, { cfg: c }); if (gp != null && gp > 10000000000n) { dd.gasPrice = '100000000'; bad = true; }
+    dd.bad = bad; return dd;
+  }
   function nearCost(d, calls, creates) {
     var c = (d && d.cfg) || {}, n = function (v, f) { return /^\d+$/.test(String(v == null ? '' : v)) ? BigInt(String(v)) : f; };
     var gp = n(d && d.gasPrice, 100000000n) * 102n / 100n, buy = n(c.buy, 1000000000n); if (buy < gp) buy = gp;
@@ -21566,7 +21575,8 @@ window.__KWLOGO={"near":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3d
   function nearPlan(req, level) {
     var d = req.near || {}, tok = req.token !== 'native', o = { fee: 0n, extra: 0n, atMost: false, approx: true }, nc;
     var cr = d.creates != null ? !!d.creates : /^[0-9a-f]{64}$/.test(String(req.to || '')) || /^0x[0-9a-f]{40}$/.test(String(req.to || ''));
-    nc = nearCost(d, tok ? (d.storage ? 2 : 1) : d.wrap ? (d.storage ? 3 : 2) : 0, !tok && !d.wrap && cr); o.fee = nc.fee; o.need = nc.need;   /* v3.99.4 (Task A) */
+    var dS = nearCfgSafe(d); o.feeWarn = dS.bad;
+    nc = nearCost(dS, tok ? (d.storage ? 2 : 1) : d.wrap ? (d.storage ? 3 : 2) : 0, !tok && !d.wrap && cr); o.fee = nc.fee; o.need = nc.need;   /* v3.99.4 (Task A) */
     if (!tok && d.wrap) { o.atMost = true; o.approx = false; o.extra = 1n + (d.storage ? (U(d.storageDeposit) || NEAR_STORAGE) : 0n); }   /* a NEAR Intents deposit: wrap + ft_transfer */
     else if (!tok) {}
     else { o.atMost = true; o.approx = false; o.extra = 1n + (d.storage ? (U(d.storageDeposit) || NEAR_STORAGE) : 0n); }
@@ -21674,7 +21684,7 @@ window.__KWLOGO={"near":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3d
       if (c === 'btc') { var p = btcPlan(req, level); o.fee = p.fee; o.amount = p.amt; o.change = p.change; o.inputs = p.sel.length; return o; }
       if (c === 'ada') { var q = adaPlan(req, level); o.fee = q.fee; o.amount = q.amt; o.change = q.change; o.inputs = q.inputs; o.extra = q.minAda || 0n; o.extraNote = q.minAda ? 'ada' : ''; return o; }
       if (c === 'near') {   /* v3.99.0 */
-        var np = nearPlan(req, level); o.fee = np.fee; o.extra = np.extra; o.atMost = np.atMost; o.approx = np.approx; o.need = np.need; if ((tok || (req.near || {}).wrap) && (req.near || {}).storage) o.extraNote = 'near-storage';
+        var np = nearPlan(req, level); o.fee = np.fee; o.extra = np.extra; o.atMost = np.atMost; o.approx = np.approx; o.need = np.need; o.feeWarn = np.feeWarn; if ((tok || (req.near || {}).wrap) && (req.near || {}).storage) o.extraNote = 'near-storage';
         var nk = root.KwSend.check({ chain: 'near', tok: tok, max: req.amount === 'max', amount: req.amount, bal: bal, gbal: gbal, fee: o.need || o.fee, extra: o.extra, reserve: U((req.near || {}).reserve) || 0n, sym: req.tokenSym, gsym: 'NEAR', gdec: 24, dec: +req.tokenDec });
         o.amount = nk.amount; if (nk.err) throw new Error(nk.err); return o;
       }
@@ -24207,7 +24217,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* network fee: tap to change (Slow / Normal / Fast / Custom) */
     var kAct = kTrxAct(stake || trust), fN = c.fee != null && kAct > 0n ? c.fee - kAct : c.fee;   /*pk39send:fee (B34)*/
     var fv = S.c === 'trx' && fN === 0n ? 'Free' : (c.approx ? '\u2248 ' : '') + fmt(fN, S.gdec, S.gdec) + ' ' + esc(S.gsym);
-    var fs = [S.c === 'trx' ? kTrxSub(fN, gpx, stake || trust) : c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : '', c.atMost ? 'at most' : '', S.c === 'near' && c.need && c.need > c.fee ? 'needs ' + fmt(c.need, S.gdec, 5) + ' NEAR available; the rest comes back in a few seconds' : ''].filter(Boolean).join(' \u00b7 ');   /* v3.99.4 (Task A) */
+    var fs = [S.c === 'trx' ? kTrxSub(fN, gpx, stake || trust) : c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : '', c.atMost ? 'at most' : '', c.feeWarn ? 'Hwallet sent odd fee data, safe defaults used' : '', gpx && c.fee > 0n && Number(c.fee) / Math.pow(10, S.gdec) * gpx > 50 ? 'unusually high fee, check it' : '', S.c === 'near' && c.need && c.need > c.fee ? 'needs ' + fmt(c.need, S.gdec, 5) + ' NEAR available; the rest comes back in a few seconds' : ''].filter(Boolean).join(' \u00b7 ');   /* v3.99.4 (Task A) */
     var live = R.live ? '<span class="hp-live hp-ldot' + (stale() ? ' stale' : '') + '" id="kss-live" role="img" aria-label="' + liveText() + '"><i></i></span>' : '';
     var ed = keys.length > 1, fopen = false;
     var ed = ed || (kcfOk() && (S.c === 'evm' || S.c === 'sol' || S.c === 'trx')) || kmanOk();   /* v3.98.36 (B19) */
