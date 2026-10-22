@@ -7405,7 +7405,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.5';
+var APP_VERSION = '1.9.6';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8270,7 +8270,7 @@ var APP_VERSION = '1.9.5';
       if (!xx[1]) throw new Error('The NEAR account ' + to + ' doesn\u2019t exist. Check the name, or send to its 64-character address.');
       var x = xx[0], d = S.d && S.d.chain === 'near' ? S.d : { chain: 'near' };
       d.nonce = String(x[0].nonce); d.blockHash = x[0].block_hash; d.gasPrice = String((x[1] && x[1].gas_price) || '100000000');
-      d.gbal = BI(x[2].amount || 0); var su = BI(x[2].storage_usage || 0); d.reserve = su <= 770n && (!x[2].code_hash || x[2].code_hash === '11111111111111111111111111111111') ? 0n : su * NEAR_BYTE; d.tbal = d.gbal; d.cfg = xx[2] || {}; d.creates = xx[1] === 2;   /* v1.9.4: zero-balance accounts (<= 770 bytes, no contract) need no storage stake */ d.levels = { medium: {} }; d.approx = !tok; d.atMost = tok;
+      d.gbal = BI(x[2].amount || 0); var su = BI(x[2].storage_usage || 0); d.reserve = su * NEAR_BYTE;   /* v1.9.6 (B36): the node locked 736 bytes (0.00736 NEAR) on a small account, so storage is always kept back */ d.tbal = d.gbal; d.cfg = xx[2] || {}; d.creates = xx[1] === 2;   /* v1.9.4: zero-balance accounts (<= 770 bytes, no contract) need no storage stake */ d.levels = { medium: {} }; d.approx = !tok; d.atMost = tok;
       d.extra = 0n; d.storage = false; d.storageDeposit = '1250000000000000000000';
       if (tok || wrap) { if (tok) d.tbal = x[3] != null && /^\d+$/.test(String(x[3])) ? BI(x[3]) : null; d.storage = x[4] == null; d.toFor = to; var bb = x[5] && x[5].min; if (bb && /^\d+$/.test(String(bb))) d.storageDeposit = String(bb); d.extra = 1n + (d.storage ? BI(d.storageDeposit) : 0n); }
       d.wrap = wrap; if (wrap) { d.approx = false; d.atMost = true; }
@@ -9870,6 +9870,8 @@ var APP_VERSION = '1.9.5';
       '<div class="note warn" id="poison" hidden></div><div class="note" id="newad" hidden></div>' +
       '<div class="hp-card"><div class="hp-r sm"><span class="hp-l">Network</span><span class="hp-v snd-nv">' + logo(n ? n.logo : c.logo, name, '', 'xs') + esc(name) + '</span></div>' +
       '<button type="button" class="hp-r sm hp-tap snd-fee" id="feechip" aria-expanded="false"><span class="hp-l">Network fee<small id="lvt">Normal</small></span><span class="hp-v"><span id="fee">Checking\u2026</span><small id="feeu"></small></span>' + sv('chev', 'ic snd-chev') + '</button>' +
+      /* v1.9.6 (F5): NEAR Max only: send everything and close the account (DeleteAccount), so it ends at exactly 0 */
+      '<button type="button" class="hp-r sm hp-tap" id="sndcl" style="display:none" aria-pressed="false"><span class="hp-l">Send all and close account<small>Leaves 0 NEAR. Funding the address again reopens it.</small></span><span class="hp-v"><span class="sw" id="sndcls"></span></span></button>' +
       /*ph38send:ui*/ '<div class="hp-r sm" id="sndx" style="display:none"><span class="hp-l" id="sndxl"></span><span class="hp-v"><span id="sndxv"></span><small id="sndxu"></small></span></div>' +
       '<div class="hp-r sm" id="sndt" style="display:none"><span class="hp-l">Total</span><span class="hp-v"><span id="sndtv"></span><small id="sndtu"></small></span></div></div>' +
       '<div class="note warn" id="err" hidden></div><div class="note" id="sim" hidden></div></section></div>' +
@@ -9897,6 +9899,7 @@ var APP_VERSION = '1.9.5';
     var bks = $('bksave'); if (bks) bks.onclick = function () { if (!validAddr(SND.ch, SND.to)) return; bookAsk(SND.ch, SND.to, function () { checkTo(); }); };
     box.querySelector('[data-p]').onclick = function () { paste().then(function (t) { if (!t) { toast('Nothing to paste'); return; } to.value = t; to.oninput(); }); };
     box.querySelector('[data-max]').onclick = function () { SND.max = true; buzz(6); fillMax(); validate(); };
+    var clb = $('sndcl'); if (clb) clb.onclick = function () { SND.close = !SND.close; buzz(4); clb.setAttribute('aria-pressed', SND.close ? 'true' : 'false'); $('sndcls').classList.toggle('on', !!SND.close); if (SND.close) toast('The whole balance goes to the recipient and this NEAR account is closed'); };
     var qb = box.querySelector('[data-qr]'); if (qb) qb.onclick = function () { buzz(6); SND.scan = true; if (window.hwScanner) hwScanner.open('scan'); };
     var ub = box.querySelector('[data-usd]'); if (ub) ub.onclick = function () {
       var tok = amtStr(); SND.usd = !SND.usd; buzz(6); ub.classList.toggle('on', SND.usd); ub.textContent = SND.usd ? r.s : 'USD';
@@ -10114,6 +10117,7 @@ var APP_VERSION = '1.9.5';
       if (fu) fu.textContent = SND.ch === 'trx' ? trxFeeSub(SND.d, fN, gas) : [px(gas.cg) ? fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '', SND.d.extra && SND.ch === 'ada' ? '+ ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : '', SND.ch === 'near' && SND.d.needFor && SND.d.needFor() > f ? 'needs ' + fmtA(SND.d.needFor(), 24) + ' NEAR available' : ''].filter(Boolean).join(' \u00b7 ');   /* v1.9.5 (S2): same line as Kwallet's sheet */
       if (fu) { if (SND.fpWarn) fu.textContent = SND.fpWarn; fu.style.color = SND.fpWarn ? '#e5484d' : ''; fu.style.whiteSpace = SND.fpWarn ? 'normal' : ''; }   /* v1.8.35 (B10) */
       try { sndXRows(f); } catch (e) {}   /*ph38send:val*/
+      try { var cl0 = $('sndcl'), clOk = SND.ch === 'near' && SND.max && r.gas && SND.d.creates === false && !/^0x/.test(String(($('to') || {}).value || '')); if (cl0) cl0.style.display = clOk ? '' : 'none'; if (!clOk) SND.close = false; } catch (e) {}
     }
     if (SND.d) { var lv = SND.d.levels; if (SND.lv !== 'custom' && !lv[SND.lv]) SND.lv = lv.medium ? 'medium' : Object.keys(lv)[0]; var fc = $('feechip'); if (fc) fc.classList.toggle('snd-one', Object.keys(lv).length < 2 && !sndManCtx()); if ($('lvt')) $('lvt').textContent = SND.lv === 'custom' ? (SND.tier ? sndLab(SND.tier) : 'Custom \u00b7 saved') : (Object.keys(lv).length < 2 && !sndManCtx()) ? sndLockWhy(true) : sndLab(SND.lv); }
   }
@@ -10520,6 +10524,7 @@ var APP_VERSION = '1.9.5';
       fee: { level: SND.lv === 'custom' ? (SND.cm && d.levels.manual ? 'manual' : SND.tier === 'x4' && d.levels.fast ? 'fast' : 'medium') : SND.lv, levels: d.levels }, feeTier: SND.lv === 'custom' && SND.tier ? SND.tier : undefined, feeManual: SND.lv === 'custom' && !SND.tier && SND.man ? SND.man : undefined,
       prices: { gasUsd: px(gas.cg), tokenUsd: px(r.cg), ts: C.pt }, firstTime: RCP.indexOf(to.toLowerCase()) < 0, live: true, toName: toName(ch, to),
       created: now, expires: now + 120000 }, d.req(), kindReq || {});
+    if (ch === 'near' && SND.close && SND.max && r.gas && d.creates === false) req.near = Object.assign({}, req.near, { close: true });   /* v1.9.6 (F5) */
     if (req.kind && req.kind !== 'transfer') { req.to = req.from; req.firstTime = false; }
     if (SND.ch === 'xrp' && !r.gas) req.tokenDec = 15;
     SND.busy = true; validate(); $('go').textContent = 'Opening Kwallet…';
@@ -11493,7 +11498,9 @@ var APP_VERSION = '1.9.5';
     var D0 = null, done = false;
     var ov = sheet('<div class="td-b">' + body(null, true) + '</div>', function (ov) { ov.querySelector('.sheet').classList.add('sw-sh'); bind(ov); });
     function bind(o) { var e = o.querySelector('[data-ex]'); if (e) e.onclick = function () { buzz(6); openExt(url); }; var hb = o.querySelector('.td-hash'); if (hb) hb.onclick = function () { copy(x.hash).then(function () { toast('Hash copied'); }); }; }
-    dtFetch(x).then(function (D) { D0 = D; try { if (D && D.fee != null && x.st !== 'pending') feeMemo(x.hash, D.fee); } catch (e) {} }, function () {}).then(function () { done = true; var b = ov.querySelector('.td-b'); if (b && ov.isConnected) { b.innerHTML = body(D0, false); bind(ov); } });
+    dtFetch(x).then(function (D) { D0 = D; try { if (D && D.fee != null && x.st !== 'pending') feeMemo(x.hash, D.fee); } catch (e) {}
+      /* v1.9.6 (S5): the chain's verdict wins: a local entry still marked pending/ok takes the confirmed status, fee and time */
+      try { if (D) { var la = ACT.filter(function (a) { return a.hash === x.hash; })[0]; if (la) { var st2 = D.ok ? 'ok' : 'fail'; if (la.st !== st2 || (D.fee != null && la.fee == null)) { la.st = st2; if (D.fee != null) la.fee = String(D.fee); if (D.time) la.tc = D.time; saveActs(); } } } } catch (e) {} }, function () {}).then(function () { done = true; var b = ov.querySelector('.td-b'); if (b && ov.isConnected) { b.innerHTML = body(D0, false); bind(ov); } });
   }
   function swapParts(t) { var m = String(t || '').match(/^\s*([\d.,]+)\s+(\S+)\s+\u2192\s+([\d.,]+)\s+(\S+)/); return m ? { a: m[1], s: m[2], b: m[3], r: m[4] } : null; }
   function actRow(x, i) {

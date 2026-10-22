@@ -12789,7 +12789,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.5';
+const APP_VERSION = '3.99.6';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -21527,6 +21527,7 @@ window.__KWLOGO={"near":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3d
     if (a.type === 'FunctionCall') { var args = a.argsB64 != null ? b64dec(a.argsB64) : TE8.encode(typeof a.args === 'string' ? a.args : JSON.stringify(a.args || {})); return cat([2], bStr(a.method), bBytes(args), le(U(a.gas) || 30000000000000n, 8), le(U(a.deposit) || 0n, 16)); }
     if (a.type === 'AddKey') { var pk = nearPk(a.publicKey), perm = a.permission === 'FullAccess' || !a.permission ? cat([1]) : cat([0], a.permission.allowance != null ? cat([1], le(U(a.permission.allowance), 16)) : [0], bStr(a.permission.receiverId), le((a.permission.methodNames || []).length, 4), cat.apply(null, [new Uint8Array(0)].concat((a.permission.methodNames || []).map(bStr)))); return cat([5], pk, le(U(a.nonce) || 0n, 8), perm); }
     if (a.type === 'DeleteKey') return cat([6], nearPk(a.publicKey));
+    if (a.type === 'DeleteAccount') return cat([7], bStr(nearAcct(a.beneficiary)));   /* v3.99.6 (F5): only from Send all and close */
     throw new Error('Kwallet does not sign NEAR ' + String(a.type || 'unknown') + ' actions');
   }
   function nearPk(s) { s = String(s || ''); need(/^ed25519:/.test(s), 'Only ed25519 NEAR keys'); var b = b58dec(s.slice(8)); need(b.length === 32, 'Bad NEAR public key'); return cat([0], b); }
@@ -21593,6 +21594,12 @@ window.__KWLOGO={"near":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3d
         if (d.storage) acts.push({ type: 'FunctionCall', method: 'storage_deposit', args: { account_id: req.to, registration_only: true }, gas: 30n * NEAR_TGAS, deposit: U(d.storageDeposit) || NEAR_STORAGE });
         acts.push({ type: 'FunctionCall', method: 'near_deposit', args: {}, gas: 30n * NEAR_TGAS, deposit: amt });
         acts.push({ type: 'FunctionCall', method: 'ft_transfer', args: { receiver_id: req.to, amount: amt.toString() }, gas: 30n * NEAR_TGAS, deposit: 1n });
+      } else if (d.close && req.amount === 'max') {
+        /* v3.99.6 (F5): Send all and close: DeleteAccount hands the whole balance (minus gas) to an EXISTING NEAR account and leaves
+           this one at 0. A missing beneficiary would burn the funds, so Hwallet must have confirmed it exists (creates === false). */
+        need(d.creates === false && !/^0x/.test(String(req.to)), 'Close account needs a recipient that already exists on NEAR');
+        need(String(req.to) !== String(req.from), 'Pick another account to receive the balance');
+        amt = bal > p.fee ? bal - p.fee : 0n; recv = req.from; acts = [{ type: 'DeleteAccount', beneficiary: req.to }];
       } else { recv = req.to; acts = [{ type: 'Transfer', deposit: amt }]; }
     } else {
       var kt = root.KwSend.check({ chain: 'near', tok: true, max: req.amount === 'max', amount: req.amount, bal: bal, gbal: gbal, fee: p.need || p.fee, extra: p.extra, reserve: res, sym: req.tokenSym, gsym: 'NEAR', gdec: 24, dec: +req.tokenDec }); need(!kt.err, kt.err);

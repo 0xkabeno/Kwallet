@@ -1,5 +1,11 @@
 # Changelog
 
+## Kwallet v3.99.6 / Hwallet v1.9.6 (test build, not released)
+
+- NEAR Max keeps back the storage the account locks (0.00736 NEAR for 736 bytes). Max sends were failing with "Needs X available".
+- NEAR "Send all and close account" (after Max, recipient must already exist): a DeleteAccount action sends the whole balance minus gas, and the account ends at exactly 0. Funding the address again reopens it.
+- Activity: opening a transaction saves its confirmed status, fee and time onto the local entry.
+
 ## Kwallet v3.99.5 / Hwallet v1.9.5 (test build, not released)
 
 - NEAR dApps: Hwallet registers with NEAR Connect (the "near-wallet-injected" event) as Hwallet, HOT Wallet, Meteor Wallet and NEAR Mobile. Every action is signed in Kwallet.
