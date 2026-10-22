@@ -7295,7 +7295,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.8.41';
+var APP_VERSION = '1.8.42';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -17413,6 +17413,47 @@ window.hwCrashPrompt = crashPrompt;
     if (!ps.length) return cbH(0, lov);
     return cbA([cbH(0, lov), cbM(ps.map(function (p) { var ns = Object.keys(pol[p]).sort(cbSortKeys); return [cbB(hexu8(p)), cbM(ns.map(function (n) { return [cbB(hexu8(n)), cbH(0, pol[p][n])]; }))]; }))]);
   }
+  /* v1.8.42: Kwallet only sees where ADA goes, not what the inputs hold. Before asking it to sign, look up every input the
+     transaction spends (address, ADA, tokens) and the name/decimals of every token that leaves or reaches this address;
+     Kwallet checks the list against the transaction and works out the real balance change. A DEX swap that spends the
+     pool's own UTxOs no longer shows the pool's ADA as yours. Any failure sends nothing extra (Kwallet then says so). */
+  function adaCb(u, o) {
+    var ib = u[o.i++], mt = ib >> 5, ai = ib & 31, n = 0n;
+    if (ai < 24) n = BigInt(ai); else if (ai < 28) { var k = 1 << (ai - 24); for (var j = 0; j < k; j++) n = (n << 8n) | BigInt(u[o.i++]); } else if (ai !== 31) throw new Error('cbor');
+    if (mt === 0) return n; if (mt === 1) return -1n - n;
+    if (mt === 2 || mt === 3) { if (ai === 31) { var parts = []; while (u[o.i] !== 0xff) parts.push(adaCb(u, o)); o.i++; return mt === 2 ? parts.reduce(function (a, b) { var c = new Uint8Array(a.length + b.length); c.set(a); c.set(b, a.length); return c; }, new Uint8Array(0)) : parts.join(''); } var by = u.slice(o.i, o.i + Number(n)); o.i += Number(n); return mt === 2 ? by : new TextDecoder().decode(by); }
+    if (mt === 4) { var a = []; if (ai === 31) { while (u[o.i] !== 0xff) a.push(adaCb(u, o)); o.i++; } else for (var i = 0; i < Number(n); i++) a.push(adaCb(u, o)); return a; }
+    if (mt === 5) { var m = { m: [] }; if (ai === 31) { while (u[o.i] !== 0xff) m.m.push([adaCb(u, o), adaCb(u, o)]); o.i++; } else for (var q = 0; q < Number(n); q++) m.m.push([adaCb(u, o), adaCb(u, o)]); return m; }
+    if (mt === 6) return adaCb(u, o);
+    if (mt === 7) return null;
+    throw new Error('cbor');
+  }
+  function adaGet(m, k) { if (!m || !m.m) return null; for (var i = 0; i < m.m.length; i++) if (m.m[i][0] === BigInt(k)) return m.m[i][1]; return null; }
+  function adaInputs(txHex) {
+    try {
+      var u = hexu8(txHex), tx = adaCb(u, { i: 0 }), body = tx && tx[0], ins = adaGet(body, 0) || [], outs = adaGet(body, 1) || [];
+      var hx = function (b) { return p17Hex(b); }, me = p17Hex(p17Bech(A.ada).slice(1, 29)), units = {};
+      var refs = ins.map(function (i) { return hx(i[0]) + '#' + String(i[1]); });
+      outs.forEach(function (o) {
+        var ab = Array.isArray(o) ? o[0] : adaGet(o, 0), val = Array.isArray(o) ? o[1] : adaGet(o, 1);
+        if (!(ab instanceof Uint8Array) || p17Hex(ab.slice(1, 29)) !== me || !Array.isArray(val) || !val[1] || !val[1].m) return;
+        val[1].m.forEach(function (pp) { (pp[1] && pp[1].m || []).forEach(function (q) { units[hx(pp[0]) + '.' + hx(q[0])] = 1; }); });
+      });
+      if (!refs.length || refs.length > 250) return Promise.resolve({});
+      return koios('/utxo_info', { _utxo_refs: refs, _extended: true }).then(function (rows) {
+        var list = (Array.isArray(rows) ? rows : []).map(function (r) {
+          var own = false; try { own = p17Hex(p17Bech(r.address).slice(1, 29)) === me; } catch (e) {}
+          var as = (r.asset_list || []).map(function (x) { return { u: String(x.policy_id) + '.' + String(x.asset_name || ''), q: String(x.quantity || '0') }; });
+          if (own) as.forEach(function (x) { units[x.u] = 1; });
+          return { ref: String(r.tx_hash) + '#' + String(r.tx_index), a: String(r.address || ''), c: String(r.value || '0'), as: as };
+        });
+        if (list.length !== refs.length) return {};
+        var meta = {}, ks = Object.keys(units).slice(0, 24);
+        return Promise.race([Promise.all(ks.map(function (k) { return tokenMeta('ada', null, k).then(function (t) { if (t) meta[k] = { s: t.s, d: t.d, icon: t.icon && String(t.icon).length < 60000 ? t.icon : '' }; }, function () {}); })), new Promise(function (r) { setTimeout(r, 4000); })])
+          .then(function () { return { adaIns: list, adaMeta: meta }; });
+      }).catch(function () { return {}; });
+    } catch (e) { return Promise.resolve({}); }
+  }
   function adaUtxos() { return koios('/address_utxos', { _addresses: [A.ada], _extended: true }).then(function (r) { return Array.isArray(r) ? r : []; }); }
   function adaUtxoCbor(u) { var ab = p17Bech(A.ada); return p17Hex(cbA([cbA([cbB(hexu8(u.tx_hash)), cbH(0, u.tx_index)]), cbA([cbB(ab), cbValue(BI(u.value || 0), u.asset_list || [])])])); }
   function adaStakeHex() { var b = p17Bech(A.ada); if (b.length < 57 || (b[0] >> 4) > 3) return null; return p17Hex([0xe1].concat(Array.prototype.slice.call(b.slice(29, 57)))); }
@@ -17888,7 +17929,7 @@ window.hwCrashPrompt = crashPrompt;
       var pg = p.paginate; if (pg && pg.limit > 0) pick = pick.slice((pg.page | 0) * pg.limit, ((pg.page | 0) + 1) * pg.limit);
       return pick.map(adaUtxoCbor);
     });
-    if (m === 'cardano_signTx') return p17K(site, 'cardano', m, { tx: String(p.tx || '').toLowerCase(), partialSign: !!p.partialSign }).then(function (r) { return r.witness; });
+    if (m === 'cardano_signTx') { var atx = String(p.tx || '').toLowerCase(); return adaInputs(atx).then(function (ex) { return p17K(site, 'cardano', m, { tx: atx, partialSign: !!p.partialSign }, ex); }).then(function (r) { return r.witness; }); }
     if (m === 'cardano_signData') return p17K(site, 'cardano', m, { address: p.address, payload: p.payload }).then(function (r) { return { signature: r.signature, key: r.key }; });
     if (m === 'cardano_submitTx') return race(CHBY.ada.rest, function (u) { return http(u + '/submittx', { method: 'POST', body: String(p.tx || ''), ctype: 'application/cbor;hex', text: true, timeout: 15000 }); })
       .then(function (t) { var h = String(t).replace(/"/g, '').trim(); try { dappLog('ada', h, site); } catch (e) {} return h; }, function (e) { throw dErr(-32603, 'Submit failed: ' + String(e && e.body || e && e.message || e).slice(0, 160)); });

@@ -1,5 +1,11 @@
 # Changelog
 
+## Kwallet v3.98.40 / Hwallet v1.8.42
+
+- Cardano dApp transactions (Minswap and other DEX swaps): Hwallet looks up every input the transaction spends and sends it to Kwallet; Kwallet checks the list against the transaction and shows your real balance change (ADA and tokens) instead of adding up every output, so a pool's own UTxOs no longer look like your money. No false "Not enough ADA" or "tokens leave your wallet"; contract outputs move to Details.
+- Cardano withdrawals: the staking warning shows only when the withdrawal is from your own stake key; an app's own 0 ADA contract check is a Details note.
+- Pair sheet: one header row (Kwallet badge, Pair with Hwallet, close) with a muted "addresses only" line and the paired chains' logos; no chain chip, no balance card; empty "Seed N" slots fold into "+ New wallet".
+
 ## Hwallet v1.8.41 (2026-10-19)
 
 - Swap screen tightened: both token cards and Details now share one width, the flip button sits on the seam between them, and the Details sheet rows are shorter.
