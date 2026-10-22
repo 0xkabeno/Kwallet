@@ -7217,10 +7217,20 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
     /* v1.8.37 (B19): Monero = wallet2 priority 1..4 (fee per byte quoted by the node for each, times the transaction weight,
        rounded up to the quantization mask: an estimate; wallet2 sets the exact fee when it builds). Cardano = fee in ADA. */
     if (x.chain === 'xmr') {
+      var fs = x.fees || []; if (!fs.length) return { err: 'Waiting for the Monero node\u2019s fee quote.' };
+      /* v1.9.0: a typed fee in XMR. Monero only pays per-byte fees at its 4 levels (any other amount would mark your
+         transactions on chain), so Hwallet takes the fastest level whose fee fits under the amount you typed. */
+      if (v.xf != null && String(v.xf).trim() !== '') {
+        var cap = mPU(v.xf, 12); if (cap == null || cap <= 0n) return { err: 'Enter a fee like 0.0002 XMR.' };
+        var q0 = B(x.q || 10000), w0 = B(x.w || 1600), best = 0, lo = null;
+        for (var pi = 1; pi <= Math.min(4, fs.length); pi++) { var f0 = B(fs[pi - 1]) * w0; f0 = (f0 + q0 - 1n) / q0 * q0; if (lo == null) lo = f0; if (f0 <= cap) best = pi; }
+        if (!best) return { err: 'The lowest Monero fee now is about ' + mFm(lo, 12, 8) + ' XMR.' };
+        v = Object.assign({}, v, { pr: String(best) });
+      }
       var pm = /^\s*([1-4])/.exec(String(v.pr == null ? '' : v.pr)); if (!pm) return { err: 'Pick a priority from 1 to 4.' };
-      var pr = +pm[1], fs = x.fees || []; if (!fs.length) return { err: 'Waiting for the Monero node\u2019s fee quote.' };
+      var pr = +pm[1];
       var fpb = B(fs[Math.min(pr, fs.length) - 1]), q = B(x.q || 10000), wt = B(x.w || 1600), xf = fpb * wt; xf = (xf + q - 1n) / q * q;
-      return { fee: xf, T: { pr: String(pr) }, L: { lvl: ['slow', 'medium', 'fast', 'fastest'][pr - 1], prio: pr, fpb: String(fpb), fee: xf.toString() } };
+      return { fee: xf, T: { pr: String(pr), xf: (st.v || {}).xf ? String(st.v.xf) : undefined }, L: { lvl: ['slow', 'medium', 'fast', 'fastest'][pr - 1], prio: pr, fpb: String(fpb), fee: xf.toString() } };
     }
     if (x.chain === 'ada') {
       var af = mPU(v.fee, 6), amn = B(x.min || 0); if (af == null || af <= 0n) return { err: 'Enter a fee in ADA.' };
@@ -7255,7 +7265,9 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
     /* v1.8.37 (B19) */
     if (x.chain === 'xmr') return { seg: false, fields: [{ k: 'pr', l: 'Priority', unit: '', presets: ['1 Low', '2 Normal', '3 Elevated', '4 Priority'], value: pv.pr != null ? ({ 1: '1 Low', 2: '2 Normal', 3: '3 Elevated', 4: '4 Priority' }[String(pv.pr).charAt(0)] || '2 Normal') : '4 Priority',
         info: 'Monero\u2019s own fee levels (wallet2). Each level multiplies the fee per byte; miners take higher levels first. The wallet builds the transaction with this level and Kwallet signs that exact fee.',
-        usd: function (t) { var r = manToT(x, { v: { pr: t } }); return r.err ? '' : '\u2248 ' + mFm(r.fee, 12, 8) + ' XMR' + (uo(r.fee) ? ' \u00b7 ' + uo(r.fee) : ''); } }], total: tot,
+        usd: function (t) { var r = manToT(x, { v: { pr: t } }); return r.err ? '' : '\u2248 ' + mFm(r.fee, 12, 8) + ' XMR' + (uo(r.fee) ? ' \u00b7 ' + uo(r.fee) : ''); } },
+      { k: 'xf', l: 'Max fee (optional)', unit: 'XMR', value: pv.xf != null ? pv.xf : '', info: 'Type the most you want to pay. Hwallet picks the fastest Monero level that fits under it (Monero only allows its 4 levels; any other fee would make your transactions stand out).',
+        usd: function (t) { if (!String(t || '').trim()) return ''; var r = manToT(x, { v: { xf: t } }); return r.err ? r.err : 'Uses level ' + r.T.pr + ' \u00b7 \u2248 ' + mFm(r.fee, 12, 8) + ' XMR' + (uo(r.fee) ? ' \u00b7 ' + uo(r.fee) : ''); } }], total: tot,
       hint: 'Saved for Monero until you change it. Pick a speed above to go back to the default.' };
     if (x.chain === 'ada') return { seg: false, fields: [{ k: 'fee', l: 'Fee', unit: 'ADA', value: pv.fee != null ? pv.fee : mDs(BigInt(x.est || x.min || 170000), 6),
         info: 'Cardano needs at least the protocol minimum for the transaction size. You can pay more; Kwallet never signs less than the exact minimum.', usd: function (t) { return uo(mPU(t, 6)); } }], total: tot,
@@ -10454,7 +10466,7 @@ var APP_VERSION = '1.9.0';
       var body = Object.assign({ prices: { gasUsd: px(gas.cg), tokenUsd: px(r.cg), ts: Date.now() } }, d.feed());
       /* v1.8.34: Kwallet replaces its levels with every feed: the custom level travels with them */
       if (S0.cm && S0.lv === 'custom' && body.fee && body.fee.levels) body.fee = Object.assign({}, body.fee, { levels: Object.assign({}, body.fee.levels, { manual: S0.cm }) });
-      var key = JSON.stringify([body.fee, body.nonce, body.balance, body.gasLimit, body.l1Fee, body.sol, body.trx, body.btc, body.sui, body.xrp, body.ada, Math.round(body.prices.gasUsd * 1e6), Math.round(body.prices.tokenUsd * 1e6)]);
+      var key = JSON.stringify([body.fee, body.nonce, body.balance, body.gasLimit, body.l1Fee, body.sol, body.trx, body.btc, body.sui, body.xrp, body.ada, body.near, body.icp, Math.round(body.prices.gasUsd * 1e6), Math.round(body.prices.tokenUsd * 1e6)]);
       var now = Date.now();
       if (!force && key === lastKey && now - lastSent < 950) return;
       lastKey = key; lastSent = now;
@@ -10471,6 +10483,12 @@ var APP_VERSION = '1.9.0';
       f(S0).then(function (d) { if (LIVE !== L) return; S0.d = d; send(); }).catch(function () {}).then(function () { busy = false; if (again) { again = false; fetchNow(); } });
     }
     L.kick = function () { fetchNow(); };
+    /* v1.9.0 (speed): chain data is re-read every second only where it moves that fast (EVM, Solana); slower chains every 2 to
+       4 s, so the phone's connections stay free for the price and block pushes and Kwallet's sheet updates sooner.
+       A new block or account event (WebSocket) still triggers an immediate read. */
+    var per = { eth: 1000, sol: 1000, sui: 2000, trx: 2000 }[S0.ch] || 4000, lastF = 0, fetch0 = fetchNow;
+    fetchNow = function (force) { var n = Date.now(); if (!force && n - lastF < per - 50) return; lastF = n; fetch0(); };
+    L.kick = function () { fetchNow(true); };
     L.t = setInterval(function () { fetchNow(); if (Date.now() - lastSent > 900) send(true); }, 1000);
     /* new blocks / account changes for this network, while Kwallet is open */
     function ws(url, open, hit) {
@@ -10478,7 +10496,7 @@ var APP_VERSION = '1.9.0';
       (function conn() {
         if (w.dead || LIVE !== L) return; var so; try { so = new WebSocket(url); } catch (e) { return; }
         w.s = so; so.onopen = function () { w.n = 0; try { open(so); } catch (e) {} };
-        so.onmessage = function (e) { var m = null; try { m = JSON.parse(e.data); } catch (x) {} if (m && hit(m)) fetchNow(); };
+        so.onmessage = function (e) { var m = null; try { m = JSON.parse(e.data); } catch (x) {} if (m && hit(m)) fetchNow(true); };
         so.onclose = function () { if (!w.dead && LIVE === L) { w.n++; setTimeout(conn, Math.min(4000, 300 * Math.pow(2, w.n))); } };
         so.onerror = function () { try { so.close(); } catch (e) {} };
       })();

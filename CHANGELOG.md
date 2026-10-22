@@ -1,5 +1,19 @@
 # Changelog
 
+## Kwallet v3.99.0 / Hwallet v1.9.0 (test build, not released)
+
+- NEAR and Internet Computer (ICP), in both apps. NEAR: m/44'/397'/0' ed25519, implicit 64-hex account, NEP-141 tokens. ICP: m/44'/223'/0'/0/0 secp256k1, principal plus ledger account ID, ICRC-1 tokens.
+- Kwallet: NEAR and ICP address rows, QR, key export (NEAR ed25519:… key, ICP hex key), address search, explorers (NearBlocks, Pikespeak, ICP Dashboard, IC Explorer), pairing with Hwallet, signing for sends and app requests (NEAR transactions and NEP-413 messages, ICP canister calls and messages).
+- Chain row: NEAR and ICP sit after XMR. The row keeps its size and scrolls sideways with a soft edge fade; the selected chain scrolls into view.
+- Hwallet: live NEAR and ICP balances and USD prices, token discovery and Add token, history, send and receive (ICP shows the account ID too), address book, explorers, CSV through the shared history.
+- Hwallet appears as Sender (window.near, for NEAR Wallet Selector apps) and as Plug (window.ic.plug: connect, balance, ICP and ICRC transfers, canister calls). Plug's actor API is not supported.
+- NEAR Intents swaps can pay from NEAR: tokens go straight to the deposit account; native NEAR is wrapped and sent in one transaction.
+- Cardano tokens: USD prices from DefiLlama (stablecoins at $1), logos from the Cardano registry, then Minswap's logo server, sent to Kwallet as small offline images; CIP-68 decimals and tickers.
+- Monero: a typed maximum fee. Hwallet takes the fastest of Monero's 4 levels that fits under it.
+- S|V, PK and Addr keep OG's rounded rectangle (9 px corners, 30 px high) in every UI style; Kwallet's signer sheets follow the active style.
+- Faster Hwallet to Kwallet updates: slow chains are re-read every 2 to 4 s instead of every second; WebSocket block and account events still update at once.
+- Re-pair Hwallet once after installing so NEAR and ICP come across.
+
 ## Kwallet v3.98.40 / Hwallet v1.8.42
 
 - Cardano dApp transactions (Minswap and other DEX swaps): Hwallet looks up every input the transaction spends and sends it to Kwallet; Kwallet checks the list against the transaction and shows your real balance change (ADA and tokens) instead of adding up every output, so a pool's own UTxOs no longer look like your money. No false "Not enough ADA" or "tokens leave your wallet"; contract outputs move to Details.
