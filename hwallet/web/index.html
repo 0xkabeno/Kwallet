@@ -7369,7 +7369,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.0';
+var APP_VERSION = '1.9.1';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8679,8 +8679,17 @@ var APP_VERSION = '1.9.0';
   function pickHtml() {
     return topbar(V.mode === 'send' ? 'Send' : V.mode === 'browse' ? 'Search' : 'Receive') + '<div class="srch">' + sv('search') + '<input id="q" placeholder="Search" autocomplete="off" spellcheck="false" value="' + esc(V.q || '') + '"></div>' +
       (hasAny() ? '<div class="lst" id="alist">' + listInner() + '</div>' : '') +
-      (V.mode === 'send' && !(A.paired && Object.keys(A.paired).length) ? '<p class="why">Nothing to send yet. Pair with Kwallet to send.</p>' : '');
+      (V.mode === 'send' && !(A.paired && Object.keys(A.paired).length) ? '<p class="why">Nothing to send yet. Pair with Kwallet to send.</p>' : '') + newChainsNote();
   }
+  /* v1.9.0: a wallet paired before NEAR and ICP existed has no address for them yet; Kwallet derives them on the next pairing */
+  function newChainsNote() {
+    if (!(A.paired && Object.keys(A.paired).length) || !A.eth) return '';
+    var miss = [['near', 'NEAR'], ['icp', 'Internet Computer']].filter(function (x) { return !A[x[0]] && chainOn(x[0]); });
+    if (!miss.length) return '';
+    return '<p class="why" style="margin-top:14px">' + esc(miss.map(function (x) { return x[1]; }).join(' and ')) + (miss.length > 1 ? ' are' : ' is') + ' new. Pair again with Kwallet to add ' + (miss.length > 1 ? 'them' : 'it') + '.</p>' +
+      '<button class="more tap" data-repair style="margin:0 auto 18px;display:flex">Pair again with Kwallet</button>';
+  }
+  document.addEventListener('click', function (e) { var b = e.target && e.target.closest && e.target.closest('[data-repair]'); if (!b) return; buzz(4); try { pairNative(); } catch (x) {} });
   function pickNet(cb, title) {
     var ns = EVM.map(function (n) { return { n: n, u: netUsd(n.id), b: U((C.b['evm:' + n.id] || {}).n) || 0n }; }).sort(function (a, b) { return b.u - a.u; });
     var fund = ns.filter(function (x) { return x.b > 0n; }), zero = ns.filter(function (x) { return !(x.b > 0n); });
@@ -9434,6 +9443,8 @@ var APP_VERSION = '1.9.0';
     var go = $('app').querySelector('[data-pairk]'); if (go) { go.disabled = true; go.classList.add('busy'); }
     var now = Date.now();
     var rq = { v: 2, id: rid(16), action: 'pair', created: now, expires: now + 120000 }; if (sid) rq.sid = sid;
+    /* v3.99.0: the seed this Hwallet wallet uses now, so Kwallet shows it first, under its name, and preselects it */
+    try { var cw = curW(), cs = cw && cw.A && cw.A.sid; if (/^\d{10}$/.test(String(cs || ''))) rq.cur = String(cs); } catch (e) {}
     callK(rq).then(function (o) {
       var go2 = $('app').querySelector('[data-pairk]'); if (go2) { go2.disabled = false; go2.classList.remove('busy'); }
       if (o && o.status === 'paired' && o.pair) { applyPair(o.pair); return; }
@@ -17912,15 +17923,31 @@ window.hwCrashPrompt = crashPrompt;
   function tcDots() { tcCss(); return '<button type="button" class="ib chh-dots tap" data-act="tokclean" aria-label="Token cleanup">' + '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="' + TC_DOTS + '"/></svg></button>'; }
   function tcMenu() {
     tcCss();
-    function row(k, ch, name, sub) {
-      var on = !!A[ch] && chainOn(ch), why = !A[ch] ? 'No ' + name + ' address in this wallet' : !chainOn(ch) ? name + ' is turned off in Chains' : sub;
-      /* ph39clean B32: the row of Send's network sheet (pickNet): md logo, name over a grey line, amount over $ */
-      var r0 = null; try { r0 = A[ch] ? assets(ch)[0] : null; } catch (e) {}
-      var b = r0 ? U(r0.raw) || 0n : 0n, u = r0 && r0.raw != null ? usdOf(r0) : 0;
-      return '<button class="ar sm tap tc-ar" data-tc="' + k + '"' + (on ? '' : ' disabled') + '>' + alogo(ch, null, { gas: 1, s: CHBY[ch].sym }, 'md').replace(/class="lg /g, 'class="lg md ') + '<span class="am"><span class="an">' + esc(name) + '</span><span class="ap">' + esc(why) + '</span></span>' +
-        (r0 ? '<span class="ax"><span class="aa">' + money(b > 0n ? esc(fmtA(b, CHBY[ch].dec) + ' ' + CHBY[ch].sym) : '0') + '</span><span class="au">' + money(u ? fmtUsd(u) : '') + '</span></span>' : '') + '</button>';
+    /* v1.9.0: each row shows what this wallet can get back (rent of the token accounts that can be closed or burned on
+       Solana, the storage rebate of the coins that can be cleaned up on Sui), read live when the sheet opens. It never
+       shows the chain balance. */
+    function row(k, ch, name) {
+      var on = !!A[ch] && chainOn(ch), why = !A[ch] ? 'No ' + name + ' address in this wallet' : !chainOn(ch) ? name + ' is turned off in Chains' : 'Checking what you can reclaim\u2026';
+      return '<button class="ar sm tap tc-ar" data-tc="' + k + '"' + (on ? '' : ' disabled') + '>' + alogo(ch, null, { gas: 1, s: CHBY[ch].sym }, 'md').replace(/class="lg /g, 'class="lg md ') + '<span class="am"><span class="an">' + esc(name) + '</span><span class="ap" data-tcs="' + k + '">' + esc(why) + '</span></span>' +
+        (on ? '<span class="ax"><span class="aa" data-tca="' + k + '">\u2026</span><span class="au" data-tcu="' + k + '"></span></span>' : '') + '</button>';
     }
-    sheet('<h3>Clean up</h3><div class="lst">' + row('sol', 'sol', 'Solana', 'Close token accounts, burn dust') + row('sui', 'sui', 'Sui', 'Clean up coins, burn dust') + '</div>', function (ov, close) {
+    sheet('<h3>Clean up</h3><div class="lst">' + row('sol', 'sol', 'Solana') + row('sui', 'sui', 'Sui') + '</div>', function (ov, close) {
+      function put(k, sub, amt, usd) {
+        var a = ov.querySelector('[data-tcs="' + k + '"]'), b = ov.querySelector('[data-tca="' + k + '"]'), c = ov.querySelector('[data-tcu="' + k + '"]');
+        if (a) a.textContent = sub; if (b) b.innerHTML = amt; if (c) c.innerHTML = usd;
+      }
+      function pl(n, w) { return n ? tcPl(n, w) : ''; }
+      if (A.sol && chainOn('sol')) tcSolLoad().then(function (rows) {
+        var cl = rows.filter(function (r) { return r.canClose; }), bu = rows.filter(function (r) { return !r.canClose && r.canBurn; }), lam = cl.concat(bu).reduce(function (t, r) { return t + r.lam; }, 0n), gp = px('solana');
+        if (!lam) { put('sol', rows.length ? 'Nothing to reclaim' : 'No token accounts', '0 SOL', ''); return; }
+        put('sol', [pl(cl.length, 'empty account'), pl(bu.length, 'dust token')].filter(Boolean).join(' \u00b7 '), '<span style="color:var(--hp-up,var(--up,#34c77b))">+' + esc(tcSolS(lam)) + ' SOL</span>', gp ? money(fmtUsd(toNum(lam, 9) * gp)) : '');
+      }, function () { put('sol', 'Couldn\u2019t read token accounts', '\u2014', ''); });
+      if (A.sui && chainOn('sui')) tcSuiLoad().then(function (types) {
+        var cl = types.filter(function (g) { return g.canClean; }), bu = types.filter(function (g) { return g.canBurn; }), reb = cl.reduce(function (t, g) { return t + g.reb; }, 0n), gp = px('sui');
+        if (!cl.length && !bu.length) { put('sui', types.length ? 'Nothing to reclaim' : 'No coins other than SUI', '0 SUI', ''); return; }
+        put('sui', [pl(cl.reduce(function (t, g) { return t + g.del.length; }, 0), 'coin') ? pl(cl.reduce(function (t, g) { return t + g.del.length; }, 0), 'coin') + ' to merge' : '', pl(bu.length, 'dust token')].filter(Boolean).join(' \u00b7 '),
+          reb ? '<span style="color:var(--hp-up,var(--up,#34c77b))">\u2248 +' + esc(fmtU(reb, 9, 6)) + ' SUI</span>' : '0 SUI', reb && gp ? money(fmtUsd(toNum(reb, 9) * gp)) : '');
+      }, function () { put('sui', 'Couldn\u2019t read coins', '\u2014', ''); });
       ov.addEventListener('click', function (e) {
         var b = e.target.closest('[data-tc]'); if (!b || b.disabled) return; var k = b.getAttribute('data-tc'); buzz(4); close();
         setTimeout(function () { if (k === 'sol') tcSolOpen(); else tcSuiOpen(); }, 200);

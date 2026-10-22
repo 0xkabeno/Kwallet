@@ -1,5 +1,13 @@
 # Changelog
 
+## Kwallet v3.99.1 / Hwallet v1.9.1 (test build, not released)
+
+- Pair sheet: the wallet Hwallet is using now sits on top under its own name, marked "Connected to Hwallet" and preselected; the other seeds follow under "Other wallets". Before, the first paired seed was preselected, so Pair could switch Hwallet to another wallet.
+- Re-pairing a wallet paired before 3.99.0 now adds its NEAR and ICP addresses (derived from the seed, checked against its Ethereum address). Before, the old record was sent back unchanged.
+- Hwallet Receive and Send pickers: a wallet without NEAR or ICP addresses shows a "Pair again with Kwallet" prompt.
+- Clean up sheet shows what you get back (SOL rent, Sui storage rebate), not the balance.
+- Cardano DEX orders (Minswap): Kwallet reads the order datum and shows the ADA locked in the order, what you swap, about how much ADA comes back with the tokens, and the batcher fee, instead of counting the whole order as spent.
+
 ## Kwallet v3.99.0 / Hwallet v1.9.0 (test build, not released)
 
 - NEAR and Internet Computer (ICP), in both apps. NEAR: m/44'/397'/0' ed25519, implicit 64-hex account, NEP-141 tokens. ICP: m/44'/223'/0'/0/0 secp256k1, principal plus ledger account ID, ICRC-1 tokens.

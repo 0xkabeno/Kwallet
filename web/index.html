@@ -12788,7 +12788,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.0';
+const APP_VERSION = '3.99.1';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -22288,6 +22288,37 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var kl = kx.slice(0, 32), kr = kx.slice(32, 64); return { kl: kl, kr: kr, pub: KU().adaPub(kl) };
   }
   function adaValue(v) { v = untag(v); if (!v) return { c: 0n, ma: 0, as: {} }; if (v.t === 'u') return { c: v.v, ma: 0, as: {} }; var a = list(v), c = a[0] ? a[0].v : 0n, ma = a[1] ? untag(a[1]) : null, cnt = 0, as = {}; if (ma && ma.t === 'm') ma.v.forEach(function (p) { var pol = hex(untag(p[0]).v), inner = untag(p[1]); if (inner && inner.t === 'm') inner.v.forEach(function (q) { cnt++; var k = pol + '.' + hex(untag(q[0]).v), n = untag(q[1]); if (n && n.t === 'u') as[k] = (as[k] || 0n) + n.v; }); }); return { c: c, ma: cnt, as: as }; }   /* v3.98.40: the assets too (policy.name -> quantity) */
+  /* v3.99.0: Plutus data helpers for DEX orders. An inline datum is [1, #6.24(bytes)]; Constr n is tag 121+n (or 1280+n-7). */
+  function adaInlineDatum(dd) {
+    try { var a = list(dd); if (!a.length || untag(a[0]).v !== 1n) return null; var t = a[1]; if (!t || t.t !== 'tag' || Number(t.tag) !== 24) return null; var b = untag(t.v); if (!b || b.t !== 'b') return null; return cbor(b.v, 0); } catch (e) { return null; }
+  }
+  function adaDatHas(d, needle) {
+    var n = 0; function walk(x) { if (!x || ++n > 4000) return false; if (x.t === 'b') return eqb(x.v, needle); if (x.t === 'tag') return walk(x.v); if (x.t === 'a') return x.v.some(walk); if (x.t === 'm') return x.v.some(function (p) { return walk(p[0]) || walk(p[1]); }); return false; }
+    return walk(d);
+  }
+  function pdC(x) { if (!x || x.t !== 'tag') return null; var g = Number(x.tag), i = g >= 121 && g <= 127 ? g - 121 : g >= 1280 && g <= 1400 ? g - 1280 + 7 : -1; if (i < 0) return null; var f = untag(x.v); return f && f.t === 'a' ? { i: i, f: f.v } : null; }
+  function pdI(x) { x = x && x.t === 'tag' && (Number(x.tag) === 2) ? x : x; return x && x.t === 'u' ? x.v : null; }
+  /* Minswap V2 OrderDatum: Constr0 [canceller, refund_receiver, refund_datum, success_receiver, success_datum, lp_asset,
+     step, max_batcher_fee, expiry]. Step SwapExactIn = Constr0 [direction, Constr0 [amount] | Constr1 [deducted], min_receive, killable].
+     Anything else stays a generic order. */
+  function adaOrder(d, vv) {
+    var o = { dex: '', swapIn: null, minOut: null, batch: null, back: null, aToB: null };
+    try {
+      var top = pdC(d);
+      if (top && top.i === 0 && top.f.length >= 8) {
+        var step = pdC(top.f[6]), bf = pdI(top.f[7]);
+        if (step && step.i === 0 && step.f.length >= 3) {
+          var dir = pdC(step.f[0]), amt = pdC(step.f[1]), mn = pdI(step.f[2]);
+          if (dir && amt && mn != null && bf != null) {
+            o.dex = 'Minswap'; o.aToB = dir.i === 1; o.minOut = mn; o.batch = bf;
+            if (amt.i === 0 && amt.f.length) o.swapIn = pdI(amt.f[0]);
+            if (o.swapIn != null && !vv.ma) { var bk = vv.c - o.swapIn - bf; o.back = bk > 0n ? bk : 0n; }
+          }
+        }
+      }
+    } catch (e) {}
+    return o;
+  }
   /** decode a transaction (hex CBOR) -> { bodyHash, fee, outs:[{a, own, c, ma}], toOthers, nIn, warn, notes } */
   function adaView(txHex, from) {
     var u = unhex(txHex), tx = cbor(u, 0); need(tx.e === u.length || tx.e <= u.length, 'Bad transaction');
@@ -22295,9 +22326,13 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var body = parts[0], bb = u.slice(body.s, body.e), me = adaAddrBytes(from), mePay = me.slice(1, 29), meStake = me.length >= 57 ? me.slice(29, 57) : null, warn = [], notes = [];
     var ins = list(mget(body, 0)), outs = list(mget(body, 1)).map(function (o) {
       var oo = untag(o), ab, val;
-      if (oo.t === 'a') { ab = oo.v[0].v; val = oo.v[1]; } else { ab = mget(oo, 0).v; val = mget(oo, 1); if (mget(oo, 2)) notes.push('An output carries a datum (smart contract data).'); }
-      var vv = adaValue(val), own = eqb(ab.slice(1, 29), mePay);
-      return { a: adaAddrText(ab), own: own, c: vv.c, ma: vv.ma, as: vv.as, script: (ab[0] >> 4) % 2 === 1 && (ab[0] >> 4) <= 7 };
+      var dat = null;
+      if (oo.t === 'a') { ab = oo.v[0].v; val = oo.v[1]; } else { ab = mget(oo, 0).v; val = mget(oo, 1); var dd = mget(oo, 2); if (dd) { notes.push('An output carries a datum (smart contract data).'); dat = adaInlineDatum(dd); } }
+      var vv = adaValue(val), own = eqb(ab.slice(1, 29), mePay), scr = (ab[0] >> 4) % 2 === 1 && (ab[0] >> 4) <= 7;
+      /* v3.99.0: a DEX order (Minswap and other batcher DEXes): ADA locked at a contract whose datum names you as the receiver.
+         The swap happens in a later transaction by the DEX's batcher, which sends the tokens and the leftover ADA back to you. */
+      var ord = scr && dat && adaDatHas(dat, mePay) ? adaOrder(dat, vv) : null;
+      return { a: adaAddrText(ab), own: own, c: vv.c, ma: vv.ma, as: vv.as, script: scr, order: ord };
     });
     var fee = mget(body, 2), ttl = mget(body, 3), certs = list(mget(body, 4)), wd = mget(body, 5), mint = mget(body, 9), coll = list(mget(body, 13)), req = list(mget(body, 14)), net = mget(body, 15);
     if (net && net.v !== 1n) warn.push('This transaction is not for Cardano mainnet.');
@@ -22475,6 +22510,29 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (!rec.xmrHeight && st === 'poly') { try { var pd = await polyDecodePhrase(sec.m); rec.xmrHeight = Math.max(0, xmrHeightAt((POLY.EPOCH + (pd.birthday | 0) * POLY.TIME_STEP) * 1000) - 21600); } catch (e) {} }
     return true;
   }
+  /* v3.99.0: a pairing made before a chain existed (NEAR and ICP in 3.99.0) lacks its address; re-pairing fills it from the
+     seed, checked against the stored Ethereum address so a wrong seed can never add foreign addresses */
+  function netsMissing(r) { return !!(r && r.addrs && (r.seedType || 'bip39') === 'bip39' && r.addrs.eth && NETS.some(function (n) { return n !== 'xmr' && !r.addrs[n]; })); }
+  async function netsFill(rec, sec) {
+    if (!netsMissing(rec) || !sec || !sec.m) return false;
+    var m = sec.m, p = sec.p || '', idx = rec.index | 0, seed = getBip39SeedHex(m, p), ok = false;
+    try { var ec = FastCore.derive(FastCore.makeCtx({ net: 'eth', pathTpl: DEFAULT_PATH.eth, seedHex: seed, pass: p, seedType: 'bip39' }), idx, false).address; if (String(ec).toLowerCase() !== String(rec.addrs.eth).toLowerCase()) return false; } catch (e) { return false; }
+    for (var i = 0; i < NETS.length; i++) {
+      var net = NETS[i]; if (net === 'xmr' || rec.addrs[net]) continue;
+      try {
+        var dd = FastCore.derive(FastCore.makeCtx({ net: net, pathTpl: DEFAULT_PATH[net], seedHex: seed, adaEnt: net === 'ada' ? ethers.Mnemonic.fromPhrase(String(m).trim().toLowerCase().split(/\s+/).join(' ')).entropy : null, pass: p, seedType: 'bip39' }), idx, false);
+        if (!dd || !dd.address) continue; rec.addrs[net] = dd.address; ok = true;
+        if (net === 'sui' && dd.pub) rec.suiPk = dd.pub; if (net === 'btc' && dd.pub) rec.btcPk = dd.pub;
+        if (net === 'near' && dd.pub) rec.nearPk = dd.pub; if (net === 'icp' && dd.pub) { rec.icpPk = dd.pub; rec.icpAcct = dd.acct; }
+      } catch (e) { try { console.warn('pair fill', net, e); } catch (x) {} }
+    }
+    seed = null; return ok;
+  }
+  function netsSave(r) { try {
+    var keys = ['addrs', 'suiPk', 'btcPk', 'nearPk', 'icpPk', 'icpAcct'];
+    var pl = jget(PUB, []); pl.forEach(function (x) { if (x.id === r.id) keys.forEach(function (k) { if (r[k] != null) x[k] = r[k]; }); }); localStorage.setItem(PUB, JSON.stringify(pl));
+    try { var al = load(); var ch = false; al.forEach(function (x) { if (x.id === r.id) { keys.forEach(function (k) { if (r[k] != null) x[k] = r[k]; }); ch = true; } }); if (ch) save(al); } catch (e) {}
+  } catch (e) {} }
   function xmrMissing(r) { return !!(r && r.addrs && r.addrs.xmr && !(/^[0-9a-f]{64}$/.test(r.xmrView || '') && r.xmrPrimary)); }
   var upgrading = false;
   async function upgradeXmr() {
@@ -23370,7 +23428,13 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   /* pk37 B20: 'BIP39 \u00b7 12 words + passphrase' + seed ID -> one plain muted meta line (escaped text) */
   function pairMeta(k, id) { return String(k || '').split(/\s+\+\s+|\s+\u00b7\s+/).filter(Boolean).concat(id ? [id] : []).map(esc).join(' \u00b7 '); }
   function pairPick(L) {
-    var pick = 0; L.some(function (o, i) { if (o.recs.length) { pick = i; return true; } return false; });
+    /* v3.99.0: the seed Hwallet is using now (REQ.cur = its seed ID) is its own card at the top, under its name, and
+       preselected; the other seeds follow under 'Other wallets'. Without it, the first paired seed is preselected. */
+    var curSid = /^\d{10}$/.test(String(REQ.cur || '')) ? String(REQ.cur) : '', ci = -1;
+    if (curSid) L.some(function (o, i) { if (o.sid === curSid) { ci = i; return true; } return false; });
+    if (ci > 0) L = [L[ci]].concat(L.slice(0, ci), L.slice(ci + 1));
+    var hasCur = ci >= 0;
+    var pick = 0; if (!hasCur) L.some(function (o, i) { if (o.recs.length) { pick = i; return true; } return false; });
     var num = L[pick].recs.length ? L[pick].recs[L[pick].recs.length - 1].index | 0 : 0;
     /* pk38 B21: Send's layout. Asset card (hp-chg) = the selected seed; seed list = To / Network fee rows (hp-cmp, hp-tap,
        label + type, address number(s) + Paired on the right, the selected row .on); Address number = the Wallet row (hp-wr);
@@ -23383,7 +23447,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* v3.98.40: empty 'Seed N' slots fold into one muted '+ New wallet' row until tapped (the picked one always shows) */
     var allSlots = false;
     function emptySlot(o) { return !o.recs.length && /^Seed \d+$/.test(String(o.label || '')); }
-    function opts() { var nFree = 0, firstFree = -1, h = L.map(function (o, i) { if (!allSlots && emptySlot(o) && i !== pick) { nFree++; if (firstFree < 0) firstFree = i; return ''; } return HWP.kv(esc(o.label), o.recs.length ? o.recs.map(function (x) { return '<span data-n="' + (x.index | 0) + '">#' + (x.index | 0) + '</span>'; }).join(', ') : 'New', '',
+    function opts() { var nFree = 0, firstFree = -1, h = L.map(function (o, i) { if (!allSlots && emptySlot(o) && i !== pick) { nFree++; if (firstFree < 0) firstFree = i; return ''; } return (hasCur && i === 1 ? '<div class="kpr-sec">Other wallets</div>' : '') + HWP.kv(esc(o.label) + (hasCur && i === 0 ? '<span class="kpr-cur">Connected to Hwallet</span>' : ''), o.recs.length ? o.recs.map(function (x) { return '<span data-n="' + (x.index | 0) + '">#' + (x.index | 0) + '</span>'; }).join(', ') : 'New', '',
       { tap: true, cls: 'kss-pr' + (i === pick ? ' on' : ''), attr: ' data-i="' + i + '" role="radio" aria-checked="' + (i === pick ? 'true' : 'false') + '"' }); }).join('');
       if (nFree) h += HWP.kv('+ New wallet', nFree + ' free slot' + (nFree === 1 ? '' : 's'), '', { tap: true, cls: 'kss-pr kpr-more', attr: ' data-more="1" role="button"' });
       return h; }
@@ -23420,6 +23484,13 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
             if (!sc && reqPin() && (await authOnce())) sc = secretFor(load(), r.id);
             if (sc && (await xmrFill(r, sc))) { try { var pl = jget(PUB, []); pl.forEach(function (x) { if (x.id === r.id) { x.xmrView = r.xmrView; x.xmrPrimary = r.xmrPrimary; x.xmrHeight = r.xmrHeight | 0; } }); localStorage.setItem(PUB, JSON.stringify(pl)); } catch (e) {} }
             sc = null;
+          }
+          if (netsMissing(r)) {
+            var sc2 = secretFor(await openStore(), r.id);
+            if (!sc2 && window.KwDB && KwDB.state() !== 'locked') sc2 = secretFor(load(), r.id);
+            if (!sc2 && (await authOnce())) sc2 = secretFor(load(), r.id);
+            if (sc2 && (await netsFill(r, sc2))) netsSave(r);
+            sc2 = null;
           }
         } else {
           if (!o.m) { if (!(await authOnce())) throw new Error('Unlock Kwallet to add a new address number'); var L2 = await scanSeeds(true), o2 = L2.filter(function (x) { return x.key === o.key || (o.sid && x.sid === o.sid); })[0]; if (!o2 || !o2.m) throw new Error('Kwallet could not open this seed'); o = o2; }
@@ -25121,6 +25192,17 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
         if (!lines.length) lines.push('All outputs return to your own address');
         if (av.assetsOut) lines.push(av.assetsOut + ' token' + (av.assetsOut === 1 ? '' : 's') + ' leave your wallet');
       }
+      /* v3.99.0: DEX orders (Minswap and other batcher DEXes): the ADA above is locked in an order that pays you; the swap
+         itself and the return of the deposit happen in a later transaction, so the token you buy is not in this one */
+      av.outs.filter(function (x) { return x.order; }).forEach(function (x) {
+        var od = x.order, nm = od.dex || 'DEX', cc = '';
+        cc += HWP.kv(nm + ' swap order', fmt(x.c, 6, 6) + ' ADA' + (x.ma ? ' + ' + x.ma + ' token' + (x.ma === 1 ? '' : 's') : ''), 'Locked for you until ' + esc(nm) + '\u2019s batcher fills it', { sm: true });
+        if (od.swapIn != null && !x.ma) cc += HWP.kv('You swap', fmt(od.swapIn, 6, 6) + ' ADA', 'The token arrives in a later transaction', { sm: true });
+        if (od.back != null) cc += HWP.kv('Comes back to you', '\u2248 ' + fmt(od.back, 6, 6) + ' ADA', 'Deposit returned with your tokens', { sm: true });
+        if (od.batch != null) cc += HWP.kv('Batcher fee', 'Up to ' + fmt(od.batch, 6, 6) + ' ADA', 'Paid from the order', { sm: true });
+        if (od.swapIn == null) cc += HWP.kv('How it works', 'Swap happens later', 'The tokens and leftover ADA come back to your address; you can cancel the order in ' + esc(nm) + ' until then', { sm: true });
+        o.main += HWP.card(cc);
+      });
       o.det += kv('Inputs', String(av.nIn), 'Kwallet signs with your payment key') + (av.ttl != null ? kv('Valid until slot', esc(String(av.ttl))) : '');
       av.outs.forEach(function (x) { if (!x.own) o.det += addrKv(x.script ? 'Contract' : 'To', x.a, fmt(x.c, 6, 6) + ' ADA' + (x.ma ? ' + ' + x.ma + ' token' + (x.ma === 1 ? '' : 's') : '')); });
       av.warn.forEach(function (w) { o.warn.push(w); }); av.notes.forEach(function (w) { o.det += '<div class="hp-note">' + esc(w) + '</div>'; });
@@ -25687,6 +25769,12 @@ html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#
 html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#ks8):not(#ks9):not(#ks10):not(#ks11):not(#ks12)[data-ui="m3"] .hp-sheet .hp-btn{border-radius:999px!important}
 html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#ks8):not(#ks9):not(#ks10):not(#ks11):not(#ks12)[data-ui="miuix"] .hp-sheet .hp-btn{border-radius:16px!important}
 html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#ks8):not(#ks9):not(#ks10):not(#ks11):not(#ks12)[data-ui="m3"] .hp-sheet .hp-btn.hp-ok,html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#ks8):not(#ks9):not(#ks10):not(#ks11):not(#ks12)[data-ui="miuix"] .hp-sheet .hp-btn.hp-ok{background:var(--u-pri)!important;color:var(--u-onpri)!important}
+</style>
+<style id="k99pair">
+/* v3.99.0: Pair sheet: the seed Hwallet uses now sits apart at the top with its name; the rest under 'Other wallets' */
+.kpr-cur{display:block;font:500 12.5px/16px 'InterE',system-ui,sans-serif;color:#b8f36a;margin-top:2px;letter-spacing:0}
+.kpr-sec{margin:0 -1px;padding:16px 16px 6px;background:var(--hp-bg,#1b1c1f);font:600 12.5px/16px 'InterE',system-ui,sans-serif;color:var(--hp-muted,#9aa3ae);text-transform:none;border-top:1px solid var(--hp-line,rgba(255,255,255,.08));border-bottom:1px solid var(--hp-line,rgba(255,255,255,.08))}
+html[data-theme="light"] .kpr-cur{color:#4d7c0f}
 </style>
 </body>
 </html>
