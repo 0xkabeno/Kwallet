@@ -12789,7 +12789,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.6';
+const APP_VERSION = '3.99.7';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -21577,7 +21577,10 @@ window.__KWLOGO={"near":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3d
     var d = req.near || {}, tok = req.token !== 'native', o = { fee: 0n, extra: 0n, atMost: false, approx: true }, nc;
     var cr = d.creates != null ? !!d.creates : /^[0-9a-f]{64}$/.test(String(req.to || '')) || /^0x[0-9a-f]{40}$/.test(String(req.to || ''));
     var dS = nearCfgSafe(d); o.feeWarn = dS.bad;
-    nc = nearCost(dS, tok ? (d.storage ? 2 : 1) : d.wrap ? (d.storage ? 3 : 2) : 0, !tok && !d.wrap && cr); o.fee = nc.fee; o.need = nc.need;   /* v3.99.4 (Task A) */
+    nc = nearCost(dS, tok ? (d.storage ? 2 : 1) : d.wrap ? (d.storage ? 3 : 2) : 0, !tok && !d.wrap && cr); o.fee = nc.fee; o.need = nc.need;
+    /* v3.99.7 (B37): nearcore prices a Transfer to ANY implicit receiver (64-hex / 0x) as an account creation, even when it exists
+       (the signer's shard can't see it); the unused part is refunded afterwards. Max must keep that upfront amount back. */
+    if (!tok && !d.wrap && !cr && !d.close && (/^[0-9a-f]{64}$/.test(String(req.to || '')) || /^0x[0-9a-f]{40}$/.test(String(req.to || '')))) { var nI = nearCost(dS, 0, true).need; if (nI > o.need) o.need = nI; }   /* v3.99.4 (Task A) */
     if (!tok && d.wrap) { o.atMost = true; o.approx = false; o.extra = 1n + (d.storage ? (U(d.storageDeposit) || NEAR_STORAGE) : 0n); }   /* a NEAR Intents deposit: wrap + ft_transfer */
     else if (!tok) {}
     else { o.atMost = true; o.approx = false; o.extra = 1n + (d.storage ? (U(d.storageDeposit) || NEAR_STORAGE) : 0n); }
@@ -24224,7 +24227,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* network fee: tap to change (Slow / Normal / Fast / Custom) */
     var kAct = kTrxAct(stake || trust), fN = c.fee != null && kAct > 0n ? c.fee - kAct : c.fee;   /*pk39send:fee (B34)*/
     var fv = S.c === 'trx' && fN === 0n ? 'Free' : (c.approx ? '\u2248 ' : '') + fmt(fN, S.gdec, S.gdec) + ' ' + esc(S.gsym);
-    var fs = [S.c === 'trx' ? kTrxSub(fN, gpx, stake || trust) : c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : '', c.atMost ? 'at most' : '', c.feeWarn ? 'Hwallet sent odd fee data, safe defaults used' : '', gpx && c.fee > 0n && Number(c.fee) / Math.pow(10, S.gdec) * gpx > 50 ? 'unusually high fee, check it' : '', S.c === 'near' && c.need && c.need > c.fee ? 'needs ' + fmt(c.need, S.gdec, 5) + ' NEAR available; the rest comes back in a few seconds' : ''].filter(Boolean).join(' \u00b7 ');   /* v3.99.4 (Task A) */
+    var fs = [S.c === 'trx' ? kTrxSub(fN, gpx, stake || trust) : c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : '', c.atMost ? 'at most' : '', c.feeWarn ? 'Hwallet sent odd fee data, safe defaults used' : '', gpx && c.fee > 0n && Number(c.fee) / Math.pow(10, S.gdec) * gpx > 50 ? 'unusually high fee, check it' : '', ''].filter(Boolean).join(' \u00b7 ');   /* v3.99.4 (Task A) */
     var live = R.live ? '<span class="hp-live hp-ldot' + (stale() ? ' stale' : '') + '" id="kss-live" role="img" aria-label="' + liveText() + '"><i></i></span>' : '';
     var ed = keys.length > 1, fopen = false;
     var ed = ed || (kcfOk() && (S.c === 'evm' || S.c === 'sol' || S.c === 'trx')) || kmanOk();   /* v3.98.36 (B19) */
@@ -24525,7 +24528,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* v3.98.16: Bitcoin message (legacy ECDSA or BIP-322 simple) and PSBT, with a full review sheet */
     btc_signMessage: ['btc', 'Sign message'], btc_signPsbt: ['btc', 'Review transaction'], btc_getPublicKey: ['btc', 'Share public key'],
     /* v3.99.0: NEAR (Sender / wallet-selector) and Internet Computer (Plug-style) requests */
-    near_signTransactions: ['near', 'Review transaction'], near_signMessage: ['near', 'Sign message'], icp_call: ['icp', 'Review transaction'], icp_signMessage: ['icp', 'Sign message'] };
+    near_signTransactions: ['near', 'Review transaction'], near_signMessage: ['near', 'Sign message'], icp_call: ['icp', 'Review transaction'], icp_signMessage: ['icp', 'Sign message'], icp_iiLogin: ['icp', 'Sign in with Internet Identity'] };
   Object.keys(P17M).forEach(function (k) { DM[k] = P17M[k][1]; DCH[k] = P17M[k][0]; });
   var MAXU = (1n << 255n);
   /* known methods: the selector is computed from the signature, so nothing here is a magic number */
@@ -25096,7 +25099,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (DS.msg) { if (!DS.msg.length) return 'The message is empty.'; if (DS.msg.length > 65536) return 'The message is too long.'; DS.text = utf8(DS.msg); }
       return '';
     }
-    if (m === 'near_signTransactions' || m === 'near_signMessage' || m === 'icp_call' || m === 'icp_signMessage') {
+    if (m === 'near_signTransactions' || m === 'near_signMessage' || m === 'icp_call' || m === 'icp_signMessage' || m === 'icp_iiLogin') {
       try {
         if (m === 'near_signTransactions') {
           var txs = Array.isArray(P.txs) ? P.txs : []; if (!txs.length || txs.length > 10) return 'The transaction could not be read.';
@@ -25120,6 +25123,11 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           var nn = KwChains.util.b64d ? null : null, nb = (function (x) { try { var b = atob(String(x || '')), o = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) o[i] = b.charCodeAt(i); return o; } catch (e) { return null; } })(P.nonce);
           if (!nb || nb.length !== 32) return 'The message nonce must be 32 bytes.';
           DS.msg = new TextEncoder().encode(String(P.message)); DS.nearNonce = nb;
+        } else if (m === 'icp_iiLogin') {   /* v3.99.7 (F6) */
+          if (!/^https:\/\/[a-z0-9.-]+(:\d+)?$/.test(String(P.origin || '')) || !/^[0-9a-f]{64,400}$/.test(String(P.sessionKey || ''))) return 'The sign-in request could not be read.';
+          var tN = /^\d+$/.test(String(P.ttl || '')) ? BigInt(P.ttl) : 8n * 3600n * 1000000000n, tMax = 30n * 86400n * 1000000000n; if (tN > tMax) tN = tMax; if (tN < 60000000000n) tN = 60000000000n;
+          DS.iiTtl = tN; var hrs = Number(tN / 3600000000000n);
+          DS.msg = new TextEncoder().encode('Sign in to ' + P.origin + ' as your Internet Identity account for this site.\nSession: ' + (hrs >= 48 ? Math.round(hrs / 24) + ' days' : hrs >= 1 ? hrs + ' hours' : 'under an hour') + '.\nThe same seed always opens the same account here.');
         } else if (m === 'icp_signMessage') {
           DS.msg = (function (x) { try { return KwChains.util.unhex(String(x || '')); } catch (e) { return new TextEncoder().encode(String(x || '')); } })(P.message);
         } else {
@@ -25317,6 +25325,16 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     else if (m === 'icp_call') {
       var me = KwChains.icp.prin(from), cl = KwChains.icp.call(pk, { canister: P.canisterId, method: P.method, arg: KwChains.util.unhex(String(P.arg)), sender: me, nowMs: +(DS.R.icp || {}).nowMs > 1.6e12 ? +DS.R.icp.nowMs : Date.now() });
       r = { envelope: cl.raw, requestId: cl.hash };
+    }
+    else if (m === 'icp_iiLogin') {   /* v3.99.7 (F6): per-site Ed25519 key from this seed's ICP key + the site's origin; delegation to the app's session key */
+      var X2 = KwChains.util, te2 = new TextEncoder(), sh = function (b) { return X2.unhex(ethers.sha256(b).slice(2)); }, cat2 = function (a) { var t = a.reduce(function (s, b) { return s + b.length; }, 0), o = new Uint8Array(t), f = 0; a.forEach(function (b) { o.set(b, f); f += b.length; }); return o; };
+      var seed = sh(cat2([te2.encode('kwallet-ii-v1|' + P.origin + '|'), X2.unhex(String(pk).replace(/^0x/i, ''))])), upub = X2.edPub(seed);
+      var der = cat2([X2.unhex('302a300506032b6570032100'), upub]), sess = X2.unhex(String(P.sessionKey));
+      var exp = BigInt(+(DS.R.icp || {}).nowMs > 1.6e12 ? +DS.R.icp.nowMs : Date.now()) * 1000000n + (DS.iiTtl || 28800000000000n);
+      var leb = function (n) { var o = []; do { var b = Number(n & 0x7fn); n >>= 7n; if (n) b |= 0x80; o.push(b); } while (n); return new Uint8Array(o); };
+      var prs = [cat2([sh(te2.encode('expiration')), sh(leb(exp))]), cat2([sh(te2.encode('pubkey')), sh(sess)])].sort(function (a, b) { for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; });
+      var rid = sh(cat2(prs)), sgI = X2.edSign(seed, cat2([te2.encode('\x1Aic-request-auth-delegation'), rid])).sig;
+      r = { userPublicKey: X2.hex(der), pubkey: P.sessionKey, expiration: exp.toString(), signature: X2.hex(sgI) }; seed = null;
     }
     else if (m === 'icp_signMessage') {
       var skk = new ethers.SigningKey('0x' + pk), sgg = skk.sign(ethers.sha256(DS.msg));

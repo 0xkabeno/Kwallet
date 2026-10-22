@@ -1,5 +1,13 @@
 # Changelog
 
+## Kwallet v3.99.7 / Hwallet v1.9.7
+
+- NEAR Max to a 64-character (implicit) address works: NEAR charges an account-creation amount upfront on any send to an implicit address, even one that exists, and refunds the unused part a few seconds later. Max now keeps that back (B37).
+- NEAR storage hold from 3.99.6 removed for zero-balance accounts (up to 770 bytes, no contract): they need no storage stake.
+- Send all and close account stays the way to end at exactly 0 NEAR.
+- Removed the "needs X NEAR available" line from the Kwallet and Hwallet send screens; close option text is now "Leaves 0 NEAR".
+- New: Internet Identity in the Hwallet browser (F6). When a site opens Internet Identity, Hwallet answers and Kwallet signs the session. Each site gets its own account, derived from the seed and the site's origin, so the seed restores every account. ic0.app and icp0.io count as one site; a derivationOrigin is honoured only when its ii-alternative-origins file lists the site.
+
 ## Kwallet v3.99.6 / Hwallet v1.9.6 (test build, not released)
 
 - NEAR Max keeps back the storage the account locks (0.00736 NEAR for 736 bytes). Max sends were failing with "Needs X available".

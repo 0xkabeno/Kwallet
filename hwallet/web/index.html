@@ -4300,6 +4300,30 @@ window.hwPlayOpening();
     createActor: function () { return Promise.reject(new Error('Hwallet does not hand out an agent. This app needs Plug\u2019s actor API, which Hwallet does not support yet')); }
   };
   if (!OFF.icp) { try { window.ic = window.ic || {}; if (!window.ic.plug) window.ic.plug = plug; } catch (e) {} }
+  /* v1.9.7 (F6): Internet Identity. When a site opens II (identity.ic0.app / identity.internetcomputer.org / id.ai), Hwallet answers
+     the II window protocol itself and Kwallet signs the session delegation with a per-site key derived from the seed. */
+  if (!OFF.icp) (function () {
+    var IIH = /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai|www\.id\.ai)$/, oo = window.open;
+    function hx(v) { var u = v instanceof Uint8Array ? v : v && v.buffer instanceof ArrayBuffer ? new Uint8Array(v.buffer, v.byteOffset || 0, v.byteLength) : new Uint8Array(v || []), s = ''; for (var i = 0; i < u.length; i++) s += ('0' + u[i].toString(16)).slice(-2); return s; }
+    function ux(h) { h = String(h || ''); var o = new Uint8Array(h.length / 2); for (var i = 0; i < o.length; i++) o[i] = parseInt(h.substr(i * 2, 2), 16); return o; }
+    try {
+      window.open = function (u, n, f) {
+        var url; try { url = new URL(String(u), location.href); } catch (e) { return oo.apply(window, arguments); }
+        if (!IIH.test(url.hostname)) return oo.apply(window, arguments);
+        var org = url.origin, fw = null;
+        var post = function (d) { setTimeout(function () { try { window.dispatchEvent(new MessageEvent('message', { data: d, origin: org, source: fw })); } catch (e) {} }, 0); };
+        fw = { closed: false, opener: window, location: { href: url.href }, focus: function () {}, blur: function () {}, close: function () { fw.closed = true; },
+          postMessage: function (m) {
+            if (!m || m.kind !== 'authorize-client' || fw.busy || fw.closed) return; fw.busy = 1;
+            call('icp', 'icp_iiLogin', { sessionKey: hx(m.sessionPublicKey), ttl: m.maxTimeToLive != null ? String(m.maxTimeToLive) : '', derivationOrigin: m.derivationOrigin ? String(m.derivationOrigin) : '' }).then(function (r) {
+              post({ kind: 'authorize-client-success', delegations: [{ delegation: { pubkey: ux(r.pubkey), expiration: BigInt(r.expiration) }, signature: ux(r.signature) }], userPublicKey: ux(r.userPublicKey), authnMethod: 'passkey' });
+            }, function (e) { fw.busy = 0; post({ kind: 'authorize-client-failure', text: String((e && e.message) || 'Rejected') }); });
+          } };
+        post({ kind: 'authorize-ready' });
+        return fw;
+      };
+    } catch (e) {}
+  })();
 
   /* ---------- restore what this site is already connected to (no prompt) ---------- */
   call('hw', 'hw_state', null).then(function (s) {
@@ -7405,7 +7429,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.6';
+var APP_VERSION = '1.9.7';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8270,11 +8294,11 @@ var APP_VERSION = '1.9.6';
       if (!xx[1]) throw new Error('The NEAR account ' + to + ' doesn\u2019t exist. Check the name, or send to its 64-character address.');
       var x = xx[0], d = S.d && S.d.chain === 'near' ? S.d : { chain: 'near' };
       d.nonce = String(x[0].nonce); d.blockHash = x[0].block_hash; d.gasPrice = String((x[1] && x[1].gas_price) || '100000000');
-      d.gbal = BI(x[2].amount || 0); var su = BI(x[2].storage_usage || 0); d.reserve = su * NEAR_BYTE;   /* v1.9.6 (B36): the node locked 736 bytes (0.00736 NEAR) on a small account, so storage is always kept back */ d.tbal = d.gbal; d.cfg = xx[2] || {}; d.creates = xx[1] === 2;   /* v1.9.4: zero-balance accounts (<= 770 bytes, no contract) need no storage stake */ d.levels = { medium: {} }; d.approx = !tok; d.atMost = tok;
+      d.gbal = BI(x[2].amount || 0); var su = BI(x[2].storage_usage || 0); var ch0 = String(x[2].code_hash || ''); d.reserve = su <= 770n && (!ch0 || ch0 === '11111111111111111111111111111111') ? 0n : su * NEAR_BYTE;   /* v1.9.7 (B37): zero-balance accounts (<= 770 bytes, no contract) need no storage stake; the old 0.0074 gap was the implicit-receiver charge */   /* v1.9.6 (B36): the node locked 736 bytes (0.00736 NEAR) on a small account, so storage is always kept back */ d.tbal = d.gbal; d.cfg = xx[2] || {}; d.creates = xx[1] === 2;   /* v1.9.4: zero-balance accounts (<= 770 bytes, no contract) need no storage stake */ d.levels = { medium: {} }; d.approx = !tok; d.atMost = tok;
       d.extra = 0n; d.storage = false; d.storageDeposit = '1250000000000000000000';
       if (tok || wrap) { if (tok) d.tbal = x[3] != null && /^\d+$/.test(String(x[3])) ? BI(x[3]) : null; d.storage = x[4] == null; d.toFor = to; var bb = x[5] && x[5].min; if (bb && /^\d+$/.test(String(bb))) d.storageDeposit = String(bb); d.extra = 1n + (d.storage ? BI(d.storageDeposit) : 0n); }
       d.wrap = wrap; if (wrap) { d.approx = false; d.atMost = true; }
-      d.cost = function () { return nearCost(d, tok ? (d.storage ? 2 : 1) : wrap ? (d.storage ? 3 : 2) : 0, !tok && !wrap && d.creates); };
+      d.cost = function () { var c0 = nearCost(d, tok ? (d.storage ? 2 : 1) : wrap ? (d.storage ? 3 : 2) : 0, !tok && !wrap && d.creates); if (!tok && !wrap && !d.creates && !(SND && SND.close) && (/^[0-9a-f]{64}$/.test(to) || /^0x[0-9a-f]{40}$/.test(to))) { var cI = nearCost(d, 0, true).need; if (cI > c0.need) c0.need = cI; } return c0; };   /* v1.9.7 (B37): same as Kwallet's nearPlan */
       d.feeFor = function () { return d.cost().fee; }; d.needFor = function () { return d.cost().need; };   /* v1.9.4 (Task A): same as Kwallet's nearPlan */   /* v1.9.3: same upfront transfer cost as Kwallet */
       d.req = function () { return { near: { nonce: d.nonce, blockHash: d.blockHash, gasPrice: d.gasPrice, reserve: d.reserve.toString(), storage: d.storage, storageDeposit: d.storageDeposit, wrap: d.wrap || undefined, creates: d.creates, cfg: d.cfg } }; };
       d.feed = function () { return { near: { nonce: d.nonce, blockHash: d.blockHash, gasPrice: d.gasPrice, reserve: d.reserve.toString(), storage: d.storage, storageDeposit: d.storageDeposit, creates: d.creates, cfg: d.cfg }, balance: { token: String(d.tbal != null ? d.tbal : ''), gas: String(d.gbal) } }; };
@@ -9871,7 +9895,7 @@ var APP_VERSION = '1.9.6';
       '<div class="hp-card"><div class="hp-r sm"><span class="hp-l">Network</span><span class="hp-v snd-nv">' + logo(n ? n.logo : c.logo, name, '', 'xs') + esc(name) + '</span></div>' +
       '<button type="button" class="hp-r sm hp-tap snd-fee" id="feechip" aria-expanded="false"><span class="hp-l">Network fee<small id="lvt">Normal</small></span><span class="hp-v"><span id="fee">Checking\u2026</span><small id="feeu"></small></span>' + sv('chev', 'ic snd-chev') + '</button>' +
       /* v1.9.6 (F5): NEAR Max only: send everything and close the account (DeleteAccount), so it ends at exactly 0 */
-      '<button type="button" class="hp-r sm hp-tap" id="sndcl" style="display:none" aria-pressed="false"><span class="hp-l">Send all and close account<small>Leaves 0 NEAR. Funding the address again reopens it.</small></span><span class="hp-v"><span class="sw" id="sndcls"></span></span></button>' +
+      '<button type="button" class="hp-r sm hp-tap" id="sndcl" style="display:none" aria-pressed="false"><span class="hp-l">Send all and close account<small>Leaves 0 NEAR</small></span><span class="hp-v"><span class="sw" id="sndcls"></span></span></button>' +
       /*ph38send:ui*/ '<div class="hp-r sm" id="sndx" style="display:none"><span class="hp-l" id="sndxl"></span><span class="hp-v"><span id="sndxv"></span><small id="sndxu"></small></span></div>' +
       '<div class="hp-r sm" id="sndt" style="display:none"><span class="hp-l">Total</span><span class="hp-v"><span id="sndtv"></span><small id="sndtu"></small></span></div></div>' +
       '<div class="note warn" id="err" hidden></div><div class="note" id="sim" hidden></div></section></div>' +
@@ -10114,7 +10138,7 @@ var APP_VERSION = '1.9.6';
       var f = feeOf(SND.lv), fu = $('feeu');
       var fN = SND.ch === 'trx' && SND.d.actFee ? f - BI(SND.d.actFee) : f;   /*ph39send:fee (B33/B34)*/
       $('fee').textContent = SND.ch === 'trx' && fN === 0n ? 'Free' : (SND.d.approx ? '≈ ' : SND.d.atMost ? 'Up to ' : '') + fmtA(fN, gas.d) + ' ' + gas.s;
-      if (fu) fu.textContent = SND.ch === 'trx' ? trxFeeSub(SND.d, fN, gas) : [px(gas.cg) ? fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '', SND.d.extra && SND.ch === 'ada' ? '+ ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : '', SND.ch === 'near' && SND.d.needFor && SND.d.needFor() > f ? 'needs ' + fmtA(SND.d.needFor(), 24) + ' NEAR available' : ''].filter(Boolean).join(' \u00b7 ');   /* v1.9.5 (S2): same line as Kwallet's sheet */
+      if (fu) fu.textContent = SND.ch === 'trx' ? trxFeeSub(SND.d, fN, gas) : [px(gas.cg) ? fmtUsd(toNum(f, gas.d) * px(gas.cg)) : '', SND.d.extra && SND.ch === 'ada' ? '+ ' + fmtU(SND.d.extra, 6, 2) + ' ADA sent with the token' : ''].filter(Boolean).join(' \u00b7 ');   /* v1.9.5 (S2): same line as Kwallet's sheet */
       if (fu) { if (SND.fpWarn) fu.textContent = SND.fpWarn; fu.style.color = SND.fpWarn ? '#e5484d' : ''; fu.style.whiteSpace = SND.fpWarn ? 'normal' : ''; }   /* v1.8.35 (B10) */
       try { sndXRows(f); } catch (e) {}   /*ph38send:val*/
       try { var cl0 = $('sndcl'), clOk = SND.ch === 'near' && SND.max && r.gas && SND.d.creates === false && !/^0x/.test(String(($('to') || {}).value || '')); if (cl0) cl0.style.display = clOk ? '' : 'none'; if (!clOk) SND.close = false; } catch (e) {}
@@ -18594,6 +18618,19 @@ window.hwCrashPrompt = crashPrompt;
       return next();
     });
   }
+  /* v1.9.7 (F6): the origin the per-site key is made for. ic0.app == icp0.io (II treats them as one); a derivationOrigin counts
+     only when its /.well-known/ii-alternative-origins lists this site, exactly like II */
+  function iiNorm(s) { var u = new URL(String(s)); var h = u.hostname.toLowerCase().replace(/\.raw\.(icp0\.io|ic0\.app)$/, '.$1').replace(/\.ic0\.app$/, '.icp0.io'); return 'https://' + h + (u.port ? ':' + u.port : ''); }
+  function iiLogin(site, p) {
+    var me = String(site.origin || ('https://' + site.host)), d = String(p.derivationOrigin || ''), sk = String(p.sessionKey || '').toLowerCase();
+    if (!/^[0-9a-f]{64,400}$/.test(sk)) return Promise.reject(dErr(-32602, 'Bad session key'));
+    var go = function (org) { return p17K(site, 'icp', 'icp_iiLogin', { origin: iiNorm(org), sessionKey: sk, ttl: /^\d{1,25}$/.test(String(p.ttl || '')) ? String(p.ttl) : '' }); };
+    if (!d || iiNorm(d) === iiNorm(me)) return go(me);
+    return http(d.replace(/\/$/, '') + '/.well-known/ii-alternative-origins', { timeout: 8000 }).then(function (j) {
+      var l = (j && j.alternativeOrigins) || []; if (!l.some(function (x) { try { return iiNorm(x) === iiNorm(me); } catch (e) { return false; } })) throw dErr(4100, d + ' does not list this site');
+      return go(d);
+    }, function (e) { if (e && e.code) throw e; throw dErr(4100, 'Could not check ' + d); });
+  }
   function icpRun(o, site, m, p) {
     if (m === 'icp_balance') return Promise.resolve(assets('icp').map(function (r) { return { symbol: r.s, decimals: r.d, amount: r.raw != null ? toNum(r.raw, r.d) : 0, canisterId: r.key === 'native' ? ICP_LEDGER : r.key, name: r.n }; }));
     if (m === 'icp_signMessage') return p17K(site, 'icp', 'icp_signMessage', { message: String(p.message || '') });
@@ -18647,6 +18684,7 @@ window.hwCrashPrompt = crashPrompt;
     if (ns === 'icp') {
       if (m === 'icp_connect') return brConnect(o, site, 'icp').then(function (a) { return { principal: a, accountId: icpAcct() || null, publicKey: jget('hw-icppk:' + a, '') || null }; });
       if (m === 'icp_disconnect') { brRevoke(o, 'icp'); return Promise.resolve(null); }
+      if (m === 'icp_iiLogin') return iiLogin(site, p);   /* v1.9.7 (F6) */
       if (!brIs(o, 'icp') || !addr) return Promise.reject(dErr(4100, 'Connect to this site first'));
       return icpRun(o, site, m, p);
     }
