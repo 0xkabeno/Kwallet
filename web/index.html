@@ -12788,7 +12788,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.1';
+const APP_VERSION = '3.99.2';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -22531,7 +22531,6 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   function netsSave(r) { try {
     var keys = ['addrs', 'suiPk', 'btcPk', 'nearPk', 'icpPk', 'icpAcct'];
     var pl = jget(PUB, []); pl.forEach(function (x) { if (x.id === r.id) keys.forEach(function (k) { if (r[k] != null) x[k] = r[k]; }); }); localStorage.setItem(PUB, JSON.stringify(pl));
-    try { var al = load(); var ch = false; al.forEach(function (x) { if (x.id === r.id) { keys.forEach(function (k) { if (r[k] != null) x[k] = r[k]; }); ch = true; } }); if (ch) save(al); } catch (e) {}
   } catch (e) {} }
   function xmrMissing(r) { return !!(r && r.addrs && r.addrs.xmr && !(/^[0-9a-f]{64}$/.test(r.xmrView || '') && r.xmrPrimary)); }
   var upgrading = false;
@@ -23447,20 +23446,20 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* v3.98.40: empty 'Seed N' slots fold into one muted '+ New wallet' row until tapped (the picked one always shows) */
     var allSlots = false;
     function emptySlot(o) { return !o.recs.length && /^Seed \d+$/.test(String(o.label || '')); }
-    function opts() { var nFree = 0, firstFree = -1, h = L.map(function (o, i) { if (!allSlots && emptySlot(o) && i !== pick) { nFree++; if (firstFree < 0) firstFree = i; return ''; } return (hasCur && i === 1 ? '<div class="kpr-sec">Other wallets</div>' : '') + HWP.kv(esc(o.label) + (hasCur && i === 0 ? '<span class="kpr-cur">Connected to Hwallet</span>' : ''), o.recs.length ? o.recs.map(function (x) { return '<span data-n="' + (x.index | 0) + '">#' + (x.index | 0) + '</span>'; }).join(', ') : 'New', '',
+    function opts(only0) { var nFree = 0, firstFree = -1, h = L.map(function (o, i) { if (!allSlots && emptySlot(o) && i !== pick) { nFree++; if (firstFree < 0) firstFree = i; return ''; } if (hasCur && i === 0 && !only0) return ''; if (only0 && i !== 0) return ''; return HWP.kv(esc(o.label), o.recs.length ? o.recs.map(function (x) { return '<span data-n="' + (x.index | 0) + '">#' + (x.index | 0) + '</span>'; }).join(', ') : 'New', '',
       { tap: true, cls: 'kss-pr' + (i === pick ? ' on' : ''), attr: ' data-i="' + i + '" role="radio" aria-checked="' + (i === pick ? 'true' : 'false') + '"' }); }).join('');
-      if (nFree) h += HWP.kv('+ New wallet', nFree + ' free slot' + (nFree === 1 ? '' : 's'), '', { tap: true, cls: 'kss-pr kpr-more', attr: ' data-more="1" role="button"' });
+      if (nFree && !only0) h += HWP.kv('+ New wallet', nFree + ' free slot' + (nFree === 1 ? '' : 's'), '', { tap: true, cls: 'kss-pr kpr-more', attr: ' data-more="1" role="button"' });
       return h; }
     function det() { var o = L[pick], id = sidFmt(o.sid), n = pairWords(o);
       return (id ? HWP.kv('Seed ID', '<span class="hp-mono">' + esc(id) + '</span>', '', { sm: true }) : '') + HWP.kv('Type', o.st === 'xmr' ? 'Monero' : o.st === 'poly' ? 'Polyseed' : 'BIP39', o.p ? 'With passphrase' : '', { sm: true }) + (n ? HWP.kv('Words', String(n), '', { sm: true }) : '') +
         HWP.kv('Goes to Hwallet', 'Public addresses', 'Monero view key', { sm: true }); }
-    var body = HWP.card(opts(), 'hp-cmp kss-ls', 'kss-pl') +
+    var body = (hasCur ? '<div class="kpr-lb">Connected to Hwallet</div>' + HWP.card(opts(true), 'hp-cmp kss-ls kpr-curc', 'kss-pl0') + (L.length > 1 ? '<div class="kpr-lb">Other wallets</div>' : '') : '') + HWP.card(opts(), 'hp-cmp kss-ls', 'kss-pl') +
       HWP.card(HWP.kv('Address number', '<div class="kss-stp"><button type="button" data-ns="-1" aria-label="Previous">\u2212</button><input id="kss-n" type="number" min="0" inputmode="numeric" value="' + num + '" aria-label="Address number"><button type="button" data-ns="1" aria-label="Next">+</button></div>', '', { cls: 'hp-wr kss-nrr' })) +
       HWP.details(det(), false, 'kss-det');
     page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(pairHead(L[pick]) + body, HWP.foot({ no: 'Cancel', ok: 'Pair', okId: 'kss-go', noId: 'kss-no', hint: '' })) + '</div>';
     try { page.querySelector('.kss-hp').classList.add('kss-pair', 'kpr40'); } catch (e) {}
     /* a new pick redraws the parts that show it (rows, asset card, chip, Details) in place; the stepper keeps its node */
-    function redraw() { $('kss-pl').innerHTML = opts(); var dc = $('kss-det'), cc = dc && dc.querySelector('.hp-card'); if (cc) cc.innerHTML = det();
+    function redraw() { $('kss-pl').innerHTML = opts(); if (hasCur && $('kss-pl0')) $('kss-pl0').innerHTML = opts(true); var dc = $('kss-det'), cc = dc && dc.querySelector('.hp-card'); if (cc) cc.innerHTML = det();
       var nt = $('kpr-note'); if (nt) { var tmp = document.createElement('div'); tmp.innerHTML = pairHead(L[pick]); var nn = tmp.querySelector('#kpr-note'); if (nn) nt.outerHTML = nn.outerHTML; } wire(); }
     $('kss-no').onclick = page.querySelector('[data-hp-x]').onclick = function () { finish({ status: 'rejected' }); };
     var ni = $('kss-n');
@@ -24387,11 +24386,21 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
 
   /* ---------- keys: derived only after the hold, from the paired seed ---------- */
   function secretFor(list, id) { return (list || []).filter(function (x) { return x.id === id; })[0] || null; }
+  /* v3.99.1: a pairing whose secret copy is gone (re-paired, restored, vault rebuilt) is matched to its seed by the public
+     seed ID, then checked: the seed must derive the pairing's own Ethereum (or Monero) address */
+  async function secretBySid() {
+    try {
+      var rec = S.rec || {}, sid = rec.sid || ((pubList().filter(function (x) { return x.id === rec.id; })[0] || {}).sid) || '';
+      if (!/^\d{10}$/.test(String(sid))) return null;
+      var L = await scanSeeds(true), o = L.filter(function (x) { return x.sid === String(sid) && x.m; })[0]; if (!o) return null;
+      return { id: rec.id, m: o.m, p: o.p || '', index: rec.index | 0, seedType: o.st || rec.seedType || 'bip39' };
+    } catch (e) { return null; }
+  }
   async function getSecret() {
     var id = S.rec.id, r = null;
     if (reqPin()) {
       if (!(await authOnce())) return null;
-      r = secretFor(load(), id);
+      r = secretFor(load(), id) || (await secretBySid());
       if (!r) throw new Error('Kwallet could not open this pairing. Pair the seed again in Settings > Hwallet signer');
       return r;
     }
@@ -24402,6 +24411,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* first sign after updating from v3.90 with App lock on: the vault must be opened once */
     if (!(await authOnce())) return null;
     r = secretFor(load(), id); if (r) syncStore(load());
+    if (!r) r = await secretBySid();
     if (!r) throw new Error('Kwallet could not open this pairing. Pair the seed again in Settings > Hwallet signer');
     return r;
   }
@@ -25771,10 +25781,13 @@ html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#
 html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#ks8):not(#ks9):not(#ks10):not(#ks11):not(#ks12)[data-ui="m3"] .hp-sheet .hp-btn.hp-ok,html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#ks8):not(#ks9):not(#ks10):not(#ks11):not(#ks12)[data-ui="miuix"] .hp-sheet .hp-btn.hp-ok{background:var(--u-pri)!important;color:var(--u-onpri)!important}
 </style>
 <style id="k99pair">
-/* v3.99.0: Pair sheet: the seed Hwallet uses now sits apart at the top with its name; the rest under 'Other wallets' */
-.kpr-cur{display:block;font:500 12.5px/16px 'InterE',system-ui,sans-serif;color:#b8f36a;margin-top:2px;letter-spacing:0}
-.kpr-sec{margin:0 -1px;padding:16px 16px 6px;background:var(--hp-bg,#1b1c1f);font:600 12.5px/16px 'InterE',system-ui,sans-serif;color:var(--hp-muted,#9aa3ae);text-transform:none;border-top:1px solid var(--hp-line,rgba(255,255,255,.08));border-bottom:1px solid var(--hp-line,rgba(255,255,255,.08))}
-html[data-theme="light"] .kpr-cur{color:#4d7c0f}
+/* v3.99.1: Pair sheet: the seed Hwallet uses now is its own card under a small 'Connected to Hwallet' label; the other seeds
+   follow in their own card under 'Other wallets' */
+.kpr-lb{padding:2px 4px 8px;font:600 13px/18px 'InterE',system-ui,sans-serif;color:var(--hp-muted,#9aa3ae);letter-spacing:.01em}
+.kpr-lb ~ .kpr-lb{padding-top:14px}
+.kss-pair .kpr-curc{margin-bottom:0}
+.kss-pair .kpr-curc + .kpr-lb{margin-top:2px}
 </style>
+
 </body>
 </html>

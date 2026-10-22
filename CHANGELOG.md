@@ -1,5 +1,12 @@
 # Changelog
 
+## Kwallet v3.99.2 / Hwallet v1.9.2 (test build, not released)
+
+- Pair sheet: the connected wallet is its own card under "Connected to Hwallet"; the other seeds follow in a second card under "Other wallets".
+- Signing: when a pairing's secret copy is missing ("Kwallet could not open this pairing"), Kwallet finds the seed by its public seed ID. Re-pairing no longer rewrites the vault list.
+- NEAR send: a named recipient must exist before signing; chain failures are explained in words (new account below 0.00182 NEAR, unknown account, nonce, expiry); the discontinued Lava node is replaced by dRPC and rpc.mainnet.near.org.
+- Clean up: every node is asked at once and the first good answer wins, so the sheet loads faster.
+
 ## Kwallet v3.99.1 / Hwallet v1.9.1 (test build, not released)
 
 - Pair sheet: the wallet Hwallet is using now sits on top under its own name, marked "Connected to Hwallet" and preselected; the other seeds follow under "Other wallets". Before, the first paired seed was preselected, so Pair could switch Hwallet to another wallet.

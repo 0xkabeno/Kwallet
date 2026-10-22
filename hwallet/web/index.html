@@ -7369,7 +7369,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.1';
+var APP_VERSION = '1.9.2';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -7501,7 +7501,7 @@ var APP_VERSION = '1.9.1';
     { id: 'xrp', name: 'XRP', sym: 'XRP', dec: 6, cg: 'ripple', logo: 'ripple', gem: 'xrp', rpc: ['https://xrplcluster.com', 'https://s1.ripple.com:51234', 'https://s2.ripple.com:51234'], tx: 'https://xrpscan.com/tx/', acct: 'https://xrpscan.com/account/', tokens: [] },
     { id: 'ada', name: 'Cardano', sym: 'ADA', dec: 6, cg: 'cardano', logo: 'cardano', gem: 'cardano', rest: ['https://api.koios.rest/api/v1'], tx: 'https://cardanoscan.io/transaction/', acct: 'https://cardanoscan.io/address/', tokens: [] },
     /* v1.9.0 */
-    { id: 'near', name: 'NEAR', sym: 'NEAR', dec: 24, cg: 'near', logo: 'near', rpc: ['https://rpc.mainnet.fastnear.com', 'https://free.rpc.fastnear.com', 'https://near.lava.build'], tx: 'https://nearblocks.io/txns/', acct: 'https://nearblocks.io/address/',
+    { id: 'near', name: 'NEAR', sym: 'NEAR', dec: 24, cg: 'near', logo: 'near', rpc: ['https://rpc.mainnet.fastnear.com', 'https://free.rpc.fastnear.com', 'https://near.drpc.org', 'https://rpc.mainnet.near.org'], tx: 'https://nearblocks.io/txns/', acct: 'https://nearblocks.io/address/',
       tokens: [['USDC', '17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1', 6, 'usd-coin', 'USD Coin'], ['USDT', 'usdt.tether-token.near', 6, 'tether', 'Tether USD']] },
     { id: 'icp', name: 'Internet Computer', sym: 'ICP', dec: 8, cg: 'internet-computer', logo: 'internetcomputer', rest: ['https://ledger-api.internetcomputer.org'], tx: 'https://dashboard.internetcomputer.org/transaction/', acct: 'https://dashboard.internetcomputer.org/account/',
       tokens: [['ckBTC', 'mxzaz-hqaaa-aaaar-qaada-cai', 8, 'bitcoin', 'ckBTC'], ['ckETH', 'ss2fx-dyaaa-aaaar-qacoq-cai', 18, 'ethereum', 'ckETH'], ['ckUSDC', 'xevnm-gaaaa-aaaar-qafnq-cai', 6, 'usd-coin', 'ckUSDC'], ['ckUSDT', 'cngnf-vqaaa-aaaar-qag4q-cai', 6, 'tether', 'ckUSDT']] }
@@ -8196,10 +8196,15 @@ var APP_VERSION = '1.9.1';
     if (!pk) return Promise.reject(new Error('Pair this wallet with Kwallet again to send NEAR'));
     var jobs = [nearQ({ request_type: 'view_access_key', finality: 'final', account_id: A.near, public_key: pk }), nearRpc('gas_price', [null]), nearQ({ request_type: 'view_account', finality: 'final', account_id: A.near }).catch(function (e) { if (e && e.near === 'UNKNOWN_ACCOUNT') return { amount: '0', storage_usage: 0 }; throw e; })];
     var to = SND && validAddr('near', SND.to) ? SND.to : '', wrap = !tok && !!(V && V.swapDep);
+    /* v1.9.1: a named NEAR account that doesn't exist can't receive (the transfer fails on chain); an implicit (64-hex or 0x)
+       account is created by the transfer itself */
+    var named = to && !/^[0-9a-f]{64}$/.test(to) && !/^0x[0-9a-f]{40}$/.test(to);
+    var toChk = named ? nearQ({ request_type: 'view_account', finality: 'final', account_id: to }).then(function () { return 1; }, function (e) { return e && e.near === 'UNKNOWN_ACCOUNT' ? 0 : 1; }) : Promise.resolve(1);
     if (wrap) jobs.push(Promise.resolve(null), to ? nearView('wrap.near', 'storage_balance_of', { account_id: to }).catch(function () { return 'x'; }) : Promise.resolve('x'), nearView('wrap.near', 'storage_balance_bounds', {}).catch(function () { return null; }));
     if (tok) { jobs.push(nearView(r.a, 'ft_balance_of', { account_id: A.near }).catch(function () { return null; })); jobs.push(to ? nearView(r.a, 'storage_balance_of', { account_id: to }).catch(function () { return 'x'; }) : Promise.resolve('x')); jobs.push(nearView(r.a, 'storage_balance_bounds', {}).catch(function () { return null; })); }
-    return Promise.all(jobs).then(function (x) {
-      var d = S.d && S.d.chain === 'near' ? S.d : { chain: 'near' };
+    return Promise.all([Promise.all(jobs), toChk]).then(function (xx) {
+      if (!xx[1]) throw new Error('The NEAR account ' + to + ' doesn\u2019t exist. Check the name, or send to its 64-character address.');
+      var x = xx[0], d = S.d && S.d.chain === 'near' ? S.d : { chain: 'near' };
       d.nonce = String(x[0].nonce); d.blockHash = x[0].block_hash; d.gasPrice = String((x[1] && x[1].gas_price) || '100000000');
       d.gbal = BI(x[2].amount || 0); d.reserve = BI(x[2].storage_usage || 0) * NEAR_BYTE; d.tbal = d.gbal; d.levels = { medium: {} }; d.approx = !tok; d.atMost = tok;
       d.extra = 0n; d.storage = false; d.storageDeposit = '1250000000000000000000';
@@ -8226,13 +8231,25 @@ var APP_VERSION = '1.9.1';
       return d;
     });
   };
+  /* v1.9.1: a NEAR failure in words (never the raw JSON) */
+  function nearWhy(f) {
+    var j = JSON.stringify(f || {}), m;
+    if (/LackBalanceForState/.test(j)) return 'The receiving account is new and needs at least 0.00182 NEAR to exist. Send more, and the network refunds this one.';
+    if (/AccountDoesNotExist|ReceiverDoesNotExist/.test(j)) return 'The receiving NEAR account doesn\u2019t exist. Nothing was sent; the network refunds the amount.';
+    if (/NotEnoughBalance/.test(j)) return 'Not enough NEAR for this amount plus the fee.';
+    if (/InvalidNonce|NonceTooLarge/.test(j)) return 'Another NEAR transaction went first. Open Send again and retry.';
+    if (/Expired/.test(j)) return 'The transaction expired before it reached the network. Send again.';
+    if (/InvalidSignature|InvalidAccessKey|AccessKeyNotFound/.test(j)) return 'The network didn\u2019t accept this wallet\u2019s key. Pair again with Kwallet.';
+    m = /"([A-Z][A-Za-z]+)"(?=[:}])/g; var last = '', r; while ((r = m.exec(j))) last = r[1];
+    return 'NEAR refused it' + (last ? ': ' + last.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase() : '') + '.';
+  }
   function nearSend(raw) {
     return nearRpc('send_tx', { signed_tx_base64: raw, wait_until: 'EXECUTED_OPTIMISTIC' }, 30000).then(function (r) {
       var st = r && r.status, h = r && r.transaction && r.transaction.hash;
-      if (st && st.Failure) throw new Error(('Failed: ' + JSON.stringify(st.Failure)).slice(0, 180));
-      (r && r.receipts_outcome || []).forEach(function (o) { var s = o.outcome && o.outcome.status; if (s && s.Failure) throw new Error(('A step failed: ' + JSON.stringify(s.Failure)).slice(0, 180)); });
+      if (st && st.Failure) throw new Error(nearWhy(st.Failure));
+      (r && r.receipts_outcome || []).forEach(function (o) { var s = o.outcome && o.outcome.status; if (s && s.Failure) throw new Error(nearWhy(s.Failure)); });
       return h;
-    });
+    }, function (e) { var b = e && e.body; if (b && b.data && typeof b.data === 'object') throw new Error(nearWhy(b.data)); throw e; });
   }
   function icpSend(res) {
     var can = res.canister || ICP_LEDGER;
@@ -17988,7 +18005,20 @@ window.hwCrashPrompt = crashPrompt;
         return pass(i + 1);
       });
     }
-    return pass(0).catch(function (e) { if (!busy) throw e; busy = false; return sleep(1200).then(function () { return pass(0); }); });
+    /* v1.9.1: every node is asked at once and the first good answer wins (one slow or refusing node no longer holds the
+       sheet for its whole timeout); the node-by-node pass is the fallback when all of them failed */
+    function all() {
+      return new Promise(function (ok, no) {
+        var left = us.length, done = false; if (!left) return no(new Error('No ' + CHBY[ch].name + ' node answered'));
+        us.forEach(function (u) {
+          http(u, { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params || [] }), timeout: ms || 8000 }).then(function (j) {
+            if (j && j.error) { var e = new Error(j.error.message || 'rpc error'); e.rpc = true; e.code = j.error.code; if (j.error.code === -32029 || j.error.code === 429) e.status = 429; throw e; }
+            if (!done) { done = true; ok(j ? j.result : null); }
+          }).catch(function (e) { var rk = rank(e); if (!last || rk >= rank(last)) last = e; if (rk === 2) busy = true; if (--left === 0 && !done) no(last); });
+        });
+      });
+    }
+    return all().catch(function (e) { if (!busy) throw e; busy = false; return sleep(1200).then(function () { return pass(0); }); });
   }
   /* a failed lookup in words (never the raw JSON of a node) */
   function tcErr(e, ch) {
@@ -18002,7 +18032,7 @@ window.hwCrashPrompt = crashPrompt;
   function tcSolLoad() {
     var a = A.sol;
     return Promise.all([SPL, SPL22].map(function (pg) {
-      return tcRpc('sol', 'getTokenAccountsByOwner', [a, { programId: pg }, { encoding: 'jsonParsed', commitment: 'confirmed' }], 12000).then(function (r) { return ((r && r.value) || []).map(function (x) { x._pg = pg; return x; }); }, function (e) { return { err: e }; });
+      return tcRpc('sol', 'getTokenAccountsByOwner', [a, { programId: pg }, { encoding: 'jsonParsed', commitment: 'confirmed' }], 9000).then(function (r) { return ((r && r.value) || []).map(function (x) { x._pg = pg; return x; }); }, function (e) { return { err: e }; });
     })).then(function (two) {
       if (two[0].err && two[1].err) throw two[0].err;   /* ph39clean B27 */
       var miss = two[0].err ? 'SPL' : two[1].err ? 'Token-2022' : '';
