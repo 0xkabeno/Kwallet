@@ -12789,7 +12789,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.8';
+const APP_VERSION = '3.99.9';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -25126,8 +25126,9 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
         } else if (m === 'icp_iiLogin') {   /* v3.99.7 (F6) */
           if (!/^https:\/\/[a-z0-9.-]+(:\d+)?$/.test(String(P.origin || '')) || !/^[0-9a-f]{64,400}$/.test(String(P.sessionKey || ''))) return 'The sign-in request could not be read.';
           var tN = /^\d+$/.test(String(P.ttl || '')) ? BigInt(P.ttl) : 8n * 3600n * 1000000000n, tMax = 30n * 86400n * 1000000000n; if (tN > tMax) tN = tMax; if (tN < 60000000000n) tN = 60000000000n;
+          DS.iiTg = Array.isArray(P.targets) ? P.targets.map(String).slice(0, 50) : []; DS.iiTg.forEach(function (t) { KwChains.icp.prin(t); });
           DS.iiTtl = tN; var hrs = Number(tN / 3600000000000n);
-          DS.msg = new TextEncoder().encode('Sign in to ' + P.origin + ' as your Internet Identity account for this site.\nSession: ' + (hrs >= 48 ? Math.round(hrs / 24) + ' days' : hrs >= 1 ? hrs + ' hours' : 'under an hour') + '.\nThe same seed always opens the same account here.');
+          DS.msg = new TextEncoder().encode('Sign in to ' + P.origin + ' as your Internet Identity account for this site.\nSession: ' + (hrs >= 48 ? Math.round(hrs / 24) + ' days' : hrs > 1 ? hrs + ' hours' : hrs === 1 ? '1 hour' : 'under an hour') + '.' + (DS.iiTg.length ? '\nLimited to ' + DS.iiTg.length + ' canister' + (DS.iiTg.length > 1 ? 's' : '') + '.' : '') + '\nThe same seed always opens the same account here.');
         } else if (m === 'icp_signMessage') {
           DS.msg = (function (x) { try { return KwChains.util.unhex(String(x || '')); } catch (e) { return new TextEncoder().encode(String(x || '')); } })(P.message);
         } else {
@@ -25332,9 +25333,11 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       var der = cat2([X2.unhex('302a300506032b6570032100'), upub]), sess = X2.unhex(String(P.sessionKey));
       var exp = BigInt(+(DS.R.icp || {}).nowMs > 1.6e12 ? +DS.R.icp.nowMs : Date.now()) * 1000000n + (DS.iiTtl || 28800000000000n);
       var leb = function (n) { var o = []; do { var b = Number(n & 0x7fn); n >>= 7n; if (n) b |= 0x80; o.push(b); } while (n); return new Uint8Array(o); };
-      var prs = [cat2([sh(te2.encode('expiration')), sh(leb(exp))]), cat2([sh(te2.encode('pubkey')), sh(sess)])].sort(function (a, b) { for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; });
+      var prs = [cat2([sh(te2.encode('expiration')), sh(leb(exp))]), cat2([sh(te2.encode('pubkey')), sh(sess)])];
+      if (DS.iiTg && DS.iiTg.length) prs.push(cat2([sh(te2.encode('targets')), sh(cat2(DS.iiTg.map(function (t) { return sh(KwChains.icp.prin(t)); })))]));
+      prs = prs.sort(function (a, b) { for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; });
       var rid = sh(cat2(prs)), sgI = X2.edSign(seed, cat2([te2.encode('\x1Aic-request-auth-delegation'), rid])).sig;
-      r = { userPublicKey: X2.hex(der), pubkey: P.sessionKey, expiration: exp.toString(), signature: X2.hex(sgI) }; seed = null;
+      r = { userPublicKey: X2.hex(der), pubkey: P.sessionKey, expiration: exp.toString(), signature: X2.hex(sgI), targets: DS.iiTg || [] }; seed = null;
     }
     else if (m === 'icp_signMessage') {
       var skk = new ethers.SigningKey('0x' + pk), sgg = skk.sign(ethers.sha256(DS.msg));

@@ -4303,28 +4303,58 @@ window.hwPlayOpening();
   /* v1.9.7 (F6): Internet Identity. When a site opens II (identity.ic0.app / identity.internetcomputer.org / id.ai), Hwallet answers
      the II window protocol itself and Kwallet signs the session delegation with a per-site key derived from the seed. */
   if (!OFF.icp) (function () {
-    var IIH = /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai|www\.id\.ai)$/, oo = window.open;
-    function hx(v) { var u = v instanceof Uint8Array ? v : v && v.buffer instanceof ArrayBuffer ? new Uint8Array(v.buffer, v.byteOffset || 0, v.byteLength) : new Uint8Array(v || []), s = ''; for (var i = 0; i < u.length; i++) s += ('0' + u[i].toString(16)).slice(-2); return s; }
+    /* v1.9.9: both sign-in protocols. Legacy II (authorize-ready / authorize-client, @dfinity/auth-client) and the ICRC signer
+       standard (ICRC-29 heartbeat + ICRC-25/34 JSON-RPC, @icp-sdk/auth v6, used by OISY). The SDK pre-opens
+       window.open('', '<IdP origin>-signer-window') and then opens the IdP URL with the same name; both get one stand-in window. */
+    var IIH = /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai|www\.id\.ai|beta\.id\.ai)$/, oo = window.open, WINS = {};
+    function hx(v) { var u = v instanceof Uint8Array ? v : v && v.buffer instanceof ArrayBuffer ? new Uint8Array(v.buffer, v.byteOffset || 0, v.byteLength) : v instanceof ArrayBuffer ? new Uint8Array(v) : new Uint8Array(v || []), s = ''; for (var i = 0; i < u.length; i++) s += ('0' + u[i].toString(16)).slice(-2); return s; }
     function ux(h) { h = String(h || ''); var o = new Uint8Array(h.length / 2); for (var i = 0; i < o.length; i++) o[i] = parseInt(h.substr(i * 2, 2), 16); return o; }
+    function b2h(b) { var s = atob(String(b || '')), o = ''; for (var i = 0; i < s.length; i++) o += ('0' + s.charCodeAt(i).toString(16)).slice(-2); return o; }
+    function h2b(h) { var s = ''; for (var i = 0; i < h.length; i += 2) s += String.fromCharCode(parseInt(h.substr(i, 2), 16)); return btoa(s); }
+    function stand(org) {
+      var ifr = document.createElement('iframe'), fw, busy = 0;
+      ifr.style.cssText = 'display:none'; ifr.setAttribute('aria-hidden', 'true'); (document.body || document.documentElement).appendChild(ifr); fw = ifr.contentWindow;
+      var post = function (d) { setTimeout(function () { var ev; try { ev = new MessageEvent('message', { data: d, origin: org, source: fw }); } catch (e) { try { ev = new MessageEvent('message', { data: d, origin: org }); } catch (e2) { return; } } try { window.dispatchEvent(ev); } catch (e) {} }, 0); };
+      var login = function (q) { return call('icp', 'icp_iiLogin', q); };
+      try { fw.close = function () { try { ifr.remove(); } catch (e) {} }; } catch (e) {}
+      try { fw.focus = function () {}; } catch (e) {}
+      fw.postMessage = function (m) {
+        if (!m || !ifr.isConnected) return;
+        if (m.jsonrpc === '2.0') {   /* ICRC signer standard */
+          var id = m.id, ok = function (r) { if (id != null) post({ jsonrpc: '2.0', id: id, result: r }); }, no = function (c, t) { if (id != null) post({ jsonrpc: '2.0', id: id, error: { code: c, message: t } }); };
+          var pr = m.params || {};
+          if (m.method === 'icrc29_status') return ok(busy ? 'pending' : 'ready');
+          if (m.method === 'icrc25_supported_standards') return ok({ supportedStandards: ['25', '27', '29', '34', '95'].map(function (n) { return { name: 'ICRC-' + n, url: 'https://github.com/dfinity/wg-identity-authentication/blob/main/topics/icrc_' + n + '.md' }; }) });
+          if (m.method === 'icrc25_request_permissions' || m.method === 'icrc25_permissions') return ok({ scopes: [{ scope: { method: 'icrc34_delegation' }, state: 'granted' }] });
+          if (m.method !== 'icrc34_delegation') return no(2000, 'Hwallet does not support ' + String(m.method).slice(0, 40));
+          if (busy) return no(1000, 'Busy');
+          var sk; try { sk = b2h(pr.publicKey); } catch (e) { return no(1001, 'Bad publicKey'); }
+          busy = 1;
+          login({ sessionKey: sk, ttl: pr.maxTimeToLive != null ? String(pr.maxTimeToLive) : '', derivationOrigin: pr.icrc95DerivationOrigin ? String(pr.icrc95DerivationOrigin) : '', targets: Array.isArray(pr.targets) ? pr.targets.map(String).slice(0, 50) : [] }).then(function (r) {
+            busy = 0; var dl = { pubkey: h2b(r.pubkey), expiration: String(r.expiration) }; if (r.targets && r.targets.length) dl.targets = r.targets;
+            ok({ publicKey: h2b(r.userPublicKey), signerDelegation: [{ delegation: dl, signature: h2b(r.signature) }] });
+          }, function (e) { busy = 0; no(3001, String((e && e.message) || 'Action aborted')); });
+          return;
+        }
+        if (m.kind !== 'authorize-client' || busy) return; busy = 1;   /* legacy II window protocol */
+        login({ sessionKey: hx(m.sessionPublicKey), ttl: m.maxTimeToLive != null ? String(m.maxTimeToLive) : '', derivationOrigin: m.derivationOrigin ? String(m.derivationOrigin) : '', targets: [] }).then(function (r) {
+          busy = 0; post({ kind: 'authorize-client-success', delegations: [{ delegation: { pubkey: ux(r.pubkey), expiration: BigInt(r.expiration) }, signature: ux(r.signature) }], userPublicKey: ux(r.userPublicKey), authnMethod: 'passkey' });
+        }, function (e) { busy = 0; post({ kind: 'authorize-client-failure', text: String((e && e.message) || 'Rejected') }); });
+      };
+      fw.__hwLegacy = function () { post({ kind: 'authorize-ready' }); };
+      return { w: fw, f: ifr };
+    }
     try {
       window.open = function (u, n, f) {
-        var url; try { url = new URL(String(u), location.href); } catch (e) { return oo.apply(window, arguments); }
-        if (!IIH.test(url.hostname)) return oo.apply(window, arguments);
-        /* v1.9.8: the stand-in II window is a hidden same-origin iframe, so it is a real Window: MessageEvent accepts it as source
-           (a plain object made the constructor throw and the app never heard 'authorize-ready'), and close() makes .closed true */
-        var org = url.origin, ifr = document.createElement('iframe'), fw;
-        ifr.style.cssText = 'display:none'; ifr.setAttribute('aria-hidden', 'true'); (document.body || document.documentElement).appendChild(ifr); fw = ifr.contentWindow;
-        var post = function (d) { setTimeout(function () { var ev; try { ev = new MessageEvent('message', { data: d, origin: org, source: fw }); } catch (e) { try { ev = new MessageEvent('message', { data: d, origin: org }); } catch (e2) { return; } } try { window.dispatchEvent(ev); } catch (e) {} }, 0); };
-        var busy = 0;
-        try { fw.close = function () { try { ifr.remove(); } catch (e) {} }; } catch (e) {}
-        fw.postMessage = function (m) {
-          if (!m || m.kind !== 'authorize-client' || busy || !ifr.isConnected) return; busy = 1;
-          call('icp', 'icp_iiLogin', { sessionKey: hx(m.sessionPublicKey), ttl: m.maxTimeToLive != null ? String(m.maxTimeToLive) : '', derivationOrigin: m.derivationOrigin ? String(m.derivationOrigin) : '' }).then(function (r) {
-            post({ kind: 'authorize-client-success', delegations: [{ delegation: { pubkey: ux(r.pubkey), expiration: BigInt(r.expiration) }, signature: ux(r.signature) }], userPublicKey: ux(r.userPublicKey), authnMethod: 'passkey' });
-          }, function (e) { busy = 0; try { console.warn('Hwallet Internet Identity:', e && e.message); } catch (x) {} post({ kind: 'authorize-client-failure', text: String((e && e.message) || 'Rejected') }); });
-        };
-        post({ kind: 'authorize-ready' });
-        return fw;
+        var url = null, nm = String(n || ''), mo = /^(https:\/\/[a-z0-9.-]+)-signer-window$/.exec(nm);
+        try { if (u != null && String(u) !== '' && String(u) !== 'about:blank') url = new URL(String(u), location.href); } catch (e) { return oo.apply(window, arguments); }
+        var org = url ? (IIH.test(url.hostname) ? url.origin : '') : (mo && IIH.test(new URL(mo[1]).hostname) ? mo[1] : '');
+        if (!org) return oo.apply(window, arguments);
+        var ex = nm && WINS[nm], s = ex && ex.f.isConnected ? ex : stand(org);
+        if (nm) WINS[nm] = s;
+        /* @dfinity/auth-client opens '<IdP>/#authorize' with name 'idpWindow' and waits for authorize-ready; ICRC callers poll instead */
+        if (url && !mo) s.w.__hwLegacy();
+        return s.w;
       };
     } catch (e) {}
   })();
@@ -7433,7 +7463,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.8';
+var APP_VERSION = '1.9.9';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -18628,7 +18658,7 @@ window.hwCrashPrompt = crashPrompt;
   function iiLogin(site, p) {
     var me = String(site.origin || ('https://' + site.host)), d = String(p.derivationOrigin || ''), sk = String(p.sessionKey || '').toLowerCase();
     if (!/^[0-9a-f]{64,400}$/.test(sk)) return Promise.reject(dErr(-32602, 'Bad session key'));
-    var go = function (org) { return p17K(site, 'icp', 'icp_iiLogin', { origin: iiNorm(org), sessionKey: sk, ttl: /^\d{1,25}$/.test(String(p.ttl || '')) ? String(p.ttl) : '' }); };
+    var go = function (org) { return p17K(site, 'icp', 'icp_iiLogin', { origin: iiNorm(org), sessionKey: sk, targets: (Array.isArray(p.targets) ? p.targets : []).map(String).filter(function (t) { return /^[a-z0-9-]{5,63}$/.test(t); }).slice(0, 50), ttl: /^\d{1,25}$/.test(String(p.ttl || '')) ? String(p.ttl) : '' }); };
     if (!d || iiNorm(d) === iiNorm(me)) return go(me);
     return http(d.replace(/\/$/, '') + '/.well-known/ii-alternative-origins', { timeout: 8000 }).then(function (j) {
       var l = (j && j.alternativeOrigins) || []; if (!l.some(function (x) { try { return iiNorm(x) === iiNorm(me); } catch (e) { return false; } })) throw dErr(4100, d + ' does not list this site');

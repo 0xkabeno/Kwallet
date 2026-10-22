@@ -1,5 +1,11 @@
 # Changelog
 
+## Kwallet v3.99.9 / Hwallet v1.9.9 (test build, not released)
+
+- Internet Identity: Hwallet now also speaks the ICRC signer standard (ICRC-29 heartbeat, ICRC-25/34 delegation, ICRC-95 derivation origin) used by @icp-sdk/auth v6 and OISY, including its blank pre-opened signer window. The legacy II window protocol still works.
+- Delegations limited to canisters (targets) are signed and shown on the Kwallet sheet.
+- Checked locally against the real @icp-sdk/signer transport: channel, delegation signature, same account on every login, and a slow approval keeping the channel alive.
+
 ## Kwallet v3.99.8 / Hwallet v1.9.8 (test build, not released)
 
 - Internet Identity sign-in reaches Kwallet: Hwallet's stand-in II window is now a real (hidden) window, so the app receives II's ready signal instead of reporting an interrupted login.
