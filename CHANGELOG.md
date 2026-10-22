@@ -1,5 +1,12 @@
 # Changelog
 
+## Kwallet v3.99.10 / Hwallet v1.9.10 (test build, not released)
+
+- Internet Identity with Kwallet as the passkey (F6b). When a site opens II, Hwallet now opens the real II page in a sign-in window over the tab (the site keeps window.opener). On II's pages, passkey prompts go to Kwallet, which makes or uses a P-256 passkey derived from the seed (relying party + passkey number), so the seed restores it. II itself signs the session, so apps that only accept genuine II logins (OISY) work, and Hwallet and Kwallet stay the only signers.
+- Each seed has its own passkeys; a new II on the same seed gets the next passkey number. An existing II can add Kwallet as a passkey from II's own settings (open id.ai in the Hwallet browser).
+- The v1.9.7 to v1.9.9 stand-in II window (Kwallet-made per-site accounts) is no longer used: OISY's backend refuses identities that II did not sign.
+- Checked locally: registration and sign-in responses verify with a standard WebAuthn verifier (origin, RP ID, user verification, signature), II's COSE key extraction, deterministic credentials, conditional sign-in cancelled by abort.
+
 ## Kwallet v3.99.9 / Hwallet v1.9.9 (test build, not released)
 
 - Internet Identity: Hwallet now also speaks the ICRC signer standard (ICRC-29 heartbeat, ICRC-25/34 delegation, ICRC-95 derivation origin) used by @icp-sdk/auth v6 and OISY, including its blank pre-opened signer window. The legacy II window protocol still works.

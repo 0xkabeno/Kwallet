@@ -4300,62 +4300,100 @@ window.hwPlayOpening();
     createActor: function () { return Promise.reject(new Error('Hwallet does not hand out an agent. This app needs Plug\u2019s actor API, which Hwallet does not support yet')); }
   };
   if (!OFF.icp) { try { window.ic = window.ic || {}; if (!window.ic.plug) window.ic.plug = plug; } catch (e) {} }
-  /* v1.9.7 (F6): Internet Identity. When a site opens II (identity.ic0.app / identity.internetcomputer.org / id.ai), Hwallet answers
-     the II window protocol itself and Kwallet signs the session delegation with a per-site key derived from the seed. */
+  /* v1.9.10 (F6b): a named window opened blank and then opened again with an address (the ICRC signer: @icp-sdk/auth v6 /
+     OISY pre-open '<IdP>-signer-window') is navigated, so the page keeps the one window it holds */
   if (!OFF.icp) (function () {
-    /* v1.9.9: both sign-in protocols. Legacy II (authorize-ready / authorize-client, @dfinity/auth-client) and the ICRC signer
-       standard (ICRC-29 heartbeat + ICRC-25/34 JSON-RPC, @icp-sdk/auth v6, used by OISY). The SDK pre-opens
-       window.open('', '<IdP origin>-signer-window') and then opens the IdP URL with the same name; both get one stand-in window. */
-    var IIH = /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai|www\.id\.ai|beta\.id\.ai)$/, oo = window.open, WINS = {};
-    function hx(v) { var u = v instanceof Uint8Array ? v : v && v.buffer instanceof ArrayBuffer ? new Uint8Array(v.buffer, v.byteOffset || 0, v.byteLength) : v instanceof ArrayBuffer ? new Uint8Array(v) : new Uint8Array(v || []), s = ''; for (var i = 0; i < u.length; i++) s += ('0' + u[i].toString(16)).slice(-2); return s; }
-    function ux(h) { h = String(h || ''); var o = new Uint8Array(h.length / 2); for (var i = 0; i < o.length; i++) o[i] = parseInt(h.substr(i * 2, 2), 16); return o; }
-    function b2h(b) { var s = atob(String(b || '')), o = ''; for (var i = 0; i < s.length; i++) o += ('0' + s.charCodeAt(i).toString(16)).slice(-2); return o; }
-    function h2b(h) { var s = ''; for (var i = 0; i < h.length; i += 2) s += String.fromCharCode(parseInt(h.substr(i, 2), 16)); return btoa(s); }
-    function stand(org) {
-      var ifr = document.createElement('iframe'), fw, busy = 0;
-      ifr.style.cssText = 'display:none'; ifr.setAttribute('aria-hidden', 'true'); (document.body || document.documentElement).appendChild(ifr); fw = ifr.contentWindow;
-      var post = function (d) { setTimeout(function () { var ev; try { ev = new MessageEvent('message', { data: d, origin: org, source: fw }); } catch (e) { try { ev = new MessageEvent('message', { data: d, origin: org }); } catch (e2) { return; } } try { window.dispatchEvent(ev); } catch (e) {} }, 0); };
-      var login = function (q) { return call('icp', 'icp_iiLogin', q); };
-      try { fw.close = function () { try { ifr.remove(); } catch (e) {} }; } catch (e) {}
-      try { fw.focus = function () {}; } catch (e) {}
-      fw.postMessage = function (m) {
-        if (!m || !ifr.isConnected) return;
-        if (m.jsonrpc === '2.0') {   /* ICRC signer standard */
-          var id = m.id, ok = function (r) { if (id != null) post({ jsonrpc: '2.0', id: id, result: r }); }, no = function (c, t) { if (id != null) post({ jsonrpc: '2.0', id: id, error: { code: c, message: t } }); };
-          var pr = m.params || {};
-          if (m.method === 'icrc29_status') return ok(busy ? 'pending' : 'ready');
-          if (m.method === 'icrc25_supported_standards') return ok({ supportedStandards: ['25', '27', '29', '34', '95'].map(function (n) { return { name: 'ICRC-' + n, url: 'https://github.com/dfinity/wg-identity-authentication/blob/main/topics/icrc_' + n + '.md' }; }) });
-          if (m.method === 'icrc25_request_permissions' || m.method === 'icrc25_permissions') return ok({ scopes: [{ scope: { method: 'icrc34_delegation' }, state: 'granted' }] });
-          if (m.method !== 'icrc34_delegation') return no(2000, 'Hwallet does not support ' + String(m.method).slice(0, 40));
-          if (busy) return no(1000, 'Busy');
-          var sk; try { sk = b2h(pr.publicKey); } catch (e) { return no(1001, 'Bad publicKey'); }
-          busy = 1;
-          login({ sessionKey: sk, ttl: pr.maxTimeToLive != null ? String(pr.maxTimeToLive) : '', derivationOrigin: pr.icrc95DerivationOrigin ? String(pr.icrc95DerivationOrigin) : '', targets: Array.isArray(pr.targets) ? pr.targets.map(String).slice(0, 50) : [] }).then(function (r) {
-            busy = 0; var dl = { pubkey: h2b(r.pubkey), expiration: String(r.expiration) }; if (r.targets && r.targets.length) dl.targets = r.targets;
-            ok({ publicKey: h2b(r.userPublicKey), signerDelegation: [{ delegation: dl, signature: h2b(r.signature) }] });
-          }, function (e) { busy = 0; no(3001, String((e && e.message) || 'Action aborted')); });
-          return;
-        }
-        if (m.kind !== 'authorize-client' || busy) return; busy = 1;   /* legacy II window protocol */
-        login({ sessionKey: hx(m.sessionPublicKey), ttl: m.maxTimeToLive != null ? String(m.maxTimeToLive) : '', derivationOrigin: m.derivationOrigin ? String(m.derivationOrigin) : '', targets: [] }).then(function (r) {
-          busy = 0; post({ kind: 'authorize-client-success', delegations: [{ delegation: { pubkey: ux(r.pubkey), expiration: BigInt(r.expiration) }, signature: ux(r.signature) }], userPublicKey: ux(r.userPublicKey), authnMethod: 'passkey' });
-        }, function (e) { busy = 0; post({ kind: 'authorize-client-failure', text: String((e && e.message) || 'Rejected') }); });
-      };
-      fw.__hwLegacy = function () { post({ kind: 'authorize-ready' }); };
-      return { w: fw, f: ifr };
-    }
+    var oo = window.open, W = {};
     try {
-      window.open = function (u, n, f) {
-        var url = null, nm = String(n || ''), mo = /^(https:\/\/[a-z0-9.-]+)-signer-window$/.exec(nm);
-        try { if (u != null && String(u) !== '' && String(u) !== 'about:blank') url = new URL(String(u), location.href); } catch (e) { return oo.apply(window, arguments); }
-        var org = url ? (IIH.test(url.hostname) ? url.origin : '') : (mo && IIH.test(new URL(mo[1]).hostname) ? mo[1] : '');
-        if (!org) return oo.apply(window, arguments);
-        var ex = nm && WINS[nm], s = ex && ex.f.isConnected ? ex : stand(org);
-        if (nm) WINS[nm] = s;
-        /* @dfinity/auth-client opens '<IdP>/#authorize' with name 'idpWindow' and waits for authorize-ready; ICRC callers poll instead */
-        if (url && !mo) s.w.__hwLegacy();
-        return s.w;
+      window.open = function (u, n) {
+        var nm = String(n || '');
+        if (!nm || /^_(blank|self|parent|top)$/i.test(nm)) return oo.apply(window, arguments);
+        var w = W[nm];
+        if (w && !w.closed && u != null && String(u) !== '' && String(u) !== 'about:blank') { try { w.location.href = new URL(String(u), location.href).href; try { w.focus(); } catch (e) {} return w; } catch (e) {} }
+        var r = oo.apply(window, arguments); if (r) W[nm] = r; return r;
       };
+    } catch (e) {}
+  })();
+  /* v1.9.10 (F6b): Internet Identity with Kwallet as the passkey. A site's II window now opens for real (a sign-in window over
+     the tab, with window.opener), and on II's own pages navigator.credentials is answered by Kwallet: a P-256 passkey derived
+     from the seed. II then signs the delegation itself, so apps that require a genuine II login (OISY) accept it.
+     (v1.9.7 to v1.9.9 answered the II window protocol in Hwallet with a Kwallet-made account; OISY's backend refuses those.) */
+  if (!OFF.icp && /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai|www\.id\.ai|beta\.id\.ai)$/.test(location.hostname)) (function () {
+    function u8(v) { return v instanceof Uint8Array ? v : ArrayBuffer.isView(v) ? new Uint8Array(v.buffer, v.byteOffset, v.byteLength) : v instanceof ArrayBuffer ? new Uint8Array(v) : new Uint8Array(0); }
+    function hx(v) { var u = u8(v), s = ''; for (var i = 0; i < u.length; i++) s += ('0' + u[i].toString(16)).slice(-2); return s; }
+    function ab(h) { h = String(h || ''); var o = new Uint8Array(h.length / 2); for (var i = 0; i < o.length; i++) o[i] = parseInt(h.substr(i * 2, 2), 16); return o.buffer; }
+    function b64u(v) { var u = u8(v), s = ''; for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+    function ub(s) { s = String(s || '').replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; var b = atob(s), o = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) o[i] = b.charCodeAt(i); return o.buffer; }
+    function dx(n, t) { try { return new DOMException(t, n); } catch (e) { var x = new Error(t); x.name = n; return x; } }
+    function guard(sig, p) {
+      if (!sig) return p;
+      if (sig.aborted) return Promise.reject(sig.reason || dx('AbortError', 'The operation was aborted.'));
+      return new Promise(function (res, rej) {
+        var f = function () { rej(sig.reason || dx('AbortError', 'The operation was aborted.')); };
+        try { sig.addEventListener('abort', f, { once: true }); } catch (e) {}
+        p.then(function (v) { try { sig.removeEventListener('abort', f); } catch (e) {} res(v); }, function (e) { try { sig.removeEventListener('abort', f); } catch (x) {} rej(e); });
+      });
+    }
+    var PKC = window.PublicKeyCredential;
+    if (typeof PKC !== 'function') {
+      PKC = function PublicKeyCredential() { throw new TypeError('Illegal constructor'); };
+      try { Object.defineProperty(window, 'PublicKeyCredential', { value: PKC, configurable: true, writable: true }); } catch (e) { window.PublicKeyCredential = PKC; }
+    }
+    function pc(j) {   /* PublicKeyCredential.parse…FromJSON */
+      var o = Object.assign({}, j || {}); o.challenge = ub(o.challenge);
+      if (o.user) o.user = Object.assign({}, o.user, { id: ub(o.user.id) });
+      ['excludeCredentials', 'allowCredentials'].forEach(function (k) { if (Array.isArray(o[k])) o[k] = o[k].map(function (c) { return Object.assign({}, c, { id: ub(c.id) }); }); });
+      return o;
+    }
+    var ST = {
+      isUserVerifyingPlatformAuthenticatorAvailable: function () { return Promise.resolve(true); },
+      isConditionalMediationAvailable: function () { return Promise.resolve(false); },
+      getClientCapabilities: function () { return Promise.resolve({ conditionalCreate: false, conditionalGet: false, hybridTransport: false, passkeyPlatformAuthenticator: true, userVerifyingPlatformAuthenticator: true, relatedOrigins: true, signalAllAcceptedCredentials: false, signalCurrentUserDetails: false, signalUnknownCredential: false, extensions: ['credProps'] }); },
+      parseCreationOptionsFromJSON: pc, parseRequestOptionsFromJSON: pc,
+      signalUnknownCredential: function () { return Promise.resolve(); }, signalAllAcceptedCredentials: function () { return Promise.resolve(); }, signalCurrentUserDetails: function () { return Promise.resolve(); }
+    };
+    Object.keys(ST).forEach(function (k) { try { Object.defineProperty(PKC, k, { value: ST[k], configurable: true, writable: true }); } catch (e) {} });
+    function own(o, k, v) { try { Object.defineProperty(o, k, { value: v, enumerable: true, configurable: true }); } catch (e) { o[k] = v; } }
+    function cred(r, resp, proto, ext) {
+      var c = Object.create(PKC.prototype || Object.prototype), rs = Object.create((proto && proto.prototype) || Object.prototype);
+      Object.keys(resp).forEach(function (k) { own(rs, k, resp[k]); });
+      own(c, 'id', b64u(ab(r.credId))); own(c, 'rawId', ab(r.credId)); own(c, 'type', 'public-key'); own(c, 'authenticatorAttachment', 'platform'); own(c, 'response', rs);
+      own(c, 'getClientExtensionResults', function () { return ext || {}; });
+      own(c, 'toJSON', function () {
+        var o = {}; Object.keys(resp).forEach(function (k) { if (resp[k] instanceof ArrayBuffer) o[k] = b64u(resp[k]); });
+        if (resp.getPublicKey) { o.publicKey = b64u(resp.getPublicKey()); o.publicKeyAlgorithm = -7; o.transports = ['internal', 'hybrid']; o.authenticatorData = b64u(resp.getAuthenticatorData()); }
+        return { id: c.id, rawId: c.id, type: 'public-key', authenticatorAttachment: 'platform', response: o, clientExtensionResults: ext || {} };
+      });
+      return c;
+    }
+    function fail(e) { var m = String((e && e.message) || ''); if (e && e.code === 4001 || /reject|cancel|denied/i.test(m)) return dx('NotAllowedError', 'The operation either timed out or was not allowed.'); return dx('NotAllowedError', m || 'Kwallet could not use the passkey'); }
+    var C = navigator.credentials, oc = C && C.create ? C.create.bind(C) : null, og = C && C.get ? C.get.bind(C) : null;
+    var mine = {
+      create: function (o) {
+        if (!o || !o.publicKey) return oc ? oc(o) : Promise.reject(dx('NotSupportedError', 'Not supported'));
+        var k = o.publicKey;
+        if (Array.isArray(k.pubKeyCredParams) && k.pubKeyCredParams.length && !k.pubKeyCredParams.some(function (p) { return p && p.alg === -7; })) return Promise.reject(dx('NotSupportedError', 'Kwallet makes ES256 passkeys only'));
+        var q = { op: 'create', rpId: String((k.rp && k.rp.id) || location.hostname), challenge: hx(k.challenge), userId: hx(k.user && k.user.id).slice(0, 128), name: String((k.user && (k.user.displayName || k.user.name)) || '').slice(0, 64), exclude: (k.excludeCredentials || []).map(function (c) { return hx(c.id); }).slice(0, 50) };
+        var ext = k.extensions && k.extensions.credProps ? { credProps: { rk: true } } : {};
+        return guard(o.signal, call('icp', 'icp_passkey', q).then(function (r) {
+          return cred(r, { clientDataJSON: ab(r.clientData), attestationObject: ab(r.attObj), authenticatorData: ab(r.authData), signature: ab(r.sig),
+            getAuthenticatorData: function () { return ab(r.authData); }, getPublicKey: function () { return ab(r.spki); }, getPublicKeyAlgorithm: function () { return -7; }, getTransports: function () { return ['internal', 'hybrid']; } }, window.AuthenticatorAttestationResponse, ext);
+        }, function (e) { throw fail(e); }));
+      },
+      get: function (o) {
+        if (!o || !o.publicKey) return og ? og(o) : Promise.reject(dx('NotSupportedError', 'Not supported'));
+        /* autofill (conditional) sign-in is not offered: it waits until II cancels it */
+        if (o.mediation === 'conditional') return guard(o.signal, new Promise(function () {}));
+        var k = o.publicKey;
+        var q = { op: 'get', rpId: String(k.rpId || location.hostname), challenge: hx(k.challenge), allow: (k.allowCredentials || []).map(function (c) { return hx(c.id); }).slice(0, 50) };
+        return guard(o.signal, call('icp', 'icp_passkey', q).then(function (r) {
+          return cred(r, { clientDataJSON: ab(r.clientData), authenticatorData: ab(r.authData), signature: ab(r.sig), userHandle: r.userHandle ? ab(r.userHandle) : null }, window.AuthenticatorAssertionResponse, {});
+        }, function (e) { throw fail(e); }));
+      }
+    };
+    try {
+      if (C) { Object.defineProperty(C, 'create', { value: mine.create, configurable: true, writable: true }); Object.defineProperty(C, 'get', { value: mine.get, configurable: true, writable: true }); }
+      else Object.defineProperty(navigator, 'credentials', { value: { create: mine.create, get: mine.get, store: function () { return Promise.resolve(); }, preventSilentAccess: function () { return Promise.resolve(); } }, configurable: true });
     } catch (e) {}
   })();
 
@@ -7463,7 +7501,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.9';
+var APP_VERSION = '1.9.10';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -18665,6 +18703,19 @@ window.hwCrashPrompt = crashPrompt;
       return go(d);
     }, function (e) { if (e && e.code) throw e; throw dErr(4100, 'Could not check ' + d); });
   }
+  /* v1.9.10 (F6b): II's own page asks for a passkey; Kwallet makes or uses it (only for II's origins, checked again in Kwallet) */
+  function iiPasskey(site, p) {
+    var me = String(site.origin || ('https://' + site.host)), h = (/^https:\/\/([a-z0-9.-]+)$/.exec(me) || [])[1] || '';
+    if (!/^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai|www\.id\.ai|beta\.id\.ai)$/.test(h)) return Promise.reject(dErr(4100, 'Only Internet Identity can ask Kwallet for a passkey'));
+    var hx = function (x, n) { x = String(x || '').toLowerCase(); return /^[0-9a-f]*$/.test(x) && x.length % 2 === 0 && x.length <= n ? x : null; };
+    var op = p.op === 'create' ? 'create' : p.op === 'get' ? 'get' : '', ch = hx(p.challenge, 2048), rp = String(p.rpId || h).toLowerCase();
+    if (!op || !ch || ch.length < 32 || !/^[a-z0-9.-]{1,253}$/.test(rp)) return Promise.reject(dErr(-32602, 'Bad passkey request'));
+    var ids = function (a) { return (Array.isArray(a) ? a : []).map(function (x) { return hx(x, 2048); }).filter(Boolean).slice(0, 50); };
+    var q = { op: op, origin: me, rpId: rp, challenge: ch };
+    if (op === 'create') { q.userId = hx(p.userId, 128) || ''; q.name = String(p.name || '').slice(0, 64); q.exclude = ids(p.exclude); }
+    else q.allow = ids(p.allow);
+    return p17K(site, 'icp', 'icp_passkey', q);
+  }
   function icpRun(o, site, m, p) {
     if (m === 'icp_balance') return Promise.resolve(assets('icp').map(function (r) { return { symbol: r.s, decimals: r.d, amount: r.raw != null ? toNum(r.raw, r.d) : 0, canisterId: r.key === 'native' ? ICP_LEDGER : r.key, name: r.n }; }));
     if (m === 'icp_signMessage') return p17K(site, 'icp', 'icp_signMessage', { message: String(p.message || '') });
@@ -18719,6 +18770,7 @@ window.hwCrashPrompt = crashPrompt;
       if (m === 'icp_connect') return brConnect(o, site, 'icp').then(function (a) { return { principal: a, accountId: icpAcct() || null, publicKey: jget('hw-icppk:' + a, '') || null }; });
       if (m === 'icp_disconnect') { brRevoke(o, 'icp'); return Promise.resolve(null); }
       if (m === 'icp_iiLogin') return iiLogin(site, p);   /* v1.9.7 (F6) */
+      if (m === 'icp_passkey') return iiPasskey(site, p);   /* v1.9.10 (F6b) */
       if (!brIs(o, 'icp') || !addr) return Promise.reject(dErr(4100, 'Connect to this site first'));
       return icpRun(o, site, m, p);
     }

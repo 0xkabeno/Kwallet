@@ -385,6 +385,7 @@ class HwBrowser(
             prio(w, true)
             if (t.reloadOnShow) { t.reloadOnShow = false; reloadUa(t, w) }
             t.shown = System.currentTimeMillis(); visible = id
+            pops.values.forEach { p -> if (p.shown && p.parent == id) popPlace(p) else p.box.visibility = View.GONE }   // v1.9.10
         }
     }
 
@@ -402,6 +403,7 @@ class HwBrowser(
             // v1.7 (P1): out of the way first (a sheet in Hwallet is waiting to be seen), then save; the switcher's thumbnail
             // comes from snap(), so the slow software draw of a thumbnail no longer delays the hide
             pullOff()
+            pops.values.forEach { it.box.visibility = View.GONE }   // v1.9.10
             tabs.values.forEach { t -> t.cover?.visibility = View.GONE; t.web?.let { if (it.visibility == View.VISIBLE) { it.visibility = View.GONE; it.onPause(); prio(it, false); ui.post { save(t) } } } }
             visible = null
         }
@@ -415,6 +417,7 @@ class HwBrowser(
     /** v1.7 (P1): Android Back while a page is on screen goes back in that page first (UI thread, from HwActivity) */
     fun back(): Boolean {
         if (afp?.isOpen == true) { afDrop(null); return true }   // v1.8.35 (B13): Back closes the autofill dropdown first
+        pops.values.lastOrNull { it.shown && it.parent == visible && it.box.visibility == View.VISIBLE }?.let { p -> if (p.w.canGoBack()) p.w.goBack() else popClose(p); return true }   // v1.9.10
         val t = tabs[visible ?: return false] ?: return false
         val w = t.web ?: return false
         // v1.8.7: dApps navigate with history.pushState (no page load), so ask the WebView itself every time
@@ -446,6 +449,7 @@ class HwBrowser(
         post {
             afDrop(id)   // v1.8.35 (B13)
             val gone = tabs.remove(id)
+            pops.values.filter { it.parent == id }.forEach { popClose(it) }   // v1.9.10
             gone?.let { t -> uncover(t); t.web?.let { w -> root.removeView(w); w.stopLoading(); try { if (t.inc && !incProfiles) w.clearCache(true) } catch (_: Throwable) {}; w.destroy() } }
             if (visible == id) visible = null
             incIds.remove(id)
@@ -520,7 +524,7 @@ class HwBrowser(
     /** the answer to one request goes back only to the frame that asked, and only if it still shows the same origin */
     fun reply(id: String, json: String) {
         post {
-            val t = tabs[id] ?: return@post
+            val t = tabs[id] ?: pops[id]?.t ?: return@post
             val rid = try { JSONObject(json).optString("id") } catch (_: Throwable) { "" }
             val p = t.pending.remove(rid) ?: return@post
             val w = t.web ?: return@post
@@ -545,7 +549,7 @@ class HwBrowser(
     fun pause() { post { tabs.values.forEach { t -> t.web?.let { save(t); it.onPause() } } ; CookieManager.getInstance().flush() } }
     fun resume() { post { visible?.let { tabs[it]?.web?.onResume() } } }
     /** called on the UI thread from HwActivity.onDestroy */
-    fun destroy() { try { afp?.closeQuiet(); afp = null } catch (_: Throwable) {}; try { ui.removeCallbacksAndMessages(null); tabs.values.forEach { t -> uncover(t); t.web?.let { save(t); root.removeView(it); it.destroy() } }; tabs.clear() } catch (_: Throwable) {} }
+    fun destroy() { try { pops.values.toList().forEach { popClose(it) } } catch (_: Throwable) {}; try { afp?.closeQuiet(); afp = null } catch (_: Throwable) {}; try { ui.removeCallbacksAndMessages(null); tabs.values.forEach { t -> uncover(t); t.web?.let { save(t); root.removeView(it); it.destroy() } }; tabs.clear() } catch (_: Throwable) {} }
 
     // ---------------------------------------------------------------- internals
 
@@ -579,6 +583,35 @@ class HwBrowser(
             .put("back", w.canGoBack()).put("fwd", w.canGoForward()).put("loading", loading).put("progress", progress).put("offline", t.offline)
             .put("desk", t.desk)
             .put("blk", try { HwShield.count(Uri.parse(t.url).host?.lowercase() ?: "") } catch (_: Throwable) { 0 }).put("shield", HwShield.on() && !(try { HwShield.siteOff(Uri.parse(t.url).host?.lowercase() ?: "") } catch (_: Throwable) { false })))
+    }
+
+    /** the wallet bridge (hwBridge) and the provider scripts for one WebView: a tab, or a sign-in window (v1.9.10) */
+    @SuppressLint("RequiresFeature")
+    private fun bridge(t: Tab, w: WebView, withAf: Boolean) {
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) try {
+            WebViewCompat.addWebMessageListener(w, "hwBridge", ORIGINS) { _, msg: WebMessageCompat, origin: Uri, isMain: Boolean, proxy: JavaScriptReplyProxy ->
+                val data = msg.data ?: return@addWebMessageListener
+                if (data.length > 1_000_000) return@addWebMessageListener
+                val rid = try { JSONObject(data).optString("id") } catch (_: Throwable) { "" }
+                if (rid.isEmpty() || rid.length > 64) return@addWebMessageListener
+                val o = originOf(origin.toString())
+                /* v1.8.13: nothing typed in an incognito tab is ever offered for saving */
+                if (t.inc && (try { JSONObject(data).optString("ns") } catch (_: Throwable) { "" }) == "hwaf") return@addWebMessageListener
+                if (!isMain || !o.startsWith("https://")) {
+                    try { proxy.postMessage(JSONObject().put("id", rid).put("error", JSONObject().put("code", 4100).put("message", "Only the page itself can use the wallet")).toString()) } catch (_: Throwable) {}
+                    return@addWebMessageListener
+                }
+                t.lastProxy = proxy; t.lastOrigin = o
+                if (t.pending.size > 200) t.pending.clear()
+                t.pending[rid] = Pair(proxy, o)
+                js("window.hwBrReq&&hwBrReq(${q(t.id)},${q(o)},${q(data)})")
+            }
+            val s = script
+            if (s != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(w, s, ORIGINS)
+            /* v1.8.13: saved inputs (offer to save / fill), never in incognito tabs */
+            val af = afScript
+            if (af != null && withAf && !t.inc && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(w, af, ORIGINS)
+        } catch (e: Throwable) { Log.e(TAG, "wallet provider injection failed; the page loads without it", e) }
     }
 
     @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility", "RequiresFeature")
@@ -622,30 +655,7 @@ class HwBrowser(
         // returned and the tab never attached or loaded (stuck at 8% on every phone). The rule is now "*" (every origin)
         // and https-only is enforced here (origin check below) and in hw_provider.js (location.protocol). A failure to
         // inject is logged and never stops the page from loading.
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) try {
-            WebViewCompat.addWebMessageListener(w, "hwBridge", ORIGINS) { _, msg: WebMessageCompat, origin: Uri, isMain: Boolean, proxy: JavaScriptReplyProxy ->
-                val data = msg.data ?: return@addWebMessageListener
-                if (data.length > 1_000_000) return@addWebMessageListener
-                val rid = try { JSONObject(data).optString("id") } catch (_: Throwable) { "" }
-                if (rid.isEmpty() || rid.length > 64) return@addWebMessageListener
-                val o = originOf(origin.toString())
-                /* v1.8.13: nothing typed in an incognito tab is ever offered for saving */
-                if (t.inc && (try { JSONObject(data).optString("ns") } catch (_: Throwable) { "" }) == "hwaf") return@addWebMessageListener
-                if (!isMain || !o.startsWith("https://")) {
-                    try { proxy.postMessage(JSONObject().put("id", rid).put("error", JSONObject().put("code", 4100).put("message", "Only the page itself can use the wallet")).toString()) } catch (_: Throwable) {}
-                    return@addWebMessageListener
-                }
-                t.lastProxy = proxy; t.lastOrigin = o
-                if (t.pending.size > 200) t.pending.clear()
-                t.pending[rid] = Pair(proxy, o)
-                js("window.hwBrReq&&hwBrReq(${q(t.id)},${q(o)},${q(data)})")
-            }
-            val s = script
-            if (s != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(w, s, ORIGINS)
-            /* v1.8.13: saved inputs (offer to save / fill), never in incognito tabs */
-            val af = afScript
-            if (af != null && !t.inc && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) WebViewCompat.addDocumentStartJavaScript(w, af, ORIGINS)
-        } catch (e: Throwable) { Log.e(TAG, "wallet provider injection failed; the page loads without it", e) }
+        bridge(t, w, true)
         uaScript(t, w)
         w.setOnTouchListener { _, e -> if (!t.touched) live(t, w); pullTouch(t, w, e) }
         w.setOnScrollChangeListener { _, _, y, _, _ -> t.scroll = y; scrollEv(t) }
@@ -707,6 +717,9 @@ class HwBrowser(
             /** target=_blank / window.open after a tap: a new Hwallet tab (never a popup window) */
             override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
                 if (!isUserGesture) return false
+                /* v1.9.10 (F6b): every window starts as a real one (window.opener works); its first address decides: Internet
+                   Identity stays as a sign-in window over the tab, anything else becomes a new tab as before */
+                try { makePop(t, t.id, false, resultMsg); return true } catch (e: Throwable) { Log.w(TAG, "sign-in window", e) }
                 val tmp = WebView(act)
                 tmp.webViewClient = object : WebViewClient() {
                     @android.annotation.TargetApi(26)
@@ -728,6 +741,115 @@ class HwBrowser(
             }
         }
         return w
+    }
+
+    // ---------------------------------------------------------------- v1.9.10 (F6b): sign-in windows
+    // window.open / target=_blank after a tap gets a real WebView window (the page keeps window.opener and can talk to it).
+    // Its first address decides: Internet Identity stays open as a sign-in window over its tab (II's passkey prompts are
+    // answered by Kwallet through the same wallet bridge); anything else becomes a new Hwallet tab and the window is dropped,
+    // as before. A window that never loads anything is dropped after a minute. Windows a sign-in window opens itself (an
+    // identity provider's login) stay as sign-in windows.
+    private class Pop(val t: Tab, val parent: String, val box: FrameLayout, val w: WebView, val head: android.widget.TextView, val always: Boolean) { var shown = false; var decided = false }
+    private val pops = LinkedHashMap<String, Pop>()
+    private var popN = 0
+    private val iiRe = Regex("^(identity\\.ic0\\.app|identity\\.internetcomputer\\.org|id\\.ai|www\\.id\\.ai|beta\\.id\\.ai)$")
+    private fun iiHost(u: String?): Boolean = try { iiRe.matches(Uri.parse(u ?: "").host?.lowercase() ?: "") } catch (_: Throwable) { false }
+
+    @SuppressLint("SetJavaScriptEnabled", "RequiresFeature")
+    private fun makePop(parent: Tab, parentId: String, always: Boolean, resultMsg: Message) {
+        while (pops.size >= 4) popClose(pops.values.first())
+        val pt = Tab("p" + (++popN).toString(36)).apply { inc = parent.inc; desk = parent.desk }
+        val ctx = android.view.ContextThemeWrapper(act, darkTheme()); pt.ctx = ctx
+        val w = WebView(ctx)
+        if (pt.inc && incProfiles) try {
+            androidx.webkit.ProfileStore.getInstance().getOrCreateProfile(INC_PROFILE)
+            WebViewCompat.setProfile(w, INC_PROFILE)
+        } catch (e: Throwable) { Log.w(TAG, "incognito profile (window)", e) }
+        with(w.settings) {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            databaseEnabled = true
+            allowFileAccess = false
+            allowContentAccess = false
+            mediaPlaybackRequiresUserGesture = true
+            setSupportMultipleWindows(true)
+            javaScriptCanOpenWindowsAutomatically = false
+            useWideViewPort = true
+            loadWithOverviewMode = true
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            if (Build.VERSION.SDK_INT >= 26) safeBrowsingEnabled = true
+            if (baseUa == null) baseUa = userAgentString
+            userAgentString = HwUa.uaFor(pt.desk, baseUa ?: userAgentString)
+            if (pt.inc) saveFormData = false
+        }
+        applyDark(pt, w)
+        CookieManager.getInstance().setAcceptThirdPartyCookies(w, false)
+        bridge(pt, w, false)
+        uaScript(pt, w)
+        val d = act.resources.displayMetrics.density
+        val dark = darkOn()
+        val box = FrameLayout(act).apply { visibility = View.GONE; setBackgroundColor(if (dark) 0xFF101418.toInt() else 0xFFFFFFFF.toInt()); isClickable = true }
+        val head = android.widget.TextView(act).apply {
+            text = "\u2715   Sign-in window"; textSize = 14f; gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding((16 * d).toInt(), 0, (16 * d).toInt(), 0); maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
+            setTextColor(if (dark) 0xFFE6E8EC.toInt() else 0xFF1B2230.toInt()); setBackgroundColor(if (dark) 0xFF1A1F27.toInt() else 0xFFF1F3F6.toInt())
+        }
+        val bar = (44 * d).toInt()
+        box.addView(head, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, bar))
+        box.addView(w, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT).apply { topMargin = bar })
+        val p = Pop(pt, parentId, box, w, head, always)
+        head.setOnClickListener { popClose(p) }
+        pops[pt.id] = p
+        w.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest): Boolean {
+                val u = req.url; val sc = u.scheme?.lowercase() ?: return true
+                if (sc != "https" && sc != "http") { if (sc == "wc") onWc(u.toString()) else outside(u.toString(), sc); return true }
+                if (!p.decided && req.isForMainFrame) return !decide(p, u.toString())
+                return false
+            }
+            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
+                if (!p.decided && isWeb(url)) { if (!decide(p, url!!)) { view.stopLoading(); return } }
+                if (p.shown) popTitle(p, url)
+            }
+            override fun onPageFinished(view: WebView, url: String?) { if (p.shown) popTitle(p, url) }
+            @android.annotation.TargetApi(26)
+            override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean { popClose(p); return true }
+        }
+        w.webChromeClient = object : WebChromeClient() {
+            override fun onCloseWindow(window: WebView) { popClose(p) }
+            override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
+                if (!isUserGesture) return false
+                return try { makePop(pt, parentId, true, resultMsg); true } catch (e: Throwable) { false }
+            }
+            override fun onShowFileChooser(view: WebView, cb: android.webkit.ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean =
+                try { act.chooseFiles(cb, params) } catch (_: Throwable) { false }
+        }
+        (resultMsg.obj as WebView.WebViewTransport).webView = w
+        resultMsg.sendToTarget()
+        ui.postDelayed({ if (!p.decided && pops[pt.id] === p) popClose(p) }, 60_000)
+    }
+    /** the window's first address: true = it stays (Internet Identity, or opened by a sign-in window), false = a new tab */
+    private fun decide(p: Pop, u: String): Boolean {
+        p.decided = true
+        if (p.always || iiHost(u)) { p.shown = true; popTitle(p, u); popPlace(p); return true }
+        val wc = wcIn(u)
+        if (wc != null) onWc(wc) else if (isWeb(u)) ev(JSONObject().put("t", "new").put("url", u))
+        ui.post { popClose(p) }
+        return false
+    }
+    private fun popTitle(p: Pop, u: String?) { try { val h = Uri.parse(u ?: "").host ?: ""; p.head.text = "\u2715   " + (if (iiHost(u)) "Internet Identity \u00b7 " else "Sign-in \u00b7 ") + h } catch (_: Throwable) {} }
+    private fun popPlace(p: Pop) {
+        if (!p.shown) return
+        val lp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT).apply { topMargin = top; bottomMargin = bottom }
+        if (p.box.parent == null) root.addView(p.box, lp) else p.box.layoutParams = lp
+        if (visible == p.parent) { p.box.visibility = View.VISIBLE; p.box.bringToFront(); try { p.w.onResume() } catch (_: Throwable) {} }
+        else p.box.visibility = View.GONE
+    }
+    private fun popClose(p: Pop) {
+        if (pops[p.t.id] !== p) return
+        pops.remove(p.t.id)
+        try { root.removeView(p.box) } catch (_: Throwable) {}
+        try { p.box.removeAllViews(); p.w.stopLoading(); p.w.destroy() } catch (_: Throwable) {}
     }
 
     /** v1.8.16: the WalletConnect v2 pairing URI inside a link (itself, or its uri= parameter), else null */
