@@ -4300,6 +4300,48 @@ window.hwPlayOpening();
     createActor: function () { return Promise.reject(new Error('Hwallet does not hand out an agent. This app needs Plug\u2019s actor API, which Hwallet does not support yet')); }
   };
   if (!OFF.icp) { try { window.ic = window.ic || {}; if (!window.ic.plug) window.ic.plug = plug; } catch (e) {} }
+  /* v1.9.12: ICRC-94 (the ICP version of EIP-6963 / NEAR's "near-wallet-injected"): dApps built on IdentityKit or the DFINITY
+     signer libraries list Hwallet with its own name and icon. Messages are ICRC-25 JSON-RPC; accounts (ICRC-27) and canister
+     calls (ICRC-49) go to Kwallet's sheet exactly like Plug-style calls. */
+  if (!OFF.icp) (function () {
+    var STD = [['ICRC-25', 'https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-25/ICRC-25.md'], ['ICRC-27', 'https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-27/ICRC-27.md'], ['ICRC-29', 'https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-29/ICRC-29.md'], ['ICRC-49', 'https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-49/ICRC-49.md'], ['ICRC-94', 'https://github.com/dfinity/wg-identity-authentication/blob/main/topics/icrc_94_multi_injected_provider_discovery.md']];
+    var SC = ['icrc27_accounts', 'icrc49_call_canister'];
+    function b2h(b) { var s = atob(String(b || '')), h = ''; for (var i = 0; i < s.length; i++) h += ('0' + s.charCodeAt(i).toString(16)).slice(-2); return h; }
+    function h2b(h) { h = String(h || ''); var s = ''; for (var i = 0; i < h.length; i += 2) s += String.fromCharCode(parseInt(h.substr(i, 2), 16)); return btoa(s); }
+    function scopes(st) { return SC.map(function (m) { return { scope: { method: m }, state: st }; }); }
+    function conn() { return icpP ? Promise.resolve(icpP) : plug.requestConnect({}).then(function () { return icpP; }); }
+    function run(m, p) {
+      if (m === 'icrc25_supported_standards') return Promise.resolve({ supportedStandards: STD.map(function (x) { return { name: x[0], url: x[1] }; }) });
+      if (m === 'icrc29_status') return Promise.resolve('ready');
+      if (m === 'icrc25_permissions') return Promise.resolve({ scopes: scopes(icpP ? 'granted' : 'ask_on_use') });
+      if (m === 'icrc25_request_permissions') return conn().then(function () { return { scopes: scopes('granted') }; });
+      if (m === 'icrc27_accounts') return conn().then(function (a) { return { accounts: [{ owner: a }] }; });
+      if (m === 'icrc49_call_canister') {
+        p = p || {};
+        return conn().then(function (a) {
+          if (p.sender && String(p.sender) !== a) { var e = new Error('This account is not connected'); e.code = 3000; throw e; }
+          return call('icp', 'icp_call', { canisterId: String(p.canisterId || ''), method: String(p.method || ''), arg: b2h(p.arg), consent: '', icrc49: true });
+        }).then(function (r) {
+          if (!r || !r.contentMap || !r.certificate) { var e = new Error(r && r.pending ? 'The call is still processing' : 'The Internet Computer did not return a certificate'); e.code = 4000; throw e; }
+          return { contentMap: h2b(r.contentMap), certificate: h2b(r.certificate) };
+        });
+      }
+      var e = new Error('Hwallet does not support ' + m); e.code = 2000; return Promise.reject(e);
+    }
+    function sendMessage(msg) {
+      var id = msg && msg.id != null ? msg.id : null;
+      if (!msg || msg.jsonrpc !== '2.0' || typeof msg.method !== 'string') return Promise.resolve({ id: id, jsonrpc: '2.0', error: { code: 1000, message: 'Invalid request' } });
+      return run(msg.method, msg.params).then(function (r) { return { id: id, jsonrpc: '2.0', result: r }; }, function (e) {
+        var c = e && typeof e.code === 'number' ? e.code : 1000, mm = String((e && e.message) || 'Request failed');
+        if (c === 4001 || /reject|cancel|denied/i.test(mm)) c = 3001; else if (c === 4100) c = 3000; else if (c === 4200) c = 2000;
+        return { id: id, jsonrpc: '2.0', error: { code: c, message: mm.slice(0, 200) } };
+      });
+    }
+    var DET = Object.freeze({ uuid: 'c3b0f6f2-2f4e-4d8b-9a3e-6b1f0d9e7a41', name: NAME, icon: ICON, rdns: RDNS, sendMessage: sendMessage, dismiss: function () { return Promise.resolve(); } });
+    function ann() { try { window.dispatchEvent(new CustomEvent('icrc94:announceProvider', { detail: DET })); } catch (e) {} }
+    window.addEventListener('icrc94:requestProvider', ann);
+    ann();
+  })();
   /* v1.9.10 (F6b): a named window opened blank and then opened again with an address (the ICRC signer: @icp-sdk/auth v6 /
      OISY pre-open '<IdP>-signer-window') is navigated, so the page keeps the one window it holds */
   if (!OFF.icp) (function () {
@@ -7501,7 +7543,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.11';
+var APP_VERSION = '1.9.12';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8291,7 +8333,7 @@ var APP_VERSION = '1.9.11';
       var r = icpCbMap(adaCb(icpB64u8(d), { i: 0 })), st = r.status;
       if (st === 'non_replicated_rejection' || st === 'rejected') throw new Error(String(r.reject_message || 'Rejected by the Internet Computer').slice(0, 200));
       if (st !== 'replied' || !(r.certificate instanceof Uint8Array)) return { pending: true };
-      return { cert: icpCbMap(adaCb(r.certificate, { i: 0 })) };
+      return { cert: icpCbMap(adaCb(r.certificate, { i: 0 })), certRaw: r.certificate };
     }, function (e) { var b = e && e.body; if (b && /^data:/.test(b)) { try { var s = atob(String(b).replace(/^data:[^,]*,/, '')); e = new Error(s.replace(/[^\x20-\x7e]/g, ' ').trim().slice(0, 200) || e.message); } catch (x) {} } throw e; });
   }
   function icpReplyOf(res, reqIdHex) {
@@ -8300,6 +8342,106 @@ var APP_VERSION = '1.9.11';
     var st = icpLookup(tree, p.concat([icpHexStr('status')])), stS = st ? new TextDecoder().decode(st) : '';
     if (stS === 'rejected') { var rm = icpLookup(tree, p.concat([icpHexStr('reject_message')])); throw new Error(rm ? new TextDecoder().decode(rm).slice(0, 200) : 'Rejected by the canister'); }
     var rp = icpLookup(tree, p.concat([icpHexStr('reply')])); return rp || null;
+  }
+  /* ---- v1.9.12: Internet Identity restore (which of this seed's Kwallet passkeys II knows, and their names) ---- */
+  var II_CAN = 'rdmx6-jaaaa-aaaaa-aaadq-cai', II_BYTES = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 7, 1, 1]);
+  function iiU8(h) { h = String(h || ''); var o = new Uint8Array(h.length / 2); for (var i = 0; i < o.length; i++) o[i] = parseInt(h.substr(i * 2, 2), 16); return o; }
+  function iiCat(a) { var n = 0; a.forEach(function (x) { n += x.length; }); var o = new Uint8Array(n), p = 0; a.forEach(function (x) { o.set(x, p); p += x.length; }); return o; }
+  function iiLeb(n) { n = BigInt(n); var o = []; do { var b = Number(n & 127n); n >>= 7n; if (n) b |= 128; o.push(b); } while (n); return new Uint8Array(o); }
+  /* minimal CBOR writer (byte strings, text, unsigned ints, maps) for the anonymous query envelope */
+  function iiCbHd(mt, n) { n = BigInt(n); var m = mt << 5; if (n < 24n) return new Uint8Array([m | Number(n)]); if (n < 256n) return new Uint8Array([m | 24, Number(n)]); if (n < 65536n) return new Uint8Array([m | 25, Number(n >> 8n), Number(n & 255n)]); var k = n < 4294967296n ? 4 : 8, o = [m | (k === 4 ? 26 : 27)]; for (var i = k - 1; i >= 0; i--) o.push(Number((n >> BigInt(8 * i)) & 255n)); return new Uint8Array(o); }
+  function iiCbE(v) { if (v instanceof Uint8Array) return iiCat([iiCbHd(2, v.length), v]); if (typeof v === 'string') { var u = new TextEncoder().encode(v); return iiCat([iiCbHd(3, u.length), u]); } if (typeof v === 'bigint') return iiCbHd(0, v); var ks = Object.keys(v); return iiCat([iiCbHd(5, ks.length)].concat(ks.map(function (k) { return iiCat([iiCbE(k), iiCbE(v[k])]); }))); }
+  /* a generic Candid reader: values by field hash ({ _h: value }), opt -> null | value, variant -> { _v: hash, v: value } */
+  function idlRead(u) {
+    var o = { i: 0 };
+    function lebU() { var r = 0n, s = 0n, b; do { b = u[o.i++]; r |= BigInt(b & 127) << s; s += 7n; } while (b & 128); return r; }
+    function lebS() { var r = 0n, s = 0n, b; do { b = u[o.i++]; r |= BigInt(b & 127) << s; s += 7n; } while (b & 128); if (b & 64) r -= 1n << s; return r; }
+    if (String.fromCharCode(u[0], u[1], u[2], u[3]) !== 'DIDL') throw new Error('not candid'); o.i = 4;
+    var nt = Number(lebU()), T = [];
+    for (var i = 0; i < nt; i++) {
+      var op = Number(lebS()), e = { op: op };
+      if (op === -18 || op === -19) e.t = Number(lebS());
+      else if (op === -20 || op === -21) { var k = Number(lebU()); e.f = []; for (var j = 0; j < k; j++) e.f.push([Number(lebU()), Number(lebS())]); }
+      else if (op === -22) { var na = Number(lebU()); for (var a = 0; a < na; a++) lebS(); var nr = Number(lebU()); for (var b = 0; b < nr; b++) lebS(); var nn = Number(lebU()); o.i += nn; }
+      else if (op === -23) { var ms = Number(lebU()); for (var c = 0; c < ms; c++) { var ln = Number(lebU()); o.i += ln; lebS(); } }
+      else throw new Error('candid type ' + op);
+      T.push(e);
+    }
+    var nargs = Number(lebU()), at = []; for (var x = 0; x < nargs; x++) at.push(Number(lebS()));
+    function fixed(n) { var v = 0n; for (var q = n - 1; q >= 0; q--) v = (v << 8n) | BigInt(u[o.i + q]); o.i += n; return v; }
+    function val(t) {
+      if (t < 0) switch (t) {
+        case -1: return null; case -2: return !!u[o.i++]; case -3: return lebU(); case -4: return lebS();
+        case -5: return Number(fixed(1)); case -6: return Number(fixed(2)); case -7: return Number(fixed(4)); case -8: return fixed(8);
+        case -9: { var v9 = Number(fixed(1)); return v9 > 127 ? v9 - 256 : v9; } case -10: { var v10 = Number(fixed(2)); return v10 > 32767 ? v10 - 65536 : v10; }
+        case -11: { var v11 = Number(fixed(4)); return v11 | 0; } case -12: { var v12 = fixed(8); return v12 >= (1n << 63n) ? v12 - (1n << 64n) : v12; }
+        case -13: o.i += 4; return 0; case -14: o.i += 8; return 0;
+        case -15: { var tl = Number(lebU()), tx = new TextDecoder().decode(u.slice(o.i, o.i + tl)); o.i += tl; return tx; }
+        case -16: return null; case -17: throw new Error('empty');
+        case -24: { if (!u[o.i++]) throw new Error('opaque principal'); var pl = Number(lebU()), pb = u.slice(o.i, o.i + pl); o.i += pl; return pb; }
+        default: throw new Error('candid ' + t);
+      }
+      var e = T[t];
+      if (e.op === -18) return u[o.i++] ? val(e.t) : null;
+      if (e.op === -19) { var n = Number(lebU()); if (e.t === -5) { var bl = u.slice(o.i, o.i + n); o.i += n; return bl; } var arr = []; for (var y = 0; y < n; y++) arr.push(val(e.t)); return arr; }
+      if (e.op === -20) { var r = {}; e.f.forEach(function (f) { r['_' + f[0]] = val(f[1]); }); return r; }
+      if (e.op === -21) { var vi = Number(lebU()), vf = e.f[vi]; return { _v: vf[0], v: val(vf[1]) }; }
+      if (e.op === -22) { if (!u[o.i++]) throw new Error('opaque func'); val(-24); var ml = Number(lebU()); o.i += ml; return null; }
+      if (e.op === -23) { return val(-24); }
+      return val(e.op);
+    }
+    return at.map(val);
+  }
+  /* anonymous query (signs nothing) to a canister; resolves the Candid reply bytes */
+  function icpQuery(canText, canBytes, method, arg) {
+    var content = { request_type: 'query', sender: new Uint8Array([4]), ingress_expiry: (BigInt(Date.now()) + 180000n) * 1000000n, canister_id: canBytes, method_name: method, arg: arg };
+    var env = p17Hex(iiCat([new Uint8Array([0xd9, 0xd9, 0xf7]), iiCbE({ content: content })]));
+    return race(ICP_API, function (u) { return http(u + '/api/v2/canister/' + canText + '/query', { method: 'POST', body: env, ctype: 'application/cbor;hex', headers: { 'X-Hw-B64': '1' }, text: true, timeout: 9000 }); }).then(function (d) {
+      var r = icpCbMap(adaCb(icpB64u8(d), { i: 0 }));
+      if (r.status !== 'replied') throw new Error(String(r.reject_message || 'Query rejected').slice(0, 160));
+      var rp = icpCbMap(r.reply); if (!(rp.arg instanceof Uint8Array)) throw new Error('No reply'); return rp.arg;
+    });
+  }
+  /* II: lookup_device_key(credential_id : blob) -> (opt record { pubkey : blob; anchor_number : nat64 }) (public query) */
+  function iiLookup(credHex) {
+    var c = iiU8(credHex), arg = iiCat([new TextEncoder().encode('DIDL'), new Uint8Array([1, 0x6d, 0x7b, 1, 0]), iiLeb(c.length), c]);
+    return icpQuery(II_CAN, II_BYTES, 'lookup_device_key', arg).then(function (rp) { var v = idlRead(rp)[0]; return v ? String(v['_' + idlHash('anchor_number')]) : ''; });
+  }
+  /* identity_info(anchor) reply: variant { Ok : IdentityInfo; Err } -> the identity's name ('' when none) */
+  function iiNameOf(rp) {
+    var v = idlRead(rp)[0]; if (!v || v._v !== idlHash('Ok')) throw new Error('Internet Identity refused to show this identity');
+    var n = v.v && v.v['_' + idlHash('name')]; return typeof n === 'string' ? n : '';
+  }
+  function iiKey() { return 'hw-ii:' + (A.icp || ''); }
+  /* per seed: { ids: { rp: [credHex x20] }, reg: { 'rp|i': anchor }, names: { anchor: name } } */
+  function iiState() { var s = jget(iiKey(), null); return s && typeof s === 'object' ? { ids: s.ids || {}, reg: s.reg || {}, names: s.names || {} } : { ids: {}, reg: {}, names: {} }; }
+  function iiSave(s) { if (A.icp) jset(iiKey(), s); }
+  /* every passkey ID Kwallet gave us for this relying party, looked up on II (20 small public queries in parallel) */
+  function iiScan(rp) {
+    var S = iiState(), L = S.ids[rp] || []; if (!L.length) return Promise.resolve(S);
+    return Promise.all(L.map(function (h, i) { return iiLookup(h).then(function (a) { return { i: i, a: a, ok: true }; }, function () { return { i: i, ok: false }; }); })).then(function (R) {
+      var S2 = iiState(); R.forEach(function (x) { var k = rp + '|' + x.i; if (!x.ok) return; if (x.a) S2.reg[k] = x.a; else delete S2.reg[k]; });
+      iiSave(S2); return S2;
+    });
+  }
+  function iiKnown(S, rp) { return Object.keys(S.reg).filter(function (k) { return k.indexOf(rp + '|') === 0; }).map(function (k) { var a = S.reg[k]; return { i: +k.split('|')[1], a: a, n: S.names[a] || '' }; }); }
+  /* identities II has but whose names this phone never saw: one Kwallet approval reads them all (identity_info is private to the identity) */
+  function iiFetchNames(site, rp, S) {
+    var miss = iiKnown(S, rp).filter(function (x) { return !(x.a in S.names); }); if (!miss.length) return Promise.resolve(S);
+    return p17K(site, 'icp', 'icp_iiNames', { rpId: rp, nowMs: Date.now(), list: miss.map(function (x) { return { i: x.i, a: x.a }; }) }).then(function (r) {
+      var calls = (r && r.calls) || [];
+      return Promise.all(calls.map(function (c) {
+        return icpSubmit(II_CAN, c.envelope).then(function (x) { if (x.pending) return null; var rp2 = icpReplyOf(x, c.requestId); return rp2 ? { a: c.a, n: iiNameOf(rp2) } : null; }, function () { return null; });
+      })).then(function (L) { var S2 = iiState(); L.forEach(function (x) { if (x) S2.names[x.a] = x.n; }); iiSave(S2); return S2; });
+    }, function () { return S; });   /* declined: the chooser shows identity numbers instead */
+  }
+  function iiTake(rp, r) {   /* what Kwallet's passkey answer tells us (public IDs, names it knows) */
+    try {
+      var S = iiState(), ch = false;
+      if (r && r.ids && r.ids.rp === rp && Array.isArray(r.ids.ids) && r.ids.ids.every(function (h) { return /^[0-9a-f]{42}$/.test(h); })) { S.ids[rp] = r.ids.ids.slice(0, 20); ch = true; }
+      ((r && r.names) || []).forEach(function (x) { if (x && x.a && /^\d{1,20}$/.test(String(x.a)) && x.n && !(x.a in S.names)) { S.names[String(x.a)] = String(x.n).slice(0, 64); ch = true; } });
+      if (ch) iiSave(S);
+    } catch (e) {}
   }
   /* token prices from DefiLlama for Cardano native assets and NEAR tokens (cardano:<policy><name>, near:<contract>), every 5 minutes */
   var LLPX = {};
@@ -9367,6 +9509,7 @@ var APP_VERSION = '1.9.11';
     try { var spk = p.pks && String(p.pks.sui || ''); if (na.sui && /^[A-Za-z0-9+/]{43}=$/.test(spk)) jset('hw-suipk:' + na.sui, spk); } catch (e) {}
     /* v1.9.0: NEAR access key (nonce lookups) and the ICP public key + ledger account ID */
     try { var npk = p.pks && String(p.pks.near || ''); if (na.near && /^ed25519:[1-9A-HJ-NP-Za-km-z]{43,44}$/.test(npk)) jset('hw-nearpk:' + na.near, npk); } catch (e) {}
+    try { var iids = p.pks && p.pks.iiIds; if (na.icp && Array.isArray(iids) && iids.length <= 20 && iids.every(function (h) { return /^[0-9a-f]{42}$/.test(String(h)); })) { var ik = 'hw-ii:' + na.icp, is0 = jget(ik, null) || {}; is0.ids = is0.ids || {}; is0.ids['id.ai'] = iids.slice(); jset(ik, is0); } } catch (e) {}   /* v1.9.12 */
     try { var ipk = p.pks && String(p.pks.icp || ''), iac = p.pks && String(p.pks.icpAcct || ''); if (na.icp && /^04[0-9a-f]{128}$/.test(ipk)) jset('hw-icppk:' + na.icp, ipk); if (na.icp && /^[0-9a-f]{64}$/.test(iac)) jset('hw-icpacct:' + na.icp, iac); } catch (e) {}
     return na;
   }
@@ -18714,14 +18857,40 @@ window.hwCrashPrompt = crashPrompt;
     var q = { op: op, origin: me, rpId: rp, challenge: ch };
     if (op === 'create') { q.userId = hx(p.userId, 128) || ''; q.name = String(p.name || '').slice(0, 64); q.exclude = ids(p.exclude); }
     else q.allow = ids(p.allow);
-    return p17K(site, 'icp', 'icp_passkey', q).catch(function (e) { try { toast('Passkey: ' + String((e && e.message) || e).slice(0, 120)); } catch (x) {} throw e; });
+    /* v1.9.12: before Kwallet's sheet opens, ask II which of this seed's passkeys it knows (a fresh phone with the same seed sees
+       every identity), read missing names once with Kwallet's approval, and tell Kwallet: the chooser lists them and a new
+       identity skips their numbers. II unreachable: Kwallet works from what this phone knows, as before. */
+    var rpK = /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai)$/.test(rp) ? rp : 'id.ai';
+    var scan = Promise.race([iiScan(rpK).catch(function () { return null; }), new Promise(function (res) { setTimeout(function () { res(null); }, 10000); })]);
+    return scan.then(function (S) { S = S || iiState(); return op === 'get' ? iiFetchNames(site, rpK, S) : S; }).then(function (S) {
+      S = S || iiState(); var kn = iiKnown(S, rpK);
+      if (kn.length) { q.known = kn.slice(0, 50); q.taken = kn.map(function (x) { return x.i; }); }
+      return p17K(site, 'icp', 'icp_passkey', q);
+    }).then(function (r) {
+      iiTake(rpK, r);
+      /* a new identity: once II has registered it, remember its number and the name it was made with */
+      if (op === 'create' && r && r.credId) {
+        var nm = q.name, ix = +r.idx, tries = 0;
+        (function poll() { setTimeout(function () { iiLookup(r.credId).then(function (a) {
+          if (a) { var S2 = iiState(); if (ix >= 0) S2.reg[rpK + '|' + ix] = a; if (nm && !(a in S2.names)) S2.names[a] = nm; iiSave(S2); }
+          else if (++tries < 8) poll();
+        }, function () { if (++tries < 8) poll(); }); }, 15000); })();
+      }
+      return r;
+    }).catch(function (e) { try { toast('Passkey: ' + String((e && e.message) || e).slice(0, 120)); } catch (x) {} throw e; });
   }
   function icpRun(o, site, m, p) {
     if (m === 'icp_balance') return Promise.resolve(assets('icp').map(function (r) { return { symbol: r.s, decimals: r.d, amount: r.raw != null ? toNum(r.raw, r.d) : 0, canisterId: r.key === 'native' ? ICP_LEDGER : r.key, name: r.n }; }));
     if (m === 'icp_signMessage') return p17K(site, 'icp', 'icp_signMessage', { message: String(p.message || '') });
     if (m === 'icp_call') {
-      return p17K(site, 'icp', 'icp_call', { canisterId: p.canisterId, method: p.method, arg: String(p.arg || '').toLowerCase(), consent: String(p.consent || '').slice(0, 2000) }, { icp: { nowMs: Date.now() } }).then(function (r) {
-        return icpSubmit(p.canisterId, r.envelope).then(function (x) { if (x.pending) return { pending: true, requestId: r.requestId }; var rp = icpReplyOf(x, r.requestId); return { reply: rp ? p17Hex(rp) : null, requestId: r.requestId }; });
+      return p17K(site, 'icp', 'icp_call', { canisterId: p.canisterId, method: p.method, arg: String(p.arg || '').toLowerCase(), consent: String(p.consent || '').slice(0, 2000) }, { icp: { nowMs: Date.now() } }).then(function (r) {   /* r.content: v3.99.12 Kwallet */
+        return icpSubmit(p.canisterId, r.envelope).then(function (x) {
+          if (x.pending) return { pending: true, requestId: r.requestId };
+          var rp = icpReplyOf(x, r.requestId), o = { reply: rp ? p17Hex(rp) : null, requestId: r.requestId };
+          /* v1.9.12: ICRC-49 answers with the signed content and the IC certificate, so the app verifies the reply itself */
+          if (p.icrc49 && r.content && x.certRaw) { o.contentMap = r.content; o.certificate = p17Hex(x.certRaw); }
+          return o;
+        });
       });
     }
     if (m === 'icp_transfer') {

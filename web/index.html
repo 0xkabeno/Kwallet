@@ -12789,7 +12789,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.11';
+const APP_VERSION = '3.99.12';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -21670,7 +21670,21 @@ window.__KWLOGO={"near":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3d
     var rid = icpReqId(content), dig = sha256(cat([10], TE8.encode('ic-request'), rid)), sg = sk.sign('0x' + hex(dig)), sig = cat(unhex(sg.r.slice(2)), unhex(sg.s.slice(2)));
     var der = cat(unhex('3056301006072a8648ce3d020106052b8104000a034200'), pu);
     var env = cat([0xd9, 0xd9, 0xf7], cbE({ content: content, sender_pubkey: der, sender_sig: sig }));
-    return { raw: hex(env), hash: hex(rid) };
+    return { raw: hex(env), hash: hex(rid), content: hex(cbE(content)) };
+  }
+  /* v3.99.12: one update call signed by a Kwallet passkey (WebAuthn sender, IC interface spec): sender_pubkey = DER of the COSE
+     key under OID 1.3.6.1.4.1.56387.1.1, sender = self-authenticating principal of it, sender_sig = CBOR { authenticator_data,
+     client_data_json, signature } whose WebAuthn challenge is "\x0Aic-request" + request ID. o.signFn(msg) -> { authData, clientData, sig } (hex) */
+  function icpPkCall(o) {
+    var F = root.FastCore.icp, der = cat(unhex('305e300c060a2b0601040183b8430101034e00'), unhex(o.cose));
+    need(der.length === 96, 'Bad passkey key');
+    var sender = cat(F.sha224(der), [2]), exp = (BI(Math.floor(o.nowMs)) + 240000n) * 1000000n;
+    var content = { request_type: 'call', sender: sender, ingress_expiry: exp, canister_id: icpPrinBytes(o.canister), method_name: o.method, arg: o.arg, nonce: crypto.getRandomValues(new Uint8Array(8)) };
+    var rid = icpReqId(content), w = o.signFn(cat([10], TE8.encode('ic-request'), rid));
+    need(w && w.sig && w.authData && w.clientData, 'The passkey did not sign');
+    var ss = cat([0xd9, 0xd9, 0xf7], cbE({ authenticator_data: unhex(w.authData), client_data_json: new TextDecoder().decode(unhex(w.clientData)), signature: unhex(w.sig) }));
+    var env = cat([0xd9, 0xd9, 0xf7], cbE({ content: content, sender_pubkey: der, sender_sig: ss }));
+    return { raw: hex(env), hash: hex(rid), sender: F.text(sender) };
   }
   var ICP_LEDGER = 'ryjl3-tyaaa-aaaaa-aaaba-cai';
   function icpPlan(req) { var d = req.icp || {}; return { fee: U(d.fee) != null ? U(d.fee) : 10000n }; }
@@ -21731,7 +21745,7 @@ window.__KWLOGO={"near":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3d
   }
 
   root.KwChains = {
-    sol: { build: solBuild }, trx: { build: trxBuild }, btc: { build: btcBuild, plan: btcPlan }, sui: { build: suiBuild }, xrp: { build: xrpBuild, tok: xrpTok }, ada: { build: adaBuild, plan: adaPlan, tok: adaTok }, near: { build: nearBuild, plan: nearPlan, sign: nearSign, acct: nearAcct }, icp: { build: icpBuild, call: icpCall, addr: icpAddr, prin: icpPrinBytes, icrc1Arg: icrc1Arg }, preview: preview,
+    sol: { build: solBuild }, trx: { build: trxBuild }, btc: { build: btcBuild, plan: btcPlan }, sui: { build: suiBuild }, xrp: { build: xrpBuild, tok: xrpTok }, ada: { build: adaBuild, plan: adaPlan, tok: adaTok }, near: { build: nearBuild, plan: nearPlan, sign: nearSign, acct: nearAcct }, icp: { build: icpBuild, call: icpCall, pkCall: icpPkCall, addr: icpAddr, prin: icpPrinBytes, icrc1Arg: icrc1Arg }, preview: preview,
     util: { hex: hex, unhex: unhex, b58enc: b58enc, b58dec: b58dec, blake2b: blake2b, edSign: edSign, edPub: edPub, edSignX: edSignX, adaPub: function (kl) { return penc(pmul(md(leBig(kl), L), BASE)); }, bech32Dec: bech32Dec, btcScript: btcScript, trxAddr: trxAddr, xrpAcct: xrpAcct, adaAddr: adaAddr, solAddr: solAddr, suiId: suiId }
   };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -22537,7 +22551,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   function writePub(all) {
     try {
-      localStorage.setItem(PUB, JSON.stringify(all.map(function (r) { return { id: r.id, label: r.label, index: r.index, addrs: r.addrs, seedType: r.seedType, created: r.created, xmrView: r.xmrView || '', xmrPrimary: r.xmrPrimary || '', xmrHeight: r.xmrHeight | 0 , suiPk: r.suiPk || '', btcPk: r.btcPk || '', nearPk: r.nearPk || '', icpPk: r.icpPk || '', icpAcct: r.icpAcct || '', sid: r.sid || ''}; })));
+      localStorage.setItem(PUB, JSON.stringify(all.map(function (r) { return { id: r.id, label: r.label, index: r.index, addrs: r.addrs, seedType: r.seedType, created: r.created, xmrView: r.xmrView || '', xmrPrimary: r.xmrPrimary || '', xmrHeight: r.xmrHeight | 0 , suiPk: r.suiPk || '', btcPk: r.btcPk || '', nearPk: r.nearPk || '', icpPk: r.icpPk || '', icpAcct: r.icpAcct || '', iiIds: Array.isArray(r.iiIds) ? r.iiIds : undefined, sid: r.sid || ''}; })));
       localStorage.setItem(PUBV, String(PUBVER));
     } catch (e) {}
   }
@@ -22564,7 +22578,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     for (var i = 0; i < NETS.length; i++) {
       var net = NETS[i]; if (net === 'xmr' || rec.addrs[net]) continue;
       try {
-        var dd = FastCore.derive(FastCore.makeCtx({ net: net, pathTpl: DEFAULT_PATH[net], seedHex: seed, adaEnt: net === 'ada' ? ethers.Mnemonic.fromPhrase(String(m).trim().toLowerCase().split(/\s+/).join(' ')).entropy : null, pass: p, seedType: 'bip39' }), idx, false);
+        var dd = FastCore.derive(FastCore.makeCtx({ net: net, pathTpl: DEFAULT_PATH[net], seedHex: seed, adaEnt: net === 'ada' ? ethers.Mnemonic.fromPhrase(String(m).trim().toLowerCase().split(/\s+/).join(' ')).entropy : null, pass: p, seedType: 'bip39' }), idx, net === 'icp');
+        if (net === 'icp' && dd && dd.privateKey) { try { rec.iiIds = window.KwPasskey ? KwPasskey.ids(dd.privateKey, 'id.ai', 20) : undefined; } catch (e) {} dd.privateKey = null; dd.pem = null; }
         if (!dd || !dd.address) continue; rec.addrs[net] = dd.address; ok = true;
         if (net === 'sui' && dd.pub) rec.suiPk = dd.pub; if (net === 'btc' && dd.pub) rec.btcPk = dd.pub;
         if (net === 'near' && dd.pub) rec.nearPk = dd.pub; if (net === 'icp' && dd.pub) { rec.icpPk = dd.pub; rec.icpAcct = dd.acct; }
@@ -22573,7 +22588,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     seed = null; return ok;
   }
   function netsSave(r) { try {
-    var keys = ['addrs', 'suiPk', 'btcPk', 'nearPk', 'icpPk', 'icpAcct'];
+    var keys = ['addrs', 'suiPk', 'btcPk', 'nearPk', 'icpPk', 'icpAcct', 'iiIds'];
     var pl = jget(PUB, []); pl.forEach(function (x) { if (x.id === r.id) keys.forEach(function (k) { if (r[k] != null) x[k] = r[k]; }); }); localStorage.setItem(PUB, JSON.stringify(pl));
   } catch (e) {} }
   function xmrMissing(r) { return !!(r && r.addrs && r.addrs.xmr && !(/^[0-9a-f]{64}$/.test(r.xmrView || '') && r.xmrPrimary)); }
@@ -22753,7 +22768,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           try { if (st === 'poly' && typeof polyDecodePhrase === 'function' && typeof POLY !== 'undefined') { var pd = await polyDecodePhrase(m); var bts = POLY.EPOCH + (pd.birthday | 0) * POLY.TIME_STEP; rec.xmrHeight = Math.max(0, xmrHeightAt(bts * 1000) - 21600); } } catch (e) {}
         } else {
           var ctx = FastCore.makeCtx({ net: net, pathTpl: DEFAULT_PATH[net], seedHex: getBip39SeedHex(m, p), adaEnt: net === 'ada' ? ethers.Mnemonic.fromPhrase(String(m).trim().toLowerCase().split(/\s+/).join(' ')).entropy : null, pass: p, seedType: st });
-          var dd = FastCore.derive(ctx, index, false); rec.addrs[net] = dd.address;
+          var dd = FastCore.derive(ctx, index, net === 'icp'); rec.addrs[net] = dd.address;
+          if (net === 'icp' && dd.privateKey) { try { rec.iiIds = window.KwPasskey ? KwPasskey.ids(dd.privateKey, 'id.ai', 20) : undefined; } catch (e) {} dd.privateKey = null; dd.pem = null; }   /* v3.99.12: public passkey IDs for Hwallet's II restore */
           if (net === 'sui' && dd.pub) rec.suiPk = dd.pub;
           if (net === 'near' && dd.pub) rec.nearPk = dd.pub;   /* v3.99.0: NEAR access key (ed25519:...) and ICP public key (hex) */
           if (net === 'icp' && dd.pub) { rec.icpPk = dd.pub; rec.icpAcct = dd.acct; }
@@ -22777,7 +22793,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   function publicExport(r) {
     /* v3.98: + the primary address (a subaddress pairing still scans the whole wallet) and the restore height when known */
-    return { v: 1, src: 'kwallet', kid: kwKid() || undefined, sid: /^\d{10}$/.test(r.sid || '') ? r.sid : undefined, label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null, pks: r.suiPk || r.btcPk || r.nearPk || r.icpPk ? { sui: r.suiPk || undefined, btc: r.btcPk || undefined, near: r.nearPk || undefined, icp: r.icpPk || undefined, icpAcct: r.icpAcct || undefined } : undefined };
+    return { v: 1, src: 'kwallet', kid: kwKid() || undefined, sid: /^\d{10}$/.test(r.sid || '') ? r.sid : undefined, label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null, pks: r.suiPk || r.btcPk || r.nearPk || r.icpPk ? { sui: r.suiPk || undefined, btc: r.btcPk || undefined, near: r.nearPk || undefined, icp: r.icpPk || undefined, icpAcct: r.icpAcct || undefined, iiIds: Array.isArray(r.iiIds) ? r.iiIds : undefined } : undefined };
   }
   /* v3.98: block height for a date, offline (60 s blocks to the v2 fork 1009827, 120 s after; anchor 3,783,000 = 1791875075) */
   function xmrHeightAt(ms) {
@@ -24528,7 +24544,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* v3.98.16: Bitcoin message (legacy ECDSA or BIP-322 simple) and PSBT, with a full review sheet */
     btc_signMessage: ['btc', 'Sign message'], btc_signPsbt: ['btc', 'Review transaction'], btc_getPublicKey: ['btc', 'Share public key'],
     /* v3.99.0: NEAR (Sender / wallet-selector) and Internet Computer (Plug-style) requests */
-    near_signTransactions: ['near', 'Review transaction'], near_signMessage: ['near', 'Sign message'], icp_call: ['icp', 'Review transaction'], icp_signMessage: ['icp', 'Sign message'], icp_iiLogin: ['icp', 'Sign in with Internet Identity'], icp_passkey: ['icp', 'Internet Identity passkey'] };
+    near_signTransactions: ['near', 'Review transaction'], near_signMessage: ['near', 'Sign message'], icp_call: ['icp', 'Review transaction'], icp_signMessage: ['icp', 'Sign message'], icp_iiLogin: ['icp', 'Sign in with Internet Identity'], icp_passkey: ['icp', 'Internet Identity passkey'], icp_iiNames: ['icp', 'Restore identities'] };
   Object.keys(P17M).forEach(function (k) { DM[k] = P17M[k][1]; DCH[k] = P17M[k][0]; });
   var MAXU = (1n << 255n);
   /* known methods: the selector is computed from the signature, so nothing here is a magic number */
@@ -25099,7 +25115,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (DS.msg) { if (!DS.msg.length) return 'The message is empty.'; if (DS.msg.length > 65536) return 'The message is too long.'; DS.text = utf8(DS.msg); }
       return '';
     }
-    if (m === 'near_signTransactions' || m === 'near_signMessage' || m === 'icp_call' || m === 'icp_signMessage' || m === 'icp_iiLogin' || m === 'icp_passkey') {
+    if (m === 'near_signTransactions' || m === 'near_signMessage' || m === 'icp_call' || m === 'icp_signMessage' || m === 'icp_iiLogin' || m === 'icp_passkey' || m === 'icp_iiNames') {
       try {
         if (m === 'near_signTransactions') {
           var txs = Array.isArray(P.txs) ? P.txs : []; if (!txs.length || txs.length > 10) return 'The transaction could not be read.';
@@ -25135,20 +25151,44 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           if (!(rp === ph || (IIP.test(rp) && /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai)$/.test(rp)))) return 'This passkey request is for another site (' + esc(rp) + ').';
           if (!/^([0-9a-f]{2}){1,1024}$/.test(String(P.challenge || ''))) return 'The passkey request could not be read.';
           var pkL = pkList(R.from).filter(function (e) { return e.rp === rp; });
-          DS.pkRp = rp; DS.pkCands = [];
+          /* v3.99.12: what II says this seed's passkeys are registered to (Hwallet looked them up): { i, a = identity number, n = name } */
+          var kn = (Array.isArray(P.known) ? P.known : []).filter(function (x) { return x && (x.i | 0) === +x.i && x.i >= 0 && x.i < 4000 && /^\d{1,20}$/.test(String(x.a || '')); }).slice(0, 50)
+            .map(function (x) { return { i: x.i | 0, a: String(x.a), n: String(x.n || '').replace(/[\u0000-\u001f]/g, '').slice(0, 64) }; });
+          var tk = (Array.isArray(P.taken) ? P.taken : []).filter(function (i) { return (i | 0) === +i && i >= 0 && i < 4000; }).map(Number);
+          DS.pkRp = rp; DS.pkCands = []; DS.pkKnown = kn; DS.pkRows = []; DS.pkSel = -1; DS.pkOp = P.op;
           if (P.op === 'create') {
             var ex = (Array.isArray(P.exclude) ? P.exclude : []).map(function (h) { try { return KwPasskey.idxOf(KwPasskey.unhex(String(h))); } catch (e) { return -1; } });
-            var ni = 0; while (ni < 4000 && (ex.indexOf(ni) >= 0 || pkL.some(function (e) { return e.i === ni; }))) ni++;
-            DS.pkCands = [ni]; DS.pkName = String(P.name || '').slice(0, 64);
+            /* a new identity never reuses a number II already has (a fresh phone knows nothing locally; II does) */
+            var ni = 0; while (ni < 4000 && (ex.indexOf(ni) >= 0 || tk.indexOf(ni) >= 0 || kn.some(function (x) { return x.i === ni; }) || pkL.some(function (e) { return e.i === ni; }))) ni++;
+            DS.pkCands = [ni]; DS.pkName = String(P.name || '').replace(/[\u0000-\u001f]/g, '').slice(0, 64);
+            DS.view = { title: 'Create passkey' };
             DS.msg = new TextEncoder().encode('Make Kwallet a passkey for your Internet Identity on ' + rp + '.\n' + (DS.pkName ? 'Name: ' + DS.pkName + '\n' : '') + 'Passkey #' + (ni + 1) + ' of this seed. The seed restores it.');
           } else if (P.op === 'get') {
             var al = (Array.isArray(P.allow) ? P.allow : []).map(function (h) { try { return KwPasskey.idxOf(KwPasskey.unhex(String(h))); } catch (e) { return -1; } }).filter(function (i) { return i >= 0; });
             if (Array.isArray(P.allow) && P.allow.length && !al.length) return 'Internet Identity asked for a passkey that is not in Kwallet.';
-            DS.pkCands = al.length ? al.slice(0, 20) : pkL.slice().sort(function (a, b) { return (b.u || 0) - (a.u || 0); }).map(function (e) { return e.i; });
-            if (!DS.pkCands.length) DS.pkCands = [0];
-            var nm = pkL.filter(function (e) { return e.i === DS.pkCands[0]; })[0];
+            /* v3.99.12: one row per identity: this phone's passkeys plus the ones II knows (a fresh install with the same seed) */
+            var rows = {};
+            pkL.forEach(function (e) { rows[e.i] = { i: e.i, a: e.a || '', n: e.n || '', u: e.u || 0 }; });
+            kn.forEach(function (x) { var r0 = rows[x.i] || (rows[x.i] = { i: x.i, a: '', n: '', u: 0, r: 1 }); r0.a = x.a; if (x.n) r0.n = x.n; });
+            var lst = Object.keys(rows).map(function (k) { return rows[k]; });
+            if (al.length) { lst = lst.filter(function (r) { return al.indexOf(r.i) >= 0; }); al.forEach(function (i) { if (!lst.some(function (r) { return r.i === i; })) lst.push({ i: i, a: '', n: '', u: 0 }); }); }
+            /* identities II does not know (anymore) are left out once II has answered */
+            if (kn.length && !al.length) lst = lst.filter(function (r) { return kn.some(function (x) { return x.i === r.i; }); });
+            lst.sort(function (x, y) { return (y.u || 0) - (x.u || 0) || x.i - y.i; });
+            if (!lst.length) lst = [{ i: 0, a: '', n: '', u: 0 }];
+            DS.pkRows = lst.slice(0, 20); DS.pkCands = DS.pkRows.map(function (r) { return r.i; }); DS.pkSel = DS.pkCands[0];
+            DS.view = { title: 'Sign in with passkey' };
+            var nm = DS.pkRows[0];
             DS.msg = new TextEncoder().encode('Sign in to Internet Identity on ' + rp + ' with your Kwallet passkey' + (nm && nm.n ? ' (' + nm.n + ')' : ' #' + (DS.pkCands[0] + 1)) + '.\nInternet Identity then signs you in to the app.');
           } else return 'The passkey request could not be read.';
+        } else if (m === 'icp_iiNames') {   /* v3.99.12: read your identity names from II (II keeps them private: each passkey signs one identity_info call) */
+          var rpN = String(P.rpId || '');
+          if (!/^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai)$/.test(rpN)) return 'The request could not be read.';
+          var nl = (Array.isArray(P.list) ? P.list : []).filter(function (x) { return x && (x.i | 0) === +x.i && x.i >= 0 && x.i < 4000 && /^\d{1,20}$/.test(String(x.a || '')); }).slice(0, 20);
+          if (!nl.length || !(+P.nowMs > 1.6e12)) return 'The request could not be read.';
+          DS.pkRp = rpN; DS.nmList = nl.map(function (x) { return { i: x.i | 0, a: String(x.a) }; });
+          DS.view = { title: 'Restore identities' };
+          DS.msg = new TextEncoder().encode('Read the names of ' + nl.length + ' Internet ' + (nl.length > 1 ? 'Identities' : 'Identity') + ' from ' + rpN + '.\nEach passkey signs a read-only request. Nothing is sent, changed or approved.');
         } else if (m === 'icp_signMessage') {
           DS.msg = (function (x) { try { return KwChains.util.unhex(String(x || '')); } catch (e) { return new TextEncoder().encode(String(x || '')); } })(P.message);
         } else {
@@ -25224,6 +25264,35 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       o.main += HWP.card(HWP.kv(m === 'btc_getPublicKey' ? 'Bitcoin public key' : m === 'cardano_getPubKeys' ? 'Cardano DRep and stake public keys' : 'XRP Ledger public key', 'Public key only', 'No private key leaves Kwallet'));
       o.main += HWP.cap('Free \u00b7 sharing the public key sends no funds.');
       o.det += addrKv('Account', R.from, esc(DS.rec.label) + ' \u00b7 #' + DS.rec.index);
+      return o;
+    }
+    /* v3.99.12: Internet Identity passkeys get the same cards as every other request: what, which identity, and a free cap */
+    if (m === 'icp_passkey' || m === 'icp_iiNames') {
+      var when = function (u) { if (!u) return ''; var d = Math.floor((Date.now() - u) / 86400000); return d <= 0 ? 'Used today' : d === 1 ? 'Used yesterday' : d < 30 ? 'Used ' + d + ' days ago' : 'Used ' + new Date(u).toLocaleDateString(); };
+      var idName = function (r) { return r.n ? esc(r.n) : r.a ? 'Identity ' + esc(r.a) : 'Passkey #' + (r.i + 1); };
+      if (m === 'icp_iiNames') {
+        o.main += HWP.card(DS.nmList.map(function (x) { return HWP.kv('Identity ' + esc(x.a), 'Passkey #' + (x.i + 1), 'Found on Internet Identity', { sm: true }); }).join(''));
+        o.main += HWP.cap('Free \u00b7 read-only. Each passkey signs one request so II shows its name. Nothing is changed or approved.');
+        o.det += kv('Site', esc(DS.pkRp), 'Internet Identity') + kv('Call', '<span class="hp-mono">identity_info</span>', 'Read-only, one per identity');
+      } else if (DS.pkOp === 'create') {
+        o.main += HWP.card(HWP.kv('Identity name', DS.pkName ? esc(DS.pkName) : 'No name', 'Exactly as Internet Identity sent it') + HWP.kv('Passkey', '#' + (DS.pkCands[0] + 1) + ' of this seed', 'Your seed restores it on any phone', { sm: true }));
+        o.main += HWP.cap('Free \u00b7 making a passkey sends no funds.');
+        o.det += kv('Site', esc(DS.pkRp), 'Internet Identity') + kv('Key', 'P-256 (ES256)', 'Made from your seed, never leaves Kwallet');
+      } else {
+        var rws = DS.pkRows || [];
+        if (rws.length > 1) {
+          o.main += HWP.cap('Choose an identity');
+          o.main += HWP.card(rws.map(function (r) {
+            var on = r.i === DS.pkSel, sub = (r.a && r.n ? 'Identity ' + esc(r.a) + ' \u00b7 ' : '') + 'Passkey #' + (r.i + 1) + (r.u ? ' \u00b7 ' + when(r.u) : r.r ? ' \u00b7 Restored' : '');
+            return HWP.kv((on ? '\u25c9 ' : '\u25cb ') + idName(r), '', sub, { tap: true, cls: 'kw-pk' + (on ? ' on' : ''), attr: ' data-pk="' + r.i + '" style="' + (on ? 'background:rgba(127,127,127,.12);border-radius:10px' : '') + '"' });
+          }).join(''));
+        } else if (rws[0]) {
+          var r1 = rws[0];
+          o.main += HWP.card(HWP.kv('Identity', idName(r1), (r1.a && r1.n ? 'Identity ' + esc(r1.a) + ' \u00b7 ' : '') + 'Passkey #' + (r1.i + 1) + (r1.u ? ' \u00b7 ' + when(r1.u) : '')));
+        }
+        o.main += HWP.cap('Free \u00b7 Internet Identity then signs you in to the app.');
+        o.det += kv('Site', esc(DS.pkRp), 'Internet Identity');
+      }
       return o;
     }
     if (DS.msg) {
@@ -25406,11 +25475,17 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (o.cred && hex(o.cred) !== hex(cred)) { d = 0n; return null; }
       var ad = cat([sha(te.encode(o.rpId)), new Uint8Array([0x1d, 0, 0, 0, 0])]), cd = client('webauthn.get', o.challenge, o.origin);
       var sg = sign(d, sha(cat([ad, sha(cd)]))); d = 0n;
-      return { credId: hex(cred), clientData: hex(cd), authData: hex(ad), sig: hex(sg) };
+      return { credId: hex(cred), clientData: hex(cd), authData: hex(ad), sig: hex(sg), cose: hex(cose(q)) };
     }
-    return { make: make, assert: assert, idxOf: idxOf, unhex: unhex, hex: hex, _t: { pub: pub, sign: sign, verify: verify, keyOf: keyOf, sha: sha } };
+    /* v3.99.12: the public credential IDs of passkeys #1..#n for a relying party (Hwallet asks II which ones are registered) */
+    function coseOf(key, rpId, idx) { var d = keyOf(key, rpId, idx), q = pub(d); d = 0n; return hex(cose(q)); }
+    function ids(key, rpId, n) { var o = []; for (var i = 0; i < n; i++) { var d = keyOf(key, rpId, i); o.push(hex(credOf(rpId, i, pub(d)))); d = 0n; } return o; }
+    return { make: make, assert: assert, ids: ids, coseOf: coseOf, idxOf: idxOf, unhex: unhex, hex: hex, _t: { pub: pub, sign: sign, verify: verify, keyOf: keyOf, sha: sha } };
   })();
-  /* the passkeys this seed made (by its ICP principal): relying party, number, credential ID, user handle, name, made, last used */
+  try { window.KwPasskey = KwPasskey; } catch (e) {}
+  var PK_N = 20;   /* v3.99.12: passkeys #1..#20 of each relying party are looked up on II */
+  /* the passkeys this seed made (by its ICP principal): relying party, number, credential ID, user handle, name, made, last used,
+     v3.99.12: + a = identity number on II, r = 1 when restored from II rather than made on this phone */
   function pkList(from) { try { var v = JSON.parse(localStorage.getItem('kw-passkeys:' + from) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
   function pkSave(from, L) { try { localStorage.setItem('kw-passkeys:' + from, JSON.stringify(L.slice(-200))); } catch (e) {} }
   function p17Sign(m, pk, P, from) {
@@ -25438,7 +25513,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     }
     else if (m === 'icp_call') {
       var me = KwChains.icp.prin(from), cl = KwChains.icp.call(pk, { canister: P.canisterId, method: P.method, arg: KwChains.util.unhex(String(P.arg)), sender: me, nowMs: +(DS.R.icp || {}).nowMs > 1.6e12 ? +DS.R.icp.nowMs : Date.now() });
-      r = { envelope: cl.raw, requestId: cl.hash };
+      r = { envelope: cl.raw, requestId: cl.hash, content: cl.content };
     }
     else if (m === 'icp_iiLogin') {   /* v3.99.7 (F6): per-site Ed25519 key from this seed's ICP key + the site's origin; delegation to the app's session key */
       var X2 = KwChains.util, te2 = new TextEncoder(), sh = function (b) { return X2.unhex(ethers.sha256(b).slice(2)); }, cat2 = function (a) { var t = a.reduce(function (s, b) { return s + b.length; }, 0), o = new Uint8Array(t), f = 0; a.forEach(function (b) { o.set(b, f); f += b.length; }); return o; };
@@ -25454,20 +25529,37 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     }
     else if (m === 'icp_passkey') {   /* v3.99.10 (F6b) */
       var chP = KwPasskey.unhex(String(P.challenge)), L = pkList(from), now = Date.now();
+      /* v3.99.12: remember what II told Hwallet (identity number, name) for every passkey of this relying party */
+      (DS.pkKnown || []).forEach(function (x) { var e = L.filter(function (q) { return q.rp === DS.pkRp && q.i === x.i; })[0]; if (!e) { e = { rp: DS.pkRp, i: x.i, c: '', h: '', n: '', t: now, u: 0, r: 1 }; L.push(e); } e.a = x.a; if (x.n) e.n = x.n; });
       if (P.op === 'create') {
         r = KwPasskey.make({ key: pk, rpId: DS.pkRp, idx: DS.pkCands[0], challenge: chP, origin: String(P.origin) });
         L = L.filter(function (e) { return !(e.rp === DS.pkRp && e.i === DS.pkCands[0]); }); L.push({ rp: DS.pkRp, i: DS.pkCands[0], c: r.credId, h: /^[0-9a-f]{0,128}$/.test(String(P.userId || '')) ? String(P.userId || '') : '', n: DS.pkName || '', t: now, u: now });
+        r.idx = DS.pkCands[0];
       } else {
         var al2 = (Array.isArray(P.allow) ? P.allow : []).map(String);
-        for (var ci = 0; ci < DS.pkCands.length && !r; ci++) {
-          var ix = DS.pkCands[ci], want = al2.filter(function (h) { try { return KwPasskey.idxOf(KwPasskey.unhex(h)) === ix; } catch (e) { return false; } });
+        /* the identity picked in the chooser first, then (only when II named several allowed passkeys) the others */
+        var order = [DS.pkSel].concat(al2.length ? DS.pkCands.filter(function (i) { return i !== DS.pkSel; }) : []).filter(function (i) { return i >= 0; });
+        for (var ci = 0; ci < order.length && !r; ci++) {
+          var ix = order[ci], want = al2.filter(function (h) { try { return KwPasskey.idxOf(KwPasskey.unhex(h)) === ix; } catch (e) { return false; } });
           if (!al2.length) r = KwPasskey.assert({ key: pk, rpId: DS.pkRp, idx: ix, challenge: chP, origin: String(P.origin) });
           else for (var wi = 0; wi < want.length && !r; wi++) r = KwPasskey.assert({ key: pk, rpId: DS.pkRp, idx: ix, challenge: chP, origin: String(P.origin), cred: KwPasskey.unhex(want[wi]) });
-          if (r) { var ce = L.filter(function (e) { return e.rp === DS.pkRp && e.i === ix; })[0]; r.userHandle = ce ? ce.h : ''; if (ce) ce.u = now; else L.push({ rp: DS.pkRp, i: ix, c: r.credId, h: '', n: '', t: now, u: now }); }
+          if (r) { var ce = L.filter(function (e) { return e.rp === DS.pkRp && e.i === ix; })[0]; r.userHandle = ce ? ce.h : ''; if (ce) { ce.u = now; ce.c = r.credId; } else L.push({ rp: DS.pkRp, i: ix, c: r.credId, h: '', n: '', t: now, u: now }); r.idx = ix; }
         }
         if (!r) throw new Error('This passkey belongs to another seed. Pair Hwallet with that seed in Kwallet and try again.');
+        delete r.cose;
       }
       pkSave(from, L);
+      /* v3.99.12: public data for Hwallet's restore: the credential IDs of #1..#20 and the names this phone knows */
+      r.ids = { rp: DS.pkRp, ids: KwPasskey.ids(pk, DS.pkRp, PK_N) };
+      r.names = L.filter(function (e) { return e.rp === DS.pkRp && e.n; }).map(function (e) { return { i: e.i, n: e.n, a: e.a || '' }; }).slice(0, 50);
+    }
+    else if (m === 'icp_iiNames') {   /* v3.99.12: one identity_info call per identity, signed by its passkey */
+      var II = 'rdmx6-jaaaa-aaaaa-aaadq-cai', nowN = +P.nowMs;
+      r = { calls: DS.nmList.map(function (x) {
+        var arg = KwPasskey.unhex('4449444c000178' + (function (v) { var h = ''; for (var k = 0; k < 8; k++) { h += ('0' + Number(v & 255n).toString(16)).slice(-2); v >>= 8n; } return h; })(BigInt(x.a)));
+        var c = KwChains.icp.pkCall({ cose: KwPasskey.coseOf(pk, DS.pkRp, x.i), canister: II, method: 'identity_info', arg: arg, nowMs: nowN, signFn: function (msg) { return KwPasskey.assert({ key: pk, rpId: DS.pkRp, idx: x.i, challenge: msg, origin: 'https://' + DS.pkRp }); } });
+        return { i: x.i, a: x.a, envelope: c.raw, requestId: c.hash };
+      }), ids: { rp: DS.pkRp, ids: KwPasskey.ids(pk, DS.pkRp, PK_N) } };
     }
     else if (m === 'icp_signMessage') {
       var skk = new ethers.SigningKey('0x' + pk), sgg = skk.sign(ethers.sha256(DS.msg));
@@ -25848,6 +25940,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (x === 'custom' && !DS.R.cfTxt) { var T = {}; cfFields(DS.last).f.forEach(function (f) { T[f.k] = String(f.v).replace(/,/g, ''); }); DS.R.cfTxt = T; }
       DS.level = x; DS.feeOpen = true; if (x === 'custom') cfParse(); buzz(8); notice = ''; DS.feeBase = null; dappDraw(); arm(450);
     }; });
+    /* v3.99.12: identity chooser on the passkey sheet */
+    page.querySelectorAll('[data-pk]').forEach(function (b) { b.onclick = function () { var x = +b.getAttribute('data-pk'); if (busy || x === DS.pkSel || !(DS.pkCands || []).some(function (i) { return i === x; })) return; DS.pkSel = x; buzz(8); dappDraw(); arm(450); }; });
     page.querySelectorAll('[data-al]').forEach(function (b) { b.onclick = function () { var x = b.getAttribute('data-al'); if (busy || x === (apprEff(DS.R) || {}).mode) return; DS.R.allowMode = x; buzz(8); dappDraw(); arm(450); }; });
     page.querySelectorAll('input[data-cf]').forEach(function (i) { i.oninput = function () { if (busy) return; DS.R.cfTxt = DS.R.cfTxt || {}; DS.R.cfTxt[i.getAttribute('data-cf')] = i.value; cfParse(); dappDraw(); arm(450); }; });
     tickExp(); syncBtn();

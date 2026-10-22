@@ -1,5 +1,16 @@
 # Changelog
 
+## Kwallet v3.99.12 / Hwallet v1.9.12 (test build, not released)
+
+- Internet Identity, several identities on one seed (F6c). Hwallet now asks II which of this seed's Kwallet passkeys (#1 to #20) are registered, with II's public `lookup_device_key` query (signs nothing). A fresh phone with the same seed finds every identity again.
+- Names exactly as II has them (hen, hen1, hen2). II keeps names private, so the first time Hwallet finds identities whose names it never saw, Kwallet shows one "Restore identities" sheet; each passkey signs one read-only `identity_info` call. Declining it just shows identity numbers.
+- Kwallet's passkey sheet uses the same cards as the other popups: "Create passkey" shows the identity name exactly as II sent it and the passkey number; "Sign in with passkey" shows a Google-style chooser (name, identity number, passkey number, last used) when the seed has more than one identity.
+- New identities skip every passkey number II already has, so a fresh install never reuses #1.
+- After a new identity is created, Hwallet checks with II that it was registered and saves its identity number with the name it was made with.
+- Pairing now also hands Hwallet the public passkey IDs for id.ai (no keys).
+- ICP dApps: Hwallet announces itself through ICRC-94 (the ICP version of NEAR's "near-wallet-injected"), so IdentityKit / DFINITY signer dApps list Hwallet with its own icon. Supports ICRC-25 permissions, ICRC-27 accounts, ICRC-29 status and ICRC-49 canister calls (content map + IC certificate), every signature in Kwallet. Plug-style window.ic.plug stays for fixed wallet lists.
+- Checked locally: II lookup query and Candid decoding against the live II canister (known identities resolve to their numbers, unknown passkeys to none); a Kwallet passkey-signed `identity_info` call is accepted by the Internet Computer (valid WebAuthn sender signature, II answers Unauthorized for an unregistered key, as expected).
+
 ## Kwallet v3.99.11 / Hwallet v1.9.11 (test build, not released)
 
 - Internet Identity passkey: creating an identity hung on "Creating identity…". II's first passkey prompt signs a 9-byte challenge, which Hwallet refused as too short, and the refusal never reached the sign-in window (its answers were dropped). Both fixed; a failed passkey request now shows a message in Hwallet and II gets the error instead of waiting forever.
