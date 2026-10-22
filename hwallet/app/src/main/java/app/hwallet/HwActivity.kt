@@ -320,9 +320,10 @@ class HwActivity : FragmentActivity() {
                     val rb = okhttp3.Request.Builder().url(url)
                         .header("Accept", "application/json, text/plain, */*")
                         .header("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME)
+                    var b64 = false   /* v1.9.0: "X-Hw-B64: 1" = return the raw reply bytes as a data: URL (images, Internet Computer CBOR replies) */
                     if (headers.isNotEmpty()) {
                         val h = JSONObject(headers); val it = h.keys()
-                        while (it.hasNext()) { val k = it.next(); val v = HwKeys.fill(this@HwActivity, host, h.optString(k), used) ?: throw IllegalStateException("nokey"); if (k.length < 64) rb.header(k, v) }
+                        while (it.hasNext()) { val k = it.next(); if (k == "X-Hw-B64") { b64 = true; continue }; val v = HwKeys.fill(this@HwActivity, host, h.optString(k), used) ?: throw IllegalStateException("nokey"); if (k.length < 64) rb.header(k, v) }
                     }
                     if (method == "POST" || method == "PUT") {
                         val hex = contentType.endsWith(";hex")
@@ -334,7 +335,8 @@ class HwActivity : FragmentActivity() {
                     val t = if (HwNet.rate.on()) 30000 else timeoutMs.coerceIn(1000, 30000)
                     HwNet.withTimeout(t).newCall(rb.build()).execute().use { r ->
                         st = r.code
-                        out = r.body?.string()?.take(4_000_000) ?: ""
+                        out = if (b64) { val by = r.body?.bytes() ?: ByteArray(0); if (by.size <= 3_000_000) "data:" + (r.header("Content-Type") ?: "application/octet-stream").substringBefore(';').trim() + ";base64," + android.util.Base64.encodeToString(by, android.util.Base64.NO_WRAP) else "" }
+                              else r.body?.string()?.take(4_000_000) ?: ""
                     }
                     if (used.isNotEmpty() && (st == 401 || st == 403 || st == 429)) { used.forEach { HwKeys.cool(it) }; st = -429; out = "" }
                 } catch (e: IllegalStateException) { st = if (e.message == "nokey") -1 else 0; out = "" }
