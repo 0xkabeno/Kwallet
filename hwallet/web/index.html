@@ -7501,7 +7501,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.10';
+var APP_VERSION = '1.9.11';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -18709,12 +18709,12 @@ window.hwCrashPrompt = crashPrompt;
     if (!/^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai|www\.id\.ai|beta\.id\.ai)$/.test(h)) return Promise.reject(dErr(4100, 'Only Internet Identity can ask Kwallet for a passkey'));
     var hx = function (x, n) { x = String(x || '').toLowerCase(); return /^[0-9a-f]*$/.test(x) && x.length % 2 === 0 && x.length <= n ? x : null; };
     var op = p.op === 'create' ? 'create' : p.op === 'get' ? 'get' : '', ch = hx(p.challenge, 2048), rp = String(p.rpId || h).toLowerCase();
-    if (!op || !ch || ch.length < 32 || !/^[a-z0-9.-]{1,253}$/.test(rp)) return Promise.reject(dErr(-32602, 'Bad passkey request'));
+    if (!op || !ch || !/^[a-z0-9.-]{1,253}$/.test(rp)) return Promise.reject(dErr(-32602, 'Bad passkey request'));
     var ids = function (a) { return (Array.isArray(a) ? a : []).map(function (x) { return hx(x, 2048); }).filter(Boolean).slice(0, 50); };
     var q = { op: op, origin: me, rpId: rp, challenge: ch };
     if (op === 'create') { q.userId = hx(p.userId, 128) || ''; q.name = String(p.name || '').slice(0, 64); q.exclude = ids(p.exclude); }
     else q.allow = ids(p.allow);
-    return p17K(site, 'icp', 'icp_passkey', q);
+    return p17K(site, 'icp', 'icp_passkey', q).catch(function (e) { try { toast('Passkey: ' + String((e && e.message) || e).slice(0, 120)); } catch (x) {} throw e; });
   }
   function icpRun(o, site, m, p) {
     if (m === 'icp_balance') return Promise.resolve(assets('icp').map(function (r) { return { symbol: r.s, decimals: r.d, amount: r.raw != null ? toNum(r.raw, r.d) : 0, canisterId: r.key === 'native' ? ICP_LEDGER : r.key, name: r.n }; }));

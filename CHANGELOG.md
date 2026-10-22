@@ -1,5 +1,9 @@
 # Changelog
 
+## Kwallet v3.99.11 / Hwallet v1.9.11 (test build, not released)
+
+- Internet Identity passkey: creating an identity hung on "Creating identity…". II's first passkey prompt signs a 9-byte challenge, which Hwallet refused as too short, and the refusal never reached the sign-in window (its answers were dropped). Both fixed; a failed passkey request now shows a message in Hwallet and II gets the error instead of waiting forever.
+
 ## Kwallet v3.99.10 / Hwallet v1.9.10 (test build, not released)
 
 - Internet Identity with Kwallet as the passkey (F6b). When a site opens II, Hwallet now opens the real II page in a sign-in window over the tab (the site keeps window.opener). On II's pages, passkey prompts go to Kwallet, which makes or uses a P-256 passkey derived from the seed (relying party + passkey number), so the seed restores it. II itself signs the session, so apps that only accept genuine II logins (OISY) work, and Hwallet and Kwallet stay the only signers.

@@ -760,7 +760,7 @@ class HwBrowser(
         while (pops.size >= 4) popClose(pops.values.first())
         val pt = Tab("p" + (++popN).toString(36)).apply { inc = parent.inc; desk = parent.desk }
         val ctx = android.view.ContextThemeWrapper(act, darkTheme()); pt.ctx = ctx
-        val w = WebView(ctx)
+        val w = WebView(ctx); pt.web = w   // reply() checks the window's own address before it answers
         if (pt.inc && incProfiles) try {
             androidx.webkit.ProfileStore.getInstance().getOrCreateProfile(INC_PROFILE)
             WebViewCompat.setProfile(w, INC_PROFILE)

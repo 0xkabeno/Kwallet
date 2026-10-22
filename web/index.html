@@ -12789,7 +12789,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.10';
+const APP_VERSION = '3.99.11';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -25133,7 +25133,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           var IIP = /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai|www\.id\.ai|beta\.id\.ai)$/, po = String(P.origin || ''), ph = (/^https:\/\/([a-z0-9.-]+)$/.exec(po) || [])[1], rp = String(P.rpId || ph || '');
           if (!ph || !IIP.test(ph)) return 'Passkeys are only made for Internet Identity.';
           if (!(rp === ph || (IIP.test(rp) && /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai)$/.test(rp)))) return 'This passkey request is for another site (' + esc(rp) + ').';
-          if (!/^([0-9a-f]{2}){16,1024}$/.test(String(P.challenge || ''))) return 'The passkey request could not be read.';
+          if (!/^([0-9a-f]{2}){1,1024}$/.test(String(P.challenge || ''))) return 'The passkey request could not be read.';
           var pkL = pkList(R.from).filter(function (e) { return e.rp === rp; });
           DS.pkRp = rp; DS.pkCands = [];
           if (P.op === 'create') {
