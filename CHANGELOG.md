@@ -1,5 +1,12 @@
 # Changelog
 
+## Kwallet v3.99.4 / Hwallet v1.9.4 (test build, not released)
+
+- NEAR fees follow today's protocol: gas is bought up front at 0.001 NEAR per Tgas and partly refunded, and creating a new account costs 0.007 NEAR. The send sheet shows the real fee plus "needs X NEAR available" when more must be held for a few seconds. Max subtracts the upfront amount, so "Not enough NEAR" no longer happens after Max.
+- Hwallet reads NEAR's live fee settings (cached for an hour) and checks whether a 64-character recipient already exists.
+- Small accounts (up to 770 bytes, no contract) no longer keep back a storage reserve.
+- NEAR errors: "Not enough balance" now says how much is needed and how much you have. The old 0.00182 NEAR recipient wording is gone.
+
 ## Kwallet v3.99.3 / Hwallet v1.9.3 (test build, not released)
 
 - Pairing: dismissing or failing the unlock ends the request; the seed list never opens without it.

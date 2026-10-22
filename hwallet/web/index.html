@@ -7369,7 +7369,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.3';
+var APP_VERSION = '1.9.4';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8189,6 +8189,34 @@ var APP_VERSION = '1.9.3';
       return new Promise(function (res) { var im = new Image(), t = setTimeout(function () { res(''); }, 3000); im.onload = function () { clearTimeout(t); try { var c = document.createElement('canvas'); c.width = c.height = 64; c.getContext('2d').drawImage(im, 0, 0, 64, 64); res(c.toDataURL('image/png')); } catch (e) { res(''); } }; im.onerror = function () { clearTimeout(t); res(''); }; im.src = d; });
     }, function () { return ''; });
   }
+  /* v3.99.4 (Task A): NEAR fees since protocol 78 (NEP-536) and NEP-642. Gas is BOUGHT up front at
+     max(gas_price, min_gas_purchase_price = 0.001 NEAR/Tgas) and burnt at gas_price; the rest comes back a block later.
+     Creating an implicit account costs a fixed 0.007 NEAR (account_creation_charge), kept from that refund.
+     need = what must be in the account (Max subtracts this); fee = what it really costs. Same function in Kwallet and Hwallet. */
+  function nearCost(d, calls, creates) {
+    var c = (d && d.cfg) || {}, n = function (v, f) { return /^\d+$/.test(String(v == null ? '' : v)) ? BigInt(String(v)) : f; };
+    var gp = n(d && d.gasPrice, 100000000n) * 102n / 100n, buy = n(c.buy, 1000000000n); if (buy < gp) buy = gp;
+    var rs = n(c.rs, 108059500000n), rx = n(c.rx, 108059500000n), ts = n(c.ts, 115123062500n), tx = n(c.tx, 115123062500n);
+    var cs = n(c.cs, 500000000000n), cx = n(c.cx, 7200000000000n), ks = n(c.ks, 101765125000n), kx = n(c.kx, 101765125000n), charge = n(c.charge, 7000000000000000000000n);
+    var FC = 2319861500n, ATT = 30000000000000n, send, exec;
+    if (calls) { send = rs + BigInt(calls) * FC; exec = rx + BigInt(calls) * (FC + ATT); }
+    else { send = rs + ts + (creates ? cs + ks : 0n); exec = rx + tx + (creates ? cx + kx : 0n); }
+    if (creates && !calls && exec < 7920000000000n) exec = 7920000000000n;   /* docs.near.org: Create Account 7.92 Tgas */
+    var need = send * gp + exec * buy, fee = (send + exec) * gp;
+    if (creates && !calls) fee = charge + (rs + ts + rx + tx) * gp;
+    return { fee: fee, need: need > fee ? need : fee };
+  }
+  /* v1.9.4: the live fee parameters, read once an hour (constants above when the RPC is down) */
+  function nearCfg() {
+    var c = jget('hw-nearcfg', null); if (c && Date.now() - (c.at || 0) < 3600000) return Promise.resolve(c);
+    return nearRpc('EXPERIMENTAL_protocol_config', { finality: 'final' }).then(function (r) {
+      var rc = r.runtime_config, t = rc.transaction_costs, a = t.action_receipt_creation_config, ac = t.action_creation_config;
+      var o = { at: Date.now(), buy: String(rc.min_gas_purchase_price || ''), charge: String(rc.account_creation_charge || ''), rs: String(a.send_not_sir), rx: String(a.execution),
+        ts: String(ac.transfer_cost.send_not_sir), tx: String(ac.transfer_cost.execution), cs: String(ac.create_account_cost.send_not_sir), cx: String(ac.create_account_cost.execution),
+        ks: String(ac.add_key_cost.full_access_cost.send_not_sir), kx: String(ac.add_key_cost.full_access_cost.execution) };
+      jset('hw-nearcfg', o); return o;
+    }).catch(function () { return c || {}; });
+  }
   /* NEAR send: nonce + recent block hash for the access key, gas price, storage reserve, token registration */
   PREP = PREP || {};
   PREP.near = function (S) {
@@ -8199,20 +8227,21 @@ var APP_VERSION = '1.9.3';
     /* v1.9.1: a named NEAR account that doesn't exist can't receive (the transfer fails on chain); an implicit (64-hex or 0x)
        account is created by the transfer itself */
     var named = to && !/^[0-9a-f]{64}$/.test(to) && !/^0x[0-9a-f]{40}$/.test(to);
-    var toChk = named ? nearQ({ request_type: 'view_account', finality: 'final', account_id: to }).then(function () { return 1; }, function (e) { return e && e.near === 'UNKNOWN_ACCOUNT' ? 0 : 1; }) : Promise.resolve(1);
+    var toChk = to ? nearQ({ request_type: 'view_account', finality: 'final', account_id: to }).then(function () { return 1; }, function (e) { return e && e.near === 'UNKNOWN_ACCOUNT' ? (named ? 0 : 2) : 1; }) : Promise.resolve(2);   /* v1.9.4: 2 = this transfer creates the implicit account */
     if (wrap) jobs.push(Promise.resolve(null), to ? nearView('wrap.near', 'storage_balance_of', { account_id: to }).catch(function () { return 'x'; }) : Promise.resolve('x'), nearView('wrap.near', 'storage_balance_bounds', {}).catch(function () { return null; }));
     if (tok) { jobs.push(nearView(r.a, 'ft_balance_of', { account_id: A.near }).catch(function () { return null; })); jobs.push(to ? nearView(r.a, 'storage_balance_of', { account_id: to }).catch(function () { return 'x'; }) : Promise.resolve('x')); jobs.push(nearView(r.a, 'storage_balance_bounds', {}).catch(function () { return null; })); }
-    return Promise.all([Promise.all(jobs), toChk]).then(function (xx) {
+    return Promise.all([Promise.all(jobs), toChk, nearCfg()]).then(function (xx) {
       if (!xx[1]) throw new Error('The NEAR account ' + to + ' doesn\u2019t exist. Check the name, or send to its 64-character address.');
       var x = xx[0], d = S.d && S.d.chain === 'near' ? S.d : { chain: 'near' };
       d.nonce = String(x[0].nonce); d.blockHash = x[0].block_hash; d.gasPrice = String((x[1] && x[1].gas_price) || '100000000');
-      d.gbal = BI(x[2].amount || 0); d.reserve = BI(x[2].storage_usage || 0) * NEAR_BYTE; d.tbal = d.gbal; d.levels = { medium: {} }; d.approx = !tok; d.atMost = tok;
+      d.gbal = BI(x[2].amount || 0); var su = BI(x[2].storage_usage || 0); d.reserve = su <= 770n && (!x[2].code_hash || x[2].code_hash === '11111111111111111111111111111111') ? 0n : su * NEAR_BYTE; d.tbal = d.gbal; d.cfg = xx[2] || {}; d.creates = xx[1] === 2;   /* v1.9.4: zero-balance accounts (<= 770 bytes, no contract) need no storage stake */ d.levels = { medium: {} }; d.approx = !tok; d.atMost = tok;
       d.extra = 0n; d.storage = false; d.storageDeposit = '1250000000000000000000';
       if (tok || wrap) { if (tok) d.tbal = x[3] != null && /^\d+$/.test(String(x[3])) ? BI(x[3]) : null; d.storage = x[4] == null; d.toFor = to; var bb = x[5] && x[5].min; if (bb && /^\d+$/.test(String(bb))) d.storageDeposit = String(bb); d.extra = 1n + (d.storage ? BI(d.storageDeposit) : 0n); }
       d.wrap = wrap; if (wrap) { d.approx = false; d.atMost = true; }
-      d.feeFor = function () { return BI(d.gasPrice) * (tok ? 30000000000000n * (d.storage ? 2n : 1n) : wrap ? 30000000000000n * (d.storage ? 3n : 2n) : (/^[0-9a-f]{64}$/.test(to) || /^0x[0-9a-f]{40}$/.test(to) || !to ? 1000000000000n : 600000000000n)); };   /* v1.9.3: same upfront transfer cost as Kwallet */
-      d.req = function () { return { near: { nonce: d.nonce, blockHash: d.blockHash, gasPrice: d.gasPrice, reserve: d.reserve.toString(), storage: d.storage, storageDeposit: d.storageDeposit, wrap: d.wrap || undefined } }; };
-      d.feed = function () { return { near: { nonce: d.nonce, blockHash: d.blockHash, gasPrice: d.gasPrice, reserve: d.reserve.toString(), storage: d.storage, storageDeposit: d.storageDeposit }, balance: { token: String(d.tbal != null ? d.tbal : ''), gas: String(d.gbal) } }; };
+      d.cost = function () { return nearCost(d, tok ? (d.storage ? 2 : 1) : wrap ? (d.storage ? 3 : 2) : 0, !tok && !wrap && d.creates); };
+      d.feeFor = function () { return d.cost().fee; }; d.needFor = function () { return d.cost().need; };   /* v1.9.4 (Task A): same as Kwallet's nearPlan */   /* v1.9.3: same upfront transfer cost as Kwallet */
+      d.req = function () { return { near: { nonce: d.nonce, blockHash: d.blockHash, gasPrice: d.gasPrice, reserve: d.reserve.toString(), storage: d.storage, storageDeposit: d.storageDeposit, wrap: d.wrap || undefined, creates: d.creates, cfg: d.cfg } }; };
+      d.feed = function () { return { near: { nonce: d.nonce, blockHash: d.blockHash, gasPrice: d.gasPrice, reserve: d.reserve.toString(), storage: d.storage, storageDeposit: d.storageDeposit, creates: d.creates, cfg: d.cfg }, balance: { token: String(d.tbal != null ? d.tbal : ''), gas: String(d.gbal) } }; };
       return d;
     }, function (e) { if (e && e.near === 'UNKNOWN_ACCESS_KEY' || e && e.near === 'UNKNOWN_ACCOUNT') throw new Error('This NEAR account has no funds yet. Receive some NEAR first.'); throw e; });
   };
@@ -8234,7 +8263,9 @@ var APP_VERSION = '1.9.3';
   /* v1.9.1: a NEAR failure in words (never the raw JSON) */
   function nearWhy(f) {
     var j = JSON.stringify(f || {}), m;
-    if (/LackBalanceForState/.test(j)) return 'The receiving account is new and needs at least 0.00182 NEAR to exist. Send more, and the network refunds this one.';
+    if (/LackBalanceForState/.test(j)) return 'This would leave less than the account needs for its storage. Send a little less.';
+    var nb = /NotEnoughBalance[^}]*?"balance":"?(\d+)"?[^}]*?"cost":"?(\d+)"?/.exec(j) || /NotEnoughBalance[^}]*?"cost":"?(\d+)"?[^}]*?"balance":"?(\d+)"?/.exec(j);
+    if (nb) { var bb = /"balance":"?(\d+)/.exec(j), cc = /"cost":"?(\d+)/.exec(j); if (bb && cc) return 'Needs ' + fmtU(BI(cc[1]), 24, 5) + ' NEAR available, you have ' + fmtU(BI(bb[1]), 24, 5) + '. Open Send again for the new Max.'; }
     if (/AccountDoesNotExist|ReceiverDoesNotExist/.test(j)) return 'The receiving NEAR account doesn\u2019t exist. Nothing was sent; the network refunds the amount.';
     if (/NotEnoughBalance/.test(j)) return 'Not enough NEAR for this amount plus the fee.';
     if (/InvalidNonce|NonceTooLarge/.test(j)) return 'Another NEAR transaction went first. Open Send again and retry.';
@@ -10009,6 +10040,7 @@ var APP_VERSION = '1.9.3';
   function sendCheck(amtOverride) {
     sndCmSync();
     var d = SND.d || {}, r = SND.r, gas = gasAsset(), b = sendBals(), fee = feeOf(SND.lv) || 0n;
+    if (SND.ch === 'near' && d.needFor) fee = d.needFor();   /* v1.9.4 (Task A): Max and checks use what NEAR buys up front */
     var mx = SND.max && r.gas && d.maxAmt ? d.maxAmt(SND.lv === 'custom' && SND.cm ? 'manual' : SND.lv) : null;   /* UTXO chains: the planner's exact max */
     /* v1.9.0: an ICRC token pays its ledger fee in itself, so amount + fee come out of the token balance */
     if (SND.ch === 'icp' && !r.gas) return KwSend.check({ chain: 'icp', tok: false, max: SND.max, amount: amtOverride != null ? amtOverride : SND.amt, bal: null, gbal: b.tb, fee: fee, sym: r.s, gsym: r.s, gdec: r.d, dec: r.d });

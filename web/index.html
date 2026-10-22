@@ -12789,7 +12789,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.3';
+const APP_VERSION = '3.99.4';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -21545,19 +21545,38 @@ window.__KWLOGO={"near":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3d
   /* v3.99.3: NEAR charges a transfer's gas up front. To an implicit account (64-hex or 0x) the receipt may also create the
      account and add its key (about 0.85 Tgas); to a named account about 0.45 Tgas. A small margin covers the network's
      pessimistic receipt price; what is not burnt stays in the account. Max = balance - storage reserve - this. */
+  /* v3.99.4 (Task A): NEAR fees since protocol 78 (NEP-536) and NEP-642. Gas is BOUGHT up front at
+     max(gas_price, min_gas_purchase_price = 0.001 NEAR/Tgas) and burnt at gas_price; the rest comes back a block later.
+     Creating an implicit account costs a fixed 0.007 NEAR (account_creation_charge), kept from that refund.
+     need = what must be in the account (Max subtracts this); fee = what it really costs. Same function in Kwallet and Hwallet. */
+  function nearCost(d, calls, creates) {
+    var c = (d && d.cfg) || {}, n = function (v, f) { return /^\d+$/.test(String(v == null ? '' : v)) ? BigInt(String(v)) : f; };
+    var gp = n(d && d.gasPrice, 100000000n) * 102n / 100n, buy = n(c.buy, 1000000000n); if (buy < gp) buy = gp;
+    var rs = n(c.rs, 108059500000n), rx = n(c.rx, 108059500000n), ts = n(c.ts, 115123062500n), tx = n(c.tx, 115123062500n);
+    var cs = n(c.cs, 500000000000n), cx = n(c.cx, 7200000000000n), ks = n(c.ks, 101765125000n), kx = n(c.kx, 101765125000n), charge = n(c.charge, 7000000000000000000000n);
+    var FC = 2319861500n, ATT = 30000000000000n, send, exec;
+    if (calls) { send = rs + BigInt(calls) * FC; exec = rx + BigInt(calls) * (FC + ATT); }
+    else { send = rs + ts + (creates ? cs + ks : 0n); exec = rx + tx + (creates ? cx + kx : 0n); }
+    if (creates && !calls && exec < 7920000000000n) exec = 7920000000000n;   /* docs.near.org: Create Account 7.92 Tgas */
+    var need = send * gp + exec * buy, fee = (send + exec) * gp;
+    if (creates && !calls) fee = charge + (rs + ts + rx + tx) * gp;
+    return { fee: fee, need: need > fee ? need : fee };
+  }
   function nearXferGas(to) { return /^[0-9a-f]{64}$/.test(String(to || '')) || /^0x[0-9a-f]{40}$/.test(String(to || '')) ? 1000000000000n : 600000000000n; }
   function nearPlan(req, level) {
-    var d = req.near || {}, gp = U(d.gasPrice) || 100000000n, tok = req.token !== 'native', o = { fee: 0n, extra: 0n, atMost: false, approx: true };
-    if (!tok && d.wrap) { o.fee = gp * 30n * NEAR_TGAS * (d.storage ? 3n : 2n); o.atMost = true; o.approx = false; o.extra = 1n + (d.storage ? (U(d.storageDeposit) || NEAR_STORAGE) : 0n); }   /* a NEAR Intents deposit: wrap + ft_transfer */
-    else if (!tok) o.fee = gp * nearXferGas(req.to);   /* v3.99.3: a transfer's upfront cost (see nearXferGas) */
-    else { o.fee = gp * 30n * NEAR_TGAS * (d.storage ? 2n : 1n); o.atMost = true; o.approx = false; o.extra = 1n + (d.storage ? (U(d.storageDeposit) || NEAR_STORAGE) : 0n); }
+    var d = req.near || {}, tok = req.token !== 'native', o = { fee: 0n, extra: 0n, atMost: false, approx: true }, nc;
+    var cr = d.creates != null ? !!d.creates : /^[0-9a-f]{64}$/.test(String(req.to || '')) || /^0x[0-9a-f]{40}$/.test(String(req.to || ''));
+    nc = nearCost(d, tok ? (d.storage ? 2 : 1) : d.wrap ? (d.storage ? 3 : 2) : 0, !tok && !d.wrap && cr); o.fee = nc.fee; o.need = nc.need;   /* v3.99.4 (Task A) */
+    if (!tok && d.wrap) { o.atMost = true; o.approx = false; o.extra = 1n + (d.storage ? (U(d.storageDeposit) || NEAR_STORAGE) : 0n); }   /* a NEAR Intents deposit: wrap + ft_transfer */
+    else if (!tok) {}
+    else { o.atMost = true; o.approx = false; o.extra = 1n + (d.storage ? (U(d.storageDeposit) || NEAR_STORAGE) : 0n); }
     return o;
   }
   function nearBuild(req, level, priv) {
     var d = req.near || {}, tok = req.token !== 'native', p = nearPlan(req, level), bal = U(req.balance && req.balance.token), gbal = U(req.balance && req.balance.gas), res = U(d.reserve) || 0n, amt, acts, recv;
     nearAcct(req.to); need(d.nonce != null, 'Missing NEAR nonce');
     if (!tok) {
-      var kc = root.KwSend.check({ chain: 'near', tok: false, max: req.amount === 'max', amount: req.amount, bal: bal, gbal: gbal, fee: p.fee, extra: p.extra, reserve: res, gsym: 'NEAR', gdec: 24 }); need(!kc.err, kc.err);
+      var kc = root.KwSend.check({ chain: 'near', tok: false, max: req.amount === 'max', amount: req.amount, bal: bal, gbal: gbal, fee: p.need || p.fee, extra: p.extra, reserve: res, gsym: 'NEAR', gdec: 24 }); need(!kc.err, kc.err);
       amt = kc.amount;
       if (d.wrap) {   /* v3.99.0: NEAR Intents takes wNEAR: wrap and hand it to the deposit account in one transaction */
         recv = 'wrap.near'; acts = [];
@@ -21566,7 +21585,7 @@ window.__KWLOGO={"near":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3d
         acts.push({ type: 'FunctionCall', method: 'ft_transfer', args: { receiver_id: req.to, amount: amt.toString() }, gas: 30n * NEAR_TGAS, deposit: 1n });
       } else { recv = req.to; acts = [{ type: 'Transfer', deposit: amt }]; }
     } else {
-      var kt = root.KwSend.check({ chain: 'near', tok: true, max: req.amount === 'max', amount: req.amount, bal: bal, gbal: gbal, fee: p.fee, extra: p.extra, reserve: res, sym: req.tokenSym, gsym: 'NEAR', gdec: 24, dec: +req.tokenDec }); need(!kt.err, kt.err);
+      var kt = root.KwSend.check({ chain: 'near', tok: true, max: req.amount === 'max', amount: req.amount, bal: bal, gbal: gbal, fee: p.need || p.fee, extra: p.extra, reserve: res, sym: req.tokenSym, gsym: 'NEAR', gdec: 24, dec: +req.tokenDec }); need(!kt.err, kt.err);
       amt = kt.amount; recv = nearAcct(req.token); acts = [];
       if (d.storage) acts.push({ type: 'FunctionCall', method: 'storage_deposit', args: { account_id: req.to, registration_only: true }, gas: 30n * NEAR_TGAS, deposit: U(d.storageDeposit) || NEAR_STORAGE });
       acts.push({ type: 'FunctionCall', method: 'ft_transfer', args: { receiver_id: req.to, amount: amt.toString() }, gas: 30n * NEAR_TGAS, deposit: 1n });
@@ -21655,8 +21674,8 @@ window.__KWLOGO={"near":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3d
       if (c === 'btc') { var p = btcPlan(req, level); o.fee = p.fee; o.amount = p.amt; o.change = p.change; o.inputs = p.sel.length; return o; }
       if (c === 'ada') { var q = adaPlan(req, level); o.fee = q.fee; o.amount = q.amt; o.change = q.change; o.inputs = q.inputs; o.extra = q.minAda || 0n; o.extraNote = q.minAda ? 'ada' : ''; return o; }
       if (c === 'near') {   /* v3.99.0 */
-        var np = nearPlan(req, level); o.fee = np.fee; o.extra = np.extra; o.atMost = np.atMost; o.approx = np.approx; if ((tok || (req.near || {}).wrap) && (req.near || {}).storage) o.extraNote = 'near-storage';
-        var nk = root.KwSend.check({ chain: 'near', tok: tok, max: req.amount === 'max', amount: req.amount, bal: bal, gbal: gbal, fee: o.fee, extra: o.extra, reserve: U((req.near || {}).reserve) || 0n, sym: req.tokenSym, gsym: 'NEAR', gdec: 24, dec: +req.tokenDec });
+        var np = nearPlan(req, level); o.fee = np.fee; o.extra = np.extra; o.atMost = np.atMost; o.approx = np.approx; o.need = np.need; if ((tok || (req.near || {}).wrap) && (req.near || {}).storage) o.extraNote = 'near-storage';
+        var nk = root.KwSend.check({ chain: 'near', tok: tok, max: req.amount === 'max', amount: req.amount, bal: bal, gbal: gbal, fee: o.need || o.fee, extra: o.extra, reserve: U((req.near || {}).reserve) || 0n, sym: req.tokenSym, gsym: 'NEAR', gdec: 24, dec: +req.tokenDec });
         o.amount = nk.amount; if (nk.err) throw new Error(nk.err); return o;
       }
       if (c === 'icp') {
@@ -24188,7 +24207,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* network fee: tap to change (Slow / Normal / Fast / Custom) */
     var kAct = kTrxAct(stake || trust), fN = c.fee != null && kAct > 0n ? c.fee - kAct : c.fee;   /*pk39send:fee (B34)*/
     var fv = S.c === 'trx' && fN === 0n ? 'Free' : (c.approx ? '\u2248 ' : '') + fmt(fN, S.gdec, S.gdec) + ' ' + esc(S.gsym);
-    var fs = [S.c === 'trx' ? kTrxSub(fN, gpx, stake || trust) : c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : '', c.atMost ? 'at most' : ''].filter(Boolean).join(' \u00b7 ');
+    var fs = [S.c === 'trx' ? kTrxSub(fN, gpx, stake || trust) : c.fee > 0n ? usdTxt(c.fee, S.gdec, gpx) : '', c.atMost ? 'at most' : '', S.c === 'near' && c.need && c.need > c.fee ? 'needs ' + fmt(c.need, S.gdec, 5) + ' NEAR available; the rest comes back in a few seconds' : ''].filter(Boolean).join(' \u00b7 ');   /* v3.99.4 (Task A) */
     var live = R.live ? '<span class="hp-live hp-ldot' + (stale() ? ' stale' : '') + '" id="kss-live" role="img" aria-label="' + liveText() + '"><i></i></span>' : '';
     var ed = keys.length > 1, fopen = false;
     var ed = ed || (kcfOk() && (S.c === 'evm' || S.c === 'sol' || S.c === 'trx')) || kmanOk();   /* v3.98.36 (B19) */
