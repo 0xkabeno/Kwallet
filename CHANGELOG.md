@@ -1,5 +1,9 @@
 # Changelog
 
+## Kwallet v3.99.8 / Hwallet v1.9.8 (test build, not released)
+
+- Internet Identity sign-in reaches Kwallet: Hwallet's stand-in II window is now a real (hidden) window, so the app receives II's ready signal instead of reporting an interrupted login.
+
 ## Kwallet v3.99.7 / Hwallet v1.9.7
 
 - NEAR Max to a 64-character (implicit) address works: NEAR charges an account-creation amount upfront on any send to an implicit address, even one that exists, and refunds the unused part a few seconds later. Max now keeps that back (B37).

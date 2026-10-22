@@ -4310,15 +4310,19 @@ window.hwPlayOpening();
       window.open = function (u, n, f) {
         var url; try { url = new URL(String(u), location.href); } catch (e) { return oo.apply(window, arguments); }
         if (!IIH.test(url.hostname)) return oo.apply(window, arguments);
-        var org = url.origin, fw = null;
-        var post = function (d) { setTimeout(function () { try { window.dispatchEvent(new MessageEvent('message', { data: d, origin: org, source: fw })); } catch (e) {} }, 0); };
-        fw = { closed: false, opener: window, location: { href: url.href }, focus: function () {}, blur: function () {}, close: function () { fw.closed = true; },
-          postMessage: function (m) {
-            if (!m || m.kind !== 'authorize-client' || fw.busy || fw.closed) return; fw.busy = 1;
-            call('icp', 'icp_iiLogin', { sessionKey: hx(m.sessionPublicKey), ttl: m.maxTimeToLive != null ? String(m.maxTimeToLive) : '', derivationOrigin: m.derivationOrigin ? String(m.derivationOrigin) : '' }).then(function (r) {
-              post({ kind: 'authorize-client-success', delegations: [{ delegation: { pubkey: ux(r.pubkey), expiration: BigInt(r.expiration) }, signature: ux(r.signature) }], userPublicKey: ux(r.userPublicKey), authnMethod: 'passkey' });
-            }, function (e) { fw.busy = 0; post({ kind: 'authorize-client-failure', text: String((e && e.message) || 'Rejected') }); });
-          } };
+        /* v1.9.8: the stand-in II window is a hidden same-origin iframe, so it is a real Window: MessageEvent accepts it as source
+           (a plain object made the constructor throw and the app never heard 'authorize-ready'), and close() makes .closed true */
+        var org = url.origin, ifr = document.createElement('iframe'), fw;
+        ifr.style.cssText = 'display:none'; ifr.setAttribute('aria-hidden', 'true'); (document.body || document.documentElement).appendChild(ifr); fw = ifr.contentWindow;
+        var post = function (d) { setTimeout(function () { var ev; try { ev = new MessageEvent('message', { data: d, origin: org, source: fw }); } catch (e) { try { ev = new MessageEvent('message', { data: d, origin: org }); } catch (e2) { return; } } try { window.dispatchEvent(ev); } catch (e) {} }, 0); };
+        var busy = 0;
+        try { fw.close = function () { try { ifr.remove(); } catch (e) {} }; } catch (e) {}
+        fw.postMessage = function (m) {
+          if (!m || m.kind !== 'authorize-client' || busy || !ifr.isConnected) return; busy = 1;
+          call('icp', 'icp_iiLogin', { sessionKey: hx(m.sessionPublicKey), ttl: m.maxTimeToLive != null ? String(m.maxTimeToLive) : '', derivationOrigin: m.derivationOrigin ? String(m.derivationOrigin) : '' }).then(function (r) {
+            post({ kind: 'authorize-client-success', delegations: [{ delegation: { pubkey: ux(r.pubkey), expiration: BigInt(r.expiration) }, signature: ux(r.signature) }], userPublicKey: ux(r.userPublicKey), authnMethod: 'passkey' });
+          }, function (e) { busy = 0; try { console.warn('Hwallet Internet Identity:', e && e.message); } catch (x) {} post({ kind: 'authorize-client-failure', text: String((e && e.message) || 'Rejected') }); });
+        };
         post({ kind: 'authorize-ready' });
         return fw;
       };
@@ -7429,7 +7433,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.7';
+var APP_VERSION = '1.9.8';
 (function () {
   'use strict';
   var BI = window.BigInt;
