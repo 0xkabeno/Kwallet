@@ -8190,6 +8190,7 @@ var APP_VERSION = '1.9.0';
     }, function () { return ''; });
   }
   /* NEAR send: nonce + recent block hash for the access key, gas price, storage reserve, token registration */
+  PREP = PREP || {};
   PREP.near = function (S) {
     var r = S.r, tok = !r.gas, pk = jget('hw-nearpk:' + A.near, '');
     if (!pk) return Promise.reject(new Error('Pair this wallet with Kwallet again to send NEAR'));
@@ -10040,7 +10041,7 @@ var APP_VERSION = '1.9.0';
     $('sndtv').textContent = (d.approx ? '\u2248 ' : '') + tv; $('sndtu').textContent = gp && (r.gas || tp || amt == null) ? fmtUsd(usd) : '';
   }
   /* chain data for the request (and the live feed): one module per chain */
-  var PREP = {};
+  var PREP = PREP || {};  /* v1.9.0: NEAR/ICP preparers are added earlier in this scope */
   function prep(quiet) {
     var me = SND, f = PREP[SND.ch === 'eth' ? 'evm' : SND.ch];
     f(SND).then(function (d) { if (me !== SND) return; SND.d = d; try { sndSavedChk(); } catch (e) {} if (SND.max) fillMax(); validate(); }).catch(function (e) { if (me !== SND) return; if (!quiet) $('fee').textContent = 'Could not reach the network. Retrying…'; console.warn(e); });
