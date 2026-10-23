@@ -124,7 +124,7 @@ object HwNet {
             val d = dohNow() ?: return Dns.SYSTEM.lookup(hostname)
             return try { d.lookup(hostname) } catch (e: java.net.UnknownHostException) {
                 /* VPN off and the DoH server unreachable on this network: the system resolver (as before 1.9.19), so the
-                   wallet keeps working where Quad9 / Mullvad is blocked. With the VPN on, DNS never reaches this point. */
+                   wallet keeps working where the chosen DoH server is blocked. With the VPN on, DNS never reaches this point. */
                 if (HwVpn.on) throw e
                 Dns.SYSTEM.lookup(hostname)
             }
@@ -141,10 +141,8 @@ object HwNet {
                 /* the bootstrap client: its own small client with the same live proxy + kill switch (DoH goes through the tunnel when on) */
                 val boot = OkHttpClient.Builder().connectTimeout(8, TimeUnit.SECONDS).readTimeout(8, TimeUnit.SECONDS)
                     .proxySelector(socks).addInterceptor(kill).build()
-                if (want == "mullvad") DnsOverHttps.Builder().client(boot).url("https://dns.mullvad.net/dns-query".toHttpUrl())
-                    .bootstrapDnsHosts(InetAddress.getByName("194.242.2.2"), InetAddress.getByName("2a07:e340::2")).build()
-                else DnsOverHttps.Builder().client(boot).url("https://dns.quad9.net/dns-query".toHttpUrl())
-                    .bootstrapDnsHosts(InetAddress.getByName("9.9.9.9"), InetAddress.getByName("149.112.112.112"), InetAddress.getByName("2620:fe::fe"), InetAddress.getByName("2620:fe::9")).build()
+                val (url, ips) = HwVpn.dohServer(want)
+                DnsOverHttps.Builder().client(boot).url(url.toHttpUrl()).bootstrapDnsHosts(ips.map { InetAddress.getByName(it) }).build()
             } catch (_: Throwable) { null }
             doh = d; dohFor = want
             return d

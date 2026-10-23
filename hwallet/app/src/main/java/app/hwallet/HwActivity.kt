@@ -433,6 +433,9 @@ class HwActivity : FragmentActivity() {
         fun vpnSet(json: String): String = try { if (json.length > 2000) "Bad request" else HwVpn.set(this@HwActivity, JSONObject(json)) } catch (e: Throwable) { "Could not change the VPN" }
         @android.webkit.JavascriptInterface
         fun vpnRegions(): String = try { HwVpn.regionsJson() } catch (_: Throwable) { "[]" }
+        /** v1.9.19: the last ~200 warp-plus log lines (WARP keys redacted) for Settings > Network & VPN > View log */
+        @android.webkit.JavascriptInterface
+        fun vpnLog(): String = try { HwVpn.logText() } catch (_: Throwable) { "" }
 
         /* v1.6 (#59/#83): Browser tab (HwBrowser.kt). Tab ids are t[0-9a-z]+; positions are CSS px of the page's #br-v box. */
         @android.webkit.JavascriptInterface

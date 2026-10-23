@@ -491,8 +491,14 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
 .hw-kp{margin:4px 20px 14px;font-size:13.5px;line-height:1.45;color:var(--muted)}
 /* v1.9.19: Network & VPN status dot + the "traffic paused" banner */
 .hw-vst{cursor:default}.hw-vdot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#9aa0a6}.hw-vdot.ok{background:#1e8e3e}.hw-vdot.amb{background:#f9ab00}.hw-vdot.err{background:#d93025}
-#hw-vbar{position:fixed;left:50%;top:calc(var(--sat, 0px) + 6px);transform:translate(-50%,-140%);z-index:2147483000;max-width:calc(100% - 32px);padding:8px 14px;border-radius:999px;background:#f9ab00;color:#1f1f1f;font:600 13px/18px system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:transform .25s ease;pointer-events:none;text-align:center}
-#hw-vbar.show{transform:translate(-50%,0)}
+/* the banner is a slim full-width strip under the status bar and the page header (top set by vpnBarPlace); in the Browser
+   tab it sits in the chrome above the page (the native WebView is laid out below it) */
+#hw-vbar{position:fixed;left:0;right:0;top:var(--sat,0px);z-index:9010;box-sizing:border-box;padding:3px 12px;background:#f9ab00;color:#1f1f1f;font:600 12px/16px system-ui,sans-serif;text-align:center;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility 0s linear .2s}
+#hw-vbar.show{opacity:1;visibility:visible;transition:opacity .2s ease}
+#hw-vbar.inbr{position:relative;top:auto!important;flex:0 0 auto;z-index:auto}
+/* the status row: title, then the plain-English status in full (wraps, never cut with an ellipsis) */
+html:not(#v19a):not(#v19b):not(#v19c):not(#v19d):not(#v19e):not(#v19f):not(#v19g) #kws-vst .kws-t{flex-direction:column!important;align-items:flex-start!important;justify-content:center!important}
+html:not(#v19a):not(#v19b):not(#v19c):not(#v19d):not(#v19e):not(#v19f):not(#v19g) #kws-vst .kws-t .kws-s{display:block!important;max-width:100%!important;margin:2px 0 0 0!important;padding-left:0!important;text-align:left!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
 .hw-kc{flex:0 0 auto;margin-left:10px;padding:4px 10px;border-radius:12px;font-size:12.5px;font-weight:600;background:var(--md-pc,#e3e8ef);color:var(--md-opc,#223348)}
 .hw-kc.none{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--border,#dadce0)}
 body[data-theme="dark"] .hw-kc.user,body[data-theme="dark"] .hw-kc.app{background:#26313f;color:#5b8def}
@@ -7411,6 +7417,8 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
      field "Max fee (SOL)". Back, the handle, the dim and X close it. o = { title, rows:[{k,l,sub,v,vs,on}], custom:{label,
      unit,value,hint,on}|null, onPick(k), onCustom(text) -> '' (ok) or an error text, host } */
   var PK = null;
+  /* v1.9.19: o.dot = the beating selection dot (kw-beatd, as in Kwallet's pickers) instead of the check */
+  function pkDot(on) { return '<span aria-hidden="true" style="flex:0 0 auto;width:28px;margin-left:8px;display:flex;align-items:center;justify-content:center"><i' + (on ? ' class="kw-beatd"' : '') + ' style="display:block;width:14px;height:14px;border-radius:50%;box-sizing:border-box;' + (on ? 'border:0;background:#a8f07a' : 'border:1.5px solid rgba(160,160,160,.6)') + '"></i></span>'; }
   function picker(o) {
     if (PK) PK.close();
     var ov = document.createElement('div'); ov.className = 'hp-ov hp-pk';
@@ -7418,7 +7426,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
       return '<button type="button" class="hp-pr' + (r.on ? ' on' : '') + '" data-pk="' + esc(r.k) + '" role="radio" aria-checked="' + (r.on ? 'true' : 'false') + '">' +
         '<span class="hp-prl"><b>' + esc(r.l) + '</b>' + (r.sub ? '<small>' + esc(r.sub) + '</small>' : '') + '</span>' +
         '<span class="hp-prv"><b>' + esc(r.v || '') + '</b>' + (r.vs ? '<small>' + esc(r.vs) + '</small>' : '') + '</span>' +
-        '<span class="hp-prc">' + (r.on ? sv(P.ok) : '') + '</span></button>';
+        (o.dot ? pkDot(r.on) : '<span class="hp-prc">' + (r.on ? sv(P.ok) : '') + '</span>') + '</button>';
     }).join('');
     /* v3.97 (#108-#110): Jupiter "Manual" style Custom section: Transaction landing Max Cap | Exact Fee, then rows
        with a label, an optional on/off switch, an amount field (or a preset dropdown) in the coin and its $ value,
@@ -7451,7 +7459,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
     var closed = false, me = { el: ov, close: function () { if (closed) return; closed = true; if (PK === me) PK = null; ov.classList.remove('in'); ov.classList.add('out'); setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 210); if (o.onClose) o.onClose(); } };
     PK = me;
     ov.querySelector('.hp-dim').onclick = me.close; ov.querySelector('[data-pkx]').onclick = me.close;
-    ov.querySelectorAll('[data-pk]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-pk'); ov.querySelectorAll('.hp-pr').forEach(function (x) { x.classList.toggle('on', x === b); }); if (o.onPick) o.onPick(k); setTimeout(me.close, 120); }; });
+    ov.querySelectorAll('[data-pk]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-pk'); ov.querySelectorAll('.hp-pr').forEach(function (x) { x.classList.toggle('on', x === b); if (o.dot && x.hasAttribute('data-pk')) { x.setAttribute('aria-checked', x === b ? 'true' : 'false'); if (x.lastElementChild) x.lastElementChild.outerHTML = pkDot(x === b); } }); if (o.onPick) o.onPick(k); setTimeout(me.close, 120); }; });
     var cb = ov.querySelector('[data-pkc]');
     if (cb && MN) {
       var mbox = ov.querySelector('.hp-mn'), mgo = ov.querySelector('#hp-pcok'), mhint = ov.querySelector('#hp-pch'), mode = MN.mode === 'exact' ? 'exact' : 'cap', en = {};
@@ -12661,13 +12669,15 @@ var APP_VERSION = '1.9.19';
   function vpnWhere(v) { return v.region ? (vpnFlag(v.region) + ' ' + (v.regionName || v.region)).trim() : 'Auto (best)'; }
   function vpnSum() { var v = VPN; if (!vpnNat() || !v.on) return 'VPN off'; if (v.status === 'connected') return 'VPN on \u00b7 ' + (v.region ? v.regionName : 'Auto'); if (v.status === 'error') return 'VPN paused \u00b7 ' + (v.error || 'error'); return 'VPN reconnecting\u2026'; }
   function vpnAgo(t) { var m = Math.max(0, Math.round((Date.now() - (+t || Date.now())) / 60000)); return m < 1 ? 'just now' : m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; }
-  function vpnDnsName(d) { return d === 'off' ? 'Off' : d === 'mullvad' ? 'Mullvad' : 'Quad9'; }
+  var VPN_DNS = [['off', 'Off'], ['quad9', 'Quad9 (default)'], ['cloudflare', 'Cloudflare'], ['google', 'Google'], ['adguard', 'AdGuard (blocks ads & trackers)']];
+  function vpnDnsName(d) { return d === 'off' ? 'Off' : d === 'cloudflare' ? 'Cloudflare' : d === 'google' ? 'Google' : d === 'adguard' ? 'AdGuard' : 'Quad9'; }
   var KI_GLOBE = 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.93 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a8.2 8.2 0 0 1 0-4h3.38a16.5 16.5 0 0 0 0 4H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.08 16zm2.95-8H5.08a7.99 7.99 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66a14.7 14.7 0 0 1 0-4h4.68a14.7 14.7 0 0 1 0 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14a16.5 16.5 0 0 0 0-4h3.38a8.2 8.2 0 0 1 0 4h-3.38z';
   function vpnHtml() {
     if (!vpnNat()) return '';
     return '<div class="kws-sec">VPN</div><div class="kws-grp">' + krow('kws-vpn', KI.shield, 'VPN for Hwallet', 'Other apps aren\u2019t affected', KSW) +
       krow('kws-vloc', KI_GLOBE, 'Location', 'Auto (best)') +
-      '<div class="kws-row hw-vst" id="kws-vst"><span class="kws-ic"><i class="hw-vdot" id="kws-vst-d"></i></span><span class="kws-t"><span id="kws-vst-t">VPN off</span><span class="kws-s" id="kws-vst-s"></span></span></div></div>' +
+      '<div class="kws-row hw-vst" id="kws-vst"><span class="kws-ic"><i class="hw-vdot" id="kws-vst-d"></i></span><span class="kws-t"><span id="kws-vst-t">VPN off</span><span class="kws-s" id="kws-vst-s"></span></span></div>' +
+      (nat('vpnLog') ? krow('kws-vlog', KI.code, 'View log', 'Connection details') : '') + '</div>' +
       '<p class="hw-kp">Kill switch is on: if the VPN drops, Hwallet pauses traffic instead of going direct.</p>' +
       '<div class="kws-sec">Secure DNS</div><div class="kws-grp">' + krow('kws-vdns', KI.shield, 'Secure DNS', 'Quad9') + '</div>' +
       '<p class="hw-kp">Secure DNS covers Hwallet\u2019s wallet traffic. Web pages use it when the VPN is on.</p>' +
@@ -12686,16 +12696,39 @@ var APP_VERSION = '1.9.19';
     var cls = !v.on ? '' : v.status === 'connected' ? 'ok' : v.status === 'error' ? 'err' : 'amb';
     if (d) d.className = 'hw-vdot' + (cls ? ' ' + cls : '');
     if (t) t.textContent = !v.on ? 'VPN off' : v.status === 'connected' ? vpnWhere(v) : v.status === 'error' ? 'Not connected' : v.status === 'connecting' ? 'Connecting\u2026' : 'Reconnecting\u2026';
-    ksub('kws-vst', !v.on ? 'Hwallet connects directly' : v.status === 'connected' ? 'Connected ' + vpnAgo(v.since) : v.error ? String(v.error).slice(0, 120) : 'Traffic is paused until the VPN is back');
+    ksub('kws-vst', !v.on ? 'Hwallet connects directly' : v.status === 'connected' ? 'Connected ' + vpnAgo(v.since) : v.error ? String(v.error).slice(0, 200) : 'Traffic is paused until the VPN is back');
     clearTimeout(VPNT); if (v.on && v.status === 'connected') VPNT = setTimeout(vpnPaint, 30000);
   }
-  /* "VPN reconnecting, traffic paused": over the main page and the Browser tab while the tunnel is down */
+  /* "VPN reconnecting, traffic paused": a slim strip under the status bar and the page header (never over the back
+     button), and in the Browser tab inside the chrome just above the page, while the tunnel is down */
+  var VBAR = null, VBT = 0;
+  function vpnBarPlace() {
+    var el = VBAR; if (!el) return;
+    var shown = el.classList.contains('show'), br = document.getElementById('br'), brv = document.getElementById('br-v');
+    if (shown && br && !br.hidden && brv && brv.parentNode === br) {
+      /* in flow above #br-v: brPlace lays the native WebView out below the strip */
+      if (el.parentNode !== br || el.nextSibling !== brv) { el.classList.add('inbr'); br.insertBefore(el, brv); brShown = ''; try { brPlace(); } catch (e) {} }
+      return;
+    }
+    if (el.parentNode !== document.body) { var was = !!br && el.parentNode === br; el.classList.remove('inbr'); el._t = null; document.body.appendChild(el); if (was) { brShown = ''; try { brPlace(); } catch (e) {} } }
+    if (!shown) return;
+    var sat = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0, top = sat;
+    try {
+      /* the header on top at the status bar's edge (the strip has no pointer events, so it is never the hit) */
+      var x = document.elementFromPoint(Math.round(window.innerWidth / 2), Math.round(sat) + 2), h = x && x.closest ? x.closest('header') : null;
+      if (h) { var r = h.getBoundingClientRect(); if (r.bottom > top && r.bottom < sat + 200) top = r.bottom; }
+    } catch (e) {}
+    top = Math.round(top);
+    if (el._t !== top) { el._t = top; el.style.top = top + 'px'; }
+  }
   function vpnBanner() {
-    var v = VPN, show = !!(v.on && v.status !== 'connected'), el = document.getElementById('hw-vbar');
-    if (!show) { if (el) el.classList.remove('show'); return; }
-    if (!el) { if (!document.body) { setTimeout(vpnBanner, 300); return; } el = document.createElement('div'); el.id = 'hw-vbar'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    var v = VPN, show = !!(v.on && v.status !== 'connected'), el = VBAR;
+    if (!show) { clearInterval(VBT); VBT = 0; if (el) { el.classList.remove('show'); vpnBarPlace(); } return; }
+    if (!el) { if (!document.body) { setTimeout(vpnBanner, 300); return; } el = VBAR = document.createElement('div'); el.id = 'hw-vbar'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
     el.textContent = v.status === 'error' && v.error === 'Not supported on this phone' ? 'VPN not supported on this phone, traffic paused' : !v.web ? 'Your Android WebView is too old for the VPN, update Android System WebView' : 'VPN reconnecting, traffic paused';
-    el.classList.add('show');
+    el.classList.add('show'); vpnBarPlace();
+    /* pages, tabs and headers change under it: re-place it while it shows */
+    if (!VBT) VBT = setInterval(vpnBarPlace, 400);
   }
   function vpnSet(o) {
     if (!vpnNat()) return;
@@ -12709,10 +12742,21 @@ var APP_VERSION = '1.9.19';
       ktick(); var v = vpnRead(), L = []; try { L = JSON.parse(String(HwNative.vpnRegions()) || '[]') || []; } catch (e) {}
       var rows = [{ k: '', l: 'Auto (best)', sub: 'Cloudflare WARP, nearest server', on: !v.region }].concat(L.map(function (r) { return { k: r.code, l: (vpnFlag(r.code) + ' ' + r.name).trim(), on: v.region === r.code }; }));
       var pick = function (k) { if (k === (vpnRead().region || '')) return; vpnSet({ region: k }); };
-      if (window.HWP && HWP.picker) HWP.picker({ title: 'VPN location', rows: rows, onPick: pick });
+      if (window.HWP && HWP.picker) HWP.picker({ title: 'VPN location', rows: rows, onPick: pick, dot: true });
       else kchoose('VPN location', rows.map(function (r) { return [r.k, esc(r.l)]; }), v.region || '', pick);
     });
-    on('kws-vdns', function () { ktick(); kchoose('Secure DNS', [['off', 'Off'], ['quad9', 'Quad9 (default)'], ['mullvad', 'Mullvad']], vpnRead().dns || 'quad9', function (d) { vpnSet({ dns: d }); }); });
+    on('kws-vlog', function () { ktick(); vpnLogSheet(); });
+    on('kws-vdns', function () { ktick(); kchoose('Secure DNS', VPN_DNS.map(function (o) { return [o[0], esc(o[1])]; }), vpnRead().dns || 'quad9', function (d) { vpnSet({ dns: d }); }); });
+  }
+  /* the last ~200 warp-plus lines (keys redacted natively), monospace, with Copy */
+  function vpnLogSheet() {
+    var t = ''; try { t = String(HwNative.vpnLog() || ''); } catch (e) {}
+    sheet('<h3>VPN log</h3><p class="sp">The VPN engine’s last 200 lines. Keys are removed. Copy it to share it with the developer.</p>' +
+      (t ? '<pre class="clog">' + esc(t.slice(-60000)) + '</pre>' : '<p class="sp">Nothing logged yet. Turn the VPN on to see its connection steps here.</p>') +
+      '<div class="row2"><button class="btn" data-x>Close</button>' + (t ? '<button class="btn pri" data-cp>' + sv('copy') + ' Copy</button>' : '') + '</div>', function (ov) {
+      var pre = ov.querySelector('.clog'); if (pre) pre.scrollTop = pre.scrollHeight;
+      var c = ov.querySelector('[data-cp]'); if (c) c.onclick = function () { copy(t).then(function () { toast('VPN log copied'); buzz(8); }); };
+    });
   }
   window.hwVpnState = function (j) { try { var o = JSON.parse(j); if (o && typeof o === 'object') VPN = o; } catch (e) { return; } vpnPaint(); };
   setTimeout(function () { vpnRead(); vpnBanner(); }, 0);
@@ -14530,6 +14574,7 @@ window.hwCrashPrompt = crashPrompt;
     if (BRU.hist) el.innerHTML = '<div class="br-sw br-h">' + brHistHtml() + '</div>';
     else if (BRU.sw) el.innerHTML = '<div class="br-sw">' + brSwHtml() + '</div>';
     else el.innerHTML = brBarHtml() + '<div class="br-v" id="br-v">' + (t && t.url && !BRU.edit ? '<div class="br-ph">' + brFav(t, 'br-favb') + '<span>' + esc(t.title || brHostOf(t.url)) + '</span></div>' : brStartHtml()) + '</div>';
+    try { vpnBarPlace(); } catch (e) {}   /* v1.9.19: the VPN strip back above the page after a repaint */
     brPlace();
   }
   function brPaintBar() {

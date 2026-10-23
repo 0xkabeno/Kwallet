@@ -35,4 +35,4 @@ SOFTWARE.
 
 OkHttp DNS over HTTPS (com.squareup.okhttp3:okhttp-dnsoverhttps 4.12.0) - https://github.com/square/okhttp
   Copyright Square, Inc. Licensed under the Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0).
-  Used unmodified from Maven Central for Settings > Network & VPN > Secure DNS (Quad9 or Mullvad resolvers).
+  Used unmodified from Maven Central for Settings > Network & VPN > Secure DNS (Quad9, Cloudflare, Google or AdGuard resolvers).

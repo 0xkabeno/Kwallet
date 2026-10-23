@@ -128,7 +128,7 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.8.3")
     // v1.2: WebSockets + HTTP for the always-on listener (foreground service)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    // v1.9.19: Secure DNS (DNS over HTTPS: Quad9 / Mullvad) for the shared client, same version as okhttp
+    // v1.9.19: Secure DNS (DNS over HTTPS: Quad9 / Cloudflare / Google / AdGuard) for the shared client, same version as okhttp
     implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:4.12.0")
     // v1.5 (#61): Hwallet's own scanner: CameraX preview + ZXing decoding on the phone (no Play services)
     implementation("androidx.camera:camera-camera2:1.3.4")
