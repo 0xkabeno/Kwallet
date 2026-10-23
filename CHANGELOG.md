@@ -6,6 +6,7 @@
 - Kwallet: readable EVM and Solana previews; approvals default to the exact amount; revoke shows as "Revoke … approval".
 - Kwallet: seed backup-check prompts; QR air-gap side (settings rows, scanner, camera permission). Still no INTERNET permission, and CI fails if it ever appears.
 - Kwallet: Internet Identity rows show plain "Identity N". Monero first in the chain row.
+- Kwallet Settings opened to nothing (an air-gap helper was out of scope); fixed.
 - Boot fix: the BC-UR (KwUR) bundle read Node's `process` at load and broke Kwallet's start; it now gets a local stub.
 - Both apps: every selected single choice (passkeys, identities, networks, dialog options, theme and icon pickers) beats like the pairing dot. Off with reduce motion.
 - Hwallet: Internet Identity scan in batches of 5 with up to 3 tries each; a scan only counts as fresh when every passkey answered.

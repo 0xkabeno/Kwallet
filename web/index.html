@@ -17106,6 +17106,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
     $('kws-hwpin').onclick = function () { tick(); if (window.KwHw) { KwHw.setReqPin(!KwHw.reqPin()); try { FX.buzz(10); } catch (x) {} } sync(); };
     document.addEventListener('kwallet-pinmode', sync);
   }
+  function airL() { try { return window.KwAir ? KwAir.list() : []; } catch (x) { return []; } }   /* v3.99.14: sync() needs it too (Settings did not open) */
   function name(m) { for (var i = 0; i < TIMES.length; i++) if (TIMES[i][0] === m) return TIMES[i][1]; return ''; }
   function sync() {
     if (!ov) return;
