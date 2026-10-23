@@ -9,6 +9,13 @@
 - Kwallet Settings opened to nothing (an air-gap helper was out of scope); fixed.
 - Boot fix: the BC-UR (KwUR) bundle read Node's `process` at load and broke Kwallet's start; it now gets a local stub.
 - Both apps: every selected single choice (passkeys, identities, networks, dialog options, theme and icon pickers) beats like the pairing dot. Off with reduce motion.
+- Hwallet: Sui works again. Sui turned its public JSON-RPC off, so balances showed "—". Balances, coins, gas price, sending, status, history, dApp transactions and the background service now use Sui GraphQL.
+- Hwallet: TON as a full chain, coin shown as Gram (GRAM): balances, jettons (USDT pinned), history, send with comment, broadcast, live status. Pair again in Kwallet to add it.
+- Hwallet: TON Connect in the browser, as Hwallet and as a Tonkeeper-compatible wallet (connect with ton_proof, sendTransaction, signData). Kwallet signs; Hwallet broadcasts. Pairing now also carries the TON public key and wallet StateInit.
+- Hwallet: swipe a Home row for Send (green), Swap (red), Pin (blue), Hide, with haptics.
+- Hwallet: token approvals work without an Etherscan key (checks every held token against the spenders you used and the big routers), and "Revoke all".
+- Hwallet: address book memo/tag, tap to edit, names in history, and "Save to address book?" after sending to a new address.
+- Hwallet: price alerts (above/below, checked by the background service every minute) and money-out alerts next to incoming ones.
 - Hwallet: Internet Identity scan in batches of 5 with up to 3 tries each; a scan only counts as fresh when every passkey answered.
 - Hwallet: native scam-site list (MetaMask eth-phishing-detect + ScamSniffer) with a full-page "Deceptive site ahead" warning: Go back to safety, or Open anyway for this session.
 

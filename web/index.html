@@ -21928,6 +21928,8 @@ window.__KWLOGO={"ton":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
   function tonOk(s) { s = String(s || '').trim(); need(/^[EUk0]Q[A-Za-z0-9_+/-]{46}$/.test(s) || /^-?[01]:[0-9a-fA-F]{64}$/.test(s), 'Not a valid TON address'); return tonAddr(s); }
   function tonKp(seedHex) { var T = tonT(), s = unhex(seedHex); need(s.length === 32, 'Bad TON key'); return T.keyPairFromSeed(T.Buffer.from(s)); }
   function tonWal(pub, ver) { var T = tonT(), o = { workchain: 0, publicKey: T.Buffer.from(pub) }; return ver === 'v4' ? T.WalletContractV4.create(o) : T.WalletContractV5R1.create(o); }
+  /* v3.99.14: the wallet's StateInit as a base64 BOC (TonConnect ton_addr.walletStateInit); public data only */
+  function tonInitB64(pubHex, ver) { var T = tonT(), p = unhex(pubHex); need(p.length === 32, 'Bad TON public key'); var w = tonWal(p, ver === 'v4' ? 'v4' : 'w5'); return T.beginCell().store(T.storeStateInit(w.init)).endCell().toBoc().toString('base64'); }
   /* the wallet (W5 or v4) of this key that `from` names; refuses anything else */
   function tonOwn(kp, from, ver) {
     var fa = tonAddr(from), w = tonWal(kp.publicKey, ver === 'v4' ? 'v4' : 'w5');
@@ -22090,7 +22092,7 @@ window.__KWLOGO={"ton":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
 
   root.KwChains = {
     sol: { build: solBuild }, trx: { build: trxBuild }, btc: { build: btcBuild, plan: btcPlan }, sui: { build: suiBuild }, xrp: { build: xrpBuild, tok: xrpTok }, ada: { build: adaBuild, plan: adaPlan, tok: adaTok }, near: { build: nearBuild, plan: nearPlan, sign: nearSign, acct: nearAcct }, icp: { build: icpBuild, call: icpCall, pkCall: icpPkCall, addr: icpAddr, prin: icpPrinBytes, icrc1Arg: icrc1Arg },
-    ton: { build: tonBuild, plan: tonPlan, addr: tonOk, own: function (seedHex, from, ver) { return tonOwn(tonKp(seedHex), from, ver).address; }, msgs: tonConnectMsgs, decode: tonDecode, connect: tonConnectSign, proof: tonProof, signData: tonSignData }, preview: preview,
+    ton: { init: tonInitB64, build: tonBuild, plan: tonPlan, addr: tonOk, own: function (seedHex, from, ver) { return tonOwn(tonKp(seedHex), from, ver).address; }, msgs: tonConnectMsgs, decode: tonDecode, connect: tonConnectSign, proof: tonProof, signData: tonSignData }, preview: preview,
     util: { hex: hex, unhex: unhex, b58enc: b58enc, b58dec: b58dec, blake2b: blake2b, edSign: edSign, edPub: edPub, edSignX: edSignX, adaPub: function (kl) { return penc(pmul(md(leBig(kl), L), BASE)); }, bech32Dec: bech32Dec, btcScript: btcScript, trxAddr: trxAddr, xrpAcct: xrpAcct, adaAddr: adaAddr, solAddr: solAddr, suiId: suiId }
   };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -23143,7 +23145,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   function publicExport(r) {
     /* v3.98: + the primary address (a subaddress pairing still scans the whole wallet) and the restore height when known */
-    return { v: 1, src: 'kwallet', kid: kwKid() || undefined, sid: /^\d{10}$/.test(r.sid || '') ? r.sid : undefined, label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null, pks: r.suiPk || r.btcPk || r.nearPk || r.icpPk ? { sui: r.suiPk || undefined, btc: r.btcPk || undefined, near: r.nearPk || undefined, icp: r.icpPk || undefined, icpAcct: r.icpAcct || undefined, iiIds: Array.isArray(r.iiIds) ? r.iiIds : undefined, ton: r.tonPk || undefined } : undefined, tonPk: r.tonPk || undefined, tonV4: r.tonV4 || undefined };
+    return { v: 1, src: 'kwallet', kid: kwKid() || undefined, sid: /^\d{10}$/.test(r.sid || '') ? r.sid : undefined, label: r.label, index: r.index, addrs: r.addrs, xmr: r.addrs.xmr ? { view: r.xmrView || '', height: r.xmrHeight | 0, primary: r.xmrPrimary || (r.index ? '' : r.addrs.xmr) } : null, pks: r.suiPk || r.btcPk || r.nearPk || r.icpPk ? { sui: r.suiPk || undefined, btc: r.btcPk || undefined, near: r.nearPk || undefined, icp: r.icpPk || undefined, icpAcct: r.icpAcct || undefined, iiIds: Array.isArray(r.iiIds) ? r.iiIds : undefined, ton: r.tonPk || undefined } : undefined, tonPk: r.tonPk || undefined, tonV4: r.tonV4 || undefined, tonInit: (function () { try { return r.tonPk && window.KwChains && KwChains.ton.init ? KwChains.ton.init(r.tonPk, 'w5') : undefined; } catch (e) { return undefined; } })() };
   }
   /* v3.98: block height for a date, offline (60 s blocks to the v2 fork 1009827, 120 s after; anchor 3,783,000 = 1791875075) */
   function xmrHeightAt(ms) {

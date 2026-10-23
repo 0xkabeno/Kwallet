@@ -334,6 +334,7 @@ class HwLiveService : Service() {
         if (!running) return
         try {
             if (cfg.optBoolean("notif", true)) prices()
+            priceAlerts()   // v1.9.14
             val bg = bgSec()
             if (bg <= 0) return
             val w = cfg.optJSONArray("watch") ?: return
@@ -439,6 +440,53 @@ class HwLiveService : Service() {
         } } catch (_: Throwable) { pxBusy = false }
     }
 
+
+    /* v1.9.14: price alerts (Settings > Notifications). cfg.palerts = [{ id, cg, sym, op: ">" | "<", v }]. Checked once a minute
+       from CoinGecko; each alert fires once when its price is crossed and re-arms when the price goes back. */
+    private var paAt = 0L
+    @Volatile private var paBusy = false
+    private fun priceAlerts() {
+        val L = cfg.optJSONArray("palerts") ?: return
+        if (L.length() == 0) return
+        val now = System.currentTimeMillis()
+        if (paBusy || now - paAt < 60000L) return
+        paBusy = true; paAt = now
+        try { exec?.execute {
+            try {
+                val ids = (0 until L.length()).mapNotNull { L.optJSONObject(it)?.optString("cg")?.takeIf { s -> s.isNotEmpty() } }.distinct()
+                if (ids.isEmpty()) return@execute
+                val j = get("https://api.coingecko.com/api/v3/simple/price?ids=" + ids.joinToString(",") { java.net.URLEncoder.encode(it, "UTF-8") } + "&vs_currencies=usd") ?: return@execute
+                val o = JSONObject(j)
+                val pr = getSharedPreferences(PREF, Context.MODE_PRIVATE)
+                val fired = HashSet(pr.getStringSet("pa_fired", emptySet()) ?: emptySet())
+                var dirty = false
+                for (i in 0 until L.length()) {
+                    val a = L.optJSONObject(i) ?: continue
+                    val id = a.optString("id"); val cg = a.optString("cg"); val v = a.optDouble("v", 0.0); val up = a.optString("op") != "<"
+                    val px = o.optJSONObject(cg)?.optDouble("usd", 0.0) ?: 0.0
+                    if (id.isEmpty() || v <= 0 || px <= 0) continue
+                    val hit = if (up) px >= v else px <= v
+                    if (hit && !fired.contains(id)) {
+                        fired.add(id); dirty = true
+                        val sym = a.optString("sym").ifEmpty { cg }
+                        val title = sym + (if (up) " is above $" else " is below $") + BigDecimal(v).stripTrailingZeros().toPlainString()
+                        val body = "Now $" + BigDecimal(px).setScale(if (px < 1) 6 else 2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+                        try {
+                            val n = NotificationCompat.Builder(this, CH_IN).setSmallIcon(R.drawable.hw_stat).setColor(0xFFDDF869.toInt())
+                                .setContentTitle(title).setContentText(body).setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_HIGH)
+                                .setCategory(NotificationCompat.CATEGORY_STATUS).setDefaults(NotificationCompat.DEFAULT_SOUND)
+                                .setContentIntent(openApp()).build()
+                            @SuppressLint("MissingPermission")
+                            val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                            nm.notify((id.hashCode() and 0x7ffffff) + 300, n)
+                        } catch (_: Exception) {}
+                    } else if (!hit && fired.contains(id)) { fired.remove(id); dirty = true }
+                }
+                if (dirty) pr.edit().putStringSet("pa_fired", fired).apply()
+            } catch (_: Exception) {} finally { paBusy = false }
+        } } catch (_: Throwable) { paBusy = false }
+    }
+
     /* ---------- balances (watch only) ---------- */
     private fun hexBig(h: String?): BigInteger? = try { if (h == null || h == "0x") BigInteger.ZERO else BigInteger(h.removePrefix("0x").ifEmpty { "0" }, 16) } catch (_: Exception) { null }
     private fun pad32(a: String): String = a.removePrefix("0x").lowercase().padStart(64, '0')
@@ -498,9 +546,11 @@ class HwLiveService : Service() {
                     if (t20 != null) for (i in 0 until t20.length()) { val m = t20.getJSONObject(i); val it = m.keys(); while (it.hasNext()) { val k = it.next(); try { out["trx:$k"] = BigInteger(m.optString(k)) } catch (_: Exception) {} } }
                 }
                 "sui" -> {
-                    val r = rpcPost(rpc, JSONObject().put("jsonrpc", "2.0").put("id", 1).put("method", "suix_getAllBalances").put("params", JSONArray().put(addr)).toString()) ?: throw IllegalStateException()
-                    val a = JSONObject(r).optJSONArray("result") ?: JSONArray()
-                    for (i in 0 until a.length()) { val b = a.getJSONObject(i); val ty = b.optString("coinType"); val k = if (Regex("^0x0*2::sui::SUI$").matches(ty)) "native" else ty.lowercase(); try { out["sui:$k"] = BigInteger(b.optString("totalBalance")) } catch (_: Exception) {} }
+                    /* v1.9.14: Sui's public JSON-RPC is off; balances come from Sui GraphQL */
+                    val q = JSONObject().put("query", "query(\$o:SuiAddress!){ address(address:\$o) { balances(first:50) { nodes { coinType { repr } totalBalance } } } }").put("variables", JSONObject().put("o", addr))
+                    val r = post("https://graphql.mainnet.sui.io/graphql", q.toString()) ?: throw IllegalStateException()
+                    val a = JSONObject(r).optJSONObject("data")?.optJSONObject("address")?.optJSONObject("balances")?.optJSONArray("nodes") ?: throw IllegalStateException()
+                    for (i in 0 until a.length()) { val b = a.getJSONObject(i); val ty = b.optJSONObject("coinType")?.optString("repr") ?: continue; val k = if (Regex("^0x0*2::sui::SUI$").matches(ty)) "native" else ty.lowercase(); try { out["sui:$k"] = BigInteger(b.optString("totalBalance")) } catch (_: Exception) {} }
                 }
                 "xrp" -> {
                     val r = rpcPost(rpc, JSONObject().put("method", "account_info").put("params", JSONArray().put(JSONObject().put("account", addr).put("ledger_index", "validated"))).toString()) ?: throw IllegalStateException()
@@ -527,12 +577,13 @@ class HwLiveService : Service() {
         for ((k, v) in now) {
             val old = snap[k]
             if (old != null && v > old && cfg.optBoolean("alerts", true)) alert(c, k, v.subtract(old))
+            if (old != null && v < old && cfg.optBoolean("alerts", true) && cfg.optBoolean("outAlerts", true)) alert(c, k, old.subtract(v), true)   // v1.9.14: money left the wallet
             if (old != v) { if (old != null) histKick(c.optString("id"), 300L); snap[k] = v; changed = true }
         }
         if (changed) saveSnap()
     }
 
-    private fun alert(c: JSONObject, key: String, amt: BigInteger) {
+    private fun alert(c: JSONObject, key: String, amt: BigInteger, out: Boolean = false) {
         val tok = key.substringAfter(":")
         var sym = c.optString("sym"); var dec = c.optInt("dec", 18)
         if (tok != "native") {
@@ -541,7 +592,7 @@ class HwLiveService : Service() {
             if (sym == c.optString("sym")) sym = "tokens"
         }
         val txt = try { BigDecimal(amt, dec).stripTrailingZeros().toPlainString() } catch (_: Exception) { amt.toString() }
-        val title = "Received +$txt $sym"
+        val title = if (out) "Sent −$txt $sym" else "Received +$txt $sym"
         val body = "On " + c.optString("name") + (cfg.optString("wallet").let { if (it.isNotEmpty()) " · $it" else "" })
         try {
             val n = NotificationCompat.Builder(this, CH_IN).setSmallIcon(R.drawable.hw_stat).setColor(0xFFDDF869.toInt())
@@ -550,7 +601,7 @@ class HwLiveService : Service() {
                 .setContentIntent(openApp()).build()
             @SuppressLint("MissingPermission")
             val ok = (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
-            ok.notify((key.hashCode() and 0x7ffffff) + 100, n)
+            ok.notify((key.hashCode() and 0x7ffffff) + (if (out) 200 else 100), n)
         } catch (_: Exception) {}
     }
 
