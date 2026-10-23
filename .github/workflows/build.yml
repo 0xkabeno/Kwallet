@@ -127,6 +127,11 @@ jobs:
           H=$("$APKSIGNER" verify --print-certs hwallet/app/build/outputs/apk/release/hwallet-release.apk | grep -m1 SHA-256)
           [ "${K#*: }" = "${H#*: }" ] || { echo "::error::Kwallet and Hwallet must be signed with the same key"; exit 1; }
 
+      - name: Kwallet has no INTERNET permission
+        run: |
+          AAPT2=$(ls $ANDROID_HOME/build-tools/*/aapt2 | sort -V | tail -1)
+          if "$AAPT2" dump permissions app/build/outputs/apk/release/app-release.apk | grep -q 'android.permission.INTERNET'; then echo "::error::Kwallet APK must not request INTERNET"; exit 1; fi
+
       - name: Package
         run: |
           V=${{ steps.ver.outputs.version }}

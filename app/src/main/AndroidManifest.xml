@@ -3,6 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Kwallet is fully offline: there is deliberately NO INTERNET permission. -->
+    <!-- v3.99.14: safety net, no library may merge INTERNET into Kwallet's manifest -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <!-- v3.99.14: QR air-gap scanner (asked only when the user opens it); phones without a camera can still install -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- v3.90: the sign page hides other apps' overlays (anti-tapjacking, Android 12+) -->
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />

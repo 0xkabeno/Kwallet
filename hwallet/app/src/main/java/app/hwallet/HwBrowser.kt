@@ -91,6 +91,14 @@ class HwBrowser(
     private val tabs = HashMap<String, Tab>()
     private var baseUa: String? = null
     init { try { HwShield.init(act); HwUa.init(act) } catch (e: Throwable) { Log.w(TAG, "shield/ua init", e) } }
+    init { try { HwScam.init(act) } catch (e: Throwable) { Log.w(TAG, "scam init", e) } }   // v1.9.14: deceptive-site warning
+
+    /** v1.9.14: a top-level navigation to a listed deceptive site: the page shows its full-page warning (nothing loads) */
+    private fun scamHit(u: String?): String? = try { if (!isWeb(u)) null else HwScam.check(Uri.parse(u).host) } catch (_: Throwable) { null }
+    private fun scamEv(t: Tab, u: String, why: String) {
+        val h = try { Uri.parse(u).host?.lowercase() ?: "" } catch (_: Throwable) { "" }
+        ev(JSONObject().put("t", "scam").put("id", t.id).put("host", h).put("url", u).put("why", why))
+    }
     init { try { darkPref = darkNorm(act.getSharedPreferences(DARK_PREFS, android.content.Context.MODE_PRIVATE).getString("mode", darkPref) ?: darkPref) } catch (_: Throwable) {} }
 
     // ---------------------------------------------------------------- dark pages (Browser ⋮ > Dark pages: Auto / On / Off)
@@ -669,6 +677,7 @@ class HwBrowser(
                    instead of leaving the app. Only a real WC v2 pairing URI (wc:<topic>@2?…symKey=…) is taken. */
                 wcIn(u.toString())?.let { onWc(it); return true }
                 if (s == "https" || s == "http") {
+                    if (req.isForMainFrame) scamHit(u.toString())?.let { why -> scamEv(t, u.toString(), why); return true }   // v1.9.14
                     if (t.offline && req.isForMainFrame) { leaveSnapshot(t, view); live(t, view); view.loadUrl(u.toString()); return true }
                     if (req.isForMainFrame && req.hasGesture() && !t.touched) live(t, view)
                     return false
@@ -677,7 +686,8 @@ class HwBrowser(
                 outside(u.toString(), s)
                 return true
             }
-            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { afDrop(t.id); if (t.inc) { val o = originOf(url); if (o.isNotEmpty()) t.incOrigins.add(o) }; try { Uri.parse(url ?: "").host?.let { HwShield.resetCount(it.lowercase()) } } catch (_: Throwable) {}; navEv(t, view, true, 10); lateInject(view) }
+            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { scamHit(url)?.let { why -> try { view.stopLoading() } catch (_: Throwable) {}; scamEv(t, url ?: "", why); return }   /* v1.9.14: loads that skip shouldOverrideUrlLoading (typed, restored, redirects) */
+                afDrop(t.id); if (t.inc) { val o = originOf(url); if (o.isNotEmpty()) t.incOrigins.add(o) }; try { Uri.parse(url ?: "").host?.let { HwShield.resetCount(it.lowercase()) } } catch (_: Throwable) {}; navEv(t, view, true, 10); lateInject(view) }
             override fun onPageCommitVisible(view: WebView, url: String?) { lateInject(view); hide(view, url); uncover(t) }
             // v1.8.7: single-page dApps (pushState / hash routes) update Back / Forward too
             override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) { navEv(t, view, view.progress < 100, view.progress) }

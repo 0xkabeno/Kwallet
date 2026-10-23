@@ -121,6 +121,9 @@ class SignActivity : KwActivity() {
 
     private fun callerOk(): Boolean {
         val caller = callingActivity?.packageName ?: return false
+        /* v3.99.14: QR air-gap. Kwallet's own main screen hands over a request it scanned from Hwallet on another phone
+           (startActivityForResult with air=true). callingActivity is set by the system, so no other app can pass as Kwallet. */
+        if (caller == packageName && intent.getBooleanExtra("air", false)) return true
         if (caller != HWALLET) return false
         return try { packageManager.checkSignatures(packageName, caller) == PackageManager.SIGNATURE_MATCH } catch (_: Exception) { false }
     }
@@ -145,9 +148,14 @@ class SignActivity : KwActivity() {
         // nothing on this page may be captured, recorded or drawn over (the CI emulator build, -PkwE2E=true, must screenshot it)
         if (!BuildConfig.E2E) window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         if (Build.VERSION.SDK_INT >= 31) window.setHideOverlayWindows(true)
-        val ok = callerOk(); callerChecked = ok
+        var ok = callerOk(); callerChecked = ok
         req = if (ok) readReq() else ""   /* v3.98: a Monero request carries the unsigned set + exported outputs; v3.98.8: from a file when large */
-        reqId = try { JSONObject(req).optString("id", "") } catch (_: Exception) { "" }
+        val rq = try { JSONObject(req) } catch (_: Exception) { null }
+        reqId = rq?.optString("id", "") ?: ""
+        /* v3.99.14: an air-gap seed signs only for a request Kwallet itself scanned (air=true from Kwallet), never for one
+           Hwallet on this phone sends; and Kwallet's own hand-off always names its air-gap seed */
+        val airIntent = callingActivity?.packageName == packageName
+        if (ok && (if (rq == null) airIntent else rq.has("air") != airIntent)) { ok = false; callerChecked = false; req = "" }
         setResult(RESULT_CANCELED, Intent().putExtra("res", if (ok) "{\"status\":\"rejected\"}" else "{\"status\":\"refused\",\"error\":\"Only Hwallet signed with the Kwallet key can ask Kwallet to sign\"}"))
         super.onCreate(null)
         @Suppress("DEPRECATION") overridePendingTransition(0, 0)

@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.webkit.JavascriptInterface
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -66,6 +67,69 @@ open class KwActivity : FragmentActivity() {
         val uri = if (res.resultCode == Activity.RESULT_OK) res.data?.data else null
         fileCallback?.onReceiveValue(if (uri != null) arrayOf(uri) else null)
         fileCallback = null
+    }
+
+    /* ---------- v3.99.14: QR air-gap scanner (main app only; the sign page never gets KwScanN) ----------
+       Same design as Hwallet's: CameraX preview behind a transparent WebView/root, the page draws the scanner frame.
+       Frames go to window.kwScanHit(text), camera state to window.kwScanState(s). A scanned request opens this app's own
+       sign page (SignActivity, extras req + air=true); its answer goes to window.kwAirDone(json) for the kw-res QR. */
+    private var scanner: KwScan? = null
+    @Volatile private var scanning = false
+    private var airSigning = false
+    private fun scanJs(f: String, v: String) { if (::web.isInitialized) web.evaluateJavascript("window.$f&&$f(${JSONObject.quote(v)})", null) }
+    private val askCam = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        if (ok) scanOpen()
+        else scanJs("kwScanState", if (!shouldShowRequestPermissionRationale(android.Manifest.permission.CAMERA)) "denied:forever" else "denied")
+    }
+    private val signAir = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+        airSigning = false
+        val out = res.data?.getStringExtra("res") ?: "{\"status\":\"rejected\"}"
+        if (::web.isInitialized) web.post { scanJs("kwAirDone", out) }
+    }
+    private fun scanOpen() {
+        if (signPage || isFinishing) return
+        try {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                askCam.launch(android.Manifest.permission.CAMERA); return
+            }
+            val sc = scanner ?: KwScan(this, root) { t -> scanJs("kwScanHit", t) }.also { scanner = it }
+            sc.state = { st -> scanJs("kwScanState", st) }
+            scanning = true
+            barAnim?.cancel()
+            web.setBackgroundColor(Color.TRANSPARENT)
+            root.setBackgroundColor(Color.BLACK)
+            @Suppress("DEPRECATION")
+            if (Build.VERSION.SDK_INT < 35) { window.statusBarColor = Color.TRANSPARENT; window.navigationBarColor = Color.TRANSPARENT }
+            val ic = WindowCompat.getInsetsController(window, window.decorView)
+            ic.isAppearanceLightStatusBars = false; ic.isAppearanceLightNavigationBars = false   // white icons over the camera
+            sc.start()
+        } catch (e: Throwable) { scanning = false; scanJs("kwScanState", "error:" + (e.message ?: "camera")) }
+    }
+    private fun scanClose(bg: String) {
+        try { scanner?.stop() } catch (_: Throwable) {}
+        scanning = false
+        val c = try { Color.parseColor(bg) } catch (_: Throwable) { curBot }
+        try { web.setBackgroundColor(c); root.setBackgroundColor(c) } catch (_: Throwable) {}
+        paintBars(curTop, curBot)
+    }
+    internal fun jsScanStart() = runOnUiThread { scanOpen() }
+    internal fun jsScanStop(bg: String) = runOnUiThread { scanClose(bg) }
+    internal fun jsScanResume() = runOnUiThread { scanner?.resume() }
+    internal fun jsScanTorch(on: Boolean): Boolean {
+        var ok = false; val l = java.util.concurrent.CountDownLatch(1)
+        runOnUiThread { ok = try { scanner?.torch(on) ?: false } catch (_: Throwable) { false }; l.countDown() }
+        try { l.await(800, java.util.concurrent.TimeUnit.MILLISECONDS) } catch (_: Throwable) {}
+        return ok
+    }
+    internal fun jsScanSign(req: String) = runOnUiThread {
+        if (signPage || isFinishing) return@runOnUiThread
+        if (airSigning) return@runOnUiThread
+        if (req.isEmpty() || req.length > 400000) { scanJs("kwAirDone", "{\"status\":\"error\",\"error\":\"This request is too large for the sign page\"}"); return@runOnUiThread }
+        if (scanning) scanClose("")
+        try {
+            airSigning = true
+            signAir.launch(Intent(this, SignActivity::class.java).putExtra("req", req).putExtra("air", true).putExtra("t0", android.os.SystemClock.uptimeMillis()))
+        } catch (e: Throwable) { airSigning = false; scanJs("kwAirDone", JSONObject().put("status", "error").put("error", "Could not open the sign page: " + (e.message ?: "")).toString()) }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -154,6 +218,7 @@ open class KwActivity : FragmentActivity() {
         }
 
         if (!adopted) web.addJavascriptInterface(kwHarkNative(this) { this }, "HarkNative")
+        if (!signPage) web.addJavascriptInterface(KwScanBridge(this), "KwScanN")   // v3.99.14: QR air-gap scanner, main app only
         onWebReady(web)
         tuneWebView(this, web)
 
@@ -344,12 +409,12 @@ open class KwActivity : FragmentActivity() {
             val ltN = android.graphics.Color.alpha(bottom) == 255 && isLight(bottom); if (ic.isAppearanceLightNavigationBars != ltN) ic.isAppearanceLightNavigationBars = ltN
             val ltS = isLight(top); if (ic.isAppearanceLightStatusBars != ltS) ic.isAppearanceLightStatusBars = ltS
             return
-        } else {
+        } else if (!scanning) {   // v3.99.14: the camera preview shows through while the scanner is open
             if (::root.isInitialized) root.setBackgroundColor(bottom)
             if (::web.isInitialized) web.setBackgroundColor(top)
             @Suppress("DEPRECATION")
             if (Build.VERSION.SDK_INT < 35) { window.statusBarColor = top; window.navigationBarColor = bottom }
-        }
+        } else return
         val c = WindowCompat.getInsetsController(window, window.decorView)
         val lt = isLight(top); val lb = isLight(bottom)
         if (c.isAppearanceLightStatusBars != lt) c.isAppearanceLightStatusBars = lt
@@ -366,7 +431,16 @@ open class KwActivity : FragmentActivity() {
 
     override fun onPause() { super.onPause(); web.onPause() }
     override fun onResume() { super.onResume(); web.onResume(); if (::web.isInitialized) tuneWebView(this, web) }  // OEMs drop back to 60 Hz after resume
-    override fun onDestroy() { web.destroy(); super.onDestroy() }
+    override fun onDestroy() { try { scanner?.release() } catch (_: Throwable) {}; scanner = null; web.destroy(); super.onDestroy() }
+}
+
+/** v3.99.14: window.KwScanN (main app only): the QR air-gap scanner and the hand-off of a scanned request to the sign page */
+class KwScanBridge(private val a: KwActivity) {
+    @JavascriptInterface fun start() = a.jsScanStart()
+    @JavascriptInterface fun stop(bg: String) = a.jsScanStop(bg)
+    @JavascriptInterface fun resume() = a.jsScanResume()
+    @JavascriptInterface fun torch(on: Boolean): Boolean = a.jsScanTorch(on)
+    @JavascriptInterface fun sign(req: String) = a.jsScanSign(req)
 }
 
 /** The one WebView setup (main app, sign page, and the sign page Kwallet pre-loads while warm). */

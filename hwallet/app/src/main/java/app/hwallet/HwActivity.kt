@@ -499,6 +499,17 @@ class HwActivity : FragmentActivity() {
         fun brShieldList(k: String, on: Boolean) { HwShield.init(this@HwActivity); if (HwShield.LISTS.containsKey(k)) HwShield.setList(k, on) }
         @android.webkit.JavascriptInterface
         fun brShieldUpdate() { HwShield.init(this@HwActivity); HwShield.update() }
+        /* v1.9.14: deceptive-site warning (HwScam): state, on/off, check a host, continue to a host this session, update now */
+        @android.webkit.JavascriptInterface
+        fun brScam(): String = try { HwScam.init(this@HwActivity); HwScam.state() } catch (_: Throwable) { "{}" }
+        @android.webkit.JavascriptInterface
+        fun brScamSet(on: Boolean) { try { HwScam.init(this@HwActivity); HwScam.setOn(on) } catch (_: Throwable) {} }
+        @android.webkit.JavascriptInterface
+        fun brScamCheck(host: String): String = if (host.length in 1..253) try { HwScam.init(this@HwActivity); if (HwScam.isAllowed(host)) "" else HwScam.check(host) ?: "" } catch (_: Throwable) { "" } else ""
+        @android.webkit.JavascriptInterface
+        fun brScamAllow(host: String) { if (host.length in 1..253) try { HwScam.init(this@HwActivity); HwScam.allow(host) } catch (_: Throwable) {} }
+        @android.webkit.JavascriptInterface
+        fun brScamUpdate() { try { HwScam.init(this@HwActivity); HwScam.update() } catch (_: Throwable) {} }
         @android.webkit.JavascriptInterface
         fun brUa(): String = try { HwUa.init(this@HwActivity); HwUa.state() } catch (_: Throwable) { "{}" }
         @android.webkit.JavascriptInterface

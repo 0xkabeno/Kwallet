@@ -67,4 +67,9 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.fragment:fragment-ktx:1.8.3")
+    // v3.99.14: QR air-gap scanner (CameraX + ZXing core, bundled, pure on-device; no Play services, no network)
+    implementation("androidx.camera:camera-camera2:1.3.4")
+    implementation("androidx.camera:camera-lifecycle:1.3.4")
+    implementation("androidx.camera:camera-view:1.3.4")
+    implementation("com.google.zxing:core:3.5.3")
 }
