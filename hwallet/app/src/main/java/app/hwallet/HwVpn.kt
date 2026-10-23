@@ -464,6 +464,10 @@ object HwVpn {
         }
     }
 
+    private fun progress(my: Int, msg: String) {
+        ex.execute { if (my == gen && on && status != "connected" && status != "off") setStatus(if (status == "error") "reconnecting" else status, msg) }
+    }
+
     private fun connectedNow() {
         if (!probe(port)) { val my0 = gen; ex.schedule(Runnable { if (my0 == gen && on && status != "connected" && probe(port)) connectedNow() }, 1, TimeUnit.SECONDS); return }
         fresh()
