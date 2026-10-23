@@ -1153,6 +1153,11 @@ body[data-theme=dark] .ptr3 i{border-color:rgba(255,255,255,.16);border-top-colo
 
 /* v1.7.2 (S1): fluid pull to refresh: smoother ease back, spinner darkens past the threshold */
 #pg.ptr-on.ptr-anim #app>*{transition:transform .38s cubic-bezier(.22,.9,.24,1)}
+/* v1.9.16: the Chains header and its 3-dot menu ride the pull a little further and bounce back on release */
+.chh-row .chh,.chh-row .chh-dots{transition:transform .62s cubic-bezier(.34,1.7,.5,1);will-change:transform}
+.chh-row .chh-dots{transition-delay:.04s}
+#pg.ptr-on .chh-row .chh,#pg.ptr-on .chh-row .chh-dots{transform:translate3d(0,calc(var(--ptr) * .22),0)}
+#pg.ptr-on:not(.ptr-anim) .chh-row .chh,#pg.ptr-on:not(.ptr-anim) .chh-row .chh-dots{transition:none}
 #pg.ptr-on.ptr-anim #app>header:first-child,#pg.ptr-on.ptr-anim #app>.bar:first-child,#pg.ptr-on.ptr-anim #app>.hbar:first-child{transition:none}
 .ptr3{transform-origin:50% 50%}
 .ptr3 i{border-color:rgba(34,51,72,.12);border-top-color:rgba(34,51,72,.55);transition:border-color .15s linear}
@@ -4266,7 +4271,7 @@ window.hwPlayOpening();
   /* ---------- v1.9.14: TON Connect JS bridge (embedded wallet). Hwallet answers as itself (window.hwallet.tonconnect) and, for
      dApps that only look for Tonkeeper, under window.tonkeeper too. Every signature happens in Kwallet; Hwallet broadcasts. */
   if (!OFF.ton) (function () {
-    var tcId = 0, tcL = [], tcDev = { platform: 'android', appName: 'Hwallet', appVersion: '1.9.15', maxProtocolVersion: 2, features: ['SendTransaction', { name: 'SendTransaction', maxMessages: 4 }, { name: 'SignData', types: ['text', 'binary', 'cell'] }] };
+    var tcId = 0, tcL = [], tcDev = { platform: 'android', appName: 'Hwallet', appVersion: '1.9.16', maxProtocolVersion: 2, features: ['SendTransaction', { name: 'SendTransaction', maxMessages: 4 }, { name: 'SignData', types: ['text', 'binary', 'cell'] }] };
     function tcErr(code, msg) { return { code: code, message: msg }; }
     function items(r, proofWanted) {
       var it = [{ name: 'ton_addr', address: r.address, network: '-239', publicKey: r.publicKey || '', walletStateInit: r.walletStateInit || '' }];
@@ -7695,7 +7700,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.15';
+var APP_VERSION = '1.9.16';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8751,11 +8756,13 @@ var APP_VERSION = '1.9.15';
   /* identity_info(anchor) reply: variant { Ok : IdentityInfo; Err } -> the identity's name ('' when none) */
   function iiNameOf(rp) {
     var v = idlRead(rp)[0]; if (!v || v._v !== idlHash('Ok')) throw new Error('Internet Identity refused to show this identity');
-    var n = v.v && v.v['_' + idlHash('name')]; return typeof n === 'string' ? n : '';
+    var n = v.v && v.v['_' + idlHash('name')], c = v.v && v.v['_' + idlHash('created_at')];
+    c = typeof c === 'bigint' ? Number(c / 1000000n) : 0;   /* v1.9.16: created_at : opt Timestamp (ns) -> ms, 0 when II has none */
+    return { n: typeof n === 'string' ? n : '', c: c > 1.4e12 && c < 4.1e12 ? c : 0 };
   }
   function iiKey() { return 'hw-ii:' + (A.icp || ''); }
   /* per seed: { ids: { rp: [credHex x20] }, reg: { 'rp|i': anchor }, names: { anchor: name } } */
-  function iiState() { var s = jget(iiKey(), null); return s && typeof s === 'object' ? { ids: s.ids || {}, reg: s.reg || {}, names: s.names || {}, at: s.at || {} } : { ids: {}, reg: {}, names: {}, at: {} }; }
+  function iiState() { var s = jget(iiKey(), null); return s && typeof s === 'object' ? { ids: s.ids || {}, reg: s.reg || {}, names: s.names || {}, at: s.at || {}, made: s.made || {} } : { ids: {}, reg: {}, names: {}, at: {}, made: {} }; }
   function iiSave(s) { if (A.icp) jset(iiKey(), s); }
   /* every passkey ID Kwallet gave us for this relying party, looked up on II (20 small public queries in parallel) */
   function iiScan(rp) {
@@ -8787,16 +8794,33 @@ var APP_VERSION = '1.9.15';
     if (Date.now() - (+S.at[rp] || 0) < 600000 || iiKnown(S, rp).length) return Promise.resolve(S);   /* v1.9.15: known identities open the sheet at once; the scan refreshes behind it */
     return Promise.race([job, new Promise(function (res) { setTimeout(function () { res(iiState()); }, 4000); })]);
   }
-  function iiKnown(S, rp) { return Object.keys(S.reg).filter(function (k) { return k.indexOf(rp + '|') === 0; }).map(function (k) { var a = S.reg[k]; return { i: +k.split('|')[1], a: a, n: S.names[a] || '' }; }); }
+  function iiKnown(S, rp) { return Object.keys(S.reg).filter(function (k) { return k.indexOf(rp + '|') === 0; }).map(function (k) { var a = S.reg[k]; return { i: +k.split('|')[1], a: a, n: S.names[a] || '', c: +(S.made || {})[a] || 0 }; }); }
   /* identities II has but whose names this phone never saw: one Kwallet approval reads them all (identity_info is private to the identity) */
   function iiFetchNames(site, rp, S) {
-    var miss = iiKnown(S, rp).filter(function (x) { return !(x.a in S.names); }); if (!miss.length) return Promise.resolve(S);
+    var miss = iiKnown(S, rp).filter(function (x) { return !(x.a in S.names) || !(x.a in S.made); });   /* v1.9.16: names and creation times */ if (!miss.length) return Promise.resolve(S);
     return p17K(site, 'icp', 'icp_iiNames', { rpId: rp, nowMs: Date.now(), list: miss.map(function (x) { return { i: x.i, a: x.a }; }) }).then(function (r) {
       var calls = (r && r.calls) || [];
       return Promise.all(calls.map(function (c) {
-        return icpSubmit(II_CAN, c.envelope).then(function (x) { if (x.pending) return null; var rp2 = icpReplyOf(x, c.requestId); return rp2 ? { a: c.a, n: iiNameOf(rp2) } : null; }, function () { return null; });
-      })).then(function (L) { var S2 = iiState(); L.forEach(function (x) { if (x) S2.names[x.a] = x.n; }); iiSave(S2); return S2; });
+        return icpSubmit(II_CAN, c.envelope).then(function (x) { if (x.pending) return null; var rp2 = icpReplyOf(x, c.requestId); if (!rp2) return null; var o2 = iiNameOf(rp2); return { a: c.a, n: o2.n, c: o2.c }; }, function () { return null; });
+      })).then(function (L) { var S2 = iiState(); L.forEach(function (x) { if (x) { S2.names[x.a] = x.n; S2.made[x.a] = x.c || 0; } }); iiSave(S2); return S2; });
     }, function () { return S; });   /* declined: the chooser shows identity numbers instead */
+  }
+  /* v1.9.16: Settings > Internet Identity: every identity of this seed, with the exact time II created it */
+  function iiWhen(ms) { try { return new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }); } catch (e) { return new Date(ms).toISOString().slice(0, 16).replace('T', ' '); } }
+  function iiSheet() {
+    var rp = 'id.ai', S = iiState(), L = iiKnown(S, rp).sort(function (x, y) { return x.i - y.i; });
+    var miss = L.filter(function (x) { return !(x.a in S.names) || !(x.a in S.made); }).length;
+    var rows = L.map(function (x) {
+      return '<li style="min-height:58px!important"><span style="white-space:normal!important"><b style="display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.n || 'Identity ' + x.a) + '</b>' +
+        '<small style="display:block;margin-top:3px;font-size:12.5px;line-height:16px;color:var(--muted)">' + 'ID ' + esc(x.a) + ' \u00b7 Passkey #' + (x.i + 1) + '</small></span>' +
+        '<em>' + (x.c ? 'Created<br>' + esc(iiWhen(x.c)) : x.a in S.made ? 'No date on II' : 'Not read yet') + '</em></li>';
+    });
+    sheet('<h3 class="pd-h">Internet Identity</h3><p class="sp pd-s">' + (L.length ? 'Identities on id.ai made with this seed\u2019s Kwallet passkeys.' : 'No identities found yet. Sign in to id.ai with Kwallet once and they show up here.') + '</p>' +
+      (L.length ? '<ul class="pd-l">' + rows.join('') + '</ul>' : '') +
+      '<div class="row2">' + (miss && nat('sign') ? '<button class="btn" data-iird>Read names and dates</button>' : '') + '<button class="btn pri" data-x>Done</button></div>', function (ov, close) {
+      var b = ov.querySelector('[data-iird]'); if (!b) return;
+      b.onclick = function () { b.disabled = true; b.textContent = 'Waiting for Kwallet\u2026'; iiFetchNames(TC_SITE, rp, iiState()).then(function () { close(); setTimeout(iiSheet, 280); }, function () { close(); }); };
+    });
   }
   function iiTake(rp, r) {   /* what Kwallet's passkey answer tells us (public IDs, names it knows) */
     try {
@@ -9035,7 +9059,24 @@ var APP_VERSION = '1.9.15';
     var m = META[metaKey(ch, net, r.a)] || {}; if (r.icon) return r.icon; if (m.icon) return m.icon;
     var g = ch === 'eth' ? (EVMBY[net] || {}).gem : (CHBY[ch] || {}).gem;
     if (g && r.a && (ch === 'eth' || ch === 'sol' || ch === 'trx')) return 'https://assets.gemwallet.com/blockchains/' + g + '/assets/' + (ch === 'eth' ? checksum(r.a) : r.a) + '/logo.png';
+    if (ch === 'sui' && r.a && r.a.indexOf('::') > 0) suiIconOf(r.a);   /* v1.9.16: read from the chain, shown on the next paint */
     return '';
+  }
+  /* v1.9.16: a Sui coin's icon from its on-chain CoinMetadata (iconUrl), once per coin type per session, kept in token metadata */
+  var SUIIC = {};
+  function suiIconOf(a) {
+    var mk = metaKey('sui', null, a); if (SUIIC[mk] || (META[mk] && META[mk].icon)) return; SUIIC[mk] = 1;
+    setTimeout(function () {
+      rpc(CHBY.sui.rpc, 'suix_getCoinMetadata', [a]).then(function (m) {
+        var u = m && String(m.iconUrl || ''); if (!/^https:\/\//.test(u)) return '';
+        return probeImg(u).then(function (ic) { return ic || logoData(u); });
+      }).then(function (ic) {
+        if (!ic) return;
+        META[mk] = Object.assign({}, META[mk] || {}, { icon: ic }); jset('hw-tokmeta', META);
+        (TOK.sui || []).forEach(function (t) { if (String(t.a).toLowerCase() === a.toLowerCase() && !t.icon) t.icon = ic; });
+        try { update(); } catch (e) {}
+      }, function () { SUIIC[mk] = 0; });
+    }, 0);
   }
   function chainLogoKey(ch, net) { return ch === 'eth' ? (EVMBY[net] || EVM[0]).logo : CHBY[ch].logo; }
   /* logo with the Gem chain badge on tokens and on non-Ethereum EVM networks */
@@ -12604,7 +12645,7 @@ var APP_VERSION = '1.9.15';
     kov = document.createElement('div'); kov.className = 'kws-page show'; kov.id = 'settings-page';
     kov._sig = ksig();
     var C0 = {
-      wal: '<div class="kws-grp">' + krow('kws-wallets', KI.wallet, 'Wallets', '') + (nat('sign') ? krow('kws-pair', KI.link, 'Pair with Kwallet', 'Add or refresh') : '') + (scanAvail() ? krow('kws-pairair', KI.link, 'Pair offline Kwallet', 'Kwallet on another phone, by QR') : '') +
+      wal: '<div class="kws-grp">' + krow('kws-wallets', KI.wallet, 'Wallets', '') + (nat('sign') ? krow('kws-pair', KI.link, 'Pair with Kwallet', 'Add or refresh') : '') + (scanAvail() ? krow('kws-pairair', KI.link, 'Pair offline Kwallet', 'Kwallet on another phone, by QR') : '') + (A.icp ? krow('kws-ii', KI.link, 'Internet Identity', 'Your identities and when they were made') : '') +
         krow('kws-wc', KI.wc, 'WalletConnect', kwcSub()) + (typeof feeAcctsVisible === 'function' && feeAcctsVisible() ? krow('kws-fees', KI.wallet, 'Fees accounts', null) : '') + '</div>',
       app: '<div class="kws-sec">Look</div><div class="kws-grp">' +
         krow('kws-theme', KI.theme, 'Theme', null, '<span class="kws-seg" role="radiogroup"><span data-t="light">Light</span><span data-t="dark">Dark</span></span>') +
@@ -12657,6 +12698,7 @@ var APP_VERSION = '1.9.15';
     on('kws-wallets', function () { ktick(); kcatsClose(true); go({ v: 'wallets' }); });
     on('kws-pair', function () { ktick(); kcatsClose(true); pairNative(); });
     on('kws-pairair', function () { ktick(); kcatsClose(true); airPairStart(); });   /* v1.9.15 */
+    on('kws-ii', function () { ktick(); kcatsClose(true); iiSheet(); });   /* v1.9.16 */
     on('kws-xpair', function () { ktick(); kcatsClose(true); pairNative(); });
     $k('kws-theme').onclick = function (e) {
       ktick(); var cur = document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
@@ -19433,7 +19475,7 @@ window.hwCrashPrompt = crashPrompt;
     var rpK = /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai)$/.test(rp) ? rp : 'id.ai';
     try { if (window.HwNative && HwNative.warmK) HwNative.warmK(); } catch (e) {}
     var scan = iiFresh(rpK);
-    return scan.then(function (S) { S = S || iiState(); return op === 'get' ? iiFetchNames(site, rpK, S) : S; }).then(function (S) {
+    return scan.then(function (S) {   /* v1.9.16: no "Restore identities" sheet in front of the passkey any more (Settings > Internet Identity reads names and dates) */
       S = S || iiState(); var kn = iiKnown(S, rpK);
       if (kn.length) { q.known = kn.slice(0, 50); q.taken = kn.map(function (x) { return x.i; }); }
       return p17K(site, 'icp', 'icp_passkey', q);

@@ -1,5 +1,12 @@
 # Changelog
 
+## Kwallet 3.99.16 / Hwallet 1.9.16 (work in progress)
+- Fix (critical): choosing or adding an identity on id.ai goes straight to Kwallet's passkey chooser. The extra "Restore identities" approval no longer appears in front of it. Names and dates are now read on request from Hwallet Settings > Internet Identity.
+- Kwallet passkey sheet is the same whether you add or connect, and whether there is one identity or several. Smaller green dot. Each row shows the name, with one clean line under it: passkey number, identity ID and the exact creation time (II's created_at, or when this phone made it).
+- Hwallet: new Settings > Internet Identity sheet listing every identity of this seed with its ID, passkey and exact creation time from id.ai.
+- Hwallet: Sui tokens (USDC and others) take their icon from the coin's on-chain CoinMetadata, cached, with the letter only as a fallback.
+- Hwallet: pull to refresh brings back the springy bounce on the Chains header, and the 3-dot menu now bounces with it.
+
 ## Kwallet 3.99.15 / Hwallet 1.9.15 (work in progress)
 - Kwallet: Settings always opens, even if one row fails to fill.
 - Kwallet + Hwallet: the selected choice is a solid green dot (no dark centre) and keeps beating even with system animations reduced.

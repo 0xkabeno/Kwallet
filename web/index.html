@@ -12939,7 +12939,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.15';
+const APP_VERSION = '3.99.16';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -25731,7 +25731,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           var pkL = pkList(R.from).filter(function (e) { return e.rp === rp; });
           /* v3.99.12: what II says this seed's passkeys are registered to (Hwallet looked them up): { i, a = identity number, n = name } */
           var kn = (Array.isArray(P.known) ? P.known : []).filter(function (x) { return x && (x.i | 0) === +x.i && x.i >= 0 && x.i < 4000 && /^\d{1,20}$/.test(String(x.a || '')); }).slice(0, 50)
-            .map(function (x) { return { i: x.i | 0, a: String(x.a), n: String(x.n || '').replace(/[\u0000-\u001f]/g, '').slice(0, 64) }; });
+            .map(function (x) { return { i: x.i | 0, a: String(x.a), n: String(x.n || '').replace(/[\u0000-\u001f]/g, '').slice(0, 64), c: +x.c > 1.4e12 && +x.c < 4.1e12 ? Math.floor(+x.c) : 0 }; });   /* v3.99.16: c = when II created the identity (ms) */
           var tk = (Array.isArray(P.taken) ? P.taken : []).filter(function (i) { return (i | 0) === +i && i >= 0 && i < 4000; }).map(Number);
           DS.pkRp = rp; DS.pkCands = []; DS.pkKnown = kn; DS.pkRows = []; DS.pkSel = -1; DS.pkOp = P.op;
           if (P.op === 'create') {
@@ -25746,8 +25746,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
             if (Array.isArray(P.allow) && P.allow.length && !al.length) return 'Internet Identity asked for a passkey that is not in Kwallet.';
             /* v3.99.12: one row per identity: this phone's passkeys plus the ones II knows (a fresh install with the same seed) */
             var rows = {};
-            pkL.forEach(function (e) { rows[e.i] = { i: e.i, a: e.a || '', n: e.n || '', u: e.u || 0 }; });
-            kn.forEach(function (x) { var r0 = rows[x.i] || (rows[x.i] = { i: x.i, a: '', n: '', u: 0, r: 1 }); r0.a = x.a; if (x.n) r0.n = x.n; });
+            pkL.forEach(function (e) { rows[e.i] = { i: e.i, a: e.a || '', n: e.n || '', u: e.u || 0, c: e.r ? 0 : (+e.t || 0) }; });   /* v3.99.16: c = when this phone made it */
+            kn.forEach(function (x) { var r0 = rows[x.i] || (rows[x.i] = { i: x.i, a: '', n: '', u: 0, r: 1 }); r0.a = x.a; if (x.n) r0.n = x.n; if (x.c) r0.c = x.c; });   /* II's creation time wins */
             var lst = Object.keys(rows).map(function (k) { return rows[k]; });
             if (al.length) { lst = lst.filter(function (r) { return al.indexOf(r.i) >= 0; }); al.forEach(function (i) { if (!lst.some(function (r) { return r.i === i; })) lst.push({ i: i, a: '', n: '', u: 0 }); }); }
             /* identities II does not know (anymore) are left out once II has answered */
@@ -25766,8 +25766,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           var nl = (Array.isArray(P.list) ? P.list : []).filter(function (x) { return x && (x.i | 0) === +x.i && x.i >= 0 && x.i < 4000 && /^\d{1,20}$/.test(String(x.a || '')); }).slice(0, 20);
           if (!nl.length || !(+P.nowMs > 1.6e12)) return 'The request could not be read.';
           DS.pkRp = rpN; DS.nmList = nl.map(function (x) { return { i: x.i | 0, a: String(x.a) }; });
-          DS.view = { title: 'Restore identities' };
-          DS.msg = new TextEncoder().encode('Read the names of ' + nl.length + ' Internet ' + (nl.length > 1 ? 'Identities' : 'Identity') + ' from ' + rpN + '.\nEach passkey signs a read-only request. Nothing is sent, changed or approved.');
+          DS.view = { title: 'Read identity details' };
+          DS.msg = new TextEncoder().encode('Read the names and creation dates of ' + nl.length + ' Internet ' + (nl.length > 1 ? 'Identities' : 'Identity') + ' from ' + rpN + '.\nEach passkey signs a read-only request. Nothing is sent, changed or approved.');
         } else if (m === 'icp_signMessage') {
           DS.msg = (function (x) { try { return KwChains.util.unhex(String(x || '')); } catch (e) { return new TextEncoder().encode(String(x || '')); } })(P.message);
         } else {
@@ -25884,7 +25884,11 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (m === 'icp_passkey' || m === 'icp_iiNames') {
       var when = function (u) { if (!u) return ''; var d = Math.floor((Date.now() - u) / 86400000); return d <= 0 ? 'Today' : d === 1 ? 'Yesterday' : d < 30 ? d + ' days ago' : new Date(u).toLocaleDateString(); };
       var idName = function (r) { return r.n ? esc(r.n) : r.a ? 'Identity ' + esc(r.a) : 'Passkey #' + (r.i + 1); };
-      var dot = function (on) { return '<span aria-hidden="true"' + (on ? ' class="kw-beatd"' : '') + ' style="display:inline-block;flex:0 0 auto;width:18px;height:18px;border-radius:50%;box-sizing:border-box;margin-right:12px;vertical-align:-3px;border:' + (on ? '0;background:#a8f07a' : '2px solid rgba(160,160,160,.6)') + '"></span>'; };
+      var dot = function (on) { return '<span aria-hidden="true"' + (on ? ' class="kw-beatd"' : '') + ' style="display:inline-block;flex:0 0 auto;width:14px;height:14px;border-radius:50%;box-sizing:border-box;margin-right:14px;border:' + (on ? '0;background:#a8f07a' : '1.5px solid rgba(160,160,160,.6)') + '"></span>'; };   /* v3.99.16: a bit smaller */
+      /* v3.99.16: the exact time, e.g. 22 Oct 2026, 21:14 */
+      var at = function (u) { try { return new Date(u).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }); } catch (e) { return new Date(u).toISOString().slice(0, 16).replace('T', ' '); } };
+      var pkSub = function (r) { return 'Passkey #' + (r.i + 1) + (r.a ? ' \u00b7 ID ' + esc(r.a) : '') + (r.c ? ' \u00b7 Created ' + at(r.c) : r.u ? ' \u00b7 Used ' + at(r.u) : r.r ? ' \u00b7 Restored' : ''); };
+      var pkLab = function (on, r) { return '<span style="display:flex;align-items:center;min-width:0">' + dot(on) + '<span style="display:block;min-width:0"><span style="display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + idName(r) + '</span><span style="display:block;margin-top:3px;font-size:12.5px;font-weight:400;line-height:16px;opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + pkSub(r) + '</span></span></span>'; };
       if (m === 'icp_iiNames') {
         o.main += HWP.card(DS.nmList.map(function (x) { return HWP.kv('Identity ' + esc(x.a), 'Passkey #' + (x.i + 1), '', { sm: true }); }).join(''));
         o.main += HWP.cap('Free \u00b7 read-only. Nothing changes on Internet Identity.');
@@ -25895,15 +25899,15 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
         o.det += kv('Site', esc(DS.pkRp), 'Internet Identity') + kv('Key', 'P-256 (ES256)', 'Never leaves Kwallet');
       } else {
         var rws = DS.pkRows || [];
-        if (rws.length > 1) {
-          o.main += HWP.cap('Choose an identity');
+        if (rws.length) {   /* v3.99.16: one look for every passkey sign-in (add or connect, one identity or many) */
+          o.main += HWP.cap(rws.length > 1 ? 'Choose an identity' : 'Identity');
           o.main += HWP.card(rws.map(function (r) {
-            var on = r.i === DS.pkSel, sub = 'Passkey #' + (r.i + 1) + (r.u ? ' \u00b7 ' + when(r.u) : r.r ? ' \u00b7 Restored' : '');
-            return HWP.kv(dot(on) + idName(r), r.a && r.n ? 'Identity ' + esc(r.a) : '', sub, { tap: true, cls: 'kw-pk' + (on ? ' on' : ''), attr: ' role="radio" aria-checked="' + on + '" data-pk="' + r.i + '"' + (on ? ' style="background:rgba(168,240,122,.08)"' : '') });
+            var on = r.i === DS.pkSel;
+            return HWP.kv(pkLab(on, r), '', '', { tap: true, cls: 'kw-pk' + (on ? ' on' : ''), attr: ' role="radio" aria-checked="' + on + '" data-pk="' + r.i + '"' + (on ? ' style="background:rgba(168,240,122,.08)"' : '') });
           }).join(''));
         } else if (rws[0]) {
           var r1 = rws[0];
-          o.main += HWP.card(HWP.kv('Identity', idName(r1), (r1.a && r1.n ? esc(r1.a) + ' \u00b7 ' : '') + 'Passkey #' + (r1.i + 1)));
+          o.main += HWP.card(HWP.kv('Identity', idName(r1), pkSub(r1)));
         }
         o.main += HWP.cap('Free \u00b7 no funds move.');
         o.det += kv('Site', esc(DS.pkRp), 'Internet Identity');
