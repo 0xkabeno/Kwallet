@@ -12939,7 +12939,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.17';
+const APP_VERSION = '3.99.18';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -25889,8 +25889,9 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       var dot = function (on) { return '<span aria-hidden="true"' + (on ? ' class="kw-beatd"' : '') + ' style="display:inline-block;flex:0 0 auto;width:14px;height:14px;border-radius:50%;box-sizing:border-box;margin-right:14px;border:' + (on ? '0;background:#a8f07a' : '1.5px solid rgba(160,160,160,.6)') + '"></span>'; };   /* v3.99.16: a bit smaller */
       /* v3.99.16: the exact time, e.g. 22 Oct 2026, 21:14 */
       var at = function (u) { try { return new Date(u).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }); } catch (e) { return new Date(u).toISOString().slice(0, 16).replace('T', ' '); } };
-      var pkSub = function (r) { return 'Passkey #' + (r.i + 1) + (r.a ? ' \u00b7 ID ' + esc(r.a) : '') + (r.c ? ' \u00b7 Created ' + at(r.c) : r.u ? ' \u00b7 Used ' + at(r.u) : r.r ? ' \u00b7 Restored' : ''); };
-      var pkLab = function (on, r) { return '<span style="display:flex;align-items:center;min-width:0">' + dot(on) + '<span style="display:block;min-width:0"><span style="display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + idName(r) + '</span><span style="display:block;margin-top:3px;font-size:12.5px;font-weight:400;line-height:16px;opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + pkSub(r) + '</span></span></span>'; };
+      var pkSub = function (r) { return 'Passkey #' + (r.i + 1) + (r.a ? ' \u00b7 ID ' + esc(r.a) : ''); };   /* v3.99.18: the date gets its own line so it never truncates */
+      var pkWhen = function (r) { return r.c ? 'Created ' + at(r.c) : r.u ? 'Used ' + at(r.u) : r.r ? 'Restored' : ''; };
+      var pkLab = function (on, r) { return '<span style="display:flex;align-items:center;min-width:0">' + dot(on) + '<span style="display:block;min-width:0"><span style="display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + idName(r) + '</span><span style="display:block;margin-top:3px;font-size:12.5px;font-weight:400;line-height:16px;opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + pkSub(r) + '</span>' + (pkWhen(r) ? '<span style="display:block;margin-top:1px;font-size:12.5px;font-weight:400;line-height:16px;opacity:.62;white-space:nowrap">' + pkWhen(r) + '</span>' : '') + '</span></span>'; };
       if (m === 'icp_iiNames') {
         o.main += HWP.card(DS.nmList.map(function (x) { return HWP.kv('Identity ' + esc(x.a), 'Passkey #' + (x.i + 1), '', { sm: true }); }).join(''));
         o.main += HWP.cap('Free \u00b7 read-only. Nothing changes on Internet Identity.');
@@ -25909,7 +25910,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           }).join(''));
         } else if (rws[0]) {
           var r1 = rws[0];
-          o.main += HWP.card(HWP.kv('Identity', idName(r1), pkSub(r1)));
+          o.main += HWP.card(HWP.kv('Identity', idName(r1), pkSub(r1) + (pkWhen(r1) ? ' \u00b7 ' + pkWhen(r1) : '')));
         }
         o.main += HWP.cap('Free \u00b7 no funds move.' + ((DS.nmList || []).length ? ' Also reads the names and creation dates II keeps for your identities.' : ''));
         o.det += kv('Site', esc(DS.pkRp), 'Internet Identity') + ((DS.nmList || []).length ? kv('Also', '<span class="hp-mono">identity_info</span>', DS.nmList.length + ' read-only') : '');

@@ -1156,7 +1156,9 @@ body[data-theme=dark] .ptr3 i{border-color:rgba(255,255,255,.16);border-top-colo
 /* v1.9.16: the Chains header and its 3-dot menu ride the pull a little further and bounce back on release */
 .chh-row .chh,.chh-row .chh-dots{transition:transform .62s cubic-bezier(.34,1.7,.5,1);will-change:transform}
 .chh-row .chh-dots{transition-delay:.04s}
-#pg.ptr-on .chh-row .chh,#pg.ptr-on .chh-row .chh-dots{transform:translate3d(0,calc(var(--ptr) * .22),0)}
+/* v1.9.18: the header stretches up away from the cards (capped) instead of sliding down into them, and draws above them */
+.chh-row{position:relative;z-index:2}
+#pg.ptr-on .chh-row .chh,#pg.ptr-on .chh-row .chh-dots{transform:translate3d(0,calc(max(var(--ptr) * -.16, -14px)),0)}
 #pg.ptr-on:not(.ptr-anim) .chh-row .chh,#pg.ptr-on:not(.ptr-anim) .chh-row .chh-dots{transition:none}
 #pg.ptr-on.ptr-anim #app>header:first-child,#pg.ptr-on.ptr-anim #app>.bar:first-child,#pg.ptr-on.ptr-anim #app>.hbar:first-child{transition:none}
 .ptr3{transform-origin:50% 50%}
@@ -4271,7 +4273,7 @@ window.hwPlayOpening();
   /* ---------- v1.9.14: TON Connect JS bridge (embedded wallet). Hwallet answers as itself (window.hwallet.tonconnect) and, for
      dApps that only look for Tonkeeper, under window.tonkeeper too. Every signature happens in Kwallet; Hwallet broadcasts. */
   if (!OFF.ton) (function () {
-    var tcId = 0, tcL = [], tcDev = { platform: 'android', appName: 'Hwallet', appVersion: '1.9.17', maxProtocolVersion: 2, features: ['SendTransaction', { name: 'SendTransaction', maxMessages: 4 }, { name: 'SignData', types: ['text', 'binary', 'cell'] }] };
+    var tcId = 0, tcL = [], tcDev = { platform: 'android', appName: 'Hwallet', appVersion: '1.9.18', maxProtocolVersion: 2, features: ['SendTransaction', { name: 'SendTransaction', maxMessages: 4 }, { name: 'SignData', types: ['text', 'binary', 'cell'] }] };
     function tcErr(code, msg) { return { code: code, message: msg }; }
     function items(r, proofWanted) {
       var it = [{ name: 'ton_addr', address: r.address, network: '-239', publicKey: r.publicKey || '', walletStateInit: r.walletStateInit || '' }];
@@ -7700,7 +7702,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.17';
+var APP_VERSION = '1.9.18';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8797,7 +8799,7 @@ var APP_VERSION = '1.9.17';
   function iiKnown(S, rp) { return Object.keys(S.reg).filter(function (k) { return k.indexOf(rp + '|') === 0; }).map(function (k) { var a = S.reg[k]; return { i: +k.split('|')[1], a: a, n: S.names[a] || '', c: +(S.made || {})[a] || 0 }; }); }
   /* identities II has but whose names this phone never saw: one Kwallet approval reads them all (identity_info is private to the identity) */
   function iiFetchNames(site, rp, S) {
-    var miss = iiKnown(S, rp).filter(function (x) { return !(x.a in S.names) || !(x.a in S.made); });   /* v1.9.16: names and creation times */ if (!miss.length) return Promise.resolve(S);
+    var miss = iiKnown(S, rp).filter(function (x) { return !(x.a in S.names) || !S.made[x.a]; });   /* v1.9.18: a 0 date is read again. v1.9.16: names and creation times */ if (!miss.length) return Promise.resolve(S);
     return p17K(site, 'icp', 'icp_iiNames', { rpId: rp, nowMs: Date.now(), list: miss.map(function (x) { return { i: x.i, a: x.a }; }) }).then(function (r) {
       return iiSubmitNames(r);
     }, function () { return S; });   /* declined: the chooser shows identity numbers instead */
@@ -8815,7 +8817,7 @@ var APP_VERSION = '1.9.17';
   function iiWhen(ms) { try { return new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }); } catch (e) { return new Date(ms).toISOString().slice(0, 16).replace('T', ' '); } }
   function iiSheet() {
     var rp = 'id.ai', S = iiState(), L = iiKnown(S, rp).sort(function (x, y) { return x.i - y.i; });
-    var miss = L.filter(function (x) { return !(x.a in S.names) || !(x.a in S.made); }).length;
+    var miss = L.filter(function (x) { return !(x.a in S.names) || !S.made[x.a]; }).length;
     var rows = L.map(function (x) {
       return '<li style="min-height:58px!important"><span style="white-space:normal!important"><b style="display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.n || 'Identity ' + x.a) + '</b>' +
         '<small style="display:block;margin-top:3px;font-size:12.5px;line-height:16px;color:var(--muted)">' + 'ID ' + esc(x.a) + ' \u00b7 Passkey #' + (x.i + 1) + '</small></span>' +
@@ -13152,9 +13154,11 @@ window.hwCrashPrompt = crashPrompt;
     return new Promise(function (res) {
       /* P2a: the P1 icon cache gives data: images and bundled dapps/*.png; both travel as they are or via canvas */
       if (/^data:image\/(png|jpeg|webp|gif);base64,/.test(String(url || ''))) return res(url.length < 90000 ? url : '');
+      /* v1.9.18: SVG favicons (id.ai and many others) were dropped here, so Kwallet showed a letter: draw them to a 64px PNG */
+      var svg = /^data:image\/svg\+xml[;,]/.test(String(url || ''));
       if (/^dapps\/[a-z0-9-]+\.png$/.test(String(url || ''))) { try { url = new URL(url, location.href).href; } catch (e) { return res(''); } }
-      if (!url || !/^https:/.test(url)) return res('');
-      var im = new Image(); im.crossOrigin = 'anonymous'; var t = setTimeout(function () { res(''); }, 1200);
+      if (!url || !(svg || /^https:/.test(url))) return res('');
+      var im = new Image(); if (!svg) im.crossOrigin = 'anonymous'; var t = setTimeout(function () { res(''); }, 1200);
       im.onload = function () { clearTimeout(t); try { var c = document.createElement('canvas'); c.width = c.height = 64; c.getContext('2d').drawImage(im, 0, 0, 64, 64); res(c.toDataURL('image/png')); } catch (e) { res(''); } };
       im.onerror = function () { clearTimeout(t); res(''); }; im.src = url;
     });
@@ -19485,7 +19489,8 @@ window.hwCrashPrompt = crashPrompt;
       S = S || iiState(); var kn = iiKnown(S, rpK);
       if (kn.length) { q.known = kn.slice(0, 50); q.taken = kn.map(function (x) { return x.i; }); }
       /* v1.9.16: identities whose name or creation date this phone hasn't read yet: Kwallet signs those reads on the same Confirm */
-      if (op === 'get') { var miss = kn.filter(function (x) { return !(x.a in S.names) || !(x.a in S.made); }).slice(0, 20); if (miss.length) { q.read = miss.map(function (x) { return { i: x.i, a: x.a }; }); q.nowMs = Date.now(); } }
+      if (op === 'get') { var miss = kn.slice(0, 20);   /* v1.9.18: every sign-in re-reads names and creation times from II, on any phone with this seed */ if (miss.length) { q.read = miss.map(function (x) { return { i: x.i, a: x.a }; }); q.nowMs = Date.now(); } }
+      if (!site.icon && LOGO.internetcomputer) site = Object.assign({}, site, { icon: LOGO.internetcomputer });   /* v1.9.18: II always shows a logo */
       return p17K(site, 'icp', 'icp_passkey', q);
     }).then(function (r) {
       iiTake(rpK, r);

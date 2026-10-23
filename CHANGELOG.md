@@ -1,5 +1,11 @@
 # Changelog
 
+## Kwallet 3.99.18 / Hwallet 1.9.18
+- Passkey rows: the creation time has its own line under "Passkey #n · ID", so it never cuts off.
+- Hwallet re-reads every identity's name and creation time from Internet Identity on each passkey sign-in (same Confirm), on any phone with the same seed; a date II hadn't returned is retried.
+- Site logo back on the passkey sheet: SVG favicons are now drawn to PNG, and II falls back to the Internet Computer logo.
+- Chains header pull: the title and 3-dot menu stretch up away from the cards (capped) and draw above them, so they no longer overlap the first chain card.
+
 ## Kwallet 3.99.17 / Hwallet 1.9.17 (work in progress)
 - Internet Identity names and creation dates keep the Hwallet-request logic: Hwallet asks for the identities it hasn't read yet, Kwallet signs the read-only identity_info calls, and Hwallet sends them to II and keeps the answers. A restored seed on another phone gets the same names and dates back. The reads now ride on the passkey request itself and go through on the same Confirm, so adding and connecting show one passkey sheet with no separate "Restore identities" step. The signed reads are never passed to the website. Settings > Internet Identity can still read them on request.
 
