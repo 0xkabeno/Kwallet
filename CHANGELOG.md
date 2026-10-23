@@ -1,5 +1,8 @@
 # Changelog
 
+## Kwallet 3.99.17 / Hwallet 1.9.17 (work in progress)
+- Internet Identity names and creation dates keep the Hwallet-request logic: Hwallet asks for the identities it hasn't read yet, Kwallet signs the read-only identity_info calls, and Hwallet sends them to II and keeps the answers. A restored seed on another phone gets the same names and dates back. The reads now ride on the passkey request itself and go through on the same Confirm, so adding and connecting show one passkey sheet with no separate "Restore identities" step. The signed reads are never passed to the website. Settings > Internet Identity can still read them on request.
+
 ## Kwallet 3.99.16 / Hwallet 1.9.16 (work in progress)
 - Fix (critical): choosing or adding an identity on id.ai goes straight to Kwallet's passkey chooser. The extra "Restore identities" approval no longer appears in front of it. Names and dates are now read on request from Hwallet Settings > Internet Identity.
 - Kwallet passkey sheet is the same whether you add or connect, and whether there is one identity or several. Smaller green dot. Each row shows the name, with one clean line under it: passkey number, identity ID and the exact creation time (II's created_at, or when this phone made it).

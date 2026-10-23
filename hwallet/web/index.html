@@ -4271,7 +4271,7 @@ window.hwPlayOpening();
   /* ---------- v1.9.14: TON Connect JS bridge (embedded wallet). Hwallet answers as itself (window.hwallet.tonconnect) and, for
      dApps that only look for Tonkeeper, under window.tonkeeper too. Every signature happens in Kwallet; Hwallet broadcasts. */
   if (!OFF.ton) (function () {
-    var tcId = 0, tcL = [], tcDev = { platform: 'android', appName: 'Hwallet', appVersion: '1.9.16', maxProtocolVersion: 2, features: ['SendTransaction', { name: 'SendTransaction', maxMessages: 4 }, { name: 'SignData', types: ['text', 'binary', 'cell'] }] };
+    var tcId = 0, tcL = [], tcDev = { platform: 'android', appName: 'Hwallet', appVersion: '1.9.17', maxProtocolVersion: 2, features: ['SendTransaction', { name: 'SendTransaction', maxMessages: 4 }, { name: 'SignData', types: ['text', 'binary', 'cell'] }] };
     function tcErr(code, msg) { return { code: code, message: msg }; }
     function items(r, proofWanted) {
       var it = [{ name: 'ton_addr', address: r.address, network: '-239', publicKey: r.publicKey || '', walletStateInit: r.walletStateInit || '' }];
@@ -7700,7 +7700,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.16';
+var APP_VERSION = '1.9.17';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8799,11 +8799,17 @@ var APP_VERSION = '1.9.16';
   function iiFetchNames(site, rp, S) {
     var miss = iiKnown(S, rp).filter(function (x) { return !(x.a in S.names) || !(x.a in S.made); });   /* v1.9.16: names and creation times */ if (!miss.length) return Promise.resolve(S);
     return p17K(site, 'icp', 'icp_iiNames', { rpId: rp, nowMs: Date.now(), list: miss.map(function (x) { return { i: x.i, a: x.a }; }) }).then(function (r) {
+      return iiSubmitNames(r);
+    }, function () { return S; });   /* declined: the chooser shows identity numbers instead */
+  }
+  /* v1.9.16: Kwallet's signed identity_info reads (from icp_iiNames or riding on icp_passkey) -> II -> names + creation dates kept here */
+  function iiSubmitNames(r) {
+    {
       var calls = (r && r.calls) || [];
       return Promise.all(calls.map(function (c) {
         return icpSubmit(II_CAN, c.envelope).then(function (x) { if (x.pending) return null; var rp2 = icpReplyOf(x, c.requestId); if (!rp2) return null; var o2 = iiNameOf(rp2); return { a: c.a, n: o2.n, c: o2.c }; }, function () { return null; });
       })).then(function (L) { var S2 = iiState(); L.forEach(function (x) { if (x) { S2.names[x.a] = x.n; S2.made[x.a] = x.c || 0; } }); iiSave(S2); return S2; });
-    }, function () { return S; });   /* declined: the chooser shows identity numbers instead */
+    }
   }
   /* v1.9.16: Settings > Internet Identity: every identity of this seed, with the exact time II created it */
   function iiWhen(ms) { try { return new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }); } catch (e) { return new Date(ms).toISOString().slice(0, 16).replace('T', ' '); } }
@@ -19478,9 +19484,12 @@ window.hwCrashPrompt = crashPrompt;
     return scan.then(function (S) {   /* v1.9.16: no "Restore identities" sheet in front of the passkey any more (Settings > Internet Identity reads names and dates) */
       S = S || iiState(); var kn = iiKnown(S, rpK);
       if (kn.length) { q.known = kn.slice(0, 50); q.taken = kn.map(function (x) { return x.i; }); }
+      /* v1.9.16: identities whose name or creation date this phone hasn't read yet: Kwallet signs those reads on the same Confirm */
+      if (op === 'get') { var miss = kn.filter(function (x) { return !(x.a in S.names) || !(x.a in S.made); }).slice(0, 20); if (miss.length) { q.read = miss.map(function (x) { return { i: x.i, a: x.a }; }); q.nowMs = Date.now(); } }
       return p17K(site, 'icp', 'icp_passkey', q);
     }).then(function (r) {
       iiTake(rpK, r);
+      if (r && Array.isArray(r.calls) && r.calls.length) { var rc = { calls: r.calls }; setTimeout(function () { iiSubmitNames(rc).catch(function () {}); }, 0); delete r.calls; }   /* v1.9.16: never handed to the site */
       /* a new identity: once II has registered it, remember its number and the name it was made with */
       if (op === 'create' && r && r.credId) {
         var nm = q.name, ix = +r.idx, tries = 0;

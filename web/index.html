@@ -12939,7 +12939,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.16';
+const APP_VERSION = '3.99.17';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -25734,6 +25734,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
             .map(function (x) { return { i: x.i | 0, a: String(x.a), n: String(x.n || '').replace(/[\u0000-\u001f]/g, '').slice(0, 64), c: +x.c > 1.4e12 && +x.c < 4.1e12 ? Math.floor(+x.c) : 0 }; });   /* v3.99.16: c = when II created the identity (ms) */
           var tk = (Array.isArray(P.taken) ? P.taken : []).filter(function (i) { return (i | 0) === +i && i >= 0 && i < 4000; }).map(Number);
           DS.pkRp = rp; DS.pkCands = []; DS.pkKnown = kn; DS.pkRows = []; DS.pkSel = -1; DS.pkOp = P.op;
+          /* v3.99.16: Hwallet's identity_info reads (names + creation dates kept by II) ride on this one sheet and this one Confirm */
+          DS.nmList = P.op === 'get' && +P.nowMs > 1.6e12 ? (Array.isArray(P.read) ? P.read : []).filter(function (x) { return x && (x.i | 0) === +x.i && x.i >= 0 && x.i < 4000 && /^\d{1,20}$/.test(String(x.a || '')); }).slice(0, 20).map(function (x) { return { i: x.i | 0, a: String(x.a) }; }) : [];
           if (P.op === 'create') {
             var ex = (Array.isArray(P.exclude) ? P.exclude : []).map(function (h) { try { return KwPasskey.idxOf(KwPasskey.unhex(String(h))); } catch (e) { return -1; } });
             /* a new identity never reuses a number II already has (a fresh phone knows nothing locally; II does) */
@@ -25909,8 +25911,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           var r1 = rws[0];
           o.main += HWP.card(HWP.kv('Identity', idName(r1), pkSub(r1)));
         }
-        o.main += HWP.cap('Free \u00b7 no funds move.');
-        o.det += kv('Site', esc(DS.pkRp), 'Internet Identity');
+        o.main += HWP.cap('Free \u00b7 no funds move.' + ((DS.nmList || []).length ? ' Also reads the names and creation dates II keeps for your identities.' : ''));
+        o.det += kv('Site', esc(DS.pkRp), 'Internet Identity') + ((DS.nmList || []).length ? kv('Also', '<span class="hp-mono">identity_info</span>', DS.nmList.length + ' read-only') : '');
       }
       return o;
     }
@@ -26135,6 +26137,15 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
      v3.99.12: + a = identity number on II, r = 1 when restored from II rather than made on this phone */
   function pkList(from) { try { var v = JSON.parse(localStorage.getItem('kw-passkeys:' + from) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
   function pkSave(from, L) { try { localStorage.setItem('kw-passkeys:' + from, JSON.stringify(L.slice(-200))); } catch (e) {} }
+  /* v3.99.16: one identity_info call per identity (read-only), each signed by that identity's passkey; shared by icp_iiNames and icp_passkey */
+  function kwIiCalls(pk, nowN) {
+      var II = 'rdmx6-jaaaa-aaaaa-aaadq-cai';
+      return (DS.nmList || []).map(function (x) {
+        var arg = KwPasskey.unhex('4449444c000178' + (function (v) { var h = ''; for (var k = 0; k < 8; k++) { h += ('0' + Number(v & 255n).toString(16)).slice(-2); v >>= 8n; } return h; })(BigInt(x.a)));
+        var c = KwChains.icp.pkCall({ cose: KwPasskey.coseOf(pk, DS.pkRp, x.i), canister: II, method: 'identity_info', arg: arg, nowMs: nowN, signFn: function (msg) { return KwPasskey.assert({ key: pk, rpId: DS.pkRp, idx: x.i, challenge: msg, origin: 'https://' + DS.pkRp }); } });
+        return { i: x.i, a: x.a, envelope: c.raw, requestId: c.hash };
+      });
+  }
   function p17Sign(m, pk, P, from) {
     var D = KwD17, r;
     if (m === 'sui_signTransaction') { r = D.suiSignTx(pk, String(P.tx || ''), from); r.publicKey = D.util.b64e(D.suiKey(pk).pub); }
@@ -26202,14 +26213,10 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       /* v3.99.12: public data for Hwallet's restore: the credential IDs of #1..#20 and the names this phone knows */
       r.ids = { rp: DS.pkRp, ids: KwPasskey.ids(pk, DS.pkRp, PK_N) };
       r.names = L.filter(function (e) { return e.rp === DS.pkRp && e.n; }).map(function (e) { return { i: e.i, n: e.n, a: e.a || '' }; }).slice(0, 50);
+      if (P.op === 'get' && (DS.nmList || []).length) try { r.calls = kwIiCalls(pk, +P.nowMs); } catch (e) {}   /* v3.99.16 */
     }
     else if (m === 'icp_iiNames') {   /* v3.99.12: one identity_info call per identity, signed by its passkey */
-      var II = 'rdmx6-jaaaa-aaaaa-aaadq-cai', nowN = +P.nowMs;
-      r = { calls: DS.nmList.map(function (x) {
-        var arg = KwPasskey.unhex('4449444c000178' + (function (v) { var h = ''; for (var k = 0; k < 8; k++) { h += ('0' + Number(v & 255n).toString(16)).slice(-2); v >>= 8n; } return h; })(BigInt(x.a)));
-        var c = KwChains.icp.pkCall({ cose: KwPasskey.coseOf(pk, DS.pkRp, x.i), canister: II, method: 'identity_info', arg: arg, nowMs: nowN, signFn: function (msg) { return KwPasskey.assert({ key: pk, rpId: DS.pkRp, idx: x.i, challenge: msg, origin: 'https://' + DS.pkRp }); } });
-        return { i: x.i, a: x.a, envelope: c.raw, requestId: c.hash };
-      }), ids: { rp: DS.pkRp, ids: KwPasskey.ids(pk, DS.pkRp, PK_N) } };
+      r = { calls: kwIiCalls(pk, +P.nowMs), ids: { rp: DS.pkRp, ids: KwPasskey.ids(pk, DS.pkRp, PK_N) } };
     }
     else if (m === 'icp_signMessage') {
       var skk = new ethers.SigningKey('0x' + pk), sgg = skk.sign(ethers.sha256(DS.msg));
