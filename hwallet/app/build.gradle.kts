@@ -85,7 +85,7 @@ android {
         release {
             // v1.9.19: the shipped APK carries phone ABIs only (arm64-v8a + armeabi-v7a): smaller download. The CI emulator
             // build (-PkwE2E=true) keeps x86_64 so it still installs on the x86_64 emulator; debug builds are unfiltered as before.
-            // The VPN binary (warp-plus) exists for arm64-v8a only.
+            // The VPN binaries (usque, Psiphon) exist for arm64-v8a only.
             ndk {
                 abiFilters += listOf("arm64-v8a", "armeabi-v7a")
                 if (project.findProperty("kwE2E") == "true") abiFilters += "x86_64"
@@ -114,7 +114,7 @@ android {
         // v1.8.12 (push 17): the native Monero engine (monero_c wallet2, ~30 MB per ABI) is stored compressed in the APK and
         // extracted at install (much smaller download); CI puts the verified, stripped libraries in src/main/jniLibs
         jniLibs.useLegacyPackaging = true
-        // v1.9.19: libwarpplus.so is the warp-plus executable (CI puts the verified binary in jniLibs/arm64-v8a). Legacy
+        // v1.9.19: libusque.so and libpsiphon.so are the VPN executables (CI puts them in jniLibs/arm64-v8a). Legacy
         // packaging extracts it to nativeLibraryDir, the one app path Android 10+ lets an app execute from.
     }
 }

@@ -12660,10 +12660,10 @@ var APP_VERSION = '1.9.19';
   function capAdSub() { return capAdOn() ? adSum().replace(/^Adaptive \u00b7 /, 'Now: ') : 'Adjusts refreshes and downloads to the connection speed and mobile data'; }
   function capAdPaint() { var on = capAdOn(); kflag('kws-capad', on); ksub('kws-capad', capAdSub()); var r = kq('#kws-cap'); if (r) r.classList.toggle('kws-dis', on); ksub('kws-c-net', capNetSub()); }
   function capNetSub() { return vpnSum(); }
-  /* ---------- v1.9.19: Network & VPN. App-only VPN for Hwallet (native HwVpn: usque for Auto, warp-plus for countries, both MIT) + Secure DNS ----------
+  /* ---------- v1.9.19: Network & VPN. App-only VPN for Hwallet (native HwVpn: usque WARP/MASQUE for Auto, Psiphon over it for a country) + Secure DNS ----------
      The switch, the location, a status card and Secure DNS sit under the speed limit. State comes from HwNative.vpnState()
      and is pushed by the app on every change (window.hwVpnState). Only Hwallet's own traffic is routed; Kwallet stays offline. */
-  var VPN = { on: false, status: 'off', region: '', regionName: 'Auto', since: 0, error: '', dns: 'quad9', web: true, supported: true };
+  var VPN = { on: false, status: 'off', region: '', regionName: 'Auto', since: 0, error: '', dns: 'cloudflare', web: true, supported: true };
   var VPNT = 0;
   function vpnNat() { return nat('vpnState') && nat('vpnSet'); }
   function vpnRead() { if (vpnNat()) try { var j = JSON.parse(String(HwNative.vpnState()) || '{}'); if (j && typeof j === 'object' && 'on' in j) VPN = j; } catch (e) {} return VPN; }
@@ -12671,7 +12671,7 @@ var APP_VERSION = '1.9.19';
   function vpnWhere(v) { return v.region ? (vpnFlag(v.region) + ' ' + (v.regionName || v.region)).trim() : 'Auto (best)'; }
   function vpnSum() { var v = VPN; if (!vpnNat() || !v.on) return 'VPN off'; if (v.status === 'connected') return 'VPN on \u00b7 ' + (v.region ? v.regionName : 'Auto'); if (v.status === 'error') return 'VPN paused \u00b7 ' + (v.error || 'error'); return 'VPN reconnecting\u2026'; }
   function vpnAgo(t) { var m = Math.max(0, Math.round((Date.now() - (+t || Date.now())) / 60000)); return m < 1 ? 'just now' : m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; }
-  var VPN_DNS = [['off', 'Off'], ['quad9', 'Quad9 (default)'], ['cloudflare', 'Cloudflare'], ['google', 'Google'], ['adguard', 'AdGuard (blocks ads & trackers)']];
+  var VPN_DNS = [['off', 'Off'], ['cloudflare', 'Cloudflare (default)'], ['quad9', 'Quad9'], ['google', 'Google'], ['adguard', 'AdGuard (blocks ads & trackers)']];
   function vpnDnsName(d) { return d === 'off' ? 'Off' : d === 'cloudflare' ? 'Cloudflare' : d === 'google' ? 'Google' : d === 'adguard' ? 'AdGuard' : 'Quad9'; }
   var KI_GLOBE = 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.93 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a8.2 8.2 0 0 1 0-4h3.38a16.5 16.5 0 0 0 0 4H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.08 16zm2.95-8H5.08a7.99 7.99 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66a14.7 14.7 0 0 1 0-4h4.68a14.7 14.7 0 0 1 0 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14a16.5 16.5 0 0 0 0-4h3.38a8.2 8.2 0 0 1 0 4h-3.38z';
   function vpnHtml() {
@@ -12681,7 +12681,7 @@ var APP_VERSION = '1.9.19';
       '<div class="kws-row hw-vst" id="kws-vst"><span class="kws-ic"><i class="hw-vdot" id="kws-vst-d"></i></span><span class="kws-t"><span id="kws-vst-t">VPN off</span><span class="kws-s" id="kws-vst-s"></span></span></div>' +
       (nat('vpnLog') ? krow('kws-vlog', KI.code, 'View log', 'Connection details') : '') + '</div>' +
       '<p class="hw-kp">Kill switch is on: if the VPN drops, Hwallet pauses traffic instead of going direct.</p>' +
-      '<div class="kws-sec">Secure DNS</div><div class="kws-grp">' + krow('kws-vdns', KI.shield, 'Secure DNS', 'Quad9') + '</div>' +
+      '<div class="kws-sec">Secure DNS</div><div class="kws-grp">' + krow('kws-vdns', KI.shield, 'Secure DNS', 'Cloudflare') + '</div>' +
       '<p class="hw-kp">Secure DNS covers Hwallet\u2019s wallet traffic. Web pages use it when the VPN is on.</p>' +
       '<p class="hw-kp">VPN servers can see traffic that isn\u2019t encrypted. Your keys never leave Kwallet.</p>';
   }
@@ -12693,7 +12693,7 @@ var APP_VERSION = '1.9.19';
     kflag('kws-vpn', !!v.on);
     var b = kq('#kws-vpn'); if (b) b.disabled = v.supported === false && !v.on;
     ksub('kws-vpn', v.supported === false ? 'Not supported on this phone' : !v.web && v.on ? 'Your Android WebView is too old for the VPN, update Android System WebView' : 'Other apps aren\u2019t affected');
-    ksub('kws-vloc', vpnWhere(v)); ksub('kws-vdns', vpnDnsName(v.dns) + (v.dns === 'quad9' ? ' (default)' : ''));
+    ksub('kws-vloc', vpnWhere(v)); ksub('kws-vdns', vpnDnsName(v.dns) + (v.dns === 'cloudflare' ? ' (default)' : ''));
     var d = kq('#kws-vst-d'), t = kq('#kws-vst-t');
     var cls = !v.on ? '' : v.status === 'connected' ? 'ok' : v.status === 'error' ? 'err' : 'amb';
     if (d) d.className = 'hw-vdot' + (cls ? ' ' + cls : '');
@@ -12747,13 +12747,13 @@ var APP_VERSION = '1.9.19';
     on('kws-vpn', function () { ktick(); var v = vpnRead(); if (!v.on && v.supported === false) { toast('The VPN is not supported on this phone'); return; } vpnSet({ on: !v.on }); buzz(10); });
     on('kws-vloc', function () {
       ktick(); var v = vpnRead(), L = []; try { L = JSON.parse(String(HwNative.vpnRegions()) || '[]') || []; } catch (e) {}
-      var rows = [{ k: '', l: 'Auto (best)', sub: 'Cloudflare WARP (MASQUE), nearest server', on: !v.region }].concat(L.map(function (r) { return { k: r.code, l: (vpnFlag(r.code) + ' ' + r.name).trim(), on: v.region === r.code }; }));
+      var rows = [{ k: '', l: 'Auto (best)', sub: 'Cloudflare WARP, nearest server', on: !v.region }].concat(L.map(function (r) { return { k: r.code, l: (vpnFlag(r.code) + ' ' + r.name).trim(), on: v.region === r.code }; }));
       var pick = function (k) { if (k === (vpnRead().region || '')) return; vpnSet({ region: k }); };
       if (window.HWP && HWP.picker) HWP.picker({ title: 'VPN location', rows: rows, onPick: pick, dot: true });
       else kchoose('VPN location', rows.map(function (r) { return [r.k, esc(r.l)]; }), v.region || '', pick);
     });
     on('kws-vlog', function () { ktick(); vpnLogSheet(); });
-    on('kws-vdns', function () { ktick(); kchoose('Secure DNS', VPN_DNS.map(function (o) { return [o[0], esc(o[1])]; }), vpnRead().dns || 'quad9', function (d) { vpnSet({ dns: d }); }); });
+    on('kws-vdns', function () { ktick(); kchoose('Secure DNS', VPN_DNS.map(function (o) { return [o[0], esc(o[1])]; }), vpnRead().dns || 'cloudflare', function (d) { vpnSet({ dns: d }); }); });
   }
   /* the last ~200 VPN engine lines (keys redacted natively), monospace, with Copy */
   function vpnLogSheet() {
@@ -20119,7 +20119,7 @@ window.hwCrashPrompt = crashPrompt;
     });
   }
   function licenses() {
-    sheet('<h3>Open-source licenses</h3><div class="lic">Hwallet\nCopyright (C) 2026 Kwallet contributors.\nLicensed under the GNU General Public License v3.0 or later. You may copy, change and share it under the same license. It comes with no warranty.\n\nGem Wallet\nHwallet\u2019s layout, lists, pickers, navigation and wallet tools follow Gem Wallet (github.com/gemwalletcom), Copyright (C) Gem Wallet contributors, GPL-3.0. Chain and token logos come from Gem Wallet\u2019s and Trust Wallet\u2019s asset repositories (MIT, Copyright (c) 2019-2023 Trust Wallet). Gem Wallet is not affiliated with Hwallet.\n\nMonero symbol: The Monero Project (getmonero.org).\n\nMonero engine (v1.8)\nmonero-ts, Copyright (c) woodser, MIT License (github.com/woodser/monero-ts), with the Monero Project\u2019s wallet2 compiled to WebAssembly, Copyright (c) 2014-2025 The Monero Project, BSD 3-Clause License; Boost (BSL-1.0) and libsodium (ISC).\n\nKwallet (the offline signer) is a separate app under the MIT license.\n\nMiuix (UI style \u201cMiuix\u201d, pull to refresh)\nCopyright compose-miuix-ui contributors. Apache License 2.0. github.com/compose-miuix-ui/miuix\n\nMaterial Design 3 (UI style \u201cMaterial UI\u201d)\nMaterial 3 specification and androidx.compose.material3 tokens, Apache License 2.0.\n\nInter typeface (v1.8.2)\nCopyright (c) 2016 The Inter Project Authors. SIL Open Font License 1.1. github.com/rsms/inter\n\nVPN for Hwallet (v1.9.19)\nusque 4.2.1 by Diniboy1123, MIT License (github.com/Diniboy1123/usque), prebuilt and unmodified (Auto).\nwarp-plus 1.2.6 by bepass-org, MIT License (github.com/bepass-org/warp-plus), prebuilt and unmodified (countries); it includes Psiphon tunnel core (GPL-3.0). Cloudflare WARP and Psiphon are not affiliated with Hwallet.\n\nSecure DNS (v1.9.19)\nOkHttp DNS over HTTPS 4.12.0, Copyright Square, Inc., Apache License 2.0.</div><div class="row2"><button class="btn" data-x>Close</button></div>');
+    sheet('<h3>Open-source licenses</h3><div class="lic">Hwallet\nCopyright (C) 2026 Kwallet contributors.\nLicensed under the GNU General Public License v3.0 or later. You may copy, change and share it under the same license. It comes with no warranty.\n\nGem Wallet\nHwallet\u2019s layout, lists, pickers, navigation and wallet tools follow Gem Wallet (github.com/gemwalletcom), Copyright (C) Gem Wallet contributors, GPL-3.0. Chain and token logos come from Gem Wallet\u2019s and Trust Wallet\u2019s asset repositories (MIT, Copyright (c) 2019-2023 Trust Wallet). Gem Wallet is not affiliated with Hwallet.\n\nMonero symbol: The Monero Project (getmonero.org).\n\nMonero engine (v1.8)\nmonero-ts, Copyright (c) woodser, MIT License (github.com/woodser/monero-ts), with the Monero Project\u2019s wallet2 compiled to WebAssembly, Copyright (c) 2014-2025 The Monero Project, BSD 3-Clause License; Boost (BSL-1.0) and libsodium (ISC).\n\nKwallet (the offline signer) is a separate app under the MIT license.\n\nMiuix (UI style \u201cMiuix\u201d, pull to refresh)\nCopyright compose-miuix-ui contributors. Apache License 2.0. github.com/compose-miuix-ui/miuix\n\nMaterial Design 3 (UI style \u201cMaterial UI\u201d)\nMaterial 3 specification and androidx.compose.material3 tokens, Apache License 2.0.\n\nInter typeface (v1.8.2)\nCopyright (c) 2016 The Inter Project Authors. SIL Open Font License 1.1. github.com/rsms/inter\n\nVPN for Hwallet (v1.9.19)\nusque 4.2.1 by Diniboy1123, MIT License (github.com/Diniboy1123/usque), prebuilt and unmodified.\nPsiphon tunnel core by Psiphon Inc., GPL-3.0 (github.com/Psiphon-Labs/psiphon-tunnel-core), its ConsoleClient built from a pinned commit, unmodified. Cloudflare WARP and Psiphon are not affiliated with Hwallet.\n\nSecure DNS (v1.9.19)\nOkHttp DNS over HTTPS 4.12.0, Copyright Square, Inc., Apache License 2.0.</div><div class="row2"><button class="btn" data-x>Close</button></div>');
   }
 
   /* ---------- themes: Kwallet light / dark + Material You from the wallpaper ---------- */

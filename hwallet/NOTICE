@@ -132,11 +132,10 @@ hwallet/web/tr/hwtr.js is a fork of Mozilla's Firefox Translations engine:
     https://firefox-settings-attachments.cdn.mozilla.net/, checks each file's SHA-256 against Mozilla's record and keeps
     them on the phone.
 
-v1.9.19 VPN for Hwallet: warp-plus v1.2.6 (https://github.com/bepass-org/warp-plus, MIT License), the prebuilt
-Android arm64 executable, unmodified, packaged by CI as lib/arm64-v8a/libwarpplus.so and run as a local SOCKS5 proxy
-for Hwallet's own traffic. It includes Psiphon tunnel core (GPL-3.0) and other Go modules listed in its go.mod.
-Secure DNS: OkHttp DNS over HTTPS 4.12.0 (Square, Apache License 2.0). Details and the MIT text: ../LICENSES/THIRD_PARTY.txt
-
 v1.9.19 VPN for Hwallet (Auto): usque v4.2.1 (https://github.com/Diniboy1123/usque, MIT License, Copyright (c) Diniboy1123),
 the prebuilt Android arm64 executable, unmodified, packaged by CI as lib/arm64-v8a/libusque.so and run as a local SOCKS5
 proxy (Cloudflare WARP over MASQUE). Cloudflare WARP is not affiliated with Hwallet.
+v1.9.19 VPN for Hwallet (a country): Psiphon tunnel core (https://github.com/Psiphon-Labs/psiphon-tunnel-core,
+GNU GPL v3.0, Copyright (c) Psiphon Inc.), its ConsoleClient built unmodified by CI from commit
+4ba6e22a08f1e1cc2b8de8d8e72a1e892acf223f for android/arm64, packaged as lib/arm64-v8a/libpsiphon.so and run with an
+upstream SOCKS5 proxy (usque). Source: the repository above at that commit. Psiphon is not affiliated with Hwallet.
