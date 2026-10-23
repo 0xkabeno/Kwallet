@@ -3123,6 +3123,18 @@ html:not(#s41_0):not(#s41_1):not(#s41_2):not(#s41_3):not(#s41_4):not(#s41_5):not
 html:not(#s41_0):not(#s41_1):not(#s41_2):not(#s41_3):not(#s41_4):not(#s41_5):not(#s41_6):not(#s41_7):not(#s41_8):not(#s41_9):not(#s41_10):not(#s41_11):not(#s41_12):not(#s41_13):not(#s41_14):not(#s41_15):not(#s41_16):not(#s41_17):not(#s41_18):not(#s41_19):not(#s41_20):not(#s41_21):not(#s41_22):not(#s41_23):not(#s41_24):not(#s41_25):not(#s41_26):not(#s41_27):not(#s41_28):not(#s41_29):not(#s41_30):not(#s41_31):not(#s41_32):not(#s41_33):not(#s41_34):not(#s41_35):not(#s41_36):not(#s41_37):not(#s41_38):not(#s41_39) .dg .dr .dv .swi{width:18px!important;height:18px!important;margin-right:-2px}
 html:not(#s41_0):not(#s41_1):not(#s41_2):not(#s41_3):not(#s41_4):not(#s41_5):not(#s41_6):not(#s41_7):not(#s41_8):not(#s41_9):not(#s41_10):not(#s41_11):not(#s41_12):not(#s41_13):not(#s41_14):not(#s41_15):not(#s41_16):not(#s41_17):not(#s41_18):not(#s41_19):not(#s41_20):not(#s41_21):not(#s41_22):not(#s41_23):not(#s41_24):not(#s41_25):not(#s41_26):not(#s41_27):not(#s41_28):not(#s41_29):not(#s41_30):not(#s41_31):not(#s41_32):not(#s41_33):not(#s41_34):not(#s41_35):not(#s41_36):not(#s41_37):not(#s41_38):not(#s41_39) .hint.dn{font-size:12.5px!important;line-height:17px!important;margin:10px 16px 0!important;text-align:left!important}
 </style>
+<style id="kw-beat-css">
+/* v3.99.14 / v1.9.14: the pairing card's beating dot on every selected single choice (radios, pickers, segments). Only the
+   indicator pulses; layout never moves. Off with reduce-motion. */
+@keyframes kwBeat{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--acc,var(--accent,#ddf869)) 70%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
+@keyframes kwBeatIco{0%{box-shadow:0 0 0 2px var(--md-sc-low,#fff),0 0 0 4px var(--md-primary,#223348),0 0 0 4px color-mix(in srgb,var(--acc,var(--accent,#ddf869)) 70%,transparent)}100%{box-shadow:0 0 0 2px var(--md-sc-low,#fff),0 0 0 4px var(--md-primary,#223348),0 0 0 14px transparent}}
+.kwd-opt.on .kwd-r,.xn-r.on .xn-rd,.kw-beatd,.hp-pr.on .hp-prc,
+[role="radio"][aria-checked="true"]>.kw-beat,
+.kws-seg span.on,.xh2-seg button[aria-checked="true"]{animation:kwBeat 1.4s ease-out infinite!important}
+.hp-pr.on .hp-prc{border-radius:50%}
+.kws-ico span.on{animation:kwBeatIco 1.4s ease-out infinite!important}
+@media (prefers-reduced-motion:reduce){.kwd-opt.on .kwd-r,.xn-r.on .xn-rd,.kw-beatd,.hp-pr.on .hp-prc,[role="radio"][aria-checked="true"]>.kw-beat,.kws-seg span.on,.xh2-seg button[aria-checked="true"],.kws-ico span.on{animation:none!important}}
+</style>
 </head>
 <body data-theme="light">
 <script>try{document.body.setAttribute("data-theme",localStorage.getItem("wallet-theme")||"light")}catch(e){}try{var __u=localStorage.getItem("hw-ui");document.documentElement.setAttribute("data-ui",__u==="m3"||__u==="miuix"?__u:"og")}catch(e){document.documentElement.setAttribute("data-ui","og")}document.documentElement.className+=" hwa";try{var __a=window.HarkNative&&HarkNative.dynamicColors?JSON.parse(String(HarkNative.dynamicColors())||'{}').a1:null;if(__a&&__a['600']&&__a['200']){var __st=document.documentElement.style;__st.setProperty('--u-dyn-l',__a['600']);__st.setProperty('--u-dyn-lo',__a['0']||'#FFFFFF');__st.setProperty('--u-dyn-d',__a['200']);__st.setProperty('--u-dyn-do',__a['800']||'#000000')}}catch(e){}</script>
@@ -8420,9 +8432,23 @@ var APP_VERSION = '1.9.14';
   /* every passkey ID Kwallet gave us for this relying party, looked up on II (20 small public queries in parallel) */
   function iiScan(rp) {
     var S = iiState(), L = S.ids[rp] || []; if (!L.length) return Promise.resolve(S);
-    return Promise.all(L.map(function (h, i) { return iiLookup(h).then(function (a) { return { i: i, a: a, ok: true }; }, function () { return { i: i, ok: false }; }); })).then(function (R) {
-      var S2 = iiState(); R.forEach(function (x) { var k = rp + '|' + x.i; if (!x.ok) return; if (x.a) S2.reg[k] = x.a; else delete S2.reg[k]; });
-      S2.at[rp] = Date.now(); iiSave(S2); return S2;
+    /* v1.9.14: batches of 5 with up to 3 tries each (0.6 s, 1.5 s back-off), so a flaky connection no longer drops identities.
+       A passkey that never answered keeps what we knew, and the scan is only stamped fresh when every passkey answered. */
+    function one(h, i, t) {
+      return iiLookup(h).then(function (a) { return { i: i, a: a, ok: true }; }, function () {
+        if (t >= 2) return { i: i, ok: false };
+        return new Promise(function (res) { setTimeout(res, t ? 1500 : 600); }).then(function () { return one(h, i, t + 1); });
+      });
+    }
+    var R = [], b = 0;
+    function next() {
+      if (b >= L.length) return Promise.resolve(R);
+      var part = L.slice(b, b + 5).map(function (h, j) { return one(h, b + j, 0); }); b += 5;
+      return Promise.all(part).then(function (x) { R = R.concat(x); return next(); });
+    }
+    return next().then(function (R) {
+      var S2 = iiState(), all = true; R.forEach(function (x) { var k = rp + '|' + x.i; if (!x.ok) { all = false; return; } if (x.a) S2.reg[k] = x.a; else delete S2.reg[k]; });
+      if (all) S2.at[rp] = Date.now(); iiSave(S2); return S2;
     });
   }
   /* v1.9.13: a scan from the last 10 minutes is used as is (the sheet opens at once) and refreshed quietly; older ones get 4 s */
@@ -13760,9 +13786,40 @@ window.hwCrashPrompt = crashPrompt;
   /* lay the active tab's native WebView over #br-v (or hide it while a sheet, the switcher or the address bar is up) */
   var brShown = '';
   function brCovered() { return !!document.querySelector('.sheet-ov, .kwd-ov, .hp-ov') || (window.hwScanner && hwScanner.isOpen && hwScanner.isOpen()); }
+  /* v1.9.14: full-page deceptive-site warning (native HwScam stopped the load). Go back is the main action; "Open anyway"
+     lets this host through for this session only. */
+  function brScamShow(e) {
+    var old = document.getElementById('hw-scam'); if (old) old.remove();
+    BRU.scam = e; brShown = ''; brPlace();
+    try { if (window.HarkNative && HarkNative.vibrate) HarkNative.vibrate(JSON.stringify([0, 40, 60, 40])); } catch (x) {}
+    if (!document.getElementById('hw-scam-css')) { var cs = document.createElement('style'); cs.id = 'hw-scam-css';
+      cs.textContent = '#hw-scam{position:fixed;inset:0;z-index:2147483100;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:32px 24px calc(env(safe-area-inset-bottom,0px) + 28px);background:#8e1b1b;color:#fff;font-family:inherit}' +
+        '#hw-scam .sc-i{width:56px;height:56px}#hw-scam h2{margin:4px 0 0;font-size:24px;line-height:30px;font-weight:700}#hw-scam p{margin:0;font-size:15px;line-height:22px;opacity:.92}' +
+        '#hw-scam .sc-h{font-family:ui-monospace,monospace;font-size:14px;word-break:break-all;background:rgba(0,0,0,.22);border-radius:10px;padding:8px 10px}' +
+        '#hw-scam .sc-b{margin-top:14px;height:48px;border:0;border-radius:24px;background:#fff;color:#8e1b1b;font:inherit;font-weight:700;font-size:16px}' +
+        '#hw-scam .sc-a{height:40px;border:0;background:transparent;color:#fff;opacity:.8;font:inherit;font-size:14px;text-decoration:underline}';
+      document.head.appendChild(cs); }
+    var why = String(e.why || ''), like = /^fuzzy:/.test(why) ? why.slice(6) : '';
+    var d = document.createElement('div'); d.id = 'hw-scam'; d.setAttribute('role', 'alertdialog'); d.setAttribute('aria-modal', 'true');
+    d.innerHTML = '<svg class="sc-i" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>' +
+      '<h2>Deceptive site ahead</h2><p class="sc-t"></p><div class="sc-h"></div>' +
+      '<p>It may try to steal your seed or trick you into signing a transaction that drains your wallet. Hwallet stopped it before it loaded.</p>' +
+      '<button type="button" class="sc-b">Go back to safety</button><button type="button" class="sc-a">Open anyway</button>';
+    d.querySelector('.sc-t').textContent = like ? 'This address looks like ' + like + ' but it isn\u2019t.' : 'This site is on public scam and phishing lists.';
+    d.querySelector('.sc-h').textContent = e.host || e.url || '';
+    function close() { d.remove(); BRU.scam = null; brShown = ''; brPlace(); }
+    d.querySelector('.sc-b').onclick = function () {
+      var t = BRM.get(BR, e.id), h = '';
+      try { h = t && t.url ? new URL(t.url).host : ''; } catch (x) {}
+      if (h && h === e.host) brNat('brNav', e.id, 'back');
+      close();
+    };
+    d.querySelector('.sc-a').onclick = function () { brNat('brScamAllow', String(e.host || '')); close(); if (e.url) brNat('brLoad', e.id, e.url); };
+    document.body.appendChild(d);
+  }
   function brPlace() {
     var el = document.getElementById('br'), t = brCur(), v = document.getElementById('br-v');
-    var want = el && !el.hidden && t && t.url && !BRU.sw && !BRU.edit && !BRU.hist && v && !brCovered();
+    var want = el && !el.hidden && t && t.url && !BRU.sw && !BRU.edit && !BRU.hist && !BRU.scam && v && !brCovered();
     if (!want) { if (brShown !== 'hidden') { brNat('brHide'); brShown = 'hidden'; } return; }
     var r = v.getBoundingClientRect(), top = Math.round(r.top), bot = Math.max(0, Math.round(window.innerHeight - r.bottom)), key = t.id + ':' + top + ':' + bot;
     if (brShown === key) return;
@@ -14476,6 +14533,7 @@ window.hwCrashPrompt = crashPrompt;
     if (!e) return;
     if (e.t === 'new') { if (e.url) { brNew(e.url); if (V.v !== 'browser') tab('browser'); } return; }
     var t = BRM.get(BR, e.id); if (!t) return;
+    if (e.t === 'scam') { brScamShow(e); return; }   /* v1.9.14 */
     if (e.t === 'gone') { if (BRL[e.id]) BRL[e.id].open = 0; if (e.id === BR.act && V.v === 'browser') { brShown = ''; brPlace(); } return; }
     if (e.t === 'nav') {
       BRM.update(BR, e.id, { url: e.url, title: e.title }); BRL[e.id] = Object.assign(BRL[e.id] || {}, { back: !!e.back, fwd: !!e.fwd, loading: !!e.loading, progress: +e.progress || 0, offline: !!e.offline, blk: +e.blk || 0, shield: !!e.shield });

@@ -1,5 +1,16 @@
 # Changelog
 
+## Kwallet v3.99.14 / Hwallet v1.9.14 (test build)
+
+- Kwallet: TON (W5 and v4R2 wallets, TON and USDT sends with comments, TonConnect signing), Tonviewer and Tonscan explorers.
+- Kwallet: readable EVM and Solana previews; approvals default to the exact amount; revoke shows as "Revoke … approval".
+- Kwallet: seed backup-check prompts; QR air-gap side (settings rows, scanner, camera permission). Still no INTERNET permission, and CI fails if it ever appears.
+- Kwallet: Internet Identity rows show plain "Identity N". Monero first in the chain row.
+- Boot fix: the BC-UR (KwUR) bundle read Node's `process` at load and broke Kwallet's start; it now gets a local stub.
+- Both apps: every selected single choice (passkeys, identities, networks, dialog options, theme and icon pickers) beats like the pairing dot. Off with reduce motion.
+- Hwallet: Internet Identity scan in batches of 5 with up to 3 tries each; a scan only counts as fresh when every passkey answered.
+- Hwallet: native scam-site list (MetaMask eth-phishing-detect + ScamSniffer) with a full-page "Deceptive site ahead" warning: Go back to safety, or Open anyway for this session.
+
 ## Kwallet v3.99.13 / Hwallet v1.9.13
 
 - Passkey sheets: shorter, cleaner text. Create shows Name and Passkey number; sign-in shows a radio chooser (name, identity number, passkey number, last used).

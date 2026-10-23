@@ -4495,6 +4495,18 @@ html:not(#k40a):not(#k40b):not(#k40c):not(#k40d):not(#k40e):not(#k40f):not(#k40g
 html:not(#k40a):not(#k40b):not(#k40c):not(#k40d):not(#k40e):not(#k40f):not(#k40g):not(#k40h):not(#k40i):not(#k40j):not(#k40k):not(#k40l):not(#k40m):not(#k40n):not(#k40o):not(#k40p):not(#k40q):not(#k40r):not(#k40s):not(#k40t):not(#k40u):not(#k40v):not(#k40w):not(#k40x):not(#k40y):not(#k40z) .kpr40 .kpr-ch img{width:14px!important;height:14px!important;border-radius:50%!important;margin-left:-3px!important;box-shadow:0 0 0 1.5px #1C1D21!important;background:#fff!important}
 html:not(#k40a):not(#k40b):not(#k40c):not(#k40d):not(#k40e):not(#k40f):not(#k40g):not(#k40h):not(#k40i):not(#k40j):not(#k40k):not(#k40l):not(#k40m):not(#k40n):not(#k40o):not(#k40p):not(#k40q):not(#k40r):not(#k40s):not(#k40t):not(#k40u):not(#k40v):not(#k40w):not(#k40x):not(#k40y):not(#k40z) .kpr40 .kpr-more,html:not(#k40a):not(#k40b):not(#k40c):not(#k40d):not(#k40e):not(#k40f):not(#k40g):not(#k40h):not(#k40i):not(#k40j):not(#k40k):not(#k40l):not(#k40m):not(#k40n):not(#k40o):not(#k40p):not(#k40q):not(#k40r):not(#k40s):not(#k40t):not(#k40u):not(#k40v):not(#k40w):not(#k40x):not(#k40y):not(#k40z) .kpr40 .kpr-more *{color:var(--hp-muted,var(--muted))!important;font-weight:400!important}
 </style>
+<style id="kw-beat-css">
+/* v3.99.14 / v1.9.14: the pairing card's beating dot on every selected single choice (radios, pickers, segments). Only the
+   indicator pulses; layout never moves. Off with reduce-motion. */
+@keyframes kwBeat{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--acc,var(--accent,#ddf869)) 70%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
+@keyframes kwBeatIco{0%{box-shadow:0 0 0 2px var(--md-sc-low,#fff),0 0 0 4px var(--md-primary,#223348),0 0 0 4px color-mix(in srgb,var(--acc,var(--accent,#ddf869)) 70%,transparent)}100%{box-shadow:0 0 0 2px var(--md-sc-low,#fff),0 0 0 4px var(--md-primary,#223348),0 0 0 14px transparent}}
+.kwd-opt.on .kwd-r,.xn-r.on .xn-rd,.kw-beatd,.hp-pr.on .hp-prc,
+[role="radio"][aria-checked="true"]>.kw-beat,
+.kws-seg span.on,.xh2-seg button[aria-checked="true"]{animation:kwBeat 1.4s ease-out infinite!important}
+.hp-pr.on .hp-prc{border-radius:50%}
+.kws-ico span.on{animation:kwBeatIco 1.4s ease-out infinite!important}
+@media (prefers-reduced-motion:reduce){.kwd-opt.on .kwd-r,.xn-r.on .xn-rd,.kw-beatd,.hp-pr.on .hp-prc,[role="radio"][aria-checked="true"]>.kw-beat,.kws-seg span.on,.xh2-seg button[aria-checked="true"],.kws-ico span.on{animation:none!important}}
+</style>
 </head>
 <body data-theme="light">
 <script>
@@ -25863,7 +25875,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (m === 'icp_passkey' || m === 'icp_iiNames') {
       var when = function (u) { if (!u) return ''; var d = Math.floor((Date.now() - u) / 86400000); return d <= 0 ? 'Today' : d === 1 ? 'Yesterday' : d < 30 ? d + ' days ago' : new Date(u).toLocaleDateString(); };
       var idName = function (r) { return r.n ? esc(r.n) : r.a ? 'Identity ' + esc(r.a) : 'Passkey #' + (r.i + 1); };
-      var dot = function (on) { return '<span aria-hidden="true" style="display:inline-block;flex:0 0 auto;width:18px;height:18px;border-radius:50%;box-sizing:border-box;margin-right:12px;vertical-align:-3px;border:' + (on ? '5px solid #a8f07a' : '2px solid rgba(160,160,160,.6)') + '"></span>'; };
+      var dot = function (on) { return '<span aria-hidden="true"' + (on ? ' class="kw-beatd"' : '') + ' style="display:inline-block;flex:0 0 auto;width:18px;height:18px;border-radius:50%;box-sizing:border-box;margin-right:12px;vertical-align:-3px;border:' + (on ? '5px solid #a8f07a' : '2px solid rgba(160,160,160,.6)') + '"></span>'; };
       if (m === 'icp_iiNames') {
         o.main += HWP.card(DS.nmList.map(function (x) { return HWP.kv('Identity ' + esc(x.a), 'Passkey #' + (x.i + 1), '', { sm: true }); }).join(''));
         o.main += HWP.cap('Free \u00b7 read-only. Nothing changes on Internet Identity.');
