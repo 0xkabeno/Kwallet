@@ -25942,7 +25942,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           var day = function (u) { try { return new Date(u).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return new Date(u).toISOString().slice(0, 10); } };
           var ln = 'display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
           DS.pkAll = rws.slice().sort(function (x, y) { return (y.u || 0) - (x.u || 0) || (y.c || 0) - (x.c || 0) || x.i - y.i; }).map(function (r) {
-            var on = r.i === DS.pkSel, w = on ? pkWhen(r) : r.c ? day(r.c) : r.u ? 'Used ' + day(r.u) : r.r ? 'Restored' : '';
+            var on = r.i === DS.pkSel, w = pkWhen(r);   /* fix: every row shows when it was created, with the time */
             return { k: String(r.i), on: on, q: (r.n || '') + ' ' + (r.a || '') + ' #' + (r.i + 1) + ' ',
               h: '<span style="display:flex;align-items:center;min-width:0;width:100%">' + dot(on) + '<span style="display:block;min-width:0;flex:1 1 auto"><span style="' + ln + ';font-weight:600;font-size:15px;line-height:20px">' + idName(r) + '</span><span style="' + ln + ';margin-top:2px;font-size:12.5px;line-height:16px;opacity:.62">#' + (r.i + 1) + (r.a ? ' \u00b7 ID ' + esc(r.a) : '') + (w ? ' \u00b7 ' + w : '') + '</span></span></span>' };
           });

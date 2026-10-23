@@ -430,6 +430,14 @@ class HwBrowser(
         val w = t.web ?: return false
         // v1.8.7: dApps navigate with history.pushState (no page load), so ask the WebView itself every time
         if (!w.canGoBack()) return false
+        /* fix: only back to a real page. The entry behind the first site is the tab's blank start (about:blank / data:);
+           going there showed the Browser start page and Back never got back to the wallet. Now the first site's Back
+           leaves the Browser (the page's kwBack takes it to the wallet). */
+        try {
+            val h = w.copyBackForwardList(); val i = h.currentIndex
+            val prev = if (i > 0) h.getItemAtIndex(i - 1)?.url ?: "" else ""
+            if (!(prev.startsWith("https://") || prev.startsWith("http://"))) return false
+        } catch (_: Throwable) {}
         live(t, w); w.goBack(); ui.postDelayed({ try { navEv(t, w, w.progress < 100, w.progress) } catch (_: Throwable) {} }, 120); return true
     }
 

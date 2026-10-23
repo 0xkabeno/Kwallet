@@ -597,6 +597,8 @@ body.md3 .scn-pl { background: var(--md-primary, var(--acc)); }
 .kwd-in{display:block;width:calc(100% - 48px);margin:0 24px;height:48px;box-sizing:border-box;border:1px solid var(--border);border-radius:12px;background:var(--bg-input,var(--bg));color:var(--text);padding:0 12px;font:500 15px 'RobotoMonoE',monospace;outline:none}
 .kwd-in:focus{border-color:var(--text)}.kwd-in.bad{border-color:#d93025}
 .kwd-key .kwd-act{align-items:center}
+html:not(#k-a):not(#k-b):not(#k-c) .kwd-key .kwd-kclr{display:block;width:auto;max-width:calc(100% - 48px);margin:10px auto 0;padding:8px 12px;min-height:0;height:auto;border:0;border-radius:999px;background:transparent;color:var(--u-pri,var(--accent,var(--acc)));font:600 14px/20px var(--u-font,'InterE','Roboto',system-ui,sans-serif);text-align:center;white-space:normal;box-shadow:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+html:not(#k-a):not(#k-b):not(#k-c) .kwd-key .kwd-kclr:active{background:color-mix(in srgb,var(--u-pri,var(--accent,#888)) 12%,transparent)}
 /* v1.6 (#77): Paste on the scan screen, above the flash button (or in its place when there is no flash) */
 .scn-paste { position: absolute; left: 50%; bottom: calc(var(--sab, 0px) + 124px); transform: translateX(-50%); height: 44px; padding: 0 18px 0 14px; border: 0; border-radius: 22px;
   display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,.42); color: #fff; font: 500 15px/1 'InterE','Roboto',system-ui,sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -12583,7 +12585,10 @@ var APP_VERSION = '1.9.19';
     var d = document.createElement('div'); d.className = 'kwd-ov';
     d.innerHTML = '<div class="kwd kwd-key" role="dialog" aria-modal="true"><h3>' + k[1] + '</h3><p class="kwd-p">' + k[2] + '. Your key is used instead of the built-in one and stays on this phone.</p>' +
       '<input type="password" class="kwd-in" id="kwd-key-in" autocomplete="off" spellcheck="false" maxlength="200" placeholder="Paste your key" aria-label="' + k[1] + ' key">' +
-      '<div class="kwd-act"><button type="button" data-a="clr">Use built-in</button><span style="flex:1"></span><button type="button" data-a="x">Cancel</button><button type="button" data-a="ok">Save</button></div></div>';
+      /* fix: "Use built-in" was a third button squeezed into the Cancel / Save row (clipped text, odd shape in every style);
+         it is now a quiet text action of its own under the field, and the row keeps the same two buttons as every dialog */
+      '<button type="button" class="kwd-kclr" data-a="clr">Use the built-in key instead</button>' +
+      '<div class="kwd-act"><span style="flex:1"></span><button type="button" data-a="x">Cancel</button><button type="button" data-a="ok">Save</button></div></div>';
     document.body.appendChild(d); void d.offsetWidth; d.classList.add('show');
     var inp = d.querySelector('#kwd-key-in'); inp.oninput = function () { inp.classList.remove('bad'); inp.removeAttribute('aria-invalid'); }; setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
     var close = function () { d.classList.remove('show'); inp.value = ''; setTimeout(function () { d.remove(); }, 160); };
@@ -15371,7 +15376,9 @@ window.hwCrashPrompt = crashPrompt;
     if (BRU.sw) { BRU.sw = false; brPaint(); return true; }
     if (BRU.edit) { var i = document.getElementById('br-in'); if (i) i.blur(); BRU.edit = false; brPaint(); return true; }
     var t = brCur(), L = t ? BRL[t.id] || {} : {};
-    if (t && L.back) { brNat('brNav', t.id, 'back'); return true; }
+    /* fix: the page's own history is native's job (HwBrowser.back runs before this and goes back while there is a real
+       page behind). When it said no, Back leaves the Browser for the wallet: asking the tab to go back again here walked
+       into the blank first entry, showed the start page, and then Back did nothing forever */
     return false;
   };
   /* ===================== v1.8.35 (B12): Chrome-style omnibox history and suggestions =====================
