@@ -27,12 +27,21 @@ import java.util.concurrent.TimeUnit
  * Kill switch: while the VPN is ON and the tunnel is not connected, HwNet refuses every request and the WebViews stay
  * pointed at the local port (loads fail), so nothing ever goes direct. Prefs "hw_vpn": on, region, dns, ep (the last WARP
  * endpoint that served, tried first with -e on the next start).
- * Attempts (warp-plus v1.2.6 flags): Auto rotates [--scan -4] -> [--scan -4 --gool] -> repeat; a country is always
- * [--scan -4 --cfon --country XX]. With a remembered endpoint the first attempt is [-e EP] (+ --cfon --country XX), no scan.
+ * Attempts (warp-plus v1.2.6 flags): a country is [--scan -4 --cfon --country XX]; with a remembered endpoint the first
+ * attempt is [-e EP --cfon --country XX], no scan.
+ *
+ * Fix round 2: Auto runs usque instead (github.com/Diniboy1123/usque, MIT), shipped as libusque.so the same way. It is
+ * Cloudflare WARP over MASQUE (HTTP/3 on UDP 443, like the official 1.1.1.1 app), which gets through networks that let
+ * the WireGuard handshake through and then drop the data (warp-plus: "connection test failed" forever). First start:
+ * `usque register -a` writes filesDir/usque/config.json (a free WARP device; private storage, never backed up). Then
+ * `usque socks -b 127.0.0.1 -p PORT -c config.json -d <DNS>`. Attempts rotate: HTTP/3 :443 -> HTTP/2 over TLS :443
+ * (--http2, for networks that block QUIC) -> HTTP/3 :500. usque listens at once and connects on first use, so
+ * "connected" = a request through the proxy to https://1.1.1.1/cdn-cgi/trace answers warp=on.
  */
 object HwVpn {
     const val PREF = "hw_vpn"
     private const val BIN = "libwarpplus.so"
+    private const val BIN_U = "libusque.so"
 
     /** the countries warp-plus v1.2.6 accepts for --country (its README); "" = Auto (best) */
     val REGIONS: List<Pair<String, String>> = listOf(
@@ -94,7 +103,11 @@ object HwVpn {
     fun blocked(): Boolean = on && status != "connected"
 
     fun bin(c: Context): File = File(c.applicationInfo.nativeLibraryDir ?: "", BIN)
-    fun supported(c: Context): Boolean = try { bin(c).exists() } catch (_: Throwable) { false }
+    fun binU(c: Context): File = File(c.applicationInfo.nativeLibraryDir ?: "", BIN_U)
+    fun supported(c: Context): Boolean = try { binU(c).exists() || bin(c).exists() } catch (_: Throwable) { false }
+    /** Auto = usque (MASQUE); a country = warp-plus (Psiphon exit) */
+    private fun usque(): Boolean = region.isEmpty()
+    private fun cfgU(c: Context): File = File(File(c.filesDir, "usque").apply { mkdirs() }, "config.json")
     fun webSupported(): Boolean = try { WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE) } catch (_: Throwable) { false }
 
     /** once per process (HwApp, HwActivity, HwLiveService): read prefs, apply DNS, bring the tunnel back if it was on */
@@ -108,6 +121,7 @@ object HwVpn {
                 on = p.getBoolean("on", false); region = p.getString("region", "") ?: ""
                 val d0 = p.getString("dns", "quad9"); dns = dnsKey(d0)
                 lastEp = validEp(p.getString("ep", "") ?: "")
+                uVar = p.getInt("uv", 0).coerceIn(0, 2)
                 if (region.isNotEmpty() && REGIONS.none { it.first == region }) region = ""
                 if (d0 != dns) p.edit().putString("dns", dns).apply()
             } catch (_: Throwable) {}
@@ -139,7 +153,7 @@ object HwVpn {
         on = wantOn; region = wantRegion; dns = wantDns
         save(c)
         if (dnsChanged) HwNet.dnsChanged()
-        if (toggled || (on && regionChanged)) {
+        if (toggled || (on && regionChanged) || (on && dnsChanged && usque())) {
             if (on) { status = if (toggled) "connecting" else "reconnecting"; error = ""; since = System.currentTimeMillis(); ex.execute { fresh(); restartProc() } }
             else { status = "off"; error = ""; since = System.currentTimeMillis(); ex.execute { stopProc() } }
             changed(true)
@@ -200,12 +214,21 @@ object HwVpn {
         } else {
             curEp = ""
             a.add("--scan"); a.add("-4")
-            /* from the third scan on, accept slower endpoints (slow or lossy networks) */
-            if (attempt >= 2) { a.add("--rtt"); a.add("2s") }
-            if (region.isEmpty() && attempt % 2 == 1) a.add("--gool")
             attempt++
         }
         if (region.isNotEmpty()) { a.add("--cfon"); a.add("--country"); a.add(region) }
+        return a
+    }
+
+    /** usque socks flags for this attempt: HTTP/3 :443 -> HTTP/2 :443 -> HTTP/3 :500, then around again */
+    private fun usqueArgs(): List<String> {
+        val a = ArrayList<String>()
+        /* starts from the variant that last worked (prefs "uv") */
+        val v = (attempt + uVar) % 3; curVar = v
+        when (v) { 1 -> a.add("--http2"); 2 -> { a.add("-P"); a.add("500") } }
+        attempt++
+        /* names asked through the proxy are resolved inside the tunnel by the chosen DNS (Quad9 when Secure DNS is off) */
+        for (ip in dohServer(dns).second.take(2)) { a.add("-d"); a.add(ip) }
         return a
     }
 
@@ -213,6 +236,7 @@ object HwVpn {
         val c = app ?: return
         if (!on) return
         if (proc != null) return
+        if (usque()) { startUsque(c); return }
         val b = bin(c)
         if (!b.exists()) { setStatus("error", "Not supported on this phone"); return }
         /* the same port as before when it is free again, so the WebView override never moves */
@@ -248,6 +272,145 @@ object HwVpn {
                 stopProc(); attemptFailed(); setStatus("reconnecting", "Taking too long. Trying another server\u2026"); schedule()
             }
         }, 180, TimeUnit.SECONDS)
+    }
+
+    /* ---------------- usque (Auto) ---------------- */
+    @Volatile private var tunFails = 0
+    @Volatile private var uVar = 0
+    private var curVar = 0
+    private var regTried = false
+    private var verifying = false
+
+    private fun startUsque(c: Context) {
+        val b = binU(c)
+        if (!b.exists()) { setStatus("error", "Not supported on this phone"); return }
+        val dir = File(c.filesDir, "usque").apply { mkdirs() }
+        val cfg = cfgU(c)
+        val reg = !(cfg.exists() && cfg.length() > 50)
+        val old = port
+        if (!reg) {
+            if (!portFree(port)) port = freePort()
+            if (port <= 0) { log("hwvpn: no free local port"); setStatus("reconnecting", "Couldn't start the VPN. Trying again\u2026"); schedule(); return }
+            if (port != old) changed(true)
+        }
+        val args: List<String> = if (reg) listOf("register", "-a", "-n", "Hwallet") else listOf("socks", "-b", "127.0.0.1", "-p", port.toString()) + usqueArgs()
+        val cmd = arrayListOf(b.absolutePath, "-c", cfg.absolutePath); cmd.addAll(args)
+        val my = ++gen
+        tunFails = 0; verifying = false; seenEp = ""
+        val how = if (args.contains("--http2")) "HTTP/2 :443" else if (args.contains("-P")) "HTTP/3 :500" else "HTTP/3 :443"
+        log("hwvpn: " + (if (reg) "registering a Cloudflare WARP device (one time)" else "attempt #$attempt Auto (MASQUE $how): " + args.drop(5).joinToString(" ")))
+        try {
+            val pb = ProcessBuilder(cmd).directory(dir).redirectErrorStream(true)
+            pb.environment()["HOME"] = c.filesDir.absolutePath
+            pb.environment()["TMPDIR"] = c.cacheDir.absolutePath
+            val p = pb.start()
+            proc = p
+            Thread({ readUsque(p, my, reg) }, "hwvpn-log").apply { isDaemon = true }.start()
+        } catch (e: Throwable) {
+            proc = null
+            log("hwvpn: could not start: " + (e.message ?: e.javaClass.simpleName).take(160))
+            setStatus("reconnecting", "Couldn't start the VPN. Trying again\u2026")
+            schedule(); return
+        }
+        progress(my, if (reg) "Setting up Cloudflare WARP\u2026" else "Connecting to Cloudflare\u2026")
+        /* registration or a MASQUE connection that hasn't proved itself in 75 s: next variant */
+        watchdog = ex.schedule(Runnable {
+            if (my == gen && on && status != "connected") {
+                log("hwvpn: no connection after 75 s, trying another way")
+                stopProc(); setStatus("reconnecting", "Taking too long. Trying another way\u2026"); schedule()
+            }
+        }, 75, TimeUnit.SECONDS)
+    }
+
+    /** usque logs `2026/10/23 22:29:01 UTC SOCKS proxy listening on 127.0.0.1:PORT`, then on first use
+     *  `Establishing MASQUE connection to IP:443` and `Connected to MASQUE server`, or `Failed to connect tunnel: ...` */
+    private fun readUsque(p: Process, my: Int, reg: Boolean) {
+        var last = ""
+        try {
+            p.inputStream.bufferedReader().use { r ->
+                while (true) {
+                    val line = r.readLine() ?: break
+                    if (line.isBlank()) continue
+                    log(line)
+                    val l = line.lowercase()
+                    when {
+                        l.contains("proxy listening on") -> ex.execute { if (my == gen && on && status != "connected") verify(my, 0) }
+                        l.contains("connected to masque server") -> { tunFails = 0; progress(my, "Checking the connection\u2026") }
+                        l.contains("failed to connect tunnel") || l.contains("failed to establish") -> {
+                            last = line.substringAfter("UTC ").take(200)
+                            val n = ++tunFails
+                            ex.execute { if (my == gen && on) tunnelFailed(my, n, l) }
+                        }
+                        l.contains("error") || l.contains("fatal") || l.contains("failed") -> last = line.substringAfter("UTC ").take(200)
+                    }
+                }
+            }
+        } catch (_: Throwable) {}
+        val code = try { p.waitFor() } catch (_: Throwable) { -1 }
+        ex.execute {
+            if (my != gen) return@execute
+            log("hwvpn: usque exited (code $code)")
+            proc = null
+            watchdog?.cancel(false); health?.cancel(false)
+            if (!on) return@execute
+            if (reg) {
+                val ok = code == 0 && app?.let { cfgU(it).length() > 50 } == true
+                if (ok) { log("hwvpn: WARP device registered"); startProc(); return@execute }
+                setStatus("reconnecting", if (last.lowercase().contains("429") || last.lowercase().contains("rate")) "Cloudflare is busy. Trying again shortly\u2026" else "Couldn't sign up with Cloudflare WARP. Trying again\u2026")
+                schedule(); return@execute
+            }
+            setStatus("reconnecting", friendly(last))
+            schedule()
+        }
+    }
+
+    /** a MASQUE connect failed: a revoked device (401/403) re-registers once; 3 failures before connecting, or 6 in a row
+     *  after, end this attempt (the next one tries the next variant) */
+    private fun tunnelFailed(my: Int, n: Int, l: String) {
+        val c = app ?: return
+        if ((l.contains("401") || l.contains("403") || l.contains("unauthorized") || l.contains("forbidden")) && !regTried) {
+            regTried = true
+            log("hwvpn: Cloudflare refused this device, registering a new one")
+            stopProc(); try { cfgU(c).delete() } catch (_: Throwable) {}
+            setStatus("reconnecting", "Setting up Cloudflare WARP again\u2026"); startProc(); return
+        }
+        val was = status == "connected"
+        if (n < (if (was) 6 else 3)) return
+        log("hwvpn: MASQUE connection failed $n times, trying another way")
+        stopProc()
+        if (was) fresh()
+        setStatus("reconnecting", if (was) "Lost the connection. Reconnecting\u2026" else "Couldn't reach Cloudflare. Trying another way\u2026")
+        schedule()
+    }
+
+    /** proves the tunnel: https://1.1.1.1/cdn-cgi/trace through the local SOCKS port must answer warp=on (an IP, so no
+     *  DNS is needed; this also wakes usque's lazy connect). Retried every 4 s while the attempt lives. */
+    private fun verify(my: Int, n: Int) {
+        if (my != gen || !on || status == "connected" || verifying) return
+        verifying = true
+        val pt = port
+        Thread({
+            var ok = false; var why = ""
+            try {
+                val px = java.net.Proxy(java.net.Proxy.Type.SOCKS, InetSocketAddress("127.0.0.1", pt))
+                val u = java.net.URL("https://1.1.1.1/cdn-cgi/trace")
+                val h = u.openConnection(px) as java.net.HttpURLConnection
+                h.connectTimeout = 15000; h.readTimeout = 15000; h.useCaches = false
+                h.setRequestProperty("User-Agent", "Hwallet")
+                val body = try { h.inputStream.bufferedReader().use { it.readText().take(2000) } } finally { try { h.disconnect() } catch (_: Throwable) {} }
+                ok = Regex("(?m)^warp=(on|plus)").containsMatchIn(body)
+                if (!ok) why = "trace says " + (Regex("(?m)^warp=\\w+").find(body)?.value ?: "no warp line")
+            } catch (e: Throwable) { why = (e.message ?: e.javaClass.simpleName).take(120) }
+            ex.execute {
+                verifying = false
+                if (my != gen || !on || status == "connected") return@execute
+                if (ok) { log("hwvpn: tunnel check passed (warp=on)"); connectedNow() }
+                else {
+                    if (n == 0 || n % 3 == 2) log("hwvpn: tunnel check failed: $why")
+                    ex.schedule(Runnable { verify(my, n + 1) }, 4, TimeUnit.SECONDS)
+                }
+            }
+        }, "hwvpn-check").apply { isDaemon = true }.start()
     }
 
     /** the attempt with the remembered endpoint failed: forget it (the next scan finds and saves a new one) */
@@ -307,12 +470,16 @@ object HwVpn {
         fresh()
         watchdog?.cancel(false); watchdog = null
         /* remember the endpoint that served: the next start tries it first with -e (no scan) */
-        val ep = seenEp
+        val ep = if (usque()) "" else seenEp
         if (ep.isNotEmpty() && ep != lastEp) {
             lastEp = ep
             try { app?.getSharedPreferences(PREF, Context.MODE_PRIVATE)?.edit()?.putString("ep", ep)?.apply() } catch (_: Throwable) {}
         }
-        log("hwvpn: connected" + (if (ep.isNotEmpty()) " via $ep" else ""))
+        if (usque() && curVar != uVar) {
+            uVar = curVar
+            try { app?.getSharedPreferences(PREF, Context.MODE_PRIVATE)?.edit()?.putInt("uv", uVar)?.apply() } catch (_: Throwable) {}
+        }
+        log("hwvpn: connected" + (if (usque()) " (MASQUE " + arrayOf("HTTP/3 :443", "HTTP/2 :443", "HTTP/3 :500")[curVar] + ")" else if (ep.isNotEmpty()) " via $ep" else ""))
         setStatus("connected", "")
         val my = gen
         health?.cancel(false)
@@ -342,6 +509,8 @@ object HwVpn {
         val r = raw.lowercase()
         return when {
             r.contains("psiphon") -> "Couldn't connect to " + regionName(region) + ". Trying again\u2026"
+            r.contains("x509") || r.contains("certificate") -> "Your network is interfering with the connection. Trying another way\u2026"
+            r.contains("masque") || r.contains("quic") || r.contains("connect-ip") || r.contains("no recent network activity") -> "Couldn't reach Cloudflare. Trying another way\u2026"
             r.contains("user canceled") -> "Couldn't find a working server. Trying again\u2026"
             r.contains("deadline exceeded") || r.contains("connection test") || r.contains("handshake") || r.contains("timeout")
                 || r.contains("i/o") || r.contains("unreachable") || r.contains("refused") || r.contains("no route") ->

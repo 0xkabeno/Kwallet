@@ -87,6 +87,19 @@ jobs:
           cp $D/warp-plus $J/libwarpplus.so; chmod 755 $J/libwarpplus.so
           ls -la $J
 
+      # Hwallet VPN fix round 2: Auto = usque (github.com/Diniboy1123/usque, MIT), Cloudflare WARP over MASQUE, the prebuilt
+      # Android arm64 executable from its pinned release, SHA-256 checked, placed as libusque.so. Never committed here.
+      - name: VPN engine (usque v4.2.1)
+        run: |
+          set -e
+          D=$RUNNER_TEMP/usque; mkdir -p $D
+          for i in 1 2 3; do curl -fsSL -o $D/u.zip https://github.com/Diniboy1123/usque/releases/download/v4.2.1/usque_4.2.1_android_arm64.zip && break; sleep 10; done
+          echo '2754ff58786297319b4a037dccda4aefe7a33587d5c1bee34ee4b6e86a3fbaa9  '"$D/u.zip" | sha256sum -c -
+          (cd $D && unzip -qo u.zip usque)
+          J=$GITHUB_WORKSPACE/hwallet/app/src/main/jniLibs/arm64-v8a; mkdir -p $J
+          cp $D/usque $J/libusque.so; chmod 755 $J/libusque.so
+          ls -la $J
+
       - name: Read version
         id: ver
         run: |
