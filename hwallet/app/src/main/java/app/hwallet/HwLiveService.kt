@@ -130,6 +130,9 @@ class HwLiveService : Service() {
         try { channels() } catch (_: Throwable) {}
         goForeground()
         try { HwNet.load(this) } catch (_: Throwable) {}
+        /* v1.9.19: the VPN tunnel lives in this process (HwVpn, loaded by HwNet.load): while this service runs it stays up for
+           alerts and WebSockets. VPN turned on or off: the sockets reconnect on the new path (their own retry). */
+        vpnOn = HwVpn.on; HwVpn.listeners.add(vpnL)
         try {
             val pm = getSystemService(POWER_SERVICE) as PowerManager
             wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Hwallet:live").apply { setReferenceCounted(false); acquire() }
@@ -162,7 +165,25 @@ class HwLiveService : Service() {
         } catch (_: Exception) {}
     }
 
+    @Volatile private var vpnOn = false
+    private val vpnL: () -> Unit = { val now = HwVpn.on; if (now != vpnOn) { vpnOn = now; if (running) closeSockets() } }
+
+    /** v1.9.19: an alert this service fired, as an "Alert" row in the Activity timeline (label and time only) */
+    private fun alertRow(title: String, body: String, ch: String, net: String?) {
+        try {
+            val w = wid(); if (w.isEmpty()) return
+            val t = System.currentTimeMillis()
+            val id = "al" + java.lang.Long.toString(t, 36) + (title.hashCode() and 0xfff).toString(36)
+            val o = JSONObject().put("ch", ch).put("hash", id).put("t", t).put("dir", "alert").put("key", "native").put("st", "ok")
+                .put("ev", 1).put("kind", "alert").put("lbl", title.take(80)).put("site", body.take(80))
+            if (net != null) o.put("net", net)
+            o.put("k", ch + ":" + (net ?: "") + ":" + id + ":native:alert")
+            HwActDb.get(this).evPut(w, listOf(o))
+        } catch (_: Throwable) {}
+    }
+
     override fun onDestroy() {
+        HwVpn.listeners.remove(vpnL)
         running = false
         try { exec?.shutdownNow() } catch (_: Exception) {}
         closeSockets()
@@ -480,6 +501,7 @@ class HwLiveService : Service() {
                             val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
                             nm.notify((id.hashCode() and 0x7ffffff) + 300, n)
                         } catch (_: Exception) {}
+                        alertRow(title, body, "", null)
                     } else if (!hit && fired.contains(id)) { fired.remove(id); dirty = true }
                 }
                 if (dirty) pr.edit().putStringSet("pa_fired", fired).apply()
@@ -603,6 +625,8 @@ class HwLiveService : Service() {
             val ok = (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
             ok.notify((key.hashCode() and 0x7ffffff) + (if (out) 200 else 100), n)
         } catch (_: Exception) {}
+        val evm = c.optString("k") == "evm"
+        alertRow(title, body, if (evm) "eth" else c.optString("id"), if (evm) c.optString("id") else null)
     }
 
     private fun saveSnap() {

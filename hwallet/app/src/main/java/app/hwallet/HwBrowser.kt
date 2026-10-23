@@ -702,7 +702,7 @@ class HwBrowser(
             override fun onReceivedError(view: WebView, req: WebResourceRequest, err: WebResourceError) {
                 if (req.isForMainFrame && !t.offline && File(dir(t.id), "page.mht").exists() && (t.restoring || !online())) loadSnapshot(t, view)
             }
-            override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? = (try { HwShield.check(req, t.url) } catch (_: Throwable) { null }) ?: (if (t.inc) null else capped(req))
+            override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? = vpnBlock(req) ?: (try { HwShield.check(req, t.url) } catch (_: Throwable) { null }) ?: (if (t.inc) null else capped(req))
             @android.annotation.TargetApi(26)
             override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
                 if (t.web === view) { uncover(t); root.removeView(view); view.destroy(); t.web = null; if (visible == t.id) visible = null; ev(JSONObject().put("t", "gone").put("id", t.id)) }
@@ -822,6 +822,7 @@ class HwBrowser(
                 if (p.shown) popTitle(p, url)
             }
             override fun onPageFinished(view: WebView, url: String?) { if (p.shown) popTitle(p, url) }
+            override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? = vpnBlock(req)
             @android.annotation.TargetApi(26)
             override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean { popClose(p); return true }
         }
@@ -967,6 +968,17 @@ class HwBrowser(
             if (w == null) { js("window.hwBrEvalDone&&hwBrEvalDone(${q(id)},$seq,null)"); return@post }
             w.evaluateJavascript(code) { r -> js("window.hwBrEvalDone&&hwBrEvalDone(${q(id)},$seq,${q(r ?: "null")})") }
         }
+    }
+    /** v1.9.19: VPN on while this WebView cannot use the local proxy (Android System WebView too old) or the tunnel has
+     *  no port yet: the page gets a short notice instead of loading direct (kill switch). Proxied WebViews need nothing
+     *  here: ProxyController keeps them on the local port, so loads fail while the tunnel is down. */
+    private fun vpnBlock(req: WebResourceRequest): WebResourceResponse? {
+        if (!HwVpn.webBlocked()) return null
+        val s = req.url.scheme?.lowercase()
+        if (s != "https" && s != "http") return null
+        val msg = if (!HwVpn.webSupported()) "Your Android WebView is too old for the VPN, update Android System WebView" else "VPN reconnecting, traffic paused"
+        val html = if (req.isForMainFrame) "<!doctype html><meta name=viewport content='width=device-width'><body style='font:16px system-ui;padding:32px 24px;color:#555'><b>Hwallet VPN</b><p>" + msg + "</p>" else ""
+        return WebResourceResponse("text/html", "utf-8", 503, "VPN", mapOf("Cache-Control" to "no-store"), java.io.ByteArrayInputStream(html.toByteArray()))
     }
     /** v1.8.7: blocker switched on/off, or this site's shield: reload the page on screen */
     fun reloadShown() { post { visible?.let { tabs[it]?.web?.reload() } } }

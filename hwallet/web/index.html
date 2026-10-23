@@ -248,6 +248,15 @@ body.hw-hide [data-money]{letter-spacing:1px}
 .vlist{position:relative;contain:strict;width:100%}
 .vr,.vh{position:absolute;left:0;right:0;top:0;will-change:transform}
 .vh{height:44px;display:flex;align-items:flex-end;padding:0 6px 8px;font-size:14px;font-weight:600;color:var(--muted)}
+/* v1.9.19: Activity timeline filters + pinned day header */
+.act-flt{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0 10px;-webkit-overflow-scrolling:touch}.act-flt::-webkit-scrollbar{display:none}
+.act-chip{flex:0 0 auto;height:34px;padding:0 14px;border:0;border-radius:999px;background:var(--card);color:var(--text);font:500 14px/1 inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+.act-chip.on{background:var(--text);color:var(--bg)}
+.act-stk{position:sticky;top:var(--sat, 0px);height:0;z-index:4;pointer-events:none}
+.act-stk>span{position:absolute;left:-16px;right:-16px;top:0;height:36px;display:flex;align-items:center;padding:0 22px;background:var(--bg);font-size:14px;font-weight:600;color:var(--muted);opacity:0;transition:opacity .12s}
+.act-stk.on>span{opacity:1}
+.act-none{padding:28px 6px;text-align:center;color:var(--muted);font-size:14px}
+.hw-evb{display:inline-flex;align-items:center;justify-content:center}.hw-evb .ic{width:20px;height:20px}
 .vr{height:66px;background:var(--card);border-radius:6px;overflow:hidden}
 .vr.f{border-top-left-radius:var(--r);border-top-right-radius:var(--r)}.vr.l{border-bottom-left-radius:var(--r);border-bottom-right-radius:var(--r)}
 .vr .ar{height:66px;min-height:0;content-visibility:visible;padding:10px 16px}
@@ -480,6 +489,10 @@ body.md3 .kws-don-c svg { fill: var(--md-opc) !important; }
 .hw-subpg .kws{padding-bottom:calc(24px + var(--sab,0px))}
 .hw-subpg .bar{position:sticky;top:0;z-index:2;background:var(--bg)}
 .hw-kp{margin:4px 20px 14px;font-size:13.5px;line-height:1.45;color:var(--muted)}
+/* v1.9.19: Network & VPN status dot + the "traffic paused" banner */
+.hw-vst{cursor:default}.hw-vdot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#9aa0a6}.hw-vdot.ok{background:#1e8e3e}.hw-vdot.amb{background:#f9ab00}.hw-vdot.err{background:#d93025}
+#hw-vbar{position:fixed;left:50%;top:calc(var(--sat, 0px) + 6px);transform:translate(-50%,-140%);z-index:2147483000;max-width:calc(100% - 32px);padding:8px 14px;border-radius:999px;background:#f9ab00;color:#1f1f1f;font:600 13px/18px system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:transform .25s ease;pointer-events:none;text-align:center}
+#hw-vbar.show{transform:translate(-50%,0)}
 .hw-kc{flex:0 0 auto;margin-left:10px;padding:4px 10px;border-radius:12px;font-size:12.5px;font-weight:600;background:var(--md-pc,#e3e8ef);color:var(--md-opc,#223348)}
 .hw-kc.none{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--border,#dadce0)}
 body[data-theme="dark"] .hw-kc.user,body[data-theme="dark"] .hw-kc.app{background:#26313f;color:#5b8def}
@@ -4273,7 +4286,7 @@ window.hwPlayOpening();
   /* ---------- v1.9.14: TON Connect JS bridge (embedded wallet). Hwallet answers as itself (window.hwallet.tonconnect) and, for
      dApps that only look for Tonkeeper, under window.tonkeeper too. Every signature happens in Kwallet; Hwallet broadcasts. */
   if (!OFF.ton) (function () {
-    var tcId = 0, tcL = [], tcDev = { platform: 'android', appName: 'Hwallet', appVersion: '1.9.18', maxProtocolVersion: 2, features: ['SendTransaction', { name: 'SendTransaction', maxMessages: 4 }, { name: 'SignData', types: ['text', 'binary', 'cell'] }] };
+    var tcId = 0, tcL = [], tcDev = { platform: 'android', appName: 'Hwallet', appVersion: '1.9.19', maxProtocolVersion: 2, features: ['SendTransaction', { name: 'SendTransaction', maxMessages: 4 }, { name: 'SignData', types: ['text', 'binary', 'cell'] }] };
     function tcErr(code, msg) { return { code: code, message: msg }; }
     function items(r, proofWanted) {
       var it = [{ name: 'ton_addr', address: r.address, network: '-239', publicKey: r.publicKey || '', walletStateInit: r.walletStateInit || '' }];
@@ -7702,7 +7715,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.18';
+var APP_VERSION = '1.9.19';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -11541,14 +11554,51 @@ var APP_VERSION = '1.9.18';
      app's origin). Shown in Activity with the same rows; sends, receives, fees, contract calls, approvals, swaps and
      closes / burns already come from ACT (dappLog / send / swap) and from each chain's history streams. */
   function ev39Get() { return jget('hw-ev39:' + wk(), []) || []; }
+  /* v1.9.19 (Activity timeline): with the app, events live in the native activity DB (HwActDb v2, kind dapp / approval /
+     alert; labels only), read 50 at a time. The older per-wallet list (localStorage) is copied there once and still merged. */
+  function ev39Nat() { return nat('evRows') && nat('evPut'); }
+  function ev39Kind(e) { return e.kind === 'approval' || e.kind === 'alert' ? e.kind : 'dapp'; }
+  function ev39Row(e) {
+    var o = itm({ ch: e.ch || '', net: e.ch === 'eth' ? e.net : undefined, hash: e.id, t: e.t, dir: e.dir, key: 'native', s: e.s || '', amt: e.amt || '', cp: '', st: 'ok', ev: 1, kind: ev39Kind(e), lbl: e.lbl, site: e.site, origin: e.origin });
+    if (e.idn) o.idn = String(e.idn).slice(0, 64); if (e.sp) o.sp = String(e.sp).slice(0, 80);
+    return o;
+  }
+  function ev39Ok(rows) { return (rows || []).filter(function (e) { return e && (e.ch ? (e.ch === 'eth' ? !e.net || chainOnFor('eth', e.net) : chainOnFor(e.ch)) : e.kind === 'alert'); }); }
+  function ev39Mig() {
+    if (!ev39Nat() || jget('hw-ev39m:' + wk(), 0)) return;
+    var L = ev39Get(); jset('hw-ev39m:' + wk(), 1);
+    if (L.length) try { HwNative.evPut(WID, JSON.stringify(L.map(ev39Row))); } catch (e) {}
+  }
   function ev39Add(o) {
     try {
-      var L = ev39Get(); o.t = o.t || Date.now(); o.id = o.id || ('ev' + o.t.toString(36) + Math.random().toString(36).slice(2, 7));
-      L.unshift(o); jset('hw-ev39:' + wk(), L.slice(0, 300));
-      if (HB && HB.items && !HB.dead) ev39Merge(HB);
+      o.t = o.t || Date.now(); o.id = o.id || ('ev' + o.t.toString(36) + Math.random().toString(36).slice(2, 7));
+      if (ev39Nat()) { ev39Mig(); try { HwNative.evPut(WID, JSON.stringify([ev39Row(o)])); } catch (e) {} }
+      else { var L = ev39Get(); L.unshift(o); jset('hw-ev39:' + wk(), L.slice(0, 300)); }
+      if (HB && HB.items && !HB.dead) merge(HB, ev39Ok([ev39Row(o)]));
     } catch (e) {}
   }
-  function ev39Ch(ns, o) { var ch = { eip155: 'eth', solana: 'sol', tron: 'trx', sui: 'sui', cardano: 'ada', xrpl: 'xrp', btc: 'btc' }[ns] || ''; var net = null; if (ch === 'eth') { try { var n = EVMID[brCid(o)]; net = n ? n.id : (EVM[0] || {}).id; } catch (e) { net = (EVM[0] || {}).id; } } return { ch: ch, net: net }; }
+  /* one page (50) of native events older than F.evLow */
+  function ev39Page(F) {
+    var a = []; try { a = JSON.parse(String(HwNative.evRows(WID, '', String(F.evLow || 0), 50)) || '[]') || []; } catch (e) { a = []; }
+    if (a.length < 50) F.evDone = true;
+    a.forEach(function (x) { if (x && x.t && (!F.evLow || x.t < F.evLow)) F.evLow = x.t; });
+    return a;
+  }
+  /* after the cache is on screen: events down to the oldest row shown (max 8 pages), the rest as the list scrolls */
+  function ev39Fill(F) {
+    if (!ev39Nat() || !F || F.dead) return;
+    var low = Infinity; F.items.forEach(function (x) { if (!x.ev && x.t < low) low = x.t; });
+    var n = 0, rows = [];
+    while (!F.evDone && n < 8 && (!F.evLow || F.evLow > low || n === 0)) { rows = rows.concat(ev39Page(F)); n++; if (low === Infinity) break; }
+    F.evInit = 1; if (rows.length) merge(F, ev39Ok(rows));
+  }
+  function ev39More(F) {
+    if (!ev39Nat() || !F || !F.evInit || F.evDone || F.dead || F.evBusy) return;
+    var fl = F.flat || [], last = fl.length ? fl[fl.length - 1].x : null;
+    if (last && F.evLow && F.evLow < last.t) return;   /* events already reach past the end of the list */
+    F.evBusy = 1; try { merge(F, ev39Ok(ev39Page(F))); } finally { F.evBusy = 0; }
+  }
+  function ev39Ch(ns, o) { var ch = { eip155: 'eth', solana: 'sol', tron: 'trx', sui: 'sui', cardano: 'ada', cip34: 'ada', xrpl: 'xrp', btc: 'btc', bip122: 'btc', ton: 'ton', icp: 'icp', near: 'near' }[ns] || ''; var net = null; if (ch === 'eth') { try { var n = EVMID[brCid(o)]; net = n ? n.id : (EVM[0] || {}).id; } catch (e) { net = (EVM[0] || {}).id; } } return { ch: ch, net: net }; }
   function ev39Conn(o, site, nss, off) {
     (nss || []).forEach(function (ns) { var c = ev39Ch(ns, o); if (!c.ch) return; ev39Add({ ch: c.ch, net: c.net, dir: off ? 'disconnect' : 'connect', lbl: off ? 'Disconnected' : 'Connected', site: String((site && (site.name || site.host)) || o || '').slice(0, 60), origin: String(o || '').slice(0, 200) }); });
   }
@@ -11558,6 +11608,7 @@ var APP_VERSION = '1.9.18';
     var m = String(req.method || ''), ch = req.chain === 'evm' ? 'eth' : String(req.chain || ''), net = ch === 'eth' ? req.network : null;
     if (!CHBY[ch] && ch !== 'eth') return;
     var site = String((req.site && req.site.name) || '').slice(0, 60), origin = String(req.origin || '').slice(0, 200), res = o.result || {};
+    if (/signTypedData/i.test(m)) { var pm = ev39Permit(req, net); if (pm) { ev39Add(Object.assign({ ch: ch, net: net, dir: 'approval', kind: 'approval', lbl: 'Approval', site: site, origin: origin }, pm)); return; } }   /* v1.9.19: a signed permit is an approval */
     if (/sign(Personal)?Message|personal_sign|signTypedData|signData$/i.test(m)) { ev39Add({ ch: ch, net: net, dir: 'sign', lbl: /Typed/i.test(m) ? 'Signed typed data' : 'Signed message', site: site, origin: origin, m: m }); return; }
     if (/getPublicKey|getPubKeys|nearAccount/i.test(m)) { ev39Add({ ch: ch, net: net, dir: 'connect', lbl: 'Shared public key', site: site, origin: origin, m: m }); return; }
     /* a transaction the app may broadcast itself (Solana / Tron signTransaction): its id is known, so it is tracked like ours */
@@ -11569,9 +11620,20 @@ var APP_VERSION = '1.9.18';
   }
   function ev39Merge(F) {
     if (!F || !F.items) return;
-    merge(F, ev39Get().filter(function (e) { return e && e.ch && (e.ch === 'eth' ? !e.net || chainOnFor('eth', e.net) : chainOnFor(e.ch)); }).map(function (e) {
-      return itm({ ch: e.ch, net: e.ch === 'eth' ? e.net : undefined, hash: e.id, t: e.t, dir: e.dir, key: 'native', s: '', amt: '', cp: '', st: 'ok', ev: 1, lbl: e.lbl, site: e.site, origin: e.origin });
-    }));
+    if (ev39Nat()) ev39Mig();
+    merge(F, ev39Ok(ev39Get().map(ev39Row)));
+  }
+  /* v1.9.19: EIP-2612 / Permit2 typed data (token, spender, amount); nothing else of the message is kept */
+  function ev39Permit(req, net) {
+    try {
+      var td = req.params && req.params.typedData; td = typeof td === 'string' ? JSON.parse(td) : td;
+      var pt = String(td && td.primaryType || ''); if (!/^Permit(Single|Batch|TransferFrom|BatchTransferFrom|WitnessTransferFrom)?$/.test(pt)) return null;
+      var msg = td.message || {}, det = Array.isArray(msg.details) ? null : (msg.details || msg.permitted || {}), dom = td.domain || {};
+      var tok = String((det && det.token) || dom.verifyingContract || ''), raw = String(msg.value != null ? msg.value : det && det.amount != null ? det.amount : '');
+      var tk = null; try { tk = tok ? tokOf(net, tok) : null; } catch (e) {}
+      var big = /^\d{60,}$/.test(raw), amt = !det ? 'Several tokens' : big ? 'Unlimited' : raw && tk ? fmtA(BigInt(raw), tk.d) + ' ' + tk.s : raw ? raw.slice(0, 40) : '';
+      return { s: String((tk && tk.s) || dom.name || 'token').slice(0, 30), sp: String(msg.spender || '').slice(0, 80), amt: amt };
+    } catch (e) { return null; }
   }
   /* to Kwallet with every request: the status (and fee paid) of recent transactions, so Kwallet's own history follows the chain */
   function tx39KSync() {
@@ -12003,8 +12065,10 @@ var APP_VERSION = '1.9.18';
   function layout(F) {
     F.items.sort(function (a, b) { return b.t - a.t; });
     var flat = [], off = [], y = 0, day = '';
+    var pass = F.scope ? null : actPass;   /* v1.9.19: the Activity tab's filter chips + chain picker */
     for (var i = 0; i < F.items.length; i++) {
-      var x = F.items[i], dl = dayLabel(x.t);
+      var x = F.items[i]; if (pass && !pass(x)) continue;
+      var dl = dayLabel(x.t);
       if (dl !== day) { if (flat.length) flat[flat.length - 1].l = 1; day = dl; flat.push({ h: dl, y: y }); y += HDR; flat.push({ x: x, i: i, f: 1, y: y }); }
       else flat.push({ x: x, i: i, y: y });
       y += ROW;
@@ -12042,12 +12106,13 @@ var APP_VERSION = '1.9.18';
       nd.el.style.transform = 'translate3d(0,' + e.y + 'px,0)'; nd.el.style.display = '';
       nd.gen = F.gen; live[q] = nd;
     });
+    try { actStick(F, top); } catch (e) {}   /* v1.9.19 */
     if (F.items.length && !F.t1) { F.t1 = Math.round(performance.now() - (window.__tabT0 || F.t0p)); window.__hwTTFR = Object.assign(window.__hwTTFR || {}, { firstRows: F.t1, cached: !!F.cachedN }); }
     if (F.fresh && !F.t2) { F.t2 = Math.round(performance.now() - (window.__tabT0 || F.t0p)); window.__hwTTFR = Object.assign(window.__hwTTFR || {}, { firstNetworkRows: F.t2 }); }
     /* endless scroll: near the end, ask every live stream for its next page (in parallel) */
     if (n && first + Object.keys(want).length >= n - 4) more(F);
     var done = !F.streams.some(function (s) { return !s.done; });
-    if (F.ldr) F.ldr.style.display = done || (F.lazy && !F.lazyGo) ? 'none' : '';
+    if (F.ldr) F.ldr.style.display = done || (F.lazy && !F.lazyGo) || (!F.scope && (AF.c === 'dapp' || AF.c === 'alert')) ? 'none' : '';
     if (done && !F.items.length && !F.empty) finishFeed(F);
   }
   /* ---------- v1.4 (#55): the native activity cache ----------
@@ -12101,8 +12166,10 @@ var APP_VERSION = '1.9.18';
     if (V.ch === 'xmr' && sc && !xmrReady()) { el.innerHTML = emptyHtml('Monero history needs the view key', 'Pair again from Kwallet (button above) to scan for payments on this phone.'); return; }
     if (HB && HB.unmount) HB.unmount();
     var F = HB = { scope: sc, streams: streamsFor(sc), items: [], seen: {}, el: el, live: {}, pool: [], t0p: performance.now(), dirty: true };
-    el.innerHTML = '<div class="vlist" id="hrows"></div><div class="ldr" id="hmore"><span class="spin"></span></div>';
-    F.box = $('hrows'); F.ldr = $('hmore');
+    el.innerHTML = (sc ? '' : actFltHtml() + '<div class="act-stk" id="act-stk"><span></span></div>') + '<div class="vlist" id="hrows"></div>' +
+      (sc ? '' : '<div class="act-none" id="act-none" hidden>Nothing here yet</div>') + '<div class="ldr" id="hmore"><span class="spin"></span></div>';
+    F.box = $('hrows'); F.ldr = $('hmore'); F.stk = sc ? null : $('act-stk'); F.none = sc ? null : $('act-none');
+    if (!sc) actFltBind(F);
     F.box.onclick = function (e) { var b = e.target.closest('[data-hx]'); if (!b) return; var x = F.items[+b.getAttribute('data-hx')]; if (x) { buzz(6); txDetail(x); } };
     var onScroll = function () { schedule(F); };
     var scr = scroller(); scr.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll);
@@ -12111,6 +12178,7 @@ var APP_VERSION = '1.9.18';
     local2(F);
     var cached = actRead(); if (sc) cached = cached.filter(function (x) { return scopeOk(sc, x); });
     F.cachedN = cached.length; merge(F, cached);
+    try { ev39Fill(F); } catch (e) {}   /* v1.9.19 */
     if (!F.streams.length && !F.items.length) { el.innerHTML = emptyHtml('Your transactions will appear here', V.v === 'activity' ? 'Sent and received transfers on every network show up here.' : 'History for this network opens in its explorer.'); return; }
     F.dirty = true; paint(F);
     /* 2) nothing is fetched on open while the live service keeps the cache fresh: its new rows are patched in as they land.
@@ -12122,6 +12190,10 @@ var APP_VERSION = '1.9.18';
   function saveFeed(F) { clearTimeout(saveT2); saveT2 = setTimeout(function () { var top = F.items.slice().sort(function (a, b) { return b.t - a.t; }).filter(function (x) { return x.st !== 'pending'; }).slice(0, 80); jset('hw-hist:' + wk(), top); }, 500); }
   function more(F) {
     if (F.dead || F !== HB) return;
+    try { ev39More(F); } catch (e) {}   /* v1.9.19: the next 50 timeline events from disk */
+    /* a filter that hides transactions never pages the chains' histories; any other filter pages them gently (one round / 4 s) */
+    if (!F.scope && (AF.c === 'dapp' || AF.c === 'alert')) return;
+    if (!F.scope && (AF.c !== 'all' || AF.n)) { var nw = Date.now(); if (nw - (F.mT || 0) < 4000) return; F.mT = nw; }
     if (F.lazy && !F.lazyGo) { if (performance.now() - F.t0p < 600) { clearTimeout(F.lzT); F.lzT = setTimeout(function () { more(F); }, 650); return; } F.lazyGo = true; }
     F.streams.forEach(function (s) { if (!s.busy && !s.done && (s.started || F.lazy)) pull(s, F).then(function () { if (F === HB && !F.scope) saveFeed(F); }); });
   }
@@ -12135,7 +12207,111 @@ var APP_VERSION = '1.9.18';
     if (!F.items.length && F.el && !F.empty) { var d = document.createElement('div'); d.innerHTML = emptyHtml('Your transactions will appear here', F.scope ? 'Receive ' + esc(curAsset().s) + ' to get started.' : 'Sent and received transfers on every network show up here.'); F.empty = d.firstChild; F.el.insertBefore(F.empty, F.el.firstChild); }
   }
   function emptyHtml(t, s) { return '<div class="empty"><span class="eb">' + sv('bolt') + '</span><b>' + esc(t) + '</b><span>' + s + '</span></div>'; }
-  function dayLabel(t) { var d = new Date(t), n = new Date(), y = new Date(Date.now() - 864e5); if (d.toDateString() === n.toDateString()) return 'Today'; if (d.toDateString() === y.toDateString()) return 'Yesterday'; return d.toLocaleDateString([], { month: 'long', day: 'numeric', year: d.getFullYear() === n.getFullYear() ? undefined : 'numeric' }); }
+  /* v1.9.19: "Today", "Yesterday", then "Wed 21 Oct 2026" */
+  var DAYN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MONN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function dayLabel(t) { var d = new Date(t), n = new Date(), y = new Date(Date.now() - 864e5); if (d.toDateString() === n.toDateString()) return 'Today'; if (d.toDateString() === y.toDateString()) return 'Yesterday'; return DAYN[d.getDay()] + ' ' + d.getDate() + ' ' + MONN[d.getMonth()] + ' ' + d.getFullYear(); }
+  /* ---------- v1.9.19: Activity timeline. One list for every chain and every kind of event: transactions (as before),
+     approvals, dApp connections / sign-ins / signed messages, and alerts. Filter chips + a chain picker (remembered);
+     transactions keep their own detail, events open a small one. Day headers stick to the top while scrolling. ---------- */
+  var ACTC = [['all', 'All'], ['tx', 'Transactions'], ['dapp', 'dApps'], ['approval', 'Approvals'], ['alert', 'Alerts']];
+  var AF = (function () { var f = jget('hw-actf', null) || {}; return { c: ACTC.some(function (c) { return c[0] === f.c; }) ? f.c : 'all', n: typeof f.n === 'string' ? f.n : '' }; })();
+  function actCat(x) {
+    if (x.ev) return x.kind === 'approval' || x.kind === 'alert' ? x.kind : 'dapp';
+    if (x.ap) return 'approval';
+    var la = null; try { la = localAct(x.hash); } catch (e) {} if (la && la.ap) return 'approval';
+    return 'tx';
+  }
+  function actChainKey(x) { return x.ch === 'eth' ? 'eth:' + (x.net || '') : String(x.ch || ''); }
+  function actChainName(k) {
+    if (!k) return 'All chains';
+    if (k.indexOf('eth:') === 0) { var n = EVMBY[k.slice(4)]; return n ? n.name : 'EVM'; }
+    return (CHBY[k] || {}).name || k.toUpperCase();
+  }
+  function actPass(x) { if (AF.c !== 'all' && actCat(x) !== AF.c) return false; if (AF.n && actChainKey(x) !== AF.n) return false; return true; }
+  function actFltHtml() {
+    return '<div class="act-flt" role="toolbar" aria-label="Filter activity">' + ACTC.map(function (c) { return '<button type="button" class="act-chip' + (AF.c === c[0] ? ' on' : '') + '" data-afc="' + c[0] + '" aria-pressed="' + (AF.c === c[0]) + '">' + c[1] + '</button>'; }).join('') +
+      '<button type="button" class="act-chip act-chn' + (AF.n ? ' on' : '') + '" data-afn>' + esc(actChainName(AF.n)) + ' \u25be</button></div>';
+  }
+  function actChains(F) {
+    var seen = {}, out = [];
+    var add = function (k) { if (k && !seen[k]) { seen[k] = 1; out.push(k); } };
+    try { if (A && A.eth) EVM.forEach(function (n) { if (chainOnFor('eth', n.id)) add('eth:' + n.id); }); } catch (e) {}
+    try { Object.keys(CHBY).forEach(function (k) { if (k !== 'eth' && A && A[k] && chainOn(k)) add(k); }); } catch (e) {}
+    (F.items || []).forEach(function (x) { if (x.ch) add(actChainKey(x)); });
+    return out;
+  }
+  function actFltBind(F) {
+    var bar = F.el.querySelector('.act-flt'); if (!bar) return;
+    var apply = function () {
+      jset('hw-actf', AF);
+      bar.querySelectorAll('[data-afc]').forEach(function (b) { var o = b.getAttribute('data-afc') === AF.c; b.classList.toggle('on', o); b.setAttribute('aria-pressed', o ? 'true' : 'false'); });
+      var cb = bar.querySelector('[data-afn]'); if (cb) { cb.textContent = actChainName(AF.n) + ' \u25be'; cb.classList.toggle('on', !!AF.n); }
+      F.dirty = true; var sc = scroller(), bt = F.box ? F.box.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop : 0; if (sc.scrollTop > bt) sc.scrollTop = Math.max(0, bt - 60);
+      schedule(F); setTimeout(function () { try { ev39More(F); } catch (e) {} }, 60);
+    };
+    bar.addEventListener('click', function (e) {
+      var c = e.target.closest('[data-afc]');
+      if (c) { buzz(6); AF.c = c.getAttribute('data-afc'); apply(); return; }
+      if (e.target.closest('[data-afn]')) {
+        buzz(6);
+        var rows = [{ k: '', l: 'All chains', on: !AF.n }].concat(actChains(F).map(function (k) { return { k: k, l: actChainName(k), on: AF.n === k }; }));
+        var pick = function (k) { AF.n = k || ''; apply(); };
+        if (window.HWP && HWP.picker) HWP.picker({ title: 'Chain', rows: rows, onPick: pick });
+        else pick('');
+      }
+    });
+  }
+  /* the day of the row at the top of the screen, pinned under the status bar */
+  function actStick(F, top) {
+    if (F.none) F.none.hidden = !(F.items.length && !(F.flat || []).length);
+    var el = F.stk; if (!el) return;
+    var fl = F.flat || [], lab = '';
+    if (top > 4 && fl.length) {
+      var L = 0, R = fl.length - 1, k = 0; while (L <= R) { var m = (L + R) >> 1; if (fl[m].y <= top) { k = m; L = m + 1; } else R = m - 1; }
+      for (var q = k; q >= 0; q--) if (fl[q].h) { lab = fl[q].h; break; }
+    }
+    if (el._l !== lab) { el._l = lab; el.firstChild.textContent = lab; el.classList.toggle('on', !!lab); }
+  }
+  function evTitle(x) {
+    var site = String(x.site || (x.origin ? hostOf(x.origin) : '') || 'an app'), d = x.dir;
+    if (actCat(x) === 'alert') return String(x.lbl || 'Alert');
+    if (actCat(x) === 'approval') return 'Approval ' + (x.s || 'token') + ' \u2192 ' + site;
+    if (d === 'signin') return 'Signed in to ' + site + (x.idn ? ' \u00b7 ' + x.idn : '');
+    if (d === 'newid') return 'New identity on ' + site + (x.idn ? ' \u00b7 ' + x.idn : '');
+    if (d === 'connect' && (x.lbl || 'Connected') === 'Connected') return 'Connected to ' + site;
+    if (d === 'disconnect') return 'Disconnected from ' + site;
+    return String(x.lbl || 'App') + ' \u00b7 ' + site;
+  }
+  function evIcon(x) { try { var r = brSites()[x.origin]; return r && r.icon ? r.icon : ''; } catch (e) { return ''; } }
+  function evRowHtml(x, i) {
+    var cat = actCat(x), chn = x.ch ? actChainName(actChainKey(x)) : '';
+    var lg = cat === 'alert' ? '<span class="lg lt md hw-evb">' + sv('bell', 'ic') + '</span>' : siteIcon({ name: x.site || hostOf(x.origin || '') || 'App', host: hostOf(x.origin || ''), icon: evIcon(x) });
+    var sub = cat === 'alert' ? String(x.site || '') : [cat === 'approval' && x.sp ? 'Spender ' + short(x.sp, 4) : (x.origin ? hostOf(x.origin) : ''), chn].filter(Boolean).join(' \u00b7 ');
+    var right = cat === 'approval' ? String(x.amt || '') : cat === 'alert' ? 'Alert' : x.dir === 'disconnect' ? 'Ended' : 'Done';
+    var when = new Date(x.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return '<button class="ar sm tap" data-hx="' + (i < 0 ? '' : i) + '">' + lg + '<span class="am"><span class="an">' + esc(evTitle(x)) + '</span><span class="ap">' + esc(sub) + '</span></span>' +
+      '<span class="ax"><span class="aa">' + esc(right) + '</span><span class="au">' + when + '</span></span></button>';
+  }
+  function evDetail(x) {
+    var cat = actCat(x), rows = [];
+    if (x.site && cat !== 'alert') rows.push(['Site', x.site]);
+    if (x.origin) rows.push(['Origin', hostOf(x.origin)]);
+    if (x.ch) rows.push(['Network', actChainName(actChainKey(x))]);
+    if (x.idn) rows.push(['Identity', x.idn]);
+    if (cat === 'approval') { rows.push(['Spender', x.sp ? short(x.sp, 6) : '\u2014']); rows.push(['Amount', x.amt || '\u2014']); }
+    if (cat === 'alert' && x.site) rows.push(['Details', x.site]);
+    rows.push(['Time', new Date(x.t).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })]);
+    rows.push(['Status', cat === 'alert' ? 'Notified' : x.dir === 'disconnect' ? 'Disconnected' : cat === 'approval' ? 'Signed' : 'Done']);
+    var head = cat === 'alert' ? 'Alert' : cat === 'approval' ? 'Approval' : 'App';
+    var html = '<div class="td-b"><div class="sh-h"><span class="sh-sp"></span><h3>' + head + '</h3><button class="sh-rb" data-x aria-label="Close">' + si('x') + '</button></div>' +
+      '<div class="td-hd"><div class="td-t">' + esc(evTitle(x)) + '</div></div>' +
+      '<div class="dg">' + rows.map(function (r) { return '<div class="dr"><span>' + esc(r[0]) + '</span><span class="dv">' + esc(String(r[1])) + '</span></div>'; }).join('') + '</div>' +
+      (cat === 'approval' && typeof apprOpen === 'function' ? '<button class="btn pri td-ex" data-appr>Review approvals</button>' : '') + '</div>';
+    sheet(html, function (ov, close) {
+      ov.querySelector('.sheet').classList.add('sw-sh');
+      var b = ov.querySelector('[data-appr]'); if (b) b.onclick = function () { buzz(6); close(); setTimeout(function () { try { apprOpen(); } catch (e) {} }, 220); };
+    });
+  }
   /* wave B (#98a): what this phone itself sent (swaps, app transactions), by hash, so chain rows read as "Swap USDC → SOL" */
   var LAI = null, PROVN = { near: 'NEAR Intents', jupiter: 'Jupiter', lifi: 'LI.FI', sunswap: 'SunSwap' };
   function localAct(h) {
@@ -12241,7 +12417,7 @@ var APP_VERSION = '1.9.18';
     return app ? 'Used ' + app : 'Transaction';
   }
   function txDetail(x) {
-    if (x && x.ev) { toast((x.lbl || 'App') + (x.origin ? ' \u00b7 ' + String(x.origin).replace(/^https?:\/\//, '') : '')); return; }   /* ph39tx */
+    if (x && x.ev) { evDetail(x); return; }   /* ph39tx; v1.9.19: a small detail sheet */
     var netName = x.ch === 'eth' ? (EVMBY[x.net] || {}).name : CHBY[x.ch].name, nat = dtNat(x), url = expFor(x.ch, x.net, x.hash);
     function body(D, loading) {
       var rows = dtRows(x, D), st = D ? (D.ok ? 'ok' : 'fail') : x.st === 'pending' ? 'pending' : x.st === 'fail' ? 'fail' : 'ok';
@@ -12273,6 +12449,7 @@ var APP_VERSION = '1.9.18';
   function swapParts(t) { var m = String(t || '').match(/^\s*([\d.,]+)\s+(\S+)\s+\u2192\s+([\d.,]+)\s+(\S+)/); return m ? { a: m[1], s: m[2], b: m[3], r: m[4] } : null; }
   function actRow(x, i) {
     if (i == null) i = HB ? HB.items.indexOf(x) : -1;
+    if (x && x.ev) return evRowHtml(x, i);   /* v1.9.19 */
     var la = localAct(x.hash), sp = la && la.kind === 'swap' ? swapParts(la.amt) : null;
     if (sp || (la && la.kind === 'dapp')) {
       /* v1.8.9 (R17): the network's own coin (BNB on BNB Chain, POL on Polygon), never a fixed ETH logo */
@@ -12472,7 +12649,73 @@ var APP_VERSION = '1.9.18';
   }
   function capAdSub() { return capAdOn() ? adSum().replace(/^Adaptive \u00b7 /, 'Now: ') : 'Adjusts refreshes and downloads to the connection speed and mobile data'; }
   function capAdPaint() { var on = capAdOn(); kflag('kws-capad', on); ksub('kws-capad', capAdSub()); var r = kq('#kws-cap'); if (r) r.classList.toggle('kws-dis', on); ksub('kws-c-net', capNetSub()); }
-  function capNetSub() { return 'Mobile data: ' + (capAdOn() ? 'Adaptive' : capTxt(capGet())); }
+  function capNetSub() { return vpnSum(); }
+  /* ---------- v1.9.19: Network & VPN. App-only VPN for Hwallet (native HwVpn: warp-plus, MIT) + Secure DNS ----------
+     The switch, the location, a status card and Secure DNS sit under the speed limit. State comes from HwNative.vpnState()
+     and is pushed by the app on every change (window.hwVpnState). Only Hwallet's own traffic is routed; Kwallet stays offline. */
+  var VPN = { on: false, status: 'off', region: '', regionName: 'Auto', since: 0, error: '', dns: 'quad9', web: true, supported: true };
+  var VPNT = 0;
+  function vpnNat() { return nat('vpnState') && nat('vpnSet'); }
+  function vpnRead() { if (vpnNat()) try { var j = JSON.parse(String(HwNative.vpnState()) || '{}'); if (j && typeof j === 'object' && 'on' in j) VPN = j; } catch (e) {} return VPN; }
+  function vpnFlag(c) { c = String(c || '').toUpperCase(); return /^[A-Z]{2}$/.test(c) ? String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65) : ''; }
+  function vpnWhere(v) { return v.region ? (vpnFlag(v.region) + ' ' + (v.regionName || v.region)).trim() : 'Auto (best)'; }
+  function vpnSum() { var v = VPN; if (!vpnNat() || !v.on) return 'VPN off'; if (v.status === 'connected') return 'VPN on \u00b7 ' + (v.region ? v.regionName : 'Auto'); if (v.status === 'error') return 'VPN paused \u00b7 ' + (v.error || 'error'); return 'VPN reconnecting\u2026'; }
+  function vpnAgo(t) { var m = Math.max(0, Math.round((Date.now() - (+t || Date.now())) / 60000)); return m < 1 ? 'just now' : m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; }
+  function vpnDnsName(d) { return d === 'off' ? 'Off' : d === 'mullvad' ? 'Mullvad' : 'Quad9'; }
+  var KI_GLOBE = 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.93 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a8.2 8.2 0 0 1 0-4h3.38a16.5 16.5 0 0 0 0 4H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.08 16zm2.95-8H5.08a7.99 7.99 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66a14.7 14.7 0 0 1 0-4h4.68a14.7 14.7 0 0 1 0 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14a16.5 16.5 0 0 0 0-4h3.38a8.2 8.2 0 0 1 0 4h-3.38z';
+  function vpnHtml() {
+    if (!vpnNat()) return '';
+    return '<div class="kws-sec">VPN</div><div class="kws-grp">' + krow('kws-vpn', KI.shield, 'VPN for Hwallet', 'Other apps aren\u2019t affected', KSW) +
+      krow('kws-vloc', KI_GLOBE, 'Location', 'Auto (best)') +
+      '<div class="kws-row hw-vst" id="kws-vst"><span class="kws-ic"><i class="hw-vdot" id="kws-vst-d"></i></span><span class="kws-t"><span id="kws-vst-t">VPN off</span><span class="kws-s" id="kws-vst-s"></span></span></div></div>' +
+      '<p class="hw-kp">Kill switch is on: if the VPN drops, Hwallet pauses traffic instead of going direct.</p>' +
+      '<div class="kws-sec">Secure DNS</div><div class="kws-grp">' + krow('kws-vdns', KI.shield, 'Secure DNS', 'Quad9') + '</div>' +
+      '<p class="hw-kp">Secure DNS covers Hwallet\u2019s wallet traffic. Web pages use it when the VPN is on.</p>' +
+      '<p class="hw-kp">VPN servers can see traffic that isn\u2019t encrypted. Your keys never leave Kwallet.</p>';
+  }
+  function vpnPaint() {
+    var v = VPN; vpnBanner();
+    if (typeof kov === 'undefined' || !kov) return;
+    ksub('kws-c-net', vpnSum());
+    if (!kq('#kws-vpn')) return;
+    kflag('kws-vpn', !!v.on);
+    var b = kq('#kws-vpn'); if (b) b.disabled = v.supported === false && !v.on;
+    ksub('kws-vpn', v.supported === false ? 'Not supported on this phone' : !v.web && v.on ? 'Your Android WebView is too old for the VPN, update Android System WebView' : 'Other apps aren\u2019t affected');
+    ksub('kws-vloc', vpnWhere(v)); ksub('kws-vdns', vpnDnsName(v.dns) + (v.dns === 'quad9' ? ' (default)' : ''));
+    var d = kq('#kws-vst-d'), t = kq('#kws-vst-t');
+    var cls = !v.on ? '' : v.status === 'connected' ? 'ok' : v.status === 'error' ? 'err' : 'amb';
+    if (d) d.className = 'hw-vdot' + (cls ? ' ' + cls : '');
+    if (t) t.textContent = !v.on ? 'VPN off' : v.status === 'connected' ? vpnWhere(v) : v.status === 'error' ? 'Not connected' : v.status === 'connecting' ? 'Connecting\u2026' : 'Reconnecting\u2026';
+    ksub('kws-vst', !v.on ? 'Hwallet connects directly' : v.status === 'connected' ? 'Connected ' + vpnAgo(v.since) : v.error ? String(v.error).slice(0, 120) : 'Traffic is paused until the VPN is back');
+    clearTimeout(VPNT); if (v.on && v.status === 'connected') VPNT = setTimeout(vpnPaint, 30000);
+  }
+  /* "VPN reconnecting, traffic paused": over the main page and the Browser tab while the tunnel is down */
+  function vpnBanner() {
+    var v = VPN, show = !!(v.on && v.status !== 'connected'), el = document.getElementById('hw-vbar');
+    if (!show) { if (el) el.classList.remove('show'); return; }
+    if (!el) { if (!document.body) { setTimeout(vpnBanner, 300); return; } el = document.createElement('div'); el.id = 'hw-vbar'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    el.textContent = v.status === 'error' && v.error === 'Not supported on this phone' ? 'VPN not supported on this phone, traffic paused' : !v.web ? 'Your Android WebView is too old for the VPN, update Android System WebView' : 'VPN reconnecting, traffic paused';
+    el.classList.add('show');
+  }
+  function vpnSet(o) {
+    if (!vpnNat()) return;
+    var err = ''; try { err = String(HwNative.vpnSet(JSON.stringify(o)) || ''); } catch (e) { err = 'Could not change the VPN'; }
+    if (err) toast(err);
+    vpnRead(); vpnPaint();
+  }
+  function vpnBind(on) {
+    on('kws-vpn', function () { ktick(); var v = vpnRead(); if (!v.on && v.supported === false) { toast('The VPN is not supported on this phone'); return; } vpnSet({ on: !v.on }); buzz(10); });
+    on('kws-vloc', function () {
+      ktick(); var v = vpnRead(), L = []; try { L = JSON.parse(String(HwNative.vpnRegions()) || '[]') || []; } catch (e) {}
+      var rows = [{ k: '', l: 'Auto (best)', sub: 'Cloudflare WARP, nearest server', on: !v.region }].concat(L.map(function (r) { return { k: r.code, l: (vpnFlag(r.code) + ' ' + r.name).trim(), on: v.region === r.code }; }));
+      var pick = function (k) { if (k === (vpnRead().region || '')) return; vpnSet({ region: k }); };
+      if (window.HWP && HWP.picker) HWP.picker({ title: 'VPN location', rows: rows, onPick: pick });
+      else kchoose('VPN location', rows.map(function (r) { return [r.k, esc(r.l)]; }), v.region || '', pick);
+    });
+    on('kws-vdns', function () { ktick(); kchoose('Secure DNS', [['off', 'Off'], ['quad9', 'Quad9 (default)'], ['mullvad', 'Mullvad']], vpnRead().dns || 'quad9', function (d) { vpnSet({ dns: d }); }); });
+  }
+  window.hwVpnState = function (j) { try { var o = JSON.parse(j); if (o && typeof o === 'object') VPN = o; } catch (e) { return; } vpnPaint(); };
+  setTimeout(function () { vpnRead(); vpnBanner(); }, 0);
   function capBind(ov) {
     var sl = ov.querySelector('#kws-sl'); if (!sl) return;
     var tr = sl.querySelector('.kws-sl-tr'), th = sl.querySelector('.kws-sl-th'), fi = sl.querySelector('.kws-sl-fi'), v = ov.querySelector('#kws-cap-v'), s = ov.querySelector('#kws-cap-s');
@@ -12546,7 +12789,7 @@ var APP_VERSION = '1.9.18';
      are built once with the main page and kept (detached while closed). */
   var KCAT = [
     ['wal', 'Wallets & pairing', KI.wallet], ['app', 'Appearance', KI.theme], ['snd', 'Sending & fees', 'M2.01 21 23 12 2.01 3 2 10l15 2-15 2z'],
-    ['net', 'Network', 'M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8 3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4 2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z'],
+    ['net', 'Network & VPN', 'M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8 3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4 2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z'],
     ['brw', 'Browser', 'M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z'],
     ['xmr', 'Monero', 'M12 2a10 10 0 0 0-9.5 13.1h3V7.6L12 14l6.5-6.4v7.5h3A10 10 0 0 0 12 2zm-1.5 14.2-2.8-2.8v5.3H3.6A10 10 0 0 0 12 22a10 10 0 0 0 8.4-4.3h-4.1v-5.3l-2.8 2.8L12 16.7z'],
     ['sec', 'Security & privacy', KI.shield], ['bg', 'Notifications & background', KI.bell], ['abt', 'About', KI.info]
@@ -12663,7 +12906,7 @@ var APP_VERSION = '1.9.18';
         '<div class="kws-sec">Sound and touch</div><div class="kws-grp">' + krow('kws-snd', KI.snd, 'Sounds', '') + krow('kws-hap', KI.vib, 'Haptics', null, KSW) + '</div>',
       snd: '<div class="kws-grp">' + krow('kws-fsp', KI.timer, 'Saved fee speeds', fpSum()) + krow('kws-sim', KI.flask, 'Simulate before sending', null, KSW) +
         krow('kws-book', 'M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm-6 4a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm5 10H7v-.75C7 13.6 10.33 13 12 13s5 .6 5 2.25V16z', 'Address book', null) + '</div>',
-      net: '<div class="kws-grp">' + capHtml() + capAdHtml() + keysHtml() + '</div>',
+      net: '<div class="kws-grp">' + capHtml() + capAdHtml() + keysHtml() + '</div>' + vpnHtml(),
       /* v1.8.7 (push 12): the browser's ad blocker and user agent, one tap from Settings */
       brw: '<div class="kws-grp">' + krow('kws-blk', KI.shield, 'Ad blocker', '', KSW) + krow('kws-ua', 'M4 6h18V4H4c-1.1 0-2 .9-2 2v11H0v3h14v-3H4V6zm19 2h-6c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V9c0-.55-.45-1-1-1zm-1 9h-4v-7h4v7z', 'User agent', '') + krow('kws-blu', KI.timer, 'Update filter lists', '') + (window.hwTr ? krow('kws-trto', hwTr.icon, 'Translate pages to', esc(hwTr.name(hwTr.to()))) : '') + '</div><p class="hw-kp">Blocks ads and trackers in the dApp browser with uBlock Origin\u2019s lists. Wallet and network services are never blocked.</p>',
       xmr: xmrCatHtml(),
@@ -12756,6 +12999,7 @@ var APP_VERSION = '1.9.18';
     on('kws-src', function () { ktick(); openExt('https://github.com/0xkabeno/Kwallet'); });
     on('kws-ver', function () { ktick(); });
     capBind(kcats.net); kov.__capPaint = kcats.net.__capPaint;
+    try { vpnBind(on); } catch (e) {}   /* v1.9.19 */
     kqa('[data-chn]').forEach(function (b) { b.onclick = function () { ktick(); chainsToggle(b.getAttribute('data-chn')); chnSync(); ksub('kws-c-chn', chnSum()); }; });
     try { if (typeof sinBind === 'function') sinBind(kcats.inp); } catch (e) {}
     on('kws-capad', function () { ktick(); capAdSet(!capAdOn()); capAdPaint(); if (!capAdOn() && kov.__capPaint) kov.__capPaint(); });
@@ -12803,7 +13047,7 @@ var APP_VERSION = '1.9.18';
     try { var BS = window.hwBrShield; if (BS) { var bst = BS.state(); kflag('kws-blk', !!bst.on); ksub('kws-blk', BS.sum(bst)); ksub('kws-ua', BS.uaSum()); ksub('kws-trto', window.hwTr ? hwTr.name(hwTr.to()) : ''); ksub('kws-blu', bst.updated ? 'Updated ' + new Date(bst.updated).toLocaleDateString() : 'Weekly, in the background'); ksub('kws-c-brw', 'Ad blocker ' + (bst.on ? 'on' : 'off') + ' \u00b7 ' + BS.uaSum()); } } catch (e) {}
     ksub('kws-c-app', thN + ' \u00b7 ' + uiN + (md ? ' \u00b7 Material You' : ''));
     ksub('kws-c-snd', 'Fee speeds: ' + fpSum() + (simOn() ? ' \u00b7 Simulate on' : ''));
-    ksub('kws-c-net', capNetSub());
+    vpnRead(); ksub('kws-c-net', capNetSub()); try { vpnPaint(); } catch (e) {}
     ksub('kws-c-xmr', xmrCatSum());
     ksub('kws-c-sec', 'Approvals \u00b7 Hide balances ' + (hidden() ? 'on' : 'off'));
     ksub('kws-c-bg', nat('setLive') ? (bg > 0 ? 'Live on \u00b7 ' + rfLabel(bg, BG) : 'Live off') + ' \u00b7 alerts ' + (jget('hw-alerts', true) !== false ? 'on' : 'off') : 'Refresh ' + rfLabel(+jget('hw-refresh', 5), RF));
@@ -13647,7 +13891,15 @@ window.hwCrashPrompt = crashPrompt;
     return WC.init;
   }
   function wcSessions() { try { return WC.wk ? WC.wk.getActiveSessions() || {} : {}; } catch (e) { return {}; } }
-  function wcSaved() { jset('hw-wc-on', Object.keys(wcSessions()).length > 0); wcBgSync(); }
+  function wcSaved() { jset('hw-wc-on', Object.keys(wcSessions()).length > 0); wcBgSync(); try { wcEvDiff(); } catch (e) {} }
+  /* v1.9.19: a WalletConnect session that is gone (disconnected here, by the app, or expired) becomes a "Disconnected" row */
+  function wcEvDiff() {
+    if (!WC.wk) return;
+    var S = wcSessions(), now = {};
+    Object.keys(S).forEach(function (t) { now[t] = { md: (S[t].peer || {}).metadata || {}, ns: Object.keys(S[t].namespaces || {}) }; });
+    var was = WC.evSnap; WC.evSnap = now; if (!was) return;
+    Object.keys(was).forEach(function (t) { if (now[t]) return; var site = wcSite(was[t].md); ev39Conn(site.origin, site, was[t].ns, true); });
+  }
   function wcSite(md) {
     md = md || {}; var url = String(md.url || ''), host = hostOf(url) || 'unknown site';
     return { name: String(md.name || host).slice(0, 60), host: host, origin: /^https?:\/\//.test(url) ? url : 'https://' + host, icon: (md.icons || []).filter(function (i) { return /^https:/.test(i); })[0] || '' };
@@ -13733,6 +13985,7 @@ window.hwCrashPrompt = crashPrompt;
         if (ns.sui && A.sui) ap.sessionProperties = { sui_getAccounts: JSON.stringify([{ address: A.sui, pubkey: suiPkFlag(spk) || spk || '' }]) };
         return wk.approveSession(ap);
       }).then(function (s) {
+        try { ev39Conn(site.origin, site, Object.keys(ns)); } catch (e) {}   /* v1.9.19: Activity timeline */
         wcSaved(); wcListSync(); snd('ok'); toast('Connected to ' + site.name); buzz([10, 40, 14]);
         wcBack({ peer: { metadata: P.proposer && P.proposer.metadata } });
         return s;
@@ -19494,6 +19747,14 @@ window.hwCrashPrompt = crashPrompt;
       return p17K(site, 'icp', 'icp_passkey', q);
     }).then(function (r) {
       iiTake(rpK, r);
+      /* v1.9.19: "Signed in to id.ai · <identity name>" in Activity (site and the identity's name only) */
+      try {
+        if (r && (op === 'get' || op === 'create')) {
+          var ix0 = +r.idx, k0 = iiKnown(iiState(), rpK).filter(function (x) { return x.i === ix0; })[0];
+          var nm0 = (k0 && k0.n) || (((r.names || []).filter(function (x) { return +x.i === ix0; })[0] || {}).n) || (op === 'create' ? q.name : '') || (k0 && k0.a ? 'Identity ' + k0.a : '');
+          ev39Add({ ch: 'icp', dir: op === 'get' ? 'signin' : 'newid', lbl: op === 'get' ? 'Signed in' : 'New identity', site: h, origin: me, idn: String(nm0 || '').slice(0, 64) });
+        }
+      } catch (e) {}
       if (r && Array.isArray(r.calls) && r.calls.length) { var rc = { calls: r.calls }; setTimeout(function () { iiSubmitNames(rc).catch(function () {}); }, 0); delete r.calls; }   /* v1.9.16: never handed to the site */
       /* a new identity: once II has registered it, remember its number and the name it was made with */
       if (op === 'create' && r && r.credId) {
@@ -19807,7 +20068,7 @@ window.hwCrashPrompt = crashPrompt;
     });
   }
   function licenses() {
-    sheet('<h3>Open-source licenses</h3><div class="lic">Hwallet\nCopyright (C) 2026 Kwallet contributors.\nLicensed under the GNU General Public License v3.0 or later. You may copy, change and share it under the same license. It comes with no warranty.\n\nGem Wallet\nHwallet\u2019s layout, lists, pickers, navigation and wallet tools follow Gem Wallet (github.com/gemwalletcom), Copyright (C) Gem Wallet contributors, GPL-3.0. Chain and token logos come from Gem Wallet\u2019s and Trust Wallet\u2019s asset repositories (MIT, Copyright (c) 2019-2023 Trust Wallet). Gem Wallet is not affiliated with Hwallet.\n\nMonero symbol: The Monero Project (getmonero.org).\n\nMonero engine (v1.8)\nmonero-ts, Copyright (c) woodser, MIT License (github.com/woodser/monero-ts), with the Monero Project\u2019s wallet2 compiled to WebAssembly, Copyright (c) 2014-2025 The Monero Project, BSD 3-Clause License; Boost (BSL-1.0) and libsodium (ISC).\n\nKwallet (the offline signer) is a separate app under the MIT license.\n\nMiuix (UI style \u201cMiuix\u201d, pull to refresh)\nCopyright compose-miuix-ui contributors. Apache License 2.0. github.com/compose-miuix-ui/miuix\n\nMaterial Design 3 (UI style \u201cMaterial UI\u201d)\nMaterial 3 specification and androidx.compose.material3 tokens, Apache License 2.0.\n\nInter typeface (v1.8.2)\nCopyright (c) 2016 The Inter Project Authors. SIL Open Font License 1.1. github.com/rsms/inter</div><div class="row2"><button class="btn" data-x>Close</button></div>');
+    sheet('<h3>Open-source licenses</h3><div class="lic">Hwallet\nCopyright (C) 2026 Kwallet contributors.\nLicensed under the GNU General Public License v3.0 or later. You may copy, change and share it under the same license. It comes with no warranty.\n\nGem Wallet\nHwallet\u2019s layout, lists, pickers, navigation and wallet tools follow Gem Wallet (github.com/gemwalletcom), Copyright (C) Gem Wallet contributors, GPL-3.0. Chain and token logos come from Gem Wallet\u2019s and Trust Wallet\u2019s asset repositories (MIT, Copyright (c) 2019-2023 Trust Wallet). Gem Wallet is not affiliated with Hwallet.\n\nMonero symbol: The Monero Project (getmonero.org).\n\nMonero engine (v1.8)\nmonero-ts, Copyright (c) woodser, MIT License (github.com/woodser/monero-ts), with the Monero Project\u2019s wallet2 compiled to WebAssembly, Copyright (c) 2014-2025 The Monero Project, BSD 3-Clause License; Boost (BSL-1.0) and libsodium (ISC).\n\nKwallet (the offline signer) is a separate app under the MIT license.\n\nMiuix (UI style \u201cMiuix\u201d, pull to refresh)\nCopyright compose-miuix-ui contributors. Apache License 2.0. github.com/compose-miuix-ui/miuix\n\nMaterial Design 3 (UI style \u201cMaterial UI\u201d)\nMaterial 3 specification and androidx.compose.material3 tokens, Apache License 2.0.\n\nInter typeface (v1.8.2)\nCopyright (c) 2016 The Inter Project Authors. SIL Open Font License 1.1. github.com/rsms/inter\n\nVPN for Hwallet (v1.9.19)\nwarp-plus 1.2.6 by bepass-org, MIT License (github.com/bepass-org/warp-plus), prebuilt and unmodified; it includes Psiphon tunnel core (GPL-3.0). Cloudflare WARP and Psiphon are not affiliated with Hwallet.\n\nSecure DNS (v1.9.19)\nOkHttp DNS over HTTPS 4.12.0, Copyright Square, Inc., Apache License 2.0.</div><div class="row2"><button class="btn" data-x>Close</button></div>');
   }
 
   /* ---------- themes: Kwallet light / dark + Material You from the wallpaper ---------- */

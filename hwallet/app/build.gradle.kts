@@ -83,6 +83,13 @@ android {
 
     buildTypes {
         release {
+            // v1.9.19: the shipped APK carries phone ABIs only (arm64-v8a + armeabi-v7a): smaller download. The CI emulator
+            // build (-PkwE2E=true) keeps x86_64 so it still installs on the x86_64 emulator; debug builds are unfiltered as before.
+            // The VPN binary (warp-plus) exists for arm64-v8a only.
+            ndk {
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+                if (project.findProperty("kwE2E") == "true") abiFilters += "x86_64"
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -107,6 +114,8 @@ android {
         // v1.8.12 (push 17): the native Monero engine (monero_c wallet2, ~30 MB per ABI) is stored compressed in the APK and
         // extracted at install (much smaller download); CI puts the verified, stripped libraries in src/main/jniLibs
         jniLibs.useLegacyPackaging = true
+        // v1.9.19: libwarpplus.so is the warp-plus executable (CI puts the verified binary in jniLibs/arm64-v8a). Legacy
+        // packaging extracts it to nativeLibraryDir, the one app path Android 10+ lets an app execute from.
     }
 }
 
@@ -119,6 +128,8 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.8.3")
     // v1.2: WebSockets + HTTP for the always-on listener (foreground service)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // v1.9.19: Secure DNS (DNS over HTTPS: Quad9 / Mullvad) for the shared client, same version as okhttp
+    implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:4.12.0")
     // v1.5 (#61): Hwallet's own scanner: CameraX preview + ZXing decoding on the phone (no Play services)
     implementation("androidx.camera:camera-camera2:1.3.4")
     implementation("androidx.camera:camera-lifecycle:1.3.4")

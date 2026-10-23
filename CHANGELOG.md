@@ -1,5 +1,12 @@
 # Changelog
 
+## Kwallet 3.99.19 / Hwallet 1.9.19
+- Kwallet: the Internet Identity passkey chooser stays short with many identities (selected + most recent, "Show all N identities" with search).
+- Hwallet: VPN for Hwallet (Settings > Network & VPN). App-only: no system VPN prompt, other apps aren't affected. Every Hwallet request, WebSocket, both WebViews and the WalletConnect / TonConnect traffic go through it. Auto (Cloudflare WARP) or a country (WARP + Psiphon exit: 31 countries). Kill switch: when the tunnel drops, Hwallet pauses traffic ("VPN reconnecting, traffic paused") instead of going direct. Engine: warp-plus 1.2.6 (bepass-org, MIT; includes Psiphon tunnel core, GPL-3.0), the prebuilt arm64 binary, downloaded and SHA-256 checked by CI, never committed. 64-bit ARM phones only.
+- Hwallet: Secure DNS (DNS over HTTPS) for wallet traffic: Quad9 (default), Mullvad or Off (OkHttp DNS over HTTPS, Apache-2.0). Web pages use it when the VPN is on.
+- Hwallet: Activity is one timeline across all chains: transactions, approvals, dApp connections and disconnections (WalletConnect, TonConnect, Browser), Internet Identity sign-ins, signed messages and alerts. Day headers (Today, Yesterday, "Wed 21 Oct 2026") stay pinned while scrolling; filter chips All, Transactions, dApps, Approvals, Alerts plus a chain picker (remembered). Events are stored on the phone only (activity database v2; existing activity is kept) with labels only, no signatures or message contents.
+- Hwallet APK: phones' ABIs only (arm64-v8a, armeabi-v7a).
+
 ## Kwallet 3.99.18 / Hwallet 1.9.18
 - Passkey rows: the creation time has its own line under "Passkey #n · ID", so it never cuts off.
 - Hwallet re-reads every identity's name and creation time from Internet Identity on each passkey sign-in (same Confirm), on any phone with the same seed; a date II hadn't returned is retried.

@@ -206,6 +206,14 @@ class HwActivity : FragmentActivity() {
     /** v1.1: true while Kwallet's sign page is open over Hwallet; the page keeps running to stream live data to it. */
     @Volatile private var signing = false
     private val socks = java.util.concurrent.ConcurrentHashMap<String, okhttp3.WebSocket>()
+    /** v1.9.19: VPN state to the page; on <-> off also restarts the page's native WebSockets (WalletConnect relay) on the new path */
+    @Volatile private var vpnWasOn = HwVpn.on
+    private val vpnL: () -> Unit = {
+        val now = HwVpn.on
+        if (now != vpnWasOn) { vpnWasOn = now; try { socks.values.forEach { it.cancel() } } catch (_: Throwable) {} }
+        val j = HwVpn.stateJson()
+        runOnUiThread { try { if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwVpnState&&hwVpnState(${JSONObject.quote(j)})", null) } catch (_: Throwable) {} }
+    }
     private fun wsJs(id: String, t: String, d: String) { runOnUiThread { if (::web.isInitialized) web.evaluateJavascript("window.hwWs&&hwWs(${JSONObject.quote(id)},${JSONObject.quote(t)},${JSONObject.quote(d)})", null) } }
 
     inner class HwBridge {
@@ -418,6 +426,14 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun netMobile(): Boolean = HwNet.mobile
 
+        /** v1.9.19: VPN for Hwallet (HwVpn) + Secure DNS. JSON in / out; changes are pushed to window.hwVpnState(json). */
+        @android.webkit.JavascriptInterface
+        fun vpnState(): String = try { HwVpn.load(this@HwActivity); HwVpn.stateJson() } catch (_: Throwable) { "{}" }
+        @android.webkit.JavascriptInterface
+        fun vpnSet(json: String): String = try { if (json.length > 2000) "Bad request" else HwVpn.set(this@HwActivity, JSONObject(json)) } catch (e: Throwable) { "Could not change the VPN" }
+        @android.webkit.JavascriptInterface
+        fun vpnRegions(): String = try { HwVpn.regionsJson() } catch (_: Throwable) { "[]" }
+
         /* v1.6 (#59/#83): Browser tab (HwBrowser.kt). Tab ids are t[0-9a-z]+; positions are CSS px of the page's #br-v box. */
         @android.webkit.JavascriptInterface
         fun brInit(script: String) { brw().init(script) }
@@ -549,6 +565,23 @@ class HwActivity : FragmentActivity() {
                 } catch (_: Throwable) {}
             }
         }
+
+        /** v1.9.19: Activity timeline events (dApp connects / sign-ins / signed messages / approvals), recorded by the page when
+         *  it handles them. Labels only (HwActDb.evPut keeps a fixed set of short fields). */
+        @android.webkit.JavascriptInterface
+        fun evPut(wid: String, json: String) {
+            if (json.length > 400_000) return
+            net.execute {
+                try {
+                    val a = org.json.JSONArray(json); val l = ArrayList<JSONObject>()
+                    for (i in 0 until minOf(a.length(), 400)) a.optJSONObject(i)?.let { l.add(it) }
+                    HwActDb.get(this@HwActivity).evPut(wid.take(80), l, false)
+                } catch (_: Throwable) {}
+            }
+        }
+        /** newest first, older than before (ms, 0 = newest), limit per page; kinds = "dapp,approval,alert" (any subset) */
+        @android.webkit.JavascriptInterface
+        fun evRows(wid: String, kinds: String, before: String, limit: Int): String = try { HwActDb.get(this@HwActivity).evRows(wid.take(80), kinds.take(60), before.toLongOrNull() ?: 0L, limit) } catch (_: Throwable) { "[]" }
 
         /** v1.8.9 (R17): the page removed a local Pending entry (never broadcast or dropped): off disk and out of the shade */
         @android.webkit.JavascriptInterface
@@ -899,7 +932,10 @@ class HwActivity : FragmentActivity() {
                 else if (request.url.host == "appassets.androidplatform.net" && (request.url.path ?: "").startsWith("/xmrq/")) xmrDirect(request.url)
                 else if (request.url.host == "appassets.androidplatform.net" && (request.url.path ?: "").startsWith("/kwres/")) kwResServe((request.url.path ?: "").removePrefix("/kwres/"))
                 else if (request.url.host == "appassets.androidplatform.net" && (request.url.path ?: "").startsWith("/hwdl/")) trDownload(request.url)
-                else if (request.url.host == "appassets.androidplatform.net") assets.shouldInterceptRequest(request.url)?.also { if (request.url.path?.endsWith(".js") == true) it.mimeType = "text/javascript" } else limited(request)
+                else if (request.url.host == "appassets.androidplatform.net") assets.shouldInterceptRequest(request.url)?.also { if (request.url.path?.endsWith(".js") == true) it.mimeType = "text/javascript" }
+                /* v1.9.19: VPN on but this WebView cannot be proxied (too old) or the tunnel has no port yet: nothing loads direct */
+                else if (HwVpn.webBlocked()) WebResourceResponse("text/plain", "utf-8", 503, "VPN reconnecting", mapOf("Cache-Control" to "no-store"), java.io.ByteArrayInputStream(ByteArray(0)))
+                else limited(request)
 
             override fun onPageFinished(view: WebView, url: String) { pushInsets(); pageReady = true; root.invalidate() }
 
@@ -986,6 +1022,7 @@ class HwActivity : FragmentActivity() {
         /* v1.8.38 (B24): a seed renamed in Kwallet while this screen is up: the page shows the new name now */
         KwWipe.onNames = { runOnUiThread { try { if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwKwNames&&hwKwNames()", null) } catch (_: Throwable) {} } }
         HwNet.onChange = { runOnUiThread { try { if (::web.isInitialized) web.evaluateJavascript("window.hwNetChanged&&hwNetChanged()", null) } catch (_: Throwable) {} } }
+        HwVpn.listeners.add(vpnL)
         // v1.3 (#42): the always-on listener is NOT started here any more. The page starts it through setLive()
         // after it has loaded, when Hwallet is resumed (see startLiveSafe).
     }
@@ -1339,7 +1376,7 @@ class HwActivity : FragmentActivity() {
         if (pendingLive) ui.postDelayed({ if (pendingLive) startLiveSafe() }, 300)
         ui.postDelayed({ warmKwallet() }, 2500)  // P2a: keep Kwallet's sign sheet quick to open while Hwallet is in use
     }  // OEMs drop back to 60 Hz after resume
-    override fun onDestroy() { try { br?.destroy(); br = null } catch (_: Throwable) {}; try { socks.values.forEach { it.cancel() }; socks.clear(); HwActDb.listener = null; KwWipe.onPurge = null; KwWipe.onNames = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
+    override fun onDestroy() { try { br?.destroy(); br = null } catch (_: Throwable) {}; try { socks.values.forEach { it.cancel() }; socks.clear(); HwActDb.listener = null; HwVpn.listeners.remove(vpnL); KwWipe.onPurge = null; KwWipe.onNames = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
 }
 
 /** Smooth rendering like Chrome: highest refresh rate, no overscroll glow.

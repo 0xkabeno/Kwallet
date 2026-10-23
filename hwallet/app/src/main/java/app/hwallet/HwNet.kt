@@ -12,6 +12,16 @@ import okio.Buffer
 import okio.BufferedSink
 import okio.BufferedSource
 import okio.buffer
+import okhttp3.Dns
+import okhttp3.dnsoverhttps.DnsOverHttps
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import java.io.IOException
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.Proxy
+import java.net.ProxySelector
+import java.net.SocketAddress
+import java.net.URI
 import java.util.concurrent.TimeUnit
 
 /**
@@ -39,7 +49,10 @@ object HwNet {
         if (!loaded) { loaded = true; try { userBps = kbps(c).toLong() * 1024L } catch (_: Throwable) {} }
         watch(c)
         apply()
+        try { HwVpn.load(c) } catch (_: Throwable) {}
     }
+    @Volatile private var lastNet: android.net.Network? = null
+    @Volatile private var netLost = false
 
     /** v1.5 (#67): follows the default network live (ConnectivityManager default-network callback) */
     private fun watch(c0: Context) {
@@ -58,8 +71,12 @@ object HwNet {
             if (android.os.Build.VERSION.SDK_INT >= 23) try { upd(cm.getNetworkCapabilities(cm.activeNetwork)) } catch (_: Throwable) {}
             if (android.os.Build.VERSION.SDK_INT >= 24) {
                 cm.registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
-                    override fun onCapabilitiesChanged(n: android.net.Network, caps: android.net.NetworkCapabilities) { upd(caps) }
-                    override fun onLost(n: android.net.Network) { upd(null) }
+                    override fun onCapabilitiesChanged(n: android.net.Network, caps: android.net.NetworkCapabilities) {
+                        upd(caps)
+                        /* v1.9.19: a different default network (Wi-Fi <-> mobile, back from airplane mode): fresh VPN tunnel */
+                        if (n != lastNet) { val had = lastNet != null || netLost; lastNet = n; netLost = false; if (had) try { HwVpn.networkChanged() } catch (_: Throwable) {} }
+                    }
+                    override fun onLost(n: android.net.Network) { upd(null); if (n == lastNet) { lastNet = null; netLost = true } }
                 })
             }
             watching = true
@@ -78,11 +95,87 @@ object HwNet {
         apply()
     }
 
+    /* ---------- v1.9.19: VPN (HwVpn) and Secure DNS ----------
+       One client, as before. Instead of rebuilding it, its proxy and DNS are live objects that read the VPN state on every
+       new connection, so every client derived from it (withTimeout(...), the copies some classes keep) follows at once:
+       VPN on  -> SOCKS5 127.0.0.1:<port> for every request and WebSocket (the exit side resolves names: no DNS leak),
+       VPN off -> the old path (the system ProxySelector, usually direct), with DoH (Secure DNS) or the system DNS.
+       Kill switch: the first interceptor refuses every request while the VPN is on and not connected. */
+    private val loop: InetAddress = InetAddress.getByAddress("localhost", byteArrayOf(127, 0, 0, 1))
+    /** with the VPN on: always exactly the local proxy, never an empty list (OkHttp would go direct). Off: what OkHttp
+     *  used before (the system's ProxySelector.getDefault(), i.e. a Wi-Fi proxy if the user set one) */
+    private val socks = object : ProxySelector() {
+        override fun select(uri: URI?): MutableList<Proxy> {
+            if (HwVpn.on) return mutableListOf(Proxy(Proxy.Type.SOCKS, InetSocketAddress(loop, HwVpn.port.coerceAtLeast(1))))
+            return try { ProxySelector.getDefault()?.select(uri)?.toMutableList() ?: mutableListOf(Proxy.NO_PROXY) } catch (_: Throwable) { mutableListOf(Proxy.NO_PROXY) }
+        }
+        override fun connectFailed(uri: URI?, sa: SocketAddress?, ioe: IOException?) {
+            if (!HwVpn.on) try { ProxySelector.getDefault()?.connectFailed(uri, sa, ioe) } catch (_: Throwable) {}
+        }
+    }
+    private val kill = Interceptor { chain ->
+        if (HwVpn.blocked()) throw IOException("VPN reconnecting")
+        chain.proceed(chain.request())
+    }
+    @Volatile private var doh: Dns? = null
+    @Volatile private var dohFor = ""
+    private val dnsLive = object : Dns {
+        override fun lookup(hostname: String): List<InetAddress> {
+            val d = dohNow() ?: return Dns.SYSTEM.lookup(hostname)
+            return try { d.lookup(hostname) } catch (e: java.net.UnknownHostException) {
+                /* VPN off and the DoH server unreachable on this network: the system resolver (as before 1.9.19), so the
+                   wallet keeps working where Quad9 / Mullvad is blocked. With the VPN on, DNS never reaches this point. */
+                if (HwVpn.on) throw e
+                Dns.SYSTEM.lookup(hostname)
+            }
+        }
+    }
+    private fun dohNow(): Dns? {
+        val want = HwVpn.dns
+        if (want == "off") return null
+        val have = doh
+        if (have != null && dohFor == want) return have
+        synchronized(this) {
+            if (doh != null && dohFor == want) return doh
+            val d = try {
+                /* the bootstrap client: its own small client with the same live proxy + kill switch (DoH goes through the tunnel when on) */
+                val boot = OkHttpClient.Builder().connectTimeout(8, TimeUnit.SECONDS).readTimeout(8, TimeUnit.SECONDS)
+                    .proxySelector(socks).addInterceptor(kill).build()
+                if (want == "mullvad") DnsOverHttps.Builder().client(boot).url("https://dns.mullvad.net/dns-query".toHttpUrl())
+                    .bootstrapDnsHosts(InetAddress.getByName("194.242.2.2"), InetAddress.getByName("2a07:e340::2")).build()
+                else DnsOverHttps.Builder().client(boot).url("https://dns.quad9.net/dns-query".toHttpUrl())
+                    .bootstrapDnsHosts(InetAddress.getByName("9.9.9.9"), InetAddress.getByName("149.112.112.112"), InetAddress.getByName("2620:fe::fe"), InetAddress.getByName("2620:fe::9")).build()
+            } catch (_: Throwable) { null }
+            doh = d; dohFor = want
+            return d
+        }
+    }
+    /** Secure DNS changed: new lookups use it at once; pooled connections (made with the old resolver) are dropped */
+    fun dnsChanged() { doh = null; dohFor = ""; try { client.connectionPool.evictAll() } catch (_: Throwable) {} }
+    /** told by HwVpn when the route changes (on/off, a new port, connected/reconnecting) */
+    @Volatile private var wasOn = false
+    fun vpnChanged() {
+        try { client.connectionPool.evictAll() } catch (_: Throwable) {}
+        val now = HwVpn.on
+        if (now != wasOn) {
+            wasOn = now
+            /* on <-> off: nothing still running on the old path (direct while turning on) may finish there */
+            try { client.dispatcher.cancelAll() } catch (_: Throwable) {}
+            /* an HTTP/2 connection that carried a cancelled call goes back to the pool idle: drop those too (turning on, the
+               kill switch holds every call until the tunnel is connected, which takes longer than this) */
+            Thread({ for (d in longArrayOf(300, 1500)) { try { Thread.sleep(d); client.connectionPool.evictAll() } catch (_: Throwable) {} } }, "hwnet-evict").apply { isDaemon = true }.start()
+            try { onChange?.invoke() } catch (_: Throwable) {}
+        }
+    }
+
     val client: OkHttpClient by lazy {
+        wasOn = HwVpn.on
         OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).writeTimeout(30, TimeUnit.SECONDS)
             .pingInterval(20, TimeUnit.SECONDS).retryOnConnectionFailure(true)
             .dispatcher(Dispatcher().apply { maxRequests = 64; maxRequestsPerHost = 12 })
+            .proxySelector(socks).dns(dnsLive)
+            .addInterceptor(kill)
             .addInterceptor(RateInterceptor(rate))
             .build()
     }

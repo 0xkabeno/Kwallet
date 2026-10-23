@@ -73,6 +73,20 @@ jobs:
           done
           ls -la $J/*
 
+      # v1.9.19: Hwallet's app-only VPN = warp-plus (github.com/bepass-org/warp-plus, MIT), the prebuilt Android arm64
+      # executable from its pinned release. Checked against the SHA-256 below (the build fails on any mismatch) and placed in
+      # hwallet's jniLibs as libwarpplus.so (extracted at install, run from nativeLibraryDir). Never committed to this repository.
+      - name: VPN engine (warp-plus v1.2.6)
+        run: |
+          set -e
+          D=$RUNNER_TEMP/warpplus; mkdir -p $D
+          for i in 1 2 3; do curl -fsSL -o $D/wp.zip https://github.com/bepass-org/warp-plus/releases/download/v1.2.6/warp-plus_android-arm64.zip && break; sleep 10; done
+          echo '585f6f8579d8f5df0c26c874fc1730c4f4298085dbed815ad2d559c8a07c6af5  '"$D/wp.zip" | sha256sum -c -
+          (cd $D && unzip -qo wp.zip warp-plus)
+          J=$GITHUB_WORKSPACE/hwallet/app/src/main/jniLibs/arm64-v8a; mkdir -p $J
+          cp $D/warp-plus $J/libwarpplus.so; chmod 755 $J/libwarpplus.so
+          ls -la $J
+
       - name: Read version
         id: ver
         run: |

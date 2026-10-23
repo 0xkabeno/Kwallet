@@ -12939,7 +12939,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.18';
+const APP_VERSION = '3.99.19';
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -22472,7 +22472,38 @@ window.__KWLOGO={"gram":"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlna
   var manFee = { toT: manToT, spec: manSpec, sub: manSub, fmt: mFm, usd: mUsd, parse: mPU };
   /* Back: closes an open picker first (true = handled) */
   function pickerBack() { if (PK) { PK.close(); return true; } return false; }
-  window.HWP = { headOwn: headOwn, subz: subz, tinyUsd: tinyUsd, manFee: manFee, picker: picker, pickerBack: pickerBack, siteName: siteName, walletRow: walletRow, esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
+  /* v3.99.19: a list sheet over the sheet (same frame as the fee picker) with a search field on top; only the list scrolls,
+     the sheet behind is locked. o = { title, ph, empty, rows:[{k, h (row html), q (search text), on}], onPick(k), host, lock (element) } */
+  function listSheet(o) {
+    if (PK) PK.close();
+    var ov = document.createElement('div'); ov.className = 'hp-ov hp-pk';
+    var rows = (o.rows || []).map(function (r) {
+      return '<button type="button" class="hp-pr' + (r.on ? ' on' : '') + '" data-lk="' + esc(r.k) + '" data-lq="' + esc(String(r.q || '').toLowerCase()) + '" role="radio" aria-checked="' + (r.on ? 'true' : 'false') + '" style="min-height:56px;padding:8px 12px 8px 18px">' + r.h + '</button>';
+    }).join('');
+    ov.innerHTML = '<div class="hp-dim"></div><div class="hp-sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.title || '') + '"><div class="hp-grab"></div>' +
+      '<div style="flex:0 0 auto;padding:12px 16px 8px"><div class="hp-pkt"><h3>' + esc(o.title || '') + '</h3><button type="button" class="hp-x" data-pkx aria-label="Close">' + sv(P.x) + '</button></div>' +
+      '<div class="hp-pcf"><input type="search" data-lsq autocomplete="off" spellcheck="false" placeholder="' + esc(o.ph || 'Search') + '" aria-label="' + esc(o.ph || 'Search') + '"></div></div>' +
+      '<div class="hp-scroll" style="padding-top:0"><div class="hp-pkl" role="radiogroup">' + rows + '</div><p class="hp-cap" data-lse style="display:none">' + esc(o.empty || 'Nothing matches.') + '</p></div></div>';
+    (o.host || document.body).appendChild(ov);
+    void ov.offsetWidth; requestAnimationFrame(function () { ov.classList.add('in'); });
+    var lk = o.lock || null, lkO = lk ? lk.style.overflowY : '';
+    if (lk) lk.style.overflowY = 'hidden';
+    var noMv = function (e) { if (e.cancelable) e.preventDefault(); };
+    ov.querySelector('.hp-dim').addEventListener('touchmove', noMv, { passive: false });
+    ov.querySelector('.hp-grab').addEventListener('touchmove', noMv, { passive: false });
+    var closed = false, me = { el: ov, close: function () { if (closed) return; closed = true; if (PK === me) PK = null; if (lk) lk.style.overflowY = lkO; ov.classList.remove('in'); ov.classList.add('out'); setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 210); } };
+    PK = me;
+    ov.querySelector('.hp-dim').onclick = me.close; ov.querySelector('[data-pkx]').onclick = me.close;
+    var qi = ov.querySelector('[data-lsq]'), em = ov.querySelector('[data-lse]'), lbox = ov.querySelector('.hp-pkl');
+    qi.oninput = function () {
+      var q = String(qi.value || '').trim().toLowerCase(), n = 0;
+      ov.querySelectorAll('[data-lk]').forEach(function (b) { var hit = !q || b.getAttribute('data-lq').indexOf(q) >= 0; b.style.display = hit ? '' : 'none'; if (hit) n++; });   /* .hp-pr sets display, so [hidden] alone would not hide it */
+      em.style.display = n ? 'none' : ''; lbox.style.display = n ? '' : 'none';
+    };
+    ov.querySelectorAll('[data-lk]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-lk'); ov.querySelectorAll('.hp-pr').forEach(function (x) { x.classList.toggle('on', x === b); }); if (o.onPick) o.onPick(k); setTimeout(me.close, 120); }; });
+    return me;
+  }
+  window.HWP = { headOwn: headOwn, subz: subz, tinyUsd: tinyUsd, manFee: manFee, picker: picker, pickerBack: pickerBack, listSheet: listSheet, siteName: siteName, walletRow: walletRow, esc: esc, sv: sv, P: P, icon: icon, head: head, title: title, cap: cap, kv: kv, card: card, changes: changes, walletV: walletV, shortA: shortA,
     trust: trust, warns: warns, perms: perms, details: details, foot: foot, sheet: sheet, topBar: topBar, hero: hero, rows: rows, rent: rent, rentInfo: rentInfo, info: info, bindRent: bindRent, siwe: siwe, siweRows: siweRows, msgBlock: msgBlock, tree: tree, overlay: overlay };
 })();
 /* ===== v1.8.8 / v3.98.8 (push 13, R6): swipe down to dismiss, one handler for every bottom sheet in both apps. =====
@@ -25885,7 +25916,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* v3.99.12: Internet Identity passkeys get the same cards as every other request: what, which identity, and a free cap */
     if (m === 'icp_passkey' || m === 'icp_iiNames') {
       var when = function (u) { if (!u) return ''; var d = Math.floor((Date.now() - u) / 86400000); return d <= 0 ? 'Today' : d === 1 ? 'Yesterday' : d < 30 ? d + ' days ago' : new Date(u).toLocaleDateString(); };
-      var idName = function (r) { return r.n ? esc(r.n) : r.a ? 'Identity ' + esc(r.a) : 'Passkey #' + (r.i + 1); };
+      var idName = function (r) { return r.n ? esc(r.n) : r.a ? 'Identity ' + esc(r.a) : 'Unnamed'; };   /* v3.99.19: "Passkey #n" only in the subtitle */
       var dot = function (on) { return '<span aria-hidden="true"' + (on ? ' class="kw-beatd"' : '') + ' style="display:inline-block;flex:0 0 auto;width:14px;height:14px;border-radius:50%;box-sizing:border-box;margin-right:14px;border:' + (on ? '0;background:#a8f07a' : '1.5px solid rgba(160,160,160,.6)') + '"></span>'; };   /* v3.99.16: a bit smaller */
       /* v3.99.16: the exact time, e.g. 22 Oct 2026, 21:14 */
       var at = function (u) { try { return new Date(u).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }); } catch (e) { return new Date(u).toISOString().slice(0, 16).replace('T', ' '); } };
@@ -25902,12 +25933,26 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
         o.det += kv('Site', esc(DS.pkRp), 'Internet Identity') + kv('Key', 'P-256 (ES256)', 'Never leaves Kwallet');
       } else {
         var rws = DS.pkRows || [];
+        /* v3.99.19: at most 3 rows (the selected one first, then the most recently used) + "Show all N identities"; 1-3 identities: unchanged */
+        var shw = rws, mor = rws.length > 3;
+        DS.pkAll = null;
+        if (mor) {
+          var sR = rws.filter(function (r) { return r.i === DS.pkSel; });
+          shw = sR.concat(rws.filter(function (r) { return r.i !== DS.pkSel; })).slice(0, 3);   /* pkRows is already last used first */
+          var day = function (u) { try { return new Date(u).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return new Date(u).toISOString().slice(0, 10); } };
+          var ln = 'display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+          DS.pkAll = rws.slice().sort(function (x, y) { return (y.u || 0) - (x.u || 0) || (y.c || 0) - (x.c || 0) || x.i - y.i; }).map(function (r) {
+            var on = r.i === DS.pkSel, w = on ? pkWhen(r) : r.c ? day(r.c) : r.u ? 'Used ' + day(r.u) : r.r ? 'Restored' : '';
+            return { k: String(r.i), on: on, q: (r.n || '') + ' ' + (r.a || '') + ' #' + (r.i + 1) + ' ',
+              h: '<span style="display:flex;align-items:center;min-width:0;width:100%">' + dot(on) + '<span style="display:block;min-width:0;flex:1 1 auto"><span style="' + ln + ';font-weight:600;font-size:15px;line-height:20px">' + idName(r) + '</span><span style="' + ln + ';margin-top:2px;font-size:12.5px;line-height:16px;opacity:.62">#' + (r.i + 1) + (r.a ? ' \u00b7 ID ' + esc(r.a) : '') + (w ? ' \u00b7 ' + w : '') + '</span></span></span>' };
+          });
+        }
         if (rws.length) {   /* v3.99.16: one look for every passkey sign-in (add or connect, one identity or many) */
           o.main += HWP.cap(rws.length > 1 ? 'Choose an identity' : 'Identity');
-          o.main += HWP.card(rws.map(function (r) {
+          o.main += HWP.card(shw.map(function (r) {
             var on = r.i === DS.pkSel;
             return HWP.kv(pkLab(on, r), '', '', { tap: true, cls: 'kw-pk' + (on ? ' on' : ''), attr: ' role="radio" aria-checked="' + on + '" data-pk="' + r.i + '"' + (on ? ' style="background:rgba(168,240,122,.08)"' : '') });
-          }).join(''));
+          }).join('') + (mor ? HWP.kv('Show all ' + rws.length + ' identities', '', '', { tap: true, chev: true, attr: ' role="button" data-pkall' }) : ''));
         } else if (rws[0]) {
           var r1 = rws[0];
           o.main += HWP.card(HWP.kv('Identity', idName(r1), pkSub(r1) + (pkWhen(r1) ? ' \u00b7 ' + pkWhen(r1) : '')));
@@ -26477,7 +26522,9 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (isMsg && DS.text != null) DS.siwe = HWP.siwe(DS.text);
     var step = R.step && R.step.n && R.step.of ? 'Step ' + (+R.step.n) + ' of ' + (+R.step.of) : '';
     var own = R.via === 'swap' || R.via === 'fees' || R.via === 'clean';   /* pd38tok */  /* v3.98.4: Hwallet's own Swap / Fees accounts: no app row */
-    var body = HWP.topBar(DS.info.name, LOGO[DS.info.logo] || '') + (own ? HWP.headOwn('Request from Hwallet' + (R.via === 'swap' && sname ? ' \u00b7 Swap via ' + sname : '')) : HWP.head({ icon: R.site && R.site.icon, name: sname, url: url })) + HWP.title(opTitle(m, v, ae), step);
+    /* v3.99.19: Internet Identity always gets the colour IC mark on a white tile (II's own icon is a black mark, unreadable on the dark tile) */
+    var iiLg = (m === 'icp_passkey' || m === 'icp_iiNames') && !!LOGO.internetcomputer;
+    var body = HWP.topBar(DS.info.name, LOGO[DS.info.logo] || '') + (own ? HWP.headOwn('Request from Hwallet' + (R.via === 'swap' && sname ? ' \u00b7 Swap via ' + sname : '')) : (iiLg ? HWP.head({ icon: LOGO.internetcomputer, name: sname, url: url }).replace('<img class="hp-ic"', '<img class="hp-ic" style="background:#fff!important"') : HWP.head({ icon: R.site && R.site.icon, name: sname, url: url }))) + HWP.title(opTitle(m, v, ae), step);
     /* 1. balance changes (simulated deltas from Hwallet when P2b provides them, else decoded from the request) */
     var PV = R.pv && typeof R.pv === 'object' && !R.pv.partial ? R.pv : null, PVp = R.pv && typeof R.pv === 'object' ? R.pv : null;
     var hS = [], hR = [];
@@ -26610,6 +26657,12 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     }; });
     /* v3.99.12: identity chooser on the passkey sheet */
     page.querySelectorAll('[data-pk]').forEach(function (b) { b.onclick = function () { var x = +b.getAttribute('data-pk'); if (busy || x === DS.pkSel || !(DS.pkCands || []).some(function (i) { return i === x; })) return; DS.pkSel = x; buzz(8); dappDraw(); arm(450); }; });
+    /* v3.99.19: the full identity list (search, compact rows); a pick comes back here first and selected, Confirm stays the only signer */
+    var pa = page.querySelector('[data-pkall]'); if (pa) pa.onclick = function () {
+      if (busy || !DS.pkAll) return; buzz(6);
+      HWP.listSheet({ title: 'Choose an identity', ph: 'Search name, ID or passkey #', empty: 'No identity matches.', host: $('kss'), lock: $('kss-sc'), rows: DS.pkAll,
+        onPick: function (k) { var x = +k; if (busy || !(DS.pkCands || []).some(function (i) { return i === x; })) return; if (x !== DS.pkSel) { DS.pkSel = x; buzz(8); } var sc = $('kss-sc'); dappDraw(); if (sc) sc.scrollTop = 0; arm(450); } });
+    };
     page.querySelectorAll('[data-al]').forEach(function (b) { b.onclick = function () { var x = b.getAttribute('data-al'); if (busy || x === (apprEff(DS.R) || {}).mode) return; DS.R.allowMode = x; buzz(8); dappDraw(); arm(450); }; });
     page.querySelectorAll('input[data-cf]').forEach(function (i) { i.oninput = function () { if (busy) return; DS.R.cfTxt = DS.R.cfTxt || {}; DS.R.cfTxt[i.getAttribute('data-cf')] = i.value; cfParse(); dappDraw(); arm(450); }; });
     tickExp(); syncBtn();

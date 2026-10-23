@@ -1,0 +1,38 @@
+Third-party components shipped in Hwallet since v1.9.19 (Kwallet 3.99.19 release)
+==================================================================================
+
+warp-plus v1.2.6 - https://github.com/bepass-org/warp-plus
+  The prebuilt Android arm64 executable from the project's GitHub release (warp-plus_android-arm64.zip,
+  SHA-256 585f6f8579d8f5df0c26c874fc1730c4f4298085dbed815ad2d559c8a07c6af5; the executable inside it,
+  warp-plus, SHA-256 0cac565d1818a26f0d81a4a0f408ccce116d9420d252b5783a31f198ff313043). Unmodified. CI downloads and
+  checks it and packages it as hwallet's lib/arm64-v8a/libwarpplus.so; it is never committed to this repository.
+  Hwallet runs it as a local SOCKS5 proxy for its own traffic only ("VPN for Hwallet", Settings > Network & VPN).
+  License: MIT (text below). The executable is built by its authors from Go modules that include, among others,
+  Psiphon tunnel core (github.com/Psiphon-Labs/psiphon-tunnel-core, GPL-3.0), wireguard-go based code and
+  sagernet/gvisor / sing (see the project's go.mod). The GPL-3.0 parts are compatible with Hwallet's GPL-3.0-or-later;
+  their sources are available from those projects. Cloudflare WARP and Psiphon are services of their operators;
+  neither is affiliated with Hwallet.
+
+---- MIT License (warp-plus) ----
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+OkHttp DNS over HTTPS (com.squareup.okhttp3:okhttp-dnsoverhttps 4.12.0) - https://github.com/square/okhttp
+  Copyright Square, Inc. Licensed under the Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0).
+  Used unmodified from Maven Central for Settings > Network & VPN > Secure DNS (Quad9 or Mullvad resolvers).

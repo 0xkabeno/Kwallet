@@ -11,3 +11,5 @@ captures/
 hwallet/app/build/
 __pycache__/
 hwallet/app/src/main/jniLibs/
+# v1.9.19: the warp-plus VPN binary is downloaded and checked by CI, never committed
+hwallet/app/src/main/jniLibs/arm64-v8a/libwarpplus.so

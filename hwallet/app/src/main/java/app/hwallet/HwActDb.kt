@@ -13,16 +13,26 @@ import org.json.JSONObject
  * call, also after the app or the service was killed. Per stream it keeps a last-seen cursor (the newest tx hash
  * seen), which lets the service catch up on what happened while it was not running.
  * Rows are the page's own row objects (ch, net, hash, t, dir, key, s, d, raw, cp, st ... and k = the row key).
+ * v1.9.19 (DB version 2): a kind column. "tx" = the transactions above (every row from version 1 becomes "tx");
+ * "dapp" / "approval" / "alert" = local timeline events (a dApp connected or disconnected, a sign-in, a signed message,
+ * an approval, an alert the live service fired). Events keep only labels: site, chain, short text, time, status.
  */
-class HwActDb private constructor(c: Context) : SQLiteOpenHelper(c.applicationContext, "hw_act.db", null, 1) {
+class HwActDb private constructor(c: Context) : SQLiteOpenHelper(c.applicationContext, "hw_act.db", null, 2) {
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL("CREATE TABLE act (wid TEXT NOT NULL, k TEXT NOT NULL, ch TEXT, hash TEXT, t INTEGER, st TEXT, j TEXT, PRIMARY KEY (wid, k))")
+        db.execSQL("CREATE TABLE act (wid TEXT NOT NULL, k TEXT NOT NULL, ch TEXT, hash TEXT, t INTEGER, st TEXT, j TEXT, kind TEXT NOT NULL DEFAULT 'tx', PRIMARY KEY (wid, k))")
         db.execSQL("CREATE INDEX act_t ON act (wid, t DESC)")
         db.execSQL("CREATE INDEX act_h ON act (wid, hash)")
+        db.execSQL("CREATE INDEX act_kt ON act (wid, kind, t DESC)")
         db.execSQL("CREATE TABLE cur (wid TEXT NOT NULL, sid TEXT NOT NULL, top TEXT, at INTEGER, PRIMARY KEY (wid, sid))")
     }
 
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+    /** v1.9.19: 1 -> 2 keeps every row (they all become kind "tx"); nothing is dropped or rewritten */
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE act ADD COLUMN kind TEXT NOT NULL DEFAULT 'tx'")
+            db.execSQL("CREATE INDEX IF NOT EXISTS act_kt ON act (wid, kind, t DESC)")
+        }
+    }
     override fun onOpen(db: SQLiteDatabase) { super.onOpen(db); if (!db.isReadOnly) purgeHashless(db) }
 
     override fun onConfigure(db: SQLiteDatabase) {
@@ -36,6 +46,10 @@ class HwActDb private constructor(c: Context) : SQLiteOpenHelper(c.applicationCo
         /** set by the open activity: (wallet id, JSON array of new or changed rows) -> patch the Activity list in place */
         @Volatile var listener: ((String, String) -> Unit)? = null
         const val KEEP = 3000
+        const val KEEP_EV = 2000
+        val EV_KINDS = setOf("dapp", "approval", "alert")
+        /** the only fields an event row may carry (labels, never payloads, signatures or keys) */
+        private val EV_FIELDS = listOf("k", "ch", "net", "hash", "t", "dir", "key", "st", "ev", "kind", "lbl", "site", "origin", "idn", "sp", "amt", "s", "ap")
         fun hashOk(h: String?): Boolean { val s = h?.trim() ?: return false; return s.length in 16..160 && s != "undefined" && s != "null" && !s.contains(' ') }
     }
 
@@ -43,7 +57,7 @@ class HwActDb private constructor(c: Context) : SQLiteOpenHelper(c.applicationCo
     fun rows(wid: String, limit: Int): String {
         val sb = StringBuilder(64 * 1024).append('[')
         try {
-            readableDatabase.rawQuery("SELECT j FROM act WHERE wid=? ORDER BY t DESC LIMIT ?", arrayOf(wid, limit.coerceIn(1, KEEP).toString())).use { c ->
+            readableDatabase.rawQuery("SELECT j FROM act WHERE wid=? AND kind='tx' ORDER BY t DESC LIMIT ?", arrayOf(wid, limit.coerceIn(1, KEEP).toString())).use { c ->
                 var first = true
                 while (c.moveToNext()) { if (!first) sb.append(','); sb.append(c.getString(0)); first = false }
             }
@@ -75,17 +89,69 @@ class HwActDb private constructor(c: Context) : SQLiteOpenHelper(c.applicationCo
                         if (done) continue
                     }
                     val cv = ContentValues()
-                    cv.put("wid", wid); cv.put("k", k); cv.put("ch", ch); cv.put("hash", hash); cv.put("t", o.optLong("t")); cv.put("st", st); cv.put("j", j)
+                    cv.put("wid", wid); cv.put("k", k); cv.put("ch", ch); cv.put("hash", hash); cv.put("t", o.optLong("t")); cv.put("st", st); cv.put("j", j); cv.put("kind", "tx")
                     db.insertWithOnConflict("act", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
                     if (st != "pending" && hash.isNotEmpty()) db.delete("act", "wid=? AND ch=? AND hash=? AND st='pending' AND k<>?", arrayOf(wid, ch, hash, k))
                     if (oldSt == null || oldSt != st) changed.put(o)
                 }
-                db.execSQL("DELETE FROM act WHERE wid=? AND k NOT IN (SELECT k FROM act WHERE wid=? ORDER BY t DESC LIMIT $KEEP)", arrayOf(wid, wid))
+                db.execSQL("DELETE FROM act WHERE wid=? AND kind='tx' AND k NOT IN (SELECT k FROM act WHERE wid=? AND kind='tx' ORDER BY t DESC LIMIT $KEEP)", arrayOf(wid, wid))
                 db.setTransactionSuccessful()
             } finally { db.endTransaction() }
         } catch (e: Throwable) { return changed }
         if (notify && changed.length() > 0) try { listener?.invoke(wid, changed.toString()) } catch (_: Throwable) {}
         return changed
+    }
+
+    /** v1.9.19: stores timeline events (kind dapp / approval / alert). Only the whitelisted label fields are kept, every
+     *  text is cut short. An event is written once (same key again = ignored). Returns the new rows. */
+    fun evPut(wid: String, items: List<JSONObject>, notify: Boolean = true): JSONArray {
+        val added = JSONArray()
+        if (wid.isEmpty() || items.isEmpty()) return added
+        try {
+            val db = writableDatabase
+            db.beginTransaction()
+            try {
+                for (o0 in items) {
+                    val kind = o0.optString("kind").let { if (it in EV_KINDS) it else "dapp" }
+                    val k = o0.optString("k").take(300); if (k.isEmpty()) continue
+                    val o = JSONObject()
+                    for (f in EV_FIELDS) {
+                        if (!o0.has(f) || o0.isNull(f)) continue
+                        val v = o0.opt(f)
+                        when (v) {
+                            is Number, is Boolean -> o.put(f, v)
+                            is JSONObject -> if (f == "ap") { val a = JSONObject(); for (x in listOf("s", "amt", "sp", "tok", "d")) if (v.has(x)) a.put(x, v.optString(x).take(120)); o.put(f, a) }
+                            else -> o.put(f, v.toString().take(if (f == "origin") 200 else 120))
+                        }
+                    }
+                    o.put("ev", 1); o.put("kind", kind); o.put("k", k)
+                    val t = o.optLong("t").let { if (it > 0) it else System.currentTimeMillis() }; o.put("t", t)
+                    val cv = ContentValues()
+                    cv.put("wid", wid); cv.put("k", k); cv.put("ch", o.optString("ch").take(24)); cv.put("hash", o.optString("hash").take(80)); cv.put("t", t)
+                    cv.put("st", o.optString("st", "ok").take(16)); cv.put("j", o.toString()); cv.put("kind", kind)
+                    if (db.insertWithOnConflict("act", null, cv, SQLiteDatabase.CONFLICT_IGNORE) != -1L) added.put(o)
+                }
+                db.execSQL("DELETE FROM act WHERE wid=? AND kind<>'tx' AND k NOT IN (SELECT k FROM act WHERE wid=? AND kind<>'tx' ORDER BY t DESC LIMIT $KEEP_EV)", arrayOf(wid, wid))
+                db.setTransactionSuccessful()
+            } finally { db.endTransaction() }
+        } catch (_: Throwable) { return added }
+        if (notify && added.length() > 0) try { listener?.invoke(wid, added.toString()) } catch (_: Throwable) {}
+        return added
+    }
+
+    /** v1.9.19: timeline events, newest first, older than [before] (ms; 0 = from the newest), [limit] at a time (pages of 50) */
+    fun evRows(wid: String, kinds: String, before: Long, limit: Int): String {
+        val ks = kinds.split(',').map { it.trim() }.filter { it in EV_KINDS }.ifEmpty { EV_KINDS.toList() }
+        val sb = StringBuilder(16 * 1024).append('[')
+        try {
+            val q = "SELECT j FROM act WHERE wid=? AND kind IN (" + ks.joinToString(",") { "?" } + ") AND t<? ORDER BY t DESC LIMIT ?"
+            val args = ArrayList<String>(); args.add(wid); args.addAll(ks); args.add((if (before > 0) before else Long.MAX_VALUE).toString()); args.add(limit.coerceIn(1, 200).toString())
+            readableDatabase.rawQuery(q, args.toTypedArray()).use { c ->
+                var first = true
+                while (c.moveToNext()) { if (!first) sb.append(','); sb.append(c.getString(0)); first = false }
+            }
+        } catch (_: Throwable) {}
+        return sb.append(']').toString()
     }
 
     /** v1.8.9 (R17): a local Pending entry the page removed (never broadcast, or dropped by the network) */
