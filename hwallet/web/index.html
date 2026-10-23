@@ -14661,7 +14661,7 @@ window.hwCrashPrompt = crashPrompt;
     var t = brCur();
     BRU.edit = false; BRU.sw = false; BRU.hist = false;
     if (!t) { var id = BRM.add(BR, url); BRL[id] = { loading: true, progress: 10 }; brSave(true); brPaint(); return id; }
-    BRM.update(BR, t.id, { url: url }); brSave();
+    delete t.fwd; BRM.update(BR, t.id, { url: url }); brSave();
     BRL[t.id] = Object.assign(BRL[t.id] || {}, { loading: true, progress: 10 });
     if (BRL[t.id] && BRL[t.id].open) brNat('brLoad', t.id, url); else brOpenNative(t);
     brPaint(); return t.id;
@@ -14807,7 +14807,7 @@ window.hwCrashPrompt = crashPrompt;
   function brMenu() {
     var t = brCur(), L = t ? BRL[t.id] || {} : {}, web = !!(t && /^https?:/.test(t.url || '')), bm = web && brBmHas(t.url);
     /* v1.8.8 (R2a/R4): one nav row across the full width: back, forward, reload, new tab, bookmark (star), desktop view */
-    brSheet('<div class="br-mn br-mn6"><button data-m="back"' + (L.back ? '' : ' disabled') + ' aria-label="Back">' + sv('back') + '</button><button data-m="fwd"' + (L.fwd ? '' : ' disabled') + ' aria-label="Forward">' + sv('fwd') + '</button>' +
+    brSheet('<div class="br-mn br-mn6"><button data-m="back"' + (L.back ? '' : ' disabled') + ' aria-label="Back">' + sv('back') + '</button><button data-m="fwd"' + (L.fwd || (t && !t.url && t.fwd) ? '' : ' disabled') + ' aria-label="Forward">' + sv('fwd') + '</button>' +
       '<button data-m="reload"' + (t ? '' : ' disabled') + ' aria-label="Reload">' + sv('reload') + '</button><button data-m="new" aria-label="New tab">' + sv('plus') + '</button>' +
       '<button data-m="star"' + (web ? '' : ' disabled') + ' class="' + (bm ? 'on' : '') + '" aria-pressed="' + bm + '" aria-label="' + (bm ? 'Remove bookmark' : 'Bookmark this page') + '">' + brSvg(bm ? STAR : STARO) + '</button>' +
       '<button data-m="desk"' + (web && window.HwNative && HwNative.brDesk ? '' : ' disabled') + ' class="' + (L.desk ? 'on' : '') + '" aria-pressed="' + !!L.desk + '" aria-label="Desktop view">' + brSvg(DESK) + '</button></div>' +
@@ -14831,7 +14831,7 @@ window.hwCrashPrompt = crashPrompt;
         close();
         if (m === 'ua') { setTimeout(function () { uaPick(); }, 200); return; }
         if (m === 'dark') { setTimeout(function () { brDkPick(); }, 200); return; }
-        if (m === 'back' || m === 'fwd' || m === 'reload') brNat('brNav', t.id, m);
+        if (m === 'fwd' && brStartFwd()) {} else if (m === 'back' || m === 'fwd' || m === 'reload') brNat('brNav', t.id, m);
         else if (m === 'new') setTimeout(function () { brNew('', false); }, 200);
         else if (m === 'newinc') setTimeout(function () { brNew('', true); toast('Incognito tab: no history, cookies or site data are kept after you close it'); }, 200);
         else if (m === 'copy') copy(t.url).then(function () { toast('Link copied'); });
@@ -15375,12 +15375,25 @@ window.hwCrashPrompt = crashPrompt;
     if (BRU.hist) { BRU.hist = false; brPaint(); return true; }
     if (BRU.sw) { BRU.sw = false; brPaint(); return true; }
     if (BRU.edit) { var i = document.getElementById('br-in'); if (i) i.blur(); BRU.edit = false; brPaint(); return true; }
-    var t = brCur(), L = t ? BRL[t.id] || {} : {};
-    /* fix: the page's own history is native's job (HwBrowser.back runs before this and goes back while there is a real
-       page behind). When it said no, Back leaves the Browser for the wallet: asking the tab to go back again here walked
-       into the blank first entry, showed the start page, and then Back did nothing forever */
-    return false;
+    /* v1.9.19: Back walks the tab's own pages (native goes back while a real page is behind), then the first site
+       returns to the Browser's start page, and on the start page Back stays in the Browser: it never jumps to the wallet */
+    var t = brCur();
+    if (t && t.url) { hwBrToStart(t.id); return true; }
+    return true;
   };
+  /* v1.9.19: the tab goes back to the start page (its page closed); a swipe from the right edge (or the menu's forward)
+     reopens the page it came from */
+  window.hwBrToStart = function (id) {
+    var t = BRM.get(BR, id); if (!t || !t.url) return;
+    t.fwd = t.url; t.url = ''; t.title = ''; t.scroll = 0;
+    delete BRL[id]; brNat('brClose', id); brSave(true); BRU.edit = false; brShown = ''; brPaint();
+  };
+  function brStartFwd() { var t = brCur(); if (!t || t.url || !t.fwd) return false; var u = t.fwd; delete t.fwd; buzz(8); brGo(u); return true; }
+  (function () {   /* right-edge swipe on the start page = forward */
+    var x0 = -1, y0 = 0;
+    document.addEventListener('touchstart', function (e) { x0 = -1; if (V.v !== 'browser' || BRU.sw || BRU.hist) return; var t = brCur(); if (!t || t.url || !t.fwd) return; var p = e.touches[0]; if (p && p.clientX >= window.innerWidth - 24) { x0 = p.clientX; y0 = p.clientY; } }, { passive: true });
+    document.addEventListener('touchend', function (e) { if (x0 < 0) return; var p = e.changedTouches[0], dx = x0 - p.clientX, dy = Math.abs(p.clientY - y0); x0 = -1; if (dx > 80 && dx > dy * 1.5) brStartFwd(); }, { passive: true });
+  })();
   /* ===================== v1.8.35 (B12): Chrome-style omnibox history and suggestions =====================
      Every search or address submitted in the address bar (Enter / Go, or a suggestion tapped) is kept on this phone only,
      in localStorage 'hw-br-om' (never sent anywhere, never readable by a site; incognito tabs are never written): the text
@@ -20343,7 +20356,7 @@ window.hwCrashPrompt = crashPrompt;
     var sp = document.querySelectorAll('.hw-subpg.show'); if (sp.length) { sp[sp.length - 1]._close(); return true; }
     if (window.hwScanner && hwScanner.isOpen()) { hwScanner.close(); return true; }
     if (V.v === 'setup' && !hasAny()) return false;
-    if (V.v === 'browser' && !stack.length && window.hwBrBack && hwBrBack()) return true;
+    if (V.v === 'browser' && window.hwBrBack && hwBrBack()) return true;   /* v1.9.19: Back never leaves the Browser */
     if (stack.length) { back(); return true; }
     if (V.v !== 'home') { tab('home'); return true; }
     return false;

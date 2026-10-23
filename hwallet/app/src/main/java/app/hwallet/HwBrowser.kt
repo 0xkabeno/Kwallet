@@ -429,23 +429,92 @@ class HwBrowser(
         val t = tabs[visible ?: return false] ?: return false
         val w = t.web ?: return false
         // v1.8.7: dApps navigate with history.pushState (no page load), so ask the WebView itself every time
-        if (!w.canGoBack()) return false
-        /* fix: only back to a real page. The entry behind the first site is the tab's blank start (about:blank / data:);
-           going there showed the Browser start page and Back never got back to the wallet. Now the first site's Back
-           leaves the Browser (the page's kwBack takes it to the wallet). */
-        try {
-            val h = w.copyBackForwardList(); val i = h.currentIndex
-            val prev = if (i > 0) h.getItemAtIndex(i - 1)?.url ?: "" else ""
-            if (!(prev.startsWith("https://") || prev.startsWith("http://"))) return false
-        } catch (_: Throwable) {}
+        if (!w.canGoBack()) { if (isWeb(t.url) || isWeb(w.url)) { toStart(t); return true }; return false }
+        /* v1.9.19: Back walks the tab's own pages only. The entry behind the first site is the tab's blank start
+           (about:blank / data:): instead of going there, the tab returns to the Browser's start page (Hwallet's page
+           closes it); Back never leaves the Browser for the wallet. */
+        if (!realBack(w)) { toStart(t); return true }
         live(t, w); w.goBack(); ui.postDelayed({ try { navEv(t, w, w.progress < 100, w.progress) } catch (_: Throwable) {} }, 120); return true
+    }
+
+    private fun realBack(w: WebView): Boolean = try {
+        val h = w.copyBackForwardList(); val i = h.currentIndex
+        val prev = if (i > 0) h.getItemAtIndex(i - 1)?.url ?: "" else ""
+        prev.startsWith("https://") || prev.startsWith("http://")
+    } catch (_: Throwable) { w.canGoBack() }
+    private fun toStart(t: Tab) { js("window.hwBrToStart&&hwBrToStart(${q(t.id)})") }
+
+    /* v1.9.19: edge swipes on a page, like Chrome: from the left edge = back, from the right edge = forward. The edge
+       band in the middle of the screen is excluded from Android's own back gesture so the swipe reaches the page; an
+       arrow follows the finger and the step happens only past the threshold. */
+    private var eSide = 0; private var eOn = false; private var ex0 = 0f; private var ey0 = 0f; private var eArrow: android.widget.TextView? = null
+    private fun edgeTouch(t: Tab, w: WebView, e: MotionEvent): Boolean {
+        try {
+            val d = act.resources.displayMetrics.density; val band = 24f * d; val full = 90f * d
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    eOn = false; ex0 = e.rawX; ey0 = e.rawY
+                    eSide = if (visible != t.id || pOn) 0 else if (e.x <= band) -1 else if (e.x >= w.width - band) 1 else 0
+                }
+                MotionEvent.ACTION_POINTER_DOWN -> { if (eOn) { arrowDone(); eOn = false; eSide = 0; return true }; eSide = 0 }
+                MotionEvent.ACTION_MOVE -> {
+                    if (eSide == 0) return false
+                    val dx = (e.rawX - ex0) * (if (eSide < 0) 1f else -1f); val dy = Math.abs(e.rawY - ey0)
+                    if (!eOn) {
+                        if (dx < -8f * d || dy > 24f * d && dy > dx) { eSide = 0; return false }
+                        if (dx > 12f * d && dx > dy * 1.5f) {
+                            eOn = true; pCand = false
+                            val c = MotionEvent.obtain(e); c.action = MotionEvent.ACTION_CANCEL; w.onTouchEvent(c); c.recycle()
+                        } else return false
+                    }
+                    arrow(w, eSide, Math.min(1f, Math.max(0f, dx / full)), e.rawY); return true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (!eOn) { eSide = 0; return false }
+                    val dx = (e.rawX - ex0) * (if (eSide < 0) 1f else -1f); val side = eSide
+                    eOn = false; eSide = 0; arrowDone()
+                    if (e.actionMasked == MotionEvent.ACTION_UP && dx >= full) {
+                        try { w.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY) } catch (_: Throwable) {}
+                        if (side < 0) { if (w.canGoBack() && realBack(w)) { live(t, w); w.goBack(); ui.postDelayed({ try { navEv(t, w, w.progress < 100, w.progress) } catch (_: Throwable) {} }, 120) } else toStart(t) }
+                        else if (w.canGoForward()) { live(t, w); w.goForward(); ui.postDelayed({ try { navEv(t, w, w.progress < 100, w.progress) } catch (_: Throwable) {} }, 120) }
+                    }
+                    return true
+                }
+            }
+        } catch (x: Throwable) { Log.w(TAG, "edge swipe", x) }
+        return false
+    }
+    private fun arrow(w: WebView, side: Int, p: Float, y: Float) {
+        val d = act.resources.displayMetrics.density; val sz = (40 * d).toInt()
+        val a = eArrow ?: android.widget.TextView(act).also { v ->
+            v.gravity = android.view.Gravity.CENTER; v.setTextColor(0xFFFFFFFF.toInt()); v.textSize = 22f; v.includeFontPadding = false
+            v.background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(0xCC202124.toInt()) }
+            v.elevation = 6 * d; root.addView(v, FrameLayout.LayoutParams(sz, sz)); eArrow = v
+        }
+        a.text = if (side < 0) "\u2039" else "\u203A"
+        a.bringToFront(); a.visibility = View.VISIBLE
+        val loc = IntArray(2); root.getLocationOnScreen(loc)
+        a.translationY = y - loc[1] - sz / 2f
+        val travel = 56 * d * p
+        a.translationX = if (side < 0) -sz + travel + 4 * d else root.width - travel - 4 * d
+        a.alpha = 0.35f + 0.65f * p; a.scaleX = if (p >= 1f) 1.12f else 1f; a.scaleY = a.scaleX
+    }
+    private fun arrowDone() { eArrow?.let { it.animate().alpha(0f).setDuration(120).withEndAction { it.visibility = View.GONE }.start() } }
+    private fun edgeExclude(w: WebView) {
+        if (Build.VERSION.SDK_INT < 29) return
+        w.addOnLayoutChangeListener { v, l, tp, r, b, _, _, _, _ ->
+            try {
+                val d = act.resources.displayMetrics.density; val bw = (24 * d).toInt(); val bh = (100 * d).toInt(); val mid = (b - tp) / 2
+                v.systemGestureExclusionRects = listOf(android.graphics.Rect(0, mid - bh, bw, mid + bh), android.graphics.Rect(r - l - bw, mid - bh, r - l, mid + bh))
+            } catch (_: Throwable) {}
+        }
     }
 
     fun nav(id: String, a: String) {
         post {
             val t = tabs[id] ?: return@post; val w = t.web ?: return@post
             when (a) {
-                "back" -> if (w.canGoBack()) { live(t, w); w.goBack() }
+                "back" -> if (w.canGoBack() && realBack(w)) { live(t, w); w.goBack() } else toStart(t)
                 "fwd" -> if (w.canGoForward()) { live(t, w); w.goForward() }
                 "reload" -> { live(t, w); if (t.offline) { leaveSnapshot(t, w); w.loadUrl(t.url) } else w.reload() }
                 "stop" -> w.stopLoading()
@@ -673,7 +742,8 @@ class HwBrowser(
         // inject is logged and never stops the page from loading.
         bridge(t, w, true)
         uaScript(t, w)
-        w.setOnTouchListener { _, e -> if (!t.touched) live(t, w); pullTouch(t, w, e) }
+        w.setOnTouchListener { _, e -> if (!t.touched) live(t, w); edgeTouch(t, w, e) || pullTouch(t, w, e) }
+        edgeExclude(w)   // v1.9.19
         w.setOnScrollChangeListener { _, _, y, _, _ -> t.scroll = y; scrollEv(t) }
         w.setDownloadListener { url, _, _, _, _ -> try { act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE)) } catch (_: Throwable) {} }
 
