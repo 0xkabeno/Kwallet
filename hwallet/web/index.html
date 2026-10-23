@@ -3160,6 +3160,9 @@ html:not(#s41_0):not(#s41_1):not(#s41_2):not(#s41_3):not(#s41_4):not(#s41_5):not
 .kwd-opt.on .kwd-r,.xn-r.on .xn-rd,.kw-beatd,.hp-pr.on .hp-prc,
 [role="radio"][aria-checked="true"]>.kw-beat,
 .kws-seg span.on,.xh2-seg button[aria-checked="true"]{animation:kwBeat 1.4s ease-out infinite!important}
+/* fix: the selected tick sits in a true circle (the box was 28x24, so the pulse ring was an oval with the tick off-centre) */
+.hp-pr .hp-prc{width:28px;height:28px;flex:0 0 28px;padding:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;line-height:0}
+.hp-pr .hp-prc svg{width:20px;height:20px;margin:0;display:block;flex:0 0 auto}
 .hp-pr.on .hp-prc{border-radius:50%}
 .kwd-opt.on .kwd-r{background:var(--accent);border-color:var(--accent)}.kwd-opt.on .kwd-r::after{display:none}
 .kws-ico span.on{animation:kwBeatIco 1.4s ease-out infinite!important}
@@ -16896,13 +16899,27 @@ window.hwCrashPrompt = crashPrompt;
     pg.classList.add('ptr-on'); pg.classList.toggle('ptr-anim', !!anim);
     pg.style.setProperty('--ptr', px.toFixed(1) + 'px');
   }
+  /* fix: the indicator follows the header every frame while it is up. Its top used to be read once, when the pull or
+     the refresh began; anything that then moved the header (the VPN strip growing or shrinking --sat, a page's enter
+     animation, the header settling after a re-render) left it drawn over the balance or the list. All three styles. */
+  var PTRT = 0;
+  function ptrTrack() {
+    if (PTRT) return;
+    function f() {
+      var el = PTR.el;
+      if (!el || !el.isConnected || !(PTR.busy || PTR.on || PTR.dy || ($('pg') && $('pg').classList.contains('ptr-on')))) { PTRT = 0; return; }
+      var t = ptrTop() + 'px'; if (el.style.top !== t) el.style.top = t;
+      PTRT = requestAnimationFrame(f);
+    }
+    PTRT = requestAnimationFrame(f);
+  }
   function ptrContentOff() { var g = $('pg'); if (g) { g.classList.remove('ptr-on', 'ptr-anim'); g.style.setProperty('--ptr', '0px'); g.style.transform = ''; g.style.overscrollBehavior = ''; } }
 
   /* ----- OG renderer ----- */
   var OG = {
     ring: function () {
       if (!PTR.el || !PTR.el.isConnected || PTR.el.className.indexOf('ptr3') < 0) { if (PTR.el && PTR.el.parentNode) PTR.el.parentNode.removeChild(PTR.el); var d = document.createElement('div'); d.className = 'ptr3'; d.setAttribute('aria-hidden', 'true'); d.innerHTML = '<i></i>'; document.body.appendChild(d); PTR.el = d; }
-      PTR.el.style.top = ptrTop() + 'px'; return PTR.el;
+      PTR.el.style.top = ptrTop() + 'px'; ptrTrack(); return PTR.el;
     },
     band: function (dy) { return PTR_MAX * (1 - Math.exp(-Math.max(0, dy) / (PTR_MAX * 1.6))); },
     armedAt: function (px) { return px >= PTR_TH; },
@@ -16938,7 +16955,7 @@ window.hwCrashPrompt = crashPrompt;
           '<svg class="m3sp" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" pathLength="100"/></svg></div>';
         document.body.appendChild(d); PTR.el = d;
       }
-      PTR.el.style.top = ptrTop() + 'px'; PTR.el.style.color = 'var(--muted, var(--text-muted))'; return PTR.el;
+      PTR.el.style.top = ptrTop() + 'px'; ptrTrack(); PTR.el.style.color = 'var(--muted, var(--text-muted))'; return PTR.el;
     },
     draw: function (f) {
       M3.frac = f; var r = PTR.el; if (!r) return;
@@ -16989,7 +17006,7 @@ window.hwCrashPrompt = crashPrompt;
         var d = document.createElement('div'); d.className = 'ptrMx'; d.setAttribute('aria-hidden', 'true');
         d.innerHTML = '<canvas></canvas><span></span>'; document.body.appendChild(d); PTR.el = d;
       }
-      PTR.el.style.top = ptrTop() + 'px'; return PTR.el;
+      PTR.el.style.top = ptrTop() + 'px'; ptrTrack(); return PTR.el;
     },
     paint: function () {
       var r = PTR.el; if (!r) return;

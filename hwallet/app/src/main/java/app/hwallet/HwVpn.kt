@@ -43,14 +43,13 @@ object HwVpn {
     private const val BIN_U = "libusque.so"
     private const val BIN_P = "libpsiphon.so"
 
-    /** Psiphon egress regions offered (the same list warp-plus offered); "" = Auto (best) */
+    /** Psiphon's live egress regions (its AvailableEgressRegions notice, 2026-10-24); "" = Auto (best) */
     val REGIONS: List<Pair<String, String>> = listOf(
-        "AT" to "Austria", "AU" to "Australia", "BE" to "Belgium", "BG" to "Bulgaria", "CA" to "Canada", "CH" to "Switzerland",
-        "CZ" to "Czechia", "DE" to "Germany", "DK" to "Denmark", "EE" to "Estonia", "ES" to "Spain", "FI" to "Finland",
-        "FR" to "France", "GB" to "United Kingdom", "HR" to "Croatia", "HU" to "Hungary", "IE" to "Ireland", "IN" to "India",
-        "IT" to "Italy", "JP" to "Japan", "LV" to "Latvia", "NL" to "Netherlands", "NO" to "Norway", "PL" to "Poland",
-        "PT" to "Portugal", "RO" to "Romania", "RS" to "Serbia", "SE" to "Sweden", "SG" to "Singapore", "SK" to "Slovakia",
-        "US" to "United States"
+        "AT" to "Austria", "AU" to "Australia", "BE" to "Belgium", "CA" to "Canada", "CH" to "Switzerland", "CZ" to "Czechia",
+        "DE" to "Germany", "DK" to "Denmark", "ES" to "Spain", "FI" to "Finland", "FR" to "France", "GB" to "United Kingdom",
+        "ID" to "Indonesia", "IE" to "Ireland", "IN" to "India", "IT" to "Italy", "JP" to "Japan", "LT" to "Lithuania",
+        "NL" to "Netherlands", "NO" to "Norway", "PL" to "Poland", "RO" to "Romania", "RS" to "Serbia", "SE" to "Sweden",
+        "SG" to "Singapore", "US" to "United States"
     )
     /** Secure DNS (DoH) servers: key -> (DoH URL, bootstrap IPs). Keys: off | cloudflare (default) | quad9 | google | adguard */
     val DNS_KEYS = listOf("off", "cloudflare", "quad9", "google", "adguard")
