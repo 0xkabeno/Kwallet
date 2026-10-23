@@ -1,5 +1,15 @@
 # Changelog
 
+## Kwallet 3.99.15 / Hwallet 1.9.15 (work in progress)
+- Kwallet: Settings always opens, even if one row fails to fill.
+- Kwallet + Hwallet: the selected choice is a solid green dot (no dark centre) and keeps beating even with system animations reduced.
+- Internet Identity: the passkey chooser opens at once from identities Hwallet already knows and refreshes behind it; this phone's own passkeys are never hidden by a slow or partial II lookup, and an empty answer no longer erases a known identity.
+- TON naming: the chain is TON everywhere (chain switches, Receive, explorers, errors); only the coin is Gram (GRAM), with the official Gram badge bundled in both apps. Kwallet's signing screens show amounts in GRAM.
+- Hwallet: ckBTC, ckETH, ckUSDC and ckUSDT show the Bitcoin, Ethereum, USDC and USDT icons with the ICP badge, from icons already in the app (nothing fetched).
+- Hwallet Receive: a chain added after the wallet was paired (NEAR, ICP, TON) is listed with "Pair again with Kwallet to add" instead of being missing.
+- Hwallet QR air-gap (the other side of Kwallet 3.99.14's): "Pair offline Kwallet" (setup screen and Settings > Wallets & pairing) scans Kwallet's kw-pair QR; every signature for that wallet then shows a kw-req animated QR for Kwallet to scan, and Hwallet scans Kwallet's kw-res answer, which is checked against the waiting request's id. Pairing again from a Kwallet on the same phone switches the wallet back to the normal link. Same KwUR (BC-UR) engine as Kwallet, embedded offline.
+- Not in this build: Network & VPN (app-only OpenVPN with kill switch) and secure DNS, plus the activity timeline. See docs/HANDOFF-3.99.15.txt.
+
 ## Kwallet v3.99.14 / Hwallet v1.9.14 (test build)
 
 - Kwallet: TON (W5 and v4R2 wallets, TON and USDT sends with comments, TonConnect signing), Tonviewer and Tonscan explorers.

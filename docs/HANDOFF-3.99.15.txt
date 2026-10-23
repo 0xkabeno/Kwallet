@@ -1,0 +1,54 @@
+KWALLET / HWALLET HANDOFF (Kwallet 3.99.15 / Hwallet 1.9.15, branch wip-3.98.13)
+==========================================================================
+Repo: github.com/0xkabeno/Kwallet, branch wip-3.98.13 (main not merged). No tag/release until the owner says so.
+Builds: CI workflow build.yml -> artifacts on the ci-dist branch. The owner tests on his own phone; never claim device testing.
+Hard rules: Kwallet has NO INTERNET permission (CI fails if it appears). Keep K<->H pairing/signing security as is.
+No live RPC/endpoint tests that spend credits. One commit per build. Design = polish only, no redesign.
+
+DONE IN THIS BUILD (3.99.15 / 1.9.15)
+- K Settings: openSettings build/sync wrapped in try/catch (owner confirmed Settings opens again).
+- Selection dot (K + H): solid accent green, no black centre; beat animation uses rgba keyframes (no color-mix),
+  not suppressed by reduced motion. Selector: .kwd-opt.on .kwd-r (K), radio styles in H.
+- Internet Identity passkeys: K chooser keeps local rows when the II lookup is partial (!r.r || ...);
+  H iiFresh() returns cached identities at once and refreshes in background; iiScan() no longer deletes a
+  known registration on an empty answer.
+- TON naming: H CH entry { id:'ton', name:'TON', coin:'Gram', clogo:'gram', sym:'GRAM' }. Helpers coinName(ch)
+  / coinLogo(ch). Chain contexts (toggles, Receive, explorers, errors) use name/logo = TON; native coin rows,
+  coin page title, price list, natLogo use coin/clogo = Gram. Official Gram circular badge (ton.org media kit)
+  embedded as "gram" in both apps' logo JSON (hw-logos / K __KWLOGO). K CHAIN.ton.sym = 'GRAM', K amount
+  labels in TON sign screens read GRAM.
+- H ck tokens: TOKLOGO ckBTC->bitcoin, ckETH->ethereum, ckUSDC->usdc, ckUSDT->usdt (ICP badge stays).
+- H Receive: chains added after pairing (near/icp/ton) with no address show a "Pair again with Kwallet to add"
+  row (data-repair) instead of vanishing. Cause of "no Gram in Receive": wallet paired before TON -> A.ton empty.
+- H QR air-gap (counterpart of K 3.99.14):
+  * lib-kwur (BC-UR, with the process shim) copied from K into H.
+  * "Pair offline Kwallet": setup screen button [data-pairair] and Settings row kws-pairair -> scanner.
+  * scanResult(): ur: frames -> airFrame() -> KwUR.dec(); kw-pair -> airPairApply() (applyPair + A.air={xfp});
+    kw-res -> airRes() (id must equal SIGNID) -> window.hwSignDone(answer) exactly like a same-phone answer.
+  * callK(): if airW() -> airAsk(req) shows kw-req animated QR {t,v,xfp,sid,chain,from,kind,req}
+    ("Cancel" / "Scan answer"). A same-phone pairing (applyPair without AIRPAIR) deletes A.air.
+  * K side unchanged: K Settings > QR air-gap > Pair with Hwallet shows kw-pair; K top-bar Scan reads kw-req,
+    routes by xfp+from (airRoute), signs in SignActivity, shows kw-res.
+  * Untested on device. Live previews (re-sim feed) do not run over QR (K sets req.live=false).
+
+NOT DONE (next model, in this order)
+1. Network & VPN in Hwallet (agreed spec):
+   - Settings row 'Network' renamed 'Network & VPN'; subtitle shows VPN state/country.
+   - App-only (like a browser extension): NO system VpnService, NO Tor (owner rejected Tor).
+   - Scope: ALL Hwallet traffic (WebView, OkHttp RPC/prices/broadcast, WalletConnect/TonConnect bridges,
+     WebSockets) with kill switch (fail closed if tunnel drops). Kwallet and other apps untouched.
+   - Servers: VPN Gate (marked volunteer/untrusted), Riseup, Calyx (OpenVPN). Run OpenVPN in-process with a
+     userspace TCP/IP stack exposed as a local proxy; WebView via androidx.webkit ProxyController
+     (webkit 1.11.0 already a dependency), OkHttp via Proxy. This needs a native/JVM OpenVPN client and a
+     userspace stack (e.g. a tun2socks-style lib); check licences (ics-openvpn is GPLv2).
+   - Secure DNS: DoH, Quad9 default, Mullvad option (okhttp-dnsoverhttps for OkHttp; WebView DNS only via
+     the proxy path).
+2. Activity timeline (plan "B" item): H activity grouped as a timeline view; only a comment stub exists
+   ("timeline (Kwallet's, x SPEED)" near line 3257 is unrelated K speed timeline).
+3. Owner's open checks after device test: Gram appears after re-pair; air-gap end to end with two phones.
+
+HOW TO PUSH
+- One commit through the GitHub Git Data API (blobs -> tree -> commit -> fast-forward ref), then dispatch
+  build.yml on wip-3.98.13, wait, fetch ci-dist artifacts, give SHA256.
+- Checks before push: python3 ci/js_check.py web/index.html ; python3 ci/js_check.py hwallet/web/index.html ;
+  git diff --check.
