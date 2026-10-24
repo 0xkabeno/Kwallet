@@ -12944,7 +12944,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.20';   /* v3.99.20: version bump (gradle derives versionName 3.99.20 / versionCode 39920 from this) */
+const APP_VERSION = '3.99.21';   /* v1.9.21: version bump (gradle derives versionName 3.99.21 / versionCode 39921 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -25781,7 +25781,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           if (P.op === 'create') {
             var ex = (Array.isArray(P.exclude) ? P.exclude : []).map(function (h) { try { return KwPasskey.idxOf(KwPasskey.unhex(String(h))); } catch (e) { return -1; } });
             /* a new identity never reuses a number II already has (a fresh phone knows nothing locally; II does) */
-            var ni = 0; while (ni < 4000 && (ex.indexOf(ni) >= 0 || tk.indexOf(ni) >= 0 || kn.some(function (x) { return x.i === ni; }) || pkL.some(function (e) { return e.i === ni; }))) ni++;
+            /* v3.99.21: the next number after the highest one in use; a gap is never reused (it may only be a lookup that failed on a fresh phone) */
+            var ni = 0; ex.concat(tk, kn.map(function (x) { return x.i; }), pkL.map(function (e) { return e.i; })).forEach(function (v) { v = +v; if (v === (v | 0) && v >= 0 && v < 3999 && v + 1 > ni) ni = v + 1; });
             DS.pkCands = [ni]; DS.pkName = String(P.name || '').replace(/[\u0000-\u001f]/g, '').slice(0, 64);
             DS.view = { title: 'Create passkey' };
             DS.msg = new TextEncoder().encode('Make Kwallet a passkey for your Internet Identity on ' + rp + '.\n' + (DS.pkName ? 'Name: ' + DS.pkName + '\n' : '') + 'Passkey #' + (ni + 1) + ' of this seed. The seed restores it.');

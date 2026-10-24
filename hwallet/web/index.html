@@ -1191,11 +1191,34 @@ body[data-theme=dark] .ptr3 i{border-color:rgba(255,255,255,.12);border-top-colo
 body[data-theme=dark] .ptr3.armed i,body[data-theme=dark] .ptr3.spin-on i{border-top-color:#5b8def}
 /* v1.7.2 (S15/S18): swipe actions on Home rows + hidden group toggle */
 #alist .ar{position:relative;z-index:1;background:var(--bg);will-change:transform}
-#alist .swa{position:absolute;right:0;z-index:0;display:flex;align-items:stretch;width:144px}
-#alist .swa button{flex:1;border:0;font:inherit;font-size:14px;font-weight:600;color:#fff;background:#223348;cursor:pointer}
-#alist .swa button.sw-hd{background:#6b7177}
-body #alist .swa button.sw-snd,html body #alist .swa button.sw-snd{background:#1e9e4a!important}body #alist .swa button.sw-swp,html body #alist .swa button.sw-swp{background:#e5484d!important}body #alist .swa button.sw-pin,html body #alist .swa button.sw-pin{background:#3a67f2!important}
-body[data-theme=dark] #alist .swa button{background:#3a67f2}body[data-theme=dark] #alist .swa button.sw-hd{background:#4a5160}
+/* v1.9.21: swipe actions redesigned: rounded, inset buttons inside the row's height (the last one follows the row's corner radius,
+   set in swipeInit), an icon above a short label, calmer colors per UI style. A full swipe widens Send (.full). */
+#alist .swa{position:absolute;right:0;z-index:0;display:flex;align-items:stretch;box-sizing:border-box;width:144px;padding:6px 6px 6px 0;background:transparent;pointer-events:auto}
+#alist .swa button{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 0 0 6px;padding:0 4px;border:0;border-radius:12px;font:inherit;font-size:12.5px;font-weight:500;line-height:1.2;letter-spacing:.1px;white-space:nowrap;overflow:hidden;cursor:pointer;color:#fff;background:#5f6672;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:flex-grow .22s cubic-bezier(.22,.9,.24,1),opacity .18s,margin .22s,padding .22s,transform .12s,filter .12s}
+#alist .swa button svg{display:block;flex:none;width:20px;height:20px;margin:0 0 4px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+#alist .swa button span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+#alist .swa button:active{transform:scale(.96);filter:brightness(.94)}
+#alist .swa button.sw-snd{background:#2f9e62;color:#fff}
+#alist .swa button.sw-swp{background:var(--swblue,#3461ed);color:#fff}
+#alist .swa button.sw-pin{background:#fbeccb;color:#8a5a06}
+#alist .swa button.sw-hd{background:var(--swbtn,#e9eaee);color:var(--text)}
+body[data-theme=dark] #alist .swa button.sw-snd{background:#2a8a57}
+body[data-theme=dark] #alist .swa button.sw-swp{background:var(--swblue,#3a67f2)}
+body[data-theme=dark] #alist .swa button.sw-pin{background:rgba(240,180,60,.2);color:#f2c164}
+body[data-theme=dark] #alist .swa button.sw-hd{background:var(--card2,#2a2f38);color:var(--text)}
+html[data-ui="m3"] #alist .swa button{border-radius:16px;font-size:12.5px;font-weight:500}
+html[data-ui="m3"] #alist .swa button.sw-snd{background:#c4eed0;color:#0f5223}
+html[data-ui="m3"] #alist .swa button.sw-swp{background:color-mix(in srgb,var(--swblue,#3461ed) 18%,var(--bg,#fff));color:var(--swblue,#3461ed)}
+html[data-ui="m3"] #alist .swa button.sw-pin{background:#ffdfa6;color:#5c3b00}
+html[data-ui="m3"] body[data-theme=dark] #alist .swa button.sw-snd{background:#1f5132;color:#a6e3b8}
+html[data-ui="m3"] body[data-theme=dark] #alist .swa button.sw-swp{background:color-mix(in srgb,var(--swblue,#3a67f2) 28%,var(--bg,#111));color:#c9d6ff}
+html[data-ui="m3"] body[data-theme=dark] #alist .swa button.sw-pin{background:#5c4210;color:#ffdfa6}
+html[data-ui="miuix"] #alist .swa button{border-radius:14px;font-size:12px;font-weight:500}
+html[data-ui="miuix"] #alist .swa button.sw-snd{background:#34a26b}
+html[data-ui="miuix"] #alist .swa button.sw-pin{background:#f3f4f6;color:#b4760e}
+html[data-ui="miuix"] body[data-theme=dark] #alist .swa button.sw-pin{background:rgba(255,255,255,.08);color:#f2c164}
+#alist .swa.full button.sw-snd{flex-grow:12}
+#alist .swa.full button:not(.sw-snd){flex:0 0 0;margin-left:0;padding:0;opacity:0}
 .hd-tg .tg{flex:none;width:40px;height:24px;border-radius:12px;background:color-mix(in srgb,var(--text) 18%,transparent);position:relative;transition:background .2s}
 .hd-tg .tg i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
 .hd-tg .tg.on{background:#223348}.hd-tg .tg.on i{transform:translateX(16px)}
@@ -7746,7 +7769,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.20';
+var APP_VERSION = '1.9.21';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8849,22 +8872,62 @@ var APP_VERSION = '1.9.20';
     if (Date.now() - (+S.at[rp] || 0) < 600000 || iiKnown(S, rp).length) return Promise.resolve(S);   /* v1.9.15: known identities open the sheet at once; the scan refreshes behind it */
     return Promise.race([job, new Promise(function (res) { setTimeout(function () { res(iiState()); }, 4000); })]);
   }
+  /* v1.9.21: a new identity waits for a complete II scan (not the cached list), so Kwallet sees every number II already holds */
+  function iiFreshFull(rp) {
+    var S = iiState(); if (!(S.ids[rp] || []).length) return Promise.resolve(S);
+    var job = IIRUN[rp] || (IIRUN[rp] = iiScan(rp).then(function (x) { delete IIRUN[rp]; return x; }, function () { delete IIRUN[rp]; return iiState(); }));
+    return Promise.race([job, new Promise(function (res) { setTimeout(function () { res(iiState()); }, 9000); })]);
+  }
   function iiKnown(S, rp) { return Object.keys(S.reg).filter(function (k) { return k.indexOf(rp + '|') === 0; }).map(function (k) { var a = S.reg[k]; return { i: +k.split('|')[1], a: a, n: S.names[a] || '', c: +(S.made || {})[a] || 0 }; }); }
   /* identities II has but whose names this phone never saw: one Kwallet approval reads them all (identity_info is private to the identity) */
   function iiFetchNames(site, rp, S) {
-    var miss = iiKnown(S, rp).filter(function (x) { return !(x.a in S.names) || !S.made[x.a]; });   /* v1.9.18: a 0 date is read again. v1.9.16: names and creation times */ if (!miss.length) return Promise.resolve(S);
+    var miss = iiMissing(S, rp);   /* v1.9.21: shared filter. v1.9.18: a 0 date is read again. v1.9.16: names and creation times */ if (!miss.length) return Promise.resolve(S);
     return p17K(site, 'icp', 'icp_iiNames', { rpId: rp, nowMs: Date.now(), list: miss.map(function (x) { return { i: x.i, a: x.a }; }) }).then(function (r) {
       return iiSubmitNames(r);
     }, function () { return S; });   /* declined: the chooser shows identity numbers instead */
   }
   /* v1.9.16: Kwallet's signed identity_info reads (from icp_iiNames or riding on icp_passkey) -> II -> names + creation dates kept here */
-  function iiSubmitNames(r) {
-    {
-      var calls = (r && r.calls) || [];
-      return Promise.all(calls.map(function (c) {
-        return icpSubmit(II_CAN, c.envelope).then(function (x) { if (x.pending) return null; var rp2 = icpReplyOf(x, c.requestId); if (!rp2) return null; var o2 = iiNameOf(rp2); return { a: c.a, n: o2.n, c: o2.c }; }, function () { return null; });
-      })).then(function (L) { var S2 = iiState(); L.forEach(function (x) { if (x) { S2.names[x.a] = x.n; S2.made[x.a] = x.c || 0; } }); iiSave(S2); return S2; });
-    }
+  /* v1.9.21: identities still missing a name or a creation date (the same filter iiFetchNames uses) */
+  function iiMissing(S, rp) { return iiKnown(S, rp).filter(function (x) { return !(x.a in S.names) || !S.made[x.a]; }); }
+  function iiWait(ms) { return new Promise(function (res) { setTimeout(res, ms); }); }
+  /* v1.9.21: one signed identity_info read. A pending answer is polled (up to 3 more tries, 1 s apart) instead of dropped: the
+     envelope is resubmitted as is (same requestId; icpSubmit races ICP_API, so icp-api.io falls back to icp0.io), and the IC
+     answers a known request with its certificate once it has replied. A read_state poll would need a passkey signature, which only Kwallet has.
+     -> { a, n, c } or null when it failed */
+  function iiReadOne(c, t) {
+    return icpSubmit(II_CAN, c.envelope).then(function (x) {
+      if (x.pending) return (t || 0) < 3 ? iiWait(1000).then(function () { return iiReadOne(c, (t || 0) + 1); }) : null;
+      var rp2 = icpReplyOf(x, c.requestId); if (!rp2) return null; var o2 = iiNameOf(rp2); return { a: c.a, n: o2.n, c: o2.c };
+    }).catch(function () { return null; });
+  }
+  /* v1.9.21: -> { S: saved state, failed: [calls that gave nothing] }. A non-empty saved name or a non-zero date is never
+     overwritten with an empty name or 0 (an empty answer only marks the identity as read) */
+  function iiSubmitCalls(calls) {
+    calls = (calls || []).filter(function (c) { return c && c.envelope && c.requestId && c.a != null; });
+    return Promise.all(calls.map(function (c) { return iiReadOne(c, 0); })).then(function (L) {
+      var S2 = iiState(), failed = [];
+      L.forEach(function (x, i) {
+        if (!x) { failed.push(calls[i]); return; }
+        var a = String(x.a);
+        if (x.n) S2.names[a] = String(x.n).slice(0, 64); else if (!(a in S2.names)) S2.names[a] = '';
+        if (x.c) S2.made[a] = x.c; else if (!(a in S2.made)) S2.made[a] = 0;
+      });
+      iiSave(S2); return { S: S2, failed: failed };
+    });
+  }
+  function iiSubmitNames(r) { return iiSubmitCalls((r && r.calls) || []).then(function (x) { return x.S; }); }   /* v1.9.21: via iiSubmitCalls */
+  /* v1.9.21: after a passkey sign-in. Failed reads are resubmitted once after 1.5 s (same envelopes and requestIds); with no reads at
+     all the scan fills in which identities II knows. Whatever is still missing is read with one Kwallet approval on the NEXT passkey
+     sheet (IINEXT), at most once per identity per app session (IIAUTO), never in a loop. */
+  var IINEXT = {}, IIAUTO = {};
+  function iiAfterSignIn(rp, calls) {
+    var p = calls && calls.length
+      ? iiSubmitCalls(calls).then(function (x) { return x.failed.length ? iiWait(1500).then(function () { return iiSubmitCalls(x.failed); }) : x; })
+      : (IIRUN[rp] || iiScan(rp));
+    return p.catch(function () {}).then(function () {
+      var m = iiMissing(iiState(), rp).filter(function (x) { return !IIAUTO[x.a]; });
+      if (m.length) IINEXT[rp] = true;
+    });
   }
   /* v1.9.16: Settings > Internet Identity: every identity of this seed, with the exact time II created it */
   function iiWhen(ms) { try { return new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }); } catch (e) { return new Date(ms).toISOString().slice(0, 16).replace('T', ' '); } }
@@ -9499,42 +9562,73 @@ var APP_VERSION = '1.9.20';
   }
   function relist() { var l = $('alist'); if (!l) return; l.innerHTML = listInner(); bindList(l); update(); }
   /* v1.7.2 (S18): swipe a Home row left for Pin / Hide (Unhide / Unpin when already set); a tap anywhere closes it */
+  /* v1.9.21: one tap on a revealed action runs it (the "moved" flag of the swipe that opened the row used to swallow the next tap's
+     click: it is now reset on every touchstart, so only the click of a real horizontal drag is dropped). New look: inset rounded
+     buttons with an icon above the label; a haptic tick when the actions fully reveal; a full swipe (over 70% of the row, and always past the open strip) runs Send. */
+  var SWAIC = {
+    send: '<svg viewBox="0 0 24 24"><path d="M5 12h13"/><path d="M13 6l6 6-6 6"/></svg>',
+    swap: '<svg viewBox="0 0 24 24"><path d="M7 4L4 7l3 3"/><path d="M4 7h13"/><path d="M17 20l3-3-3-3"/><path d="M20 17H7"/></svg>',
+    pin: '<svg viewBox="0 0 24 24"><path d="M9 4h6"/><path d="M10 4v5l-3 4h10l-3-4V4"/><path d="M12 13v7"/></svg>',
+    hide: '<svg viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.6"/></svg>'
+  };
   function swipeInit(box) {
     if (box._sw) return; box._sw = 1; box.style.position = 'relative';
     var st = null, open = null, moved = false, W = 144;
     function close(anim) { if (!open) return; var r = open; open = null; r.style.transition = anim === false ? 'none' : 'transform .25s cubic-bezier(.22,.9,.24,1)'; r.style.transform = ''; r.classList.remove('swr', 'open'); var a = box.querySelector('.swa'); if (a) setTimeout(function () { if (a.parentNode && !open) a.remove(); }, 260); }
+    function btn(k, cls, label) { return '<button type="button" data-sp="' + k + '" class="' + cls + '">' + SWAIC[k] + '<span>' + label + '</span></button>'; }   /* v1.9.21 */
+    function run(k, x) {   /* v1.9.21: shared by a tap on an action and a full swipe */
+      buzz(k === 'pin' || k === 'hide' ? 8 : [10, 30, 10]); snd('tick', 900);
+      if (k === 'send' || k === 'swap') { close(false); var a0 = box.querySelector('.swa'); if (a0) a0.remove(); var net = x.net || (x.ch === 'eth' ? 'ethereum' : null), tk = x.r && x.r.key || 'native';
+        if (k === 'send') go({ v: 'send', ch: x.ch, net: net, tk: tk }); else go({ v: 'swap', fresh: 1, from: { ch: x.ch, net: net, key: tk } }); return; }
+      if (k === 'hide' && HOMEHID.indexOf(x) >= 0 && rowHidden().indexOf(x.id) < 0) { if (spamLike(x.r)) { rowToggle('pin', x.id); } } else rowToggle(k, x.id);
+      open = null; relist();
+    }
     function acts(row) {
       var x = LIST[+row.getAttribute('data-li')]; if (!x) return null;
-      var a = box.querySelector('.swa'); if (a) a.remove(); a = document.createElement('div'); a.className = 'swa';
+      var a = box.querySelector('.swa'); if (a) a.remove(); a = document.createElement('div'); a.className = 'swa'; a._x = x;
       var pinned = rowPins().indexOf(x.id) >= 0, hid = rowHidden().indexOf(x.id) >= 0 || HOMEHID.indexOf(x) >= 0;
-      /* v1.9.14: Send (green), Swap (red), Pin (blue), then Hide when it applies */
-      a.innerHTML = '<button type="button" data-sp="send" class="sw-snd">Send</button>' + (x.ch === 'xmr' ? '' : '<button type="button" data-sp="swap" class="sw-swp">Swap</button>') +
-        '<button type="button" data-sp="pin" class="sw-pin">' + (pinned ? 'Unpin' : 'Pin') + '</button>' + (x.coin && !hid ? '' : '<button type="button" data-sp="hide" class="sw-hd">' + (hid ? 'Show' : 'Hide') + '</button>');
-      W = 72 * a.children.length; a.style.width = W + 'px';
-      a.style.top = row.offsetTop + 'px'; a.style.height = row.offsetHeight + 'px'; box.insertBefore(a, box.firstChild);
-      a.querySelectorAll('[data-sp]').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); var k = b.getAttribute('data-sp'); buzz(k === 'pin' || k === 'hide' ? 8 : [10, 30, 10]); snd('tick', 900);
-        if (k === 'send' || k === 'swap') { close(false); var net = x.net || (x.ch === 'eth' ? 'ethereum' : null), tk = x.r && x.r.key || 'native';
-          if (k === 'send') go({ v: 'send', ch: x.ch, net: net, tk: tk }); else go({ v: 'swap', fresh: 1, from: { ch: x.ch, net: net, key: tk } }); return; }
-        if (k === 'hide' && HOMEHID.indexOf(x) >= 0 && rowHidden().indexOf(x.id) < 0) { if (spamLike(x.r)) { rowToggle('pin', x.id); } } else rowToggle(k, x.id);
-        open = null; relist(); }; });
+      /* v1.9.14: Send, Swap, Pin, then Hide when it applies. v1.9.21: icon + label buttons */
+      a.innerHTML = btn('send', 'sw-snd', 'Send') + (x.ch === 'xmr' ? '' : btn('swap', 'sw-swp', 'Swap')) +
+        btn('pin', 'sw-pin', pinned ? 'Unpin' : 'Pin') + (x.coin && !hid ? '' : btn('hide', 'sw-hd', hid ? 'Show' : 'Hide'));
+      W = 66 * a.children.length + 6; a.style.width = W + 'px';   /* v1.9.21: 60 px buttons, 6 px gaps and inset */
+      a.style.top = row.offsetTop + 'px'; a.style.height = row.offsetHeight + 'px';
+      /* v1.9.21: the strip takes the row's own corners; the last button's outer corners follow them (concentric with the 6 px inset) */
+      try {
+        var cs = getComputedStyle(row), rr = function (p) { return parseFloat(cs[p]) || 0; };
+        a.style.setProperty('border-radius', rr('borderTopLeftRadius') + 'px ' + rr('borderTopRightRadius') + 'px ' + rr('borderBottomRightRadius') + 'px ' + rr('borderBottomLeftRadius') + 'px', 'important');
+        a.style.setProperty('overflow', 'hidden', 'important'); a.style.setProperty('background', 'transparent', 'important');
+        var last = a.lastElementChild; if (last) { last.style.borderTopRightRadius = Math.max(8, rr('borderTopRightRadius') - 6) + 'px'; last.style.borderBottomRightRadius = Math.max(8, rr('borderBottomRightRadius') - 6) + 'px'; }
+      } catch (e) {}
+      box.insertBefore(a, box.firstChild);
+      a.querySelectorAll('[data-sp]').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); e.preventDefault(); run(b.getAttribute('data-sp'), x); }; });
       return a;
     }
     box.addEventListener('touchstart', function (e) {
+      moved = false;   /* v1.9.21: a stale flag from the swipe that opened the row no longer eats this tap */
       var row = e.target.closest && e.target.closest('.ar[data-li]'); if (open && (!row || row !== open) && !e.target.closest('.swa')) close();
       if (!row || e.touches.length !== 1) { st = null; return; }
-      st = { row: row, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, h: false, past: false, base: row === open ? -W : 0 }; moved = false;
+      st = { row: row, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, h: false, rv: row === open, full: false, rw: row.offsetWidth || 360, base: row === open ? -W : 0 };
     }, { passive: true });
     box.addEventListener('touchmove', function (e) {
       if (!st) return; var dx = e.touches[0].clientX - st.x, dy = e.touches[0].clientY - st.y;
       if (!st.h) { if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) { st = null; return; } if (Math.abs(dx) < 10) return; st.h = true; moved = true; if (st.row !== open) { close(false); acts(st.row); } }
       if (e.cancelable) e.preventDefault();
-      var v = Math.min(0, Math.max(-(W + 26), st.base + dx)); st.dx = v; var past = v < -60; if (past !== st.past) { st.past = past; buzz(past ? 6 : 3); } st.row.style.transition = 'none'; st.row.style.transform = 'translate3d(' + v + 'px,0,0)'; st.row.classList.add('swr');
+      var v = Math.min(0, Math.max(-st.rw, st.base + dx)), a = box.querySelector('.swa'); st.dx = v;
+      if (a) a.style.width = Math.max(W, -v) + 'px';   /* v1.9.21: the strip follows a long swipe */
+      var rv = v <= -W; if (rv && !st.rv) buzz(5); st.rv = rv || st.rv && v < -60;   /* v1.9.21: small tick when the actions fully reveal */
+      var full = v < -Math.min(st.rw - 8, Math.max(0.7 * st.rw, W + 24)); if (full !== st.full) { st.full = full; if (a) a.classList.toggle('full', full); buzz(full ? 10 : 4); }   /* v1.9.21: full swipe = Send */
+      st.row.style.transition = 'none'; st.row.style.transform = 'translate3d(' + v + 'px,0,0)'; st.row.classList.add('swr');
     }, { passive: false });
-    box.addEventListener('touchend', function () {
-      if (!st || !st.h) { st = null; return; } var r = st.row, v = st.dx; st = null;
+    function end(cancel) {
+      if (!st || !st.h) { st = null; return; } var r = st.row, v = st.dx, full = st.full && !cancel, rv = st.rv, rw = st.rw; st = null;
+      var a = box.querySelector('.swa');
       r.style.transition = 'transform .25s cubic-bezier(.22,.9,.24,1)';
-      if (v < -60) { r.style.transform = 'translate3d(' + (-W) + 'px,0,0)'; r.classList.add('open'); open = r; buzz(10); } else { open = r; close(); }
-    }, { passive: true });
+      if (full && a && a._x) { var x = a._x; r.style.transform = 'translate3d(' + (-rw) + 'px,0,0)'; open = r; setTimeout(function () { run('send', x); }, 170); return; }   /* v1.9.21 */
+      if (a) { a.classList.remove('full'); a.style.transition = 'width .25s cubic-bezier(.22,.9,.24,1)'; a.style.width = W + 'px'; }
+      if (v < -60) { r.style.transform = 'translate3d(' + (-W) + 'px,0,0)'; r.classList.add('open'); open = r; if (!rv) buzz(5); } else { open = r; close(); }
+    }
+    box.addEventListener('touchend', function () { end(false); }, { passive: true });
+    box.addEventListener('touchcancel', function () { end(true); }, { passive: true });   /* v1.9.21: an interrupted swipe settles instead of sticking */
     box.addEventListener('click', function (e) { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; return; } if (open && !e.target.closest('.swa')) { e.stopPropagation(); e.preventDefault(); close(); } }, true);
   }
   function openItem(x) {
@@ -19922,7 +20016,14 @@ window.hwCrashPrompt = crashPrompt;
        identity skips their numbers. II unreachable: Kwallet works from what this phone knows, as before. */
     var rpK = /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai)$/.test(rp) ? rp : 'id.ai';
     try { if (window.HwNative && HwNative.warmK) HwNative.warmK(); } catch (e) {}
-    var scan = iiFresh(rpK);
+    var scan = (op === 'create' ? iiFreshFull(rpK) : iiFresh(rpK)).then(function (S) {
+      /* v1.9.21: the last sign-in left identities without a name or date: read them now with one Kwallet approval, once (the flag is
+         cleared first and each identity is tried once per app session), so this chooser shows names and dates */
+      S = S || iiState(); if (!IINEXT[rpK]) return S; delete IINEXT[rpK];
+      var m = iiMissing(S, rpK).filter(function (x) { return !IIAUTO[x.a]; }); if (!m.length) return S;
+      iiMissing(S, rpK).forEach(function (x) { IIAUTO[x.a] = 1; });
+      return iiFetchNames(site, rpK, S).then(function () { return iiState(); }, function () { return iiState(); });
+    });
     return scan.then(function (S) {   /* v1.9.16: no "Restore identities" sheet in front of the passkey any more (Settings > Internet Identity reads names and dates) */
       S = S || iiState(); var kn = iiKnown(S, rpK);
       if (kn.length) { q.known = kn.slice(0, 50); q.taken = kn.map(function (x) { return x.i; }); }
@@ -19940,12 +20041,15 @@ window.hwCrashPrompt = crashPrompt;
           ev39Add({ ch: 'icp', dir: op === 'get' ? 'signin' : 'newid', lbl: op === 'get' ? 'Signed in' : 'New identity', site: h, origin: me, idn: String(nm0 || '').slice(0, 64) });
         }
       } catch (e) {}
-      if (r && Array.isArray(r.calls) && r.calls.length) { var rc = { calls: r.calls }; setTimeout(function () { iiSubmitNames(rc).catch(function () {}); }, 0); delete r.calls; }   /* v1.9.16: never handed to the site */
+      /* v1.9.21: reads riding on the passkey answer go through iiAfterSignIn (retry once, then one approval on the next sheet);
+         a sign-in with no reads still checks what is missing. v1.9.16: the calls are never handed to the site */
+      if (r && (op === 'get' || op === 'create' || (Array.isArray(r.calls) && r.calls.length))) { var rc = Array.isArray(r.calls) ? r.calls.slice(0, 50) : []; setTimeout(function () { iiAfterSignIn(rpK, rc).catch(function () {}); }, 0); }
+      if (r) delete r.calls;
       /* a new identity: once II has registered it, remember its number and the name it was made with */
       if (op === 'create' && r && r.credId) {
         var nm = q.name, ix = +r.idx, tries = 0;
         (function poll() { setTimeout(function () { iiLookup(r.credId).then(function (a) {
-          if (a) { var S2 = iiState(); if (ix >= 0) S2.reg[rpK + '|' + ix] = a; if (nm && !(a in S2.names)) S2.names[a] = nm; iiSave(S2); }
+          if (a) { var S2 = iiState(); if (ix >= 0) S2.reg[rpK + '|' + ix] = a; if (nm && !S2.names[a]) S2.names[a] = nm;   /* v1.9.21: an empty saved name may be filled */ iiSave(S2); }
           else if (++tries < 8) poll();
         }, function () { if (++tries < 8) poll(); }); }, 15000); })();
       }

@@ -1,5 +1,11 @@
 # Changelog
 
+## Kwallet 3.99.21 / Hwallet 1.9.21
+- Fix: a new Internet Identity passkey gets the next number after the highest one II already has, never a lower gap. Hwallet waits for a full II check (up to 9 s) before creating one, instead of using the cached list.
+- Fix: Internet Identity names and creation times come back after a fresh install with the same seed. Pending replies are polled, failed reads are retried once, and anything still missing is read with one approval on the next passkey sheet. A saved name or date is never overwritten by an empty one.
+- Fix: Hwallet fetches ICP / Internet Identity data again. ICP hosts are no longer held behind the per-host request cap (now 12 for other hosts), which made balances and identity lookups time out.
+- Hwallet: token swipe actions (Send, Swap, Pin) work with one tap, have new icons and per-style colours, buzz when revealed, and a full swipe sends.
+
 ## Kwallet 3.99.20 / Hwallet 1.9.20
 - Fix (critical): Send and Swap no longer freeze. A missing "+" in the Send sheet broke it on every chain. A sheet that fails now backs out with a message instead of leaving an invisible layer over the screen.
 - Kwallet: with Require PIN to sign on, every PIN check from Hwallet (signing, dApp requests, new address numbers, pairing) uses Kwallet's official lock screen and asks every time. Back cancels the request.

@@ -211,11 +211,11 @@ class HwActivity : FragmentActivity() {
             override fun newThread(r: Runnable) = Thread(r, "hw-net-" + n.incrementAndGet())
         }).apply { allowCoreThreadTimeOut(true) }
     /** v1.9.20: at most HOST_MAX calls to one host in flight; the rest wait in that host's queue without holding a thread */
-    private val HOST_MAX = 4
+    private val HOST_MAX = 12   // v1.9.21: was 4, which starved one-host chains
     private val hostQ = HashMap<String, ArrayDeque<Runnable>>()
     private val hostRun = HashMap<String, Int>()
     private fun netHost(host: String, r: Runnable) {
-        if (host.isEmpty()) { net.execute(r); return }
+        if (host.isEmpty() || hostFree(host)) { net.execute(r); return }
         synchronized(hostQ) {
             val n = hostRun[host] ?: 0
             if (n >= HOST_MAX) { hostQ.getOrPut(host) { ArrayDeque() }.addLast(r); return }
@@ -223,6 +223,8 @@ class HwActivity : FragmentActivity() {
         }
         netHostRun(host, r)
     }
+    /** v1.9.21: the Internet Computer is one host for every balance, II lookup and identity_info call, so it is never capped */
+    private fun hostFree(h: String): Boolean = h == "icp-api.io" || h == "icp0.io" || h == "ic0.app" || h.endsWith(".icp0.io") || h.endsWith(".ic0.app") || h.endsWith(".icp-api.io")
     private fun netHostRun(host: String, r: Runnable) {
         try { net.execute { try { r.run() } finally { netHostDone(host) } } }
         catch (_: java.util.concurrent.RejectedExecutionException) { synchronized(hostQ) { hostQ.remove(host); hostRun.remove(host) } }
