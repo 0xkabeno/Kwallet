@@ -67,6 +67,7 @@ class HwBrowser(
 ) {
     private class Tab(val id: String) {
         var web: WebView? = null
+        var cfStock = ""   // v1.9.27: a host whose Cloudflare check runs with the stock user agent this session
         var shown = 0L
         var url = ""
         var scroll = 0
@@ -534,6 +535,7 @@ class HwBrowser(
         post {
             afDrop(id)   // v1.8.35 (B13)
             val gone = tabs.remove(id)
+            thumbMem.remove(id)
             pops.values.filter { it.parent == id }.forEach { popClose(it) }   // v1.9.10
             gone?.let { t -> uncover(t); t.web?.let { w -> root.removeView(w); w.stopLoading(); try { if (t.inc && !incProfiles) w.clearCache(true) } catch (_: Throwable) {}; w.destroy() } }
             if (visible == id) visible = null
@@ -599,8 +601,10 @@ class HwBrowser(
         } catch (e: Throwable) { Log.w(TAG, "trim", e) }
     }
 
+    private val thumbMem = java.util.concurrent.ConcurrentHashMap<String, ByteArray>()
     fun thumbData(id: String): String {
         if (!okId(id)) return ""
+        thumbMem[id]?.let { return "data:image/jpeg;base64," + Base64.encodeToString(it, Base64.NO_WRAP) }
         val f = File(dir(id), "thumb.jpg")
         if (!f.exists() || f.length() > 400_000) return ""
         return try { "data:image/jpeg;base64," + Base64.encodeToString(f.readBytes(), Base64.NO_WRAP) } catch (_: Throwable) { "" }
@@ -765,12 +769,14 @@ class HwBrowser(
                 return true
             }
             override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) { scamHit(url)?.let { why -> try { view.stopLoading() } catch (_: Throwable) {}; scamEv(t, url ?: "", why); return }   /* v1.9.14: loads that skip shouldOverrideUrlLoading (typed, restored, redirects) */
+                try { cfLeave(t, view, url) } catch (_: Throwable) {}
                 afDrop(t.id); if (t.inc) { val o = originOf(url); if (o.isNotEmpty()) t.incOrigins.add(o) }; try { Uri.parse(url ?: "").host?.let { HwShield.resetCount(it.lowercase()) } } catch (_: Throwable) {}; navEv(t, view, true, 10); lateInject(view) }
             override fun onPageCommitVisible(view: WebView, url: String?) { lateInject(view); hide(view, url); uncover(t) }
             // v1.8.7: single-page dApps (pushState / hash routes) update Back / Forward too
             override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) { navEv(t, view, view.progress < 100, view.progress) }
             override fun onPageFinished(view: WebView, url: String?) {
                 pullDone(t)
+                try { cfCheck(t, view, url) } catch (_: Throwable) {}
                 lateInject(view)
                 hide(view, url)
                 navEv(t, view, false, 100)
@@ -985,12 +991,45 @@ class HwBrowser(
         try { t.vpH?.remove() } catch (_: Throwable) {}; t.vpH = null
         if (!dss) return
         val p = HwUa.presetFor(t.desk)
-        if (p != null) try { t.uaH = WebViewCompat.addDocumentStartJavaScript(w, HwUa.scriptFor(p), setOf("*")) } catch (e: Throwable) { Log.w(TAG, "ua script", e) }
+        val nat = uaMeta(w, if (t.cfStock.isNotEmpty()) null else p)
+        if (p != null && t.cfStock.isEmpty()) try { t.uaH = WebViewCompat.addDocumentStartJavaScript(w, HwUa.scriptFor(p, nat), setOf("*")) } catch (e: Throwable) { Log.w(TAG, "ua script", e) }
         if (t.desk) try { t.vpH = WebViewCompat.addDocumentStartJavaScript(w, HwUa.VIEWPORT_JS, setOf("*")) } catch (e: Throwable) { Log.w(TAG, "viewport script", e) }
     }
     /** v1.8.9 (R18): the tab's user agent (settings.userAgentString), navigator.* hints and viewport, from its desktop flag */
+    /** v1.9.27: client hints from the WebView (true = applied natively); null restores the WebView's own */
+    @SuppressLint("RequiresFeature")
+    private fun uaMeta(w: WebView, p: HwUa.P?): Boolean {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.USER_AGENT_METADATA)) return false
+        return try {
+            if (baseMeta == null) baseMeta = WebSettingsCompat.getUserAgentMetadata(w.settings)
+            val m = p?.let { HwUa.meta(it) }
+            WebSettingsCompat.setUserAgentMetadata(w.settings, m ?: baseMeta!!)
+            m != null
+        } catch (e: Throwable) { Log.w(TAG, "ua metadata", e); false }
+    }
+    /** v1.9.27: a Cloudflare challenge page with a spoofed user agent: Cloudflare binds its clearance to the real browser, so
+     *  that host runs with the stock user agent (and third-party cookies for the Turnstile frame) for this tab until it leaves */
+    private fun cfCheck(t: Tab, w: WebView, url: String?) {
+        if (t.cfStock.isNotEmpty() || t.inc || HwUa.presetFor(t.desk) == null || !isWeb(url)) return
+        w.evaluateJavascript("(function(){try{return !!(document.querySelector('#challenge-form,#challenge-running,#cf-challenge-running,script[src*=\"/cdn-cgi/challenge-platform/\"]')||/^(Just a moment|Attention Required)/i.test(document.title))}catch(e){return false}})()") { r ->
+            if (r != "true" || t.cfStock.isNotEmpty()) return@evaluateJavascript
+            val h = try { Uri.parse(url ?: "").host?.lowercase() ?: "" } catch (_: Throwable) { "" }
+            if (h.isEmpty()) return@evaluateJavascript
+            t.cfStock = h
+            try { CookieManager.getInstance().setAcceptThirdPartyCookies(w, true) } catch (_: Throwable) {}
+            applyUaTo(t, w); reloadUa(t, w)
+        }
+    }
+    private fun cfLeave(t: Tab, w: WebView, url: String?) {
+        if (t.cfStock.isEmpty()) return
+        val h = try { Uri.parse(url ?: "").host?.lowercase() ?: "" } catch (_: Throwable) { "" }
+        if (h.isEmpty() || h == t.cfStock || h.endsWith("." + t.cfStock) || h == "challenges.cloudflare.com") return
+        t.cfStock = ""
+        try { CookieManager.getInstance().setAcceptThirdPartyCookies(w, false) } catch (_: Throwable) {}
+        applyUaTo(t, w)
+    }
     private fun applyUaTo(t: Tab, w: WebView) {
-        w.settings.userAgentString = HwUa.uaFor(t.desk, baseUa ?: w.settings.userAgentString)
+        w.settings.userAgentString = if (t.cfStock.isNotEmpty()) (baseUa ?: w.settings.userAgentString).replace("; wv)", ")") else HwUa.uaFor(t.desk, baseUa ?: w.settings.userAgentString)
         w.settings.useWideViewPort = true; w.settings.loadWithOverviewMode = true
         uaScript(t, w)
     }
@@ -1140,7 +1179,11 @@ class HwBrowser(
             val bmp = Bitmap.createBitmap(360, (w.height * s).toInt().coerceAtLeast(1), Bitmap.Config.RGB_565)
             val c = Canvas(bmp); c.scale(s, s); c.translate(-w.scrollX.toFloat(), -w.scrollY.toFloat()); w.draw(c)
             val d = dir(t.id)
-            fio { val o = ByteArrayOutputStream(); bmp.compress(Bitmap.CompressFormat.JPEG, 70, o); bmp.recycle(); d.mkdirs(); atomic(File(d, "thumb.jpg"), o.toByteArray()) }
+            // v1.9.27: compressed here and kept in memory, so the switcher that opens right after snap() shows this page
+            // (the file write used to finish after the switcher had already read an empty / old thumbnail)
+            val o = ByteArrayOutputStream(); bmp.compress(Bitmap.CompressFormat.JPEG, 70, o); bmp.recycle(); val b = o.toByteArray()
+            thumbMem[t.id] = b
+            fio { d.mkdirs(); atomic(File(d, "thumb.jpg"), b) }
         } catch (_: Throwable) {}
     }
 
