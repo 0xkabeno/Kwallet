@@ -638,6 +638,27 @@ def run():
             f2 = shot('h_swap_picker'); step('h_swap_picker', True, text=app_text(pg, 300), shot=f2, logcat=logcat('h_swap_picker'))
             adb('shell input keyevent 4'); time.sleep(1.5)
 
+    # 4b. freeze probe (1.9.19 report: Swap / Receive / a token open, then the wallet stops answering)
+    def jsalive(tag):
+        t0 = time.time(); r = None
+        try: r = pg.ev("(function(){var o=document.querySelectorAll('.sheet-ov.show,.kwd-ov.show,.hw-subpg.show,.hp-ov,.ptr3,.ptr-m3,.ptr-mx').length;var e=document.elementFromPoint(innerWidth/2,innerHeight/2);return {v:(window.V||{}).v,ov:o,top:e?(e.tagName+'.'+String(e.className).slice(0,60)+'#'+e.id):null,stack:(typeof stack!=='undefined'?stack.length:-1)}})()", 8)
+        except Exception as x: r = 'ERR ' + str(x)[:120]
+        return {'tag': tag, 'ms': round((time.time() - t0) * 1000), 'r': r}
+    probes = [jsalive('after_swap')]
+    for i in range(3):
+        if pg.ev("!!document.querySelector('.hbar')"): break
+        adb('shell input keyevent 4'); time.sleep(1.5)
+    probes.append(jsalive('back_home'))
+    xy = tap(pg, '[data-act="recv"]'); time.sleep(4); probes.append(jsalive('after_recv')); fr = shot('h_recv')
+    adb('shell input keyevent 4'); time.sleep(1.5); probes.append(jsalive('recv_back'))
+    tok = pg.ev("(function(){var b=document.querySelector('.hbar ~ * [data-i], [data-coin], .coin, .tk'); if(!b) return null; var r=b.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2,c:String(b.className).slice(0,40)}})()")
+    if tok:
+        adb('shell input tap %d %d' % (round(tok['x'] * SCREEN['dpr']), round(SCREEN['oy'] + tok['y'] * SCREEN['dpr']))); time.sleep(4)
+        probes.append(jsalive('after_token')); ft = shot('h_token')
+        adb('shell input tap %d %d' % (SCREEN['w'] // 2, SCREEN['h'] // 2)); time.sleep(1); probes.append(jsalive('token_tap'))
+        adb('shell input keyevent 4'); time.sleep(1.5); probes.append(jsalive('token_back'))
+    step('h_freeze_probe', all(isinstance(p['r'], dict) for p in probes), probes=probes, token=tok, shot=fr, logcat=logcat('h_freeze'))
+
     # 5. pull to refresh on Home: a real finger swipe, sampled every 250 ms for 12 s
     for i in range(3):
         if pg.ev("!!document.querySelector('.hbar')"): break
