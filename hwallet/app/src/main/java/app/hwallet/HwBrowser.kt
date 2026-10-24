@@ -996,17 +996,8 @@ class HwBrowser(
         if (t.desk) try { t.vpH = WebViewCompat.addDocumentStartJavaScript(w, HwUa.VIEWPORT_JS, setOf("*")) } catch (e: Throwable) { Log.w(TAG, "viewport script", e) }
     }
     /** v1.8.9 (R18): the tab's user agent (settings.userAgentString), navigator.* hints and viewport, from its desktop flag */
-    /** v1.9.27: client hints from the WebView (true = applied natively); null restores the WebView's own */
-    @SuppressLint("RequiresFeature")
-    private fun uaMeta(w: WebView, p: HwUa.P?): Boolean {
-        if (!WebViewFeature.isFeatureSupported(WebViewFeature.USER_AGENT_METADATA)) return false
-        return try {
-            if (baseMeta == null) baseMeta = WebSettingsCompat.getUserAgentMetadata(w.settings)
-            val m = p?.let { HwUa.meta(it) }
-            WebSettingsCompat.setUserAgentMetadata(w.settings, m ?: baseMeta!!)
-            m != null
-        } catch (e: Throwable) { Log.w(TAG, "ua metadata", e); false }
-    }
+    /** v1.9.28: native client hints need androidx.webkit 1.12 (compileSdk 35); until then the JS override stays */
+    @Suppress("UNUSED_PARAMETER") private fun uaMeta(w: WebView, p: HwUa.P?): Boolean = false
     /** v1.9.27: a Cloudflare challenge page with a spoofed user agent: Cloudflare binds its clearance to the real browser, so
      *  that host runs with the stock user agent (and third-party cookies for the Turnstile frame) for this tab until it leaves */
     private fun cfCheck(t: Tab, w: WebView, url: String?) {

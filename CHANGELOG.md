@@ -1,6 +1,6 @@
 # Changelog
 
-## Kwallet 3.99.28 / Hwallet 1.9.28
+## Kwallet 3.99.29 / Hwallet 1.9.29 (3.99.28 failed CI: androidx.webkit 1.12 needs compileSdk 35; native client hints are deferred, and the JS hints plus the Cloudflare stock-UA fallback ship)
 - Browser and Cloudflare: Sec-CH-UA client hints and navigator.userAgentData now come from the WebView itself (androidx.webkit 1.12.1 USER_AGENT_METADATA) and match the chosen Chromium-family user agent. The JS-only override is used only where the feature is missing.
 - When a Cloudflare challenge page loads with a spoofed user agent, that host runs with the stock user agent and allows third-party cookies for the Turnstile frame in that tab, then goes back when the tab leaves the host. Cloudflare binds its clearance to the real browser.
 - Tab switcher: each card shows the page's thumbnail right away (kept in memory, written to disk after). The site icon shows as soon as it's saved instead of staying a letter for the rest of the session.

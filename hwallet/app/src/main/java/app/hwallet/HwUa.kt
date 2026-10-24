@@ -97,24 +97,6 @@ object HwUa {
     /** v1.8.8 (R4b): the one-tap desktop view of a tab (Windows Chrome) */
     val DESK: P get() = PRESETS.first { it.id == "winchrome" }
     fun script(): String? { val p = cur() ?: return null; return scriptFor(p) }
-    /** v1.9.27: the Sec-CH-UA client-hint headers and navigator.userAgentData from the WebView itself (androidx.webkit
-     *  USER_AGENT_METADATA), so they match the chosen Chromium-family user agent. Cloudflare compares them with the
-     *  User-Agent header; a JS-only override left the headers saying "Android WebView" and failed its check. */
-    fun meta(p: P): androidx.webkit.UserAgentMetadata? {
-        if (p.hints == "none" || p.hints == "keep") return null
-        val brand = when (p.hints) { "edge" -> "Microsoft Edge"; "opera" -> "Opera"; "samsung" -> "Samsung Internet"; "brave" -> "Brave"; else -> "Google Chrome" }
-        val ver = when (p.hints) { "opera" -> if (p.mobile) "91" else "122"; "samsung" -> "28"; else -> "141" }
-        val plat = when { p.platform.startsWith("Win") -> "Windows"; p.platform.startsWith("Mac") -> "macOS"; p.platform.contains("x86_64") -> "Linux"; else -> "Android" }
-        val pv = when (plat) { "Windows" -> "19.0.0"; "macOS" -> "15.6.0"; "Linux" -> "6.8.0"; else -> Regex("Android (\\d+)").find(p.ua)?.groupValues?.get(1)?.let { "$it.0.0" } ?: "16.0.0" }
-        val model = if (plat == "Android") Regex("Android [^;]+; ([^)]+)\\)").find(p.ua)?.groupValues?.get(1)?.trim()?.takeIf { it != "K" } ?: "" else ""
-        fun b(n: String, v: String) = androidx.webkit.UserAgentMetadata.BrandVersion.Builder().setBrand(n).setMajorVersion(v).setFullVersion("$v.0.0.0").build()
-        return try {
-            androidx.webkit.UserAgentMetadata.Builder()
-                .setBrandVersionList(listOf(b("Not)A;Brand", "8"), b("Chromium", "141"), b(brand, ver)))
-                .setFullVersion("$ver.0.0.0").setPlatform(plat).setPlatformVersion(pv).setArchitecture(if (plat == "Android") "" else "x86")
-                .setModel(model).setMobile(p.mobile).setBitness(if (plat == "Android") 0 else 64).setWow64(false).build()
-        } catch (_: Throwable) { null }
-    }
     fun scriptFor(p: P, nativeHints: Boolean = false): String {
         val sb = StringBuilder("(function(){try{var N=Navigator.prototype,d=function(k,v){try{Object.defineProperty(N,k,{get:function(){return v},configurable:true})}catch(e){}};")
         if (p.platform.isNotEmpty()) sb.append("d('platform',").append(JSONObject.quote(p.platform)).append(");")
