@@ -6499,6 +6499,25 @@ function __fastCoreFactory(G) {
   function tonWallet(pub, v4) { var T = tonLib(), o = { workchain: 0, publicKey: T.Buffer.from(pub) }; return v4 ? T.WalletContractV4.create(o) : T.WalletContractV5R1.create(o); }
   function tonAddr(pub, v4) { return tonWallet(pub, v4).address.toString({ bounceable: false }); }
   function tonHash(pub, v4) { return bytesToHex(new Uint8Array(tonWallet(pub, v4).address.hash)); }
+  /* v3.99.23: the other TON wallet versions a key may sit in (Tonkeeper / Tonhub / Tychi and older apps), for the address finder.
+     v3R1 / v3R2 are found and shown; Hwallet signs with W5 or v4R2 only. */
+  var TONV3 = { v3r1: 'te6cckEBAQEAYgAAwP8AIN0gggFMl7qXMO1E0NcLH+Ck8mCDCNcYINMf0x/TH/gjE7vyY+1E0NMf0x/T/9FRMrryoVFEuvKiBPkBVBBV+RDyo/gAkyDXSpbTB9QC+wDo0QGkyMsfyx/L/8ntVD++buA=',
+    v3r2: 'te6cckEBAQEAcQAA3v8AIN0gggFMl7ohggEznLqxn3Gw7UTQ0x/THzHXC//jBOCk8mCDCNcYINMf0x/TH/gjE7vyY+1E0NMf0x/T/9FRMrryoVFEuvKiBPkBVBBV+RDyo/gAkyDXSpbTB9QC+wDo0QGkyMsfyx/L/8ntVBC9ba0=' };
+  var TONV3C = {};
+  function tonVerAddrObj(pub, ver) {
+    if (ver === 'w5') return tonWallet(pub).address; if (ver === 'v4') return tonWallet(pub, true).address;
+    var T = tonLib(), code = TONV3C[ver] || (TONV3C[ver] = T.Cell.fromBoc(T.Buffer.from(TONV3[ver], 'base64'))[0]);
+    return T.contractAddress(0, { code: code, data: T.beginCell().storeUint(0, 32).storeUint(698983191, 32).storeBuffer(T.Buffer.from(pub)).endCell() });
+  }
+  var TON_VERS = ['w5', 'v4', 'v3r2', 'v3r1'];
+  function tonVerOf(pub, hex) { for (var i = 0; i < TON_VERS.length; i++) if (bytesToHex(new Uint8Array(tonVerAddrObj(pub, TON_VERS[i]).hash)) === hex) return TON_VERS[i]; return ''; }
+  function tonVerAddr(pub, ver) { return tonVerAddrObj(pub, ver).toString({ bounceable: false }); }
+  /* v3.99.23: a TON-native key (Tonkeeper / Tonhub style): the words themselves, no BIP-44 path (@ton/crypto mnemonicToPrivateKey) */
+  function tonNativeSeed(phrase, pass) {
+    var E = G.ethers, w = String(phrase || '').trim().toLowerCase().split(/\s+/).join(' ');
+    var ent = E.computeHmac('sha512', E.toUtf8Bytes(w), E.toUtf8Bytes(pass || ''));
+    return hexToBytes(E.pbkdf2(ent, E.toUtf8Bytes('TON default seed'), 100000, 64, 'sha512').slice(2, 66));
+  }
   /* ---------- v3.99.0: Internet Computer (BIP32 secp256k1; self-authenticating principal + ledger account ID) ---------- */
   var S2K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
   function sha224(m) {
@@ -6850,7 +6869,7 @@ function __fastCoreFactory(G) {
           hit = m.raw ? nr === m.raw.hex : nr.indexOf(sub.toLowerCase()) >= 0;
         } else if (lane.kind === 'ton') {   /* v3.99.14: a pasted address matches the W5 or the v4R2 wallet of the key */
           var tpk = edPub(nodeAt(laneId, lane, i, mkPath).k);
-          if (m.raw) hit = tonHash(tpk) === m.raw.hex || tonHash(tpk, true) === m.raw.hex;
+          if (m.raw) hit = !!tonVerOf(tpk, m.raw.hex);   /* v3.99.23: W5, v4R2, v3R2 or v3R1 */
           else { var tw = tonWallet(tpk).address; hit = tw.toString({ bounceable: false }).indexOf(sub) >= 0 || tw.toString().indexOf(sub) >= 0; }
         } else if (lane.kind === 'icp') {
           var ipb = icpPrin(nodeAt(laneId, lane, i, mkPath).pu);
@@ -6934,7 +6953,7 @@ function __fastCoreFactory(G) {
   return {
     makeCtx: makeCtx, derive: derive, pathFromTpl: pathFromTpl, engine: engine, parseFullAddress: parseFullAddress,
     xmrAccount: xmrAccount, xmrAddr: xmrAddr, btcKindForPath: btcKindForPath,
-    icp: { sha224: sha224, crc32: crc32, prin: icpPrin, text: icpText, acct: icpAcct, pem: icpPem }, nearAddr: nearAddr, ton: { addr: tonAddr, hash: tonHash, wallet: tonWallet },
+    icp: { sha224: sha224, crc32: crc32, prin: icpPrin, text: icpText, acct: icpAcct, pem: icpPem }, nearAddr: nearAddr, ton: { addr: tonAddr, hash: tonHash, wallet: tonWallet, verOf: tonVerOf, verAddr: tonVerAddr, nativeSeed: tonNativeSeed, edPub: edPub },
     _t: { segwitEncode: segwitEncode, segwitDecode: segwitDecode, base58: base58, base58decode: base58decode, b58check: b58check,
       secpRoot: secpRoot, secpChild: secpChild, edRoot: edRoot, edChild: edChild, parseSegs: parseSegs, addrFor: addrFor,
       hexToBytes: hexToBytes, bytesToHex: bytesToHex, cnB58decode: cnB58decode, makeWalker: makeWalker, ecState: function () { return [EOK, HOK]; }, fastPubU: fastPubU, hmac512: function (k, d) { return hmac512(k, d); } }
@@ -12944,7 +12963,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.22';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
+const APP_VERSION = '3.99.23';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -14318,6 +14337,10 @@ function buildSearchLanes(depth, nets) {
   add('near', 'near', "m/44'/397'/{i}'", 0, 'MyNearWallet / Sender / Meteor');
   add('icp', 'icp', "m/44'/223'/0'/0/{i}", 0, 'Plug / dfx / Ledger');
   add('ton', 'ton', "m/44'/607'/{i}'", 0, 'Trust / Ledger / Tonkeeper(W5)');   /* v3.99.14 */
+  /* v3.99.23: multichain apps that put TON elsewhere (Tychi, Tether WDK, older SDKs: every level hardened for ed25519) */
+  add('ton', 'ton', "m/44'/607'/0'/0'/{i}'", 0, 'Tychi / WDK / multichain');
+  add('ton', 'ton', "m/44'/607'/{i}'/0'/0'", 0, 'Multichain (account)');
+  add('ton', 'ton', "m/44'/607'/0'/{i}'", 0, 'Multichain (change)');
   lanes.sort(function (x, y) { return x.prio - y.prio || x.id - y.id; });
   return lanes;
 }
@@ -14563,6 +14586,21 @@ function renderAddrHits(hits, query) {
   }
 }
 
+/* v3.99.23: a TON account found with a full address: saved for this seed so its next Hwallet pairing (#0) uses it (W5 / v4R2) */
+var TONVER_LBL = { w5: 'W5', v4: 'v4R2', v3r2: 'v3R2', v3r1: 'v3R1' };
+function kwTonFound(ov, where) {
+  var lbl = TONVER_LBL[ov.ver] || ov.ver;
+  if (ov.ver !== 'w5' && ov.ver !== 'v4') { setSearchMeta('Found TON \u00b7 ' + where + ' \u00b7 ' + lbl + ' wallet. Hwallet sends from W5 and v4R2 wallets only', 'ok'); return; }
+  try {
+    var eth = window.FastCore.derive(window.FastCore.makeCtx({ net: 'eth', pathTpl: DEFAULT_PATH.eth, seedHex: getBip39SeedHex(currentMnemonic, currentPassphrase || ''), pass: currentPassphrase || '', seedType: 'bip39' }), 0, false).address.toLowerCase();
+    var M = {}; try { M = JSON.parse(localStorage.getItem('kw-ton-ov') || '{}') || {}; } catch (e) {}
+    M[eth] = ov.native ? { native: 1, ver: ov.ver } : { tpl: ov.tpl, idx: ov.idx | 0, ver: ov.ver };
+    localStorage.setItem('kw-ton-ov', JSON.stringify(M));
+  } catch (e) { setSearchMeta('Found TON \u00b7 ' + where + ', but it could not be saved', 'err'); return; }
+  setSearchMeta('Found TON \u00b7 ' + where + ' \u00b7 ' + lbl + '. Saved for Hwallet: pair this seed again in Settings \u203a Hwallet signer', 'ok');
+  if (typeof buzz === 'function') buzz(12);
+  if (typeof showToast === 'function') showToast('TON account saved. Pair this seed again for Hwallet');
+}
 async function jumpToFoundHit(k) {
   var h = __searchHits[k];
   if (!h) return;
@@ -14581,6 +14619,13 @@ async function jumpToFoundHit(k) {
   await deriveAddresses();
   if (typeof glowPathRow === 'function') glowPathRow(startIndex);
   if (typeof showToast === 'function') showToast(NET_BADGE[lane.net] + ' #' + h.index);
+  if (lane.net === 'ton' && window.__tonFullHex && currentSeedType === 'bip39') {   /* v3.99.23 */
+    try {
+      var tr = window.FastCore.derive(window.FastCore.makeCtx({ net: 'ton', pathTpl: pathTpl, seedHex: getBip39SeedHex(currentMnemonic, currentPassphrase || ''), pass: currentPassphrase || '', seedType: 'bip39' }), startIndex, false);
+      var tv = window.FastCore.ton.verOf(window.FastCore._t.hexToBytes(tr.pub), window.__tonFullHex);
+      if (tv) kwTonFound({ tpl: pathTpl, idx: startIndex, ver: tv }, lane.label + ' #' + h.index);
+    } catch (e) {}
+  }
 }
 async function jumpToFoundAddress(index) { // legacy: current chain, current path
   startIndex = index | 0; currentPage = 0;
@@ -14605,6 +14650,15 @@ async function runAddressSearch(resume) {
   var prefs = searchPrefs(), D = SEARCH_DEPTHS[prefs.depth];
   var full = window.FastCore.parseFullAddress(q);
   if (full && full.invalid) { setSearchMeta(full.invalid, 'err'); setSearchProgress(0, ''); return; }
+  window.__tonFullHex = full && full.type === 'ton32' ? full.hex : '';
+  /* v3.99.23: a TON address can come from the words themselves (TON-native key, no path, e.g. Tonkeeper / Tonhub): checked first */
+  if (full && full.type === 'ton32' && currentSeedType !== 'xmr' && currentSeedType !== 'poly' && !resume) {
+    setSearchMeta('Checking the TON-native key\u2026', ''); setSearchProgress(0.05, ''); await __macroYield();
+    try {
+      var tns = window.FastCore.ton.nativeSeed(currentMnemonic, currentPassphrase || ''), tpb = window.FastCore.ton.edPub(tns), tvr = window.FastCore.ton.verOf(tpb, full.hex);
+      if (tvr) { setSearchProgress(1, 'ok'); kwTonFound({ native: 1, ver: tvr }, 'TON-native key'); return; }
+    } catch (e) {}
+  }
 
   var seedNets = (currentSeedType === 'xmr' || currentSeedType === 'poly') ? ['xmr'] : ['eth', 'btc', 'trx', 'sol', 'sui', 'xrp', 'ada', 'xmr', 'near', 'icp', 'ton'];
   var nets = prefs.scope === 'chain' ? seedNets.filter(function (n) { return n === currentNetwork; }) : seedNets;
@@ -23138,6 +23192,25 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   function nextNum(o) { var u = {}; (o.recs || []).forEach(function (r) { u[r.index | 0] = 1; }); var i = 0; while (u[i]) i++; return i; }
 
+  /* v3.99.23: a TON account found with the address finder (another app's path, or a TON-native key) replaces this seed's default
+     TON account in its next pairing (number #0 only), when it is a W5 or v4R2 wallet Hwallet can send from. Public data only
+     (path, number, version), keyed by the seed's first ETH address. */
+  function tonOvFor(eth) {
+    var M = jget('kw-ton-ov', {}) || {}, o = M[String(eth || '').toLowerCase()];
+    if (!o || (o.ver !== 'w5' && o.ver !== 'v4')) return null;
+    if (o.native) return { native: 1, ver: o.ver };
+    var tp = String(o.tpl || ''), ix = o.idx | 0;
+    try { if (!/^m(\/\d+'?)+$/.test(FastCore.pathFromTpl(tp, ix, 0))) return null; } catch (e) { return null; }
+    return { tpl: tp, idx: ix, ver: o.ver };
+  }
+  window.kwTonDerive = function (m, p, ov) {
+    var k;
+    if (ov.native) k = FastCore.ton.nativeSeed(m, p);
+    else k = FastCore._t.hexToBytes(String(FastCore.derive(FastCore.makeCtx({ net: 'ton', pathTpl: ov.tpl, seedHex: getBip39SeedHex(m, p || ''), pass: p || '', seedType: 'bip39' }), ov.idx | 0, true).privateKey));
+    var pub = FastCore.ton.edPub(k);
+    return { k: k, pub: FastCore._t.bytesToHex(pub), w5: FastCore.ton.verAddr(pub, 'w5'), v4: FastCore.ton.verAddr(pub, 'v4') };
+  };
+
   /* ---------- pairing ---------- */
   async function makePair(index, label, src, air) {
     src = src || { m: currentMnemonic, p: currentPassphrase || '', st: currentSeedType };
@@ -23165,6 +23238,10 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           if (net === 'near' && dd.pub) rec.nearPk = dd.pub;   /* v3.99.0: NEAR access key (ed25519:...) and ICP public key (hex) */
           if (net === 'icp' && dd.pub) { rec.icpPk = dd.pub; rec.icpAcct = dd.acct; }
           if (net === 'ton' && dd.pub) { rec.tonPk = dd.pub; rec.tonV4 = dd.v4 || ''; }   /* v3.99.14: TON public key (hex) + the v4R2 address for Hwallet's wallet-version check */
+          if (net === 'ton' && index === 0 && st === 'bip39') {   /* v3.99.23: the TON account the address finder saved for this seed */
+            var tov = tonOvFor(rec.addrs.eth);
+            if (tov) { var tdv = window.kwTonDerive(m, p, tov); rec.addrs.ton = tov.ver === 'v4' ? tdv.v4 : tdv.w5; rec.tonPk = tdv.pub; rec.tonV4 = tdv.v4; rec.tonOv = tov; tdv.k = null; }
+          }
           if (net === 'btc' && dd.pub) rec.btcPk = dd.pub;   /* v3.98.16: Bitcoin dApps ask for the public key (UniSat getPublicKey, Wallet Standard accounts) */
         }
       } catch (e) { try { console.warn('pair', net, e); } catch (x) {} }
@@ -25044,6 +25121,11 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   var ADAX = null;   /* v3.98.22: Cardano stake + DRep keys of the last derive, cleared right after signing */
   function deriveKey(sec, net) {
     var m = String(sec.m || '').trim().toLowerCase().split(/\s+/).join(' '), p = sec.p || '';
+    if (net === 'ton' && sec.tonOv && window.kwTonDerive) {   /* v3.99.23: the TON account the address finder saved (another app's path or a TON-native key) */
+      var tw = String(S.R.from), td = window.kwTonDerive(m, p, sec.tonOv);
+      if (tonId(tw) !== tonId(td.w5) && tonId(tw) !== tonId(td.v4)) throw new Error('The paired seed no longer derives ' + short(tw) + '.');
+      ADAX = null; return FastCore._t.bytesToHex(td.k);
+    }
     var ctx = FastCore.makeCtx({ net: net, pathTpl: DEFAULT_PATH[net], seedHex: getBip39SeedHex(m, p), adaEnt: net === 'ada' ? ethers.Mnemonic.fromPhrase(m).entropy : null, pass: p, seedType: 'bip39' });
     var d = FastCore.derive(ctx, sec.index, true);
     var want = String(S.R.from), got = String(d.address);
@@ -25624,6 +25706,35 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* v3.99.22: reading identity names is read-only (each passkey signs one identity_info, nothing moves or changes): it runs with no sheet */
     if (m === 'icp_iiNames') { try { document.body.style.opacity = '0'; } catch (e) {} setTimeout(function () { dappProceed({ level: DS.level, R: JSON.parse(JSON.stringify(DS.R)), c: DS.last }); }, 0); }
   }
+  /* v3.99.23: headless identity reads. Hwallet asks over the K-H link (KwLinkService SVC_QUIET) and this pre-loaded sign page
+     answers with no window, no sheet, no PIN and no approval: only icp_iiNames (each passkey signs one read-only identity_info;
+     nothing is sent, changed or approved). The seed comes only from the hardware-sealed signing copy (or an already open vault);
+     when neither opens without the user ("Require PIN to sign", locked vault) the answer is { status: 'locked' } and Hwallet
+     shows identity numbers. Every other method is refused here; funds always go through the sheet. */
+  window.kwQuiet = function (qid, body) {
+    var reply = function (o) { try { if (window.KwQuietOut) KwQuietOut.done(String(qid), JSON.stringify(o)); } catch (e) {} };
+    (async function () {
+      var R = null; try { R = JSON.parse(String(body || '')); } catch (e) {}
+      if (!R || R.method !== 'icp_iiNames' || R.chain !== 'icp' || !isAddr('icp', R.from)) return reply({ status: 'error', error: 'refused' });
+      var P = R.params || {}, rpN = String(P.rpId || '');
+      if (!/^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai)$/.test(rpN) || !(+P.nowMs > 1.6e12)) return reply({ status: 'error', error: 'bad request' });
+      var nl = (Array.isArray(P.list) ? P.list : []).filter(function (x) { return x && (x.i | 0) === +x.i && x.i >= 0 && x.i < 4000 && /^\d{1,20}$/.test(String(x.a || '')); }).slice(0, 20);
+      /* an empty list asks only for this seed's public passkey IDs (a wiped Hwallet has none), still with no window */
+      var rec = findPub(R.from, 'icp'); if (!rec) return reply({ status: 'error', error: 'not paired' });
+      if (rec.seedType && rec.seedType !== 'bip39') return reply({ status: 'error', error: 'seed type' });
+      var sec = null;
+      try { sec = secretFor(await openStore(), rec.id); if (!sec && window.KwDB && KwDB.state() !== 'locked' && !reqPin()) sec = secretFor(load(), rec.id); } catch (e) { sec = null; }
+      if (!sec) return reply({ status: 'locked' });
+      var keepS = S, keepD = DS, pk = null;
+      try {
+        S = DS = { R: R, rec: rec, c: 'icp', net: 'icp', m: 'icp_iiNames', pkRp: rpN, nmList: nl.map(function (x) { return { i: x.i | 0, a: String(x.a) }; }) };
+        pk = deriveKey(sec, 'icp'); sec = null;
+        var r = p17Sign('icp_iiNames', pk, P, R.from);
+        reply({ status: 'signed', method: 'icp_iiNames', result: r });
+      } catch (e) { reply({ status: 'error', error: String(e && e.message || e).slice(0, 160) }); }
+      finally { pk = null; sec = null; S = keepS; DS = keepD; }
+    })();
+  };
   /* #82: the custom network fee of Solana (priority fee / compute units) and Tron (fee limit) */
   function solFee(R, v) {
     var cus = DS.level === 'custom' && R.cf, pr = v.cuPrice, lim = BI(v.cuLimit);

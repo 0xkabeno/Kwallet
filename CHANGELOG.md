@@ -1,5 +1,9 @@
 # Changelog
 
+## Kwallet 3.99.23 / Hwallet 1.9.23
+- Internet Identity reads are now headless. Hwallet asks Kwallet over the bound K-H link (KwLinkService SVC_QUIET), and Kwallet's spare sign page signs the read-only identity_info calls with no window, sheet, PIN or approval. Hwallet fetches passkey IDs, identities, names and creation dates when it starts or comes back, when the browser opens Internet Identity, and before the passkey chooser. Select passkey then goes straight to the chooser with names loaded. Only icp_iiNames runs this way. Signing in still needs Confirm, and funds always go through the sheet. A seed behind "Require PIN to sign" or a locked vault answers "locked", and Hwallet shows identity numbers without asking.
+- Kwallet address finder: TON addresses from other apps. It adds TON paths m/44'/607'/0'/0'/{i}' (Tychi, Tether WDK), m/44'/607'/{i}'/0'/0' and m/44'/607'/0'/{i}', plus TON-native keys (Tonkeeper / Tonhub words, no path). It matches W5, v4R2, v3R2 and v3R1 wallets. A W5 or v4R2 match from a full pasted address is saved for that seed, and its next Hwallet pairing (#0) uses that TON account for sending.
+
 ## Kwallet 3.99.22 / Hwallet 1.9.22
 - Internet Identity names and creation dates show in the first passkey chooser after a fresh import. Hwallet reads them before the chooser opens, and Kwallet signs these read-only identity_info calls with no sheet, because only moving funds asks for approval. If Kwallet can't open the pairing without your PIN, the usual check shows instead.
 

@@ -38,7 +38,7 @@ class KwLinkService : Service() {
 
     private val link = object : Binder() {
         override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
-            if (code != SVC_PING && code != SVC_WARM && code != SVC_FEED) return super.onTransact(code, data, reply, flags)
+            if (code != SVC_PING && code != SVC_WARM && code != SVC_FEED && code != SVC_QUIET) return super.onTransact(code, data, reply, flags)
             if (!callerOk(Binder.getCallingUid())) return false
             when (code) {
                 SVC_PING -> {
@@ -50,6 +50,18 @@ class KwLinkService : Service() {
                     val id = try { data.readString() ?: "" } catch (_: Exception) { "" }
                     val f = try { data.readString() ?: "" } catch (_: Exception) { "" }
                     if (id.isNotEmpty() && f.isNotEmpty()) ui.post { SignActivity.open?.onFeed(id, f) }
+                }
+                /* v3.99.23: a headless identity read (blocking call from Hwallet's link thread, at most ~9 s). Only icp_iiNames is
+                   signed, by the spare sign page, with no window and no PIN; the answer is the page's JSON. */
+                SVC_QUIET -> {
+                    val body = try { data.readString() ?: "" } catch (_: Exception) { "" }
+                    var out = "{\"status\":\"error\",\"error\":\"empty\"}"
+                    if (body.isNotEmpty() && body.length <= 65536) {
+                        val latch = java.util.concurrent.CountDownLatch(1)
+                        ui.post { KwWarm.quiet(applicationContext, body) { j -> out = j; latch.countDown() } }
+                        try { if (!latch.await(9500, java.util.concurrent.TimeUnit.MILLISECONDS)) out = "{\"status\":\"timeout\"}" } catch (_: InterruptedException) {}
+                    }
+                    reply?.writeString(out)
                 }
             }
             return true
@@ -65,10 +77,11 @@ class KwLinkService : Service() {
     override fun onUnbind(intent: Intent?): Boolean { Log.i("KwLink", "Hwallet unbound the link"); return false }
 
     companion object {
-        const val PROTO = 1
+        const val PROTO = 2   // v3.99.23: 2 = SVC_QUIET
         /* same numbers in Hwallet's HwActivity (KW_SVC_*) */
         const val SVC_PING = IBinder.FIRST_CALL_TRANSACTION + 11
         const val SVC_WARM = IBinder.FIRST_CALL_TRANSACTION + 12
         const val SVC_FEED = IBinder.FIRST_CALL_TRANSACTION + 13
+        const val SVC_QUIET = IBinder.FIRST_CALL_TRANSACTION + 14
     }
 }

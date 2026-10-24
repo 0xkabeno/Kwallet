@@ -352,6 +352,14 @@ class HwActivity : FragmentActivity() {
         @android.webkit.JavascriptInterface
         fun warmK() { warmKwallet() }
 
+        /** v1.9.23: a headless Kwallet read (only icp_iiNames: read-only identity_info signatures) over the bound K-H link. No
+         *  Kwallet window opens. Result via window.hwKQuiet(id, json): Kwallet's answer, or {"status":"nolink"} when the link is
+         *  down or Kwallet is too old (the page then shows identity numbers; it never falls back to a sheet for this). */
+        @android.webkit.JavascriptInterface
+        fun kQuiet(id: String, json: String) { kwQuiet(id.take(64), json) }
+        @android.webkit.JavascriptInterface
+        fun kQuietOk(): Boolean = kwSvc != null && kwSvcProto >= 2
+
         /** HTTPS JSON requests to public nodes (no CORS limits here). Result via window.hwHttpDone(id, status, body).
          *  v1.4 (#53): through Hwallet's one network stack (HwNet), so the data speed limit applies. */
         @android.webkit.JavascriptInterface
@@ -1455,6 +1463,9 @@ class HwActivity : FragmentActivity() {
     private val KW_SVC_PING = android.os.IBinder.FIRST_CALL_TRANSACTION + 11
     private val KW_SVC_WARM = android.os.IBinder.FIRST_CALL_TRANSACTION + 12
     private val KW_SVC_FEED = android.os.IBinder.FIRST_CALL_TRANSACTION + 13
+    private val KW_SVC_QUIET = android.os.IBinder.FIRST_CALL_TRANSACTION + 14
+    /** v1.9.23: Kwallet's link protocol from its last ping (2+ = headless identity reads) */
+    @Volatile private var kwSvcProto = 0
     private val KW_SVC_BEAT = 5000L
     /** the link's Binder while connected (null = not connected) */
     @Volatile private var kwSvc: android.os.IBinder? = null
@@ -1549,7 +1560,7 @@ class HwActivity : FragmentActivity() {
         var ok = false; var ready = true
         try {
             ok = b.transact(KW_SVC_PING, d, r, 0)
-            if (ok) { r.readInt(); ready = r.readInt() == 1 }
+            if (ok) { kwSvcProto = r.readInt(); ready = r.readInt() == 1 }
         } catch (_: Exception) { ok = false } finally { d.recycle(); r.recycle(); kwSvcPinging = false }
         runOnUiThread {
             if (kwSvc !== b) return@runOnUiThread
@@ -1576,6 +1587,18 @@ class HwActivity : FragmentActivity() {
         val b = kwSvc ?: return false
         if (json.length > 65536 || id.length > 256) return false
         return kwSvcSend(b, KW_SVC_FEED, id, json)
+    }
+    /** v1.9.23: headless identity read over the link, on its own short-lived thread (a blocking call, at most ~10 s) */
+    private fun kwQuiet(id: String, json: String) {
+        val b = kwSvc
+        val done = { out: String -> runOnUiThread { if (::web.isInitialized) web.evaluateJavascript("window.hwKQuiet&&hwKQuiet(${JSONObject.quote(id)},${JSONObject.quote(out)})", null) } }
+        if (b == null || json.length > 65536) { done("{\"status\":\"nolink\"}"); return }
+        Thread({
+            val d = android.os.Parcel.obtain(); val r = android.os.Parcel.obtain()
+            var out = "{\"status\":\"nolink\"}"
+            try { d.writeString(json); if (b.transact(KW_SVC_QUIET, d, r, 0)) out = r.readString() ?: out } catch (_: Exception) {} finally { d.recycle(); r.recycle() }
+            done(out)
+        }, "hw-kquiet").apply { isDaemon = true }.start()
     }
     override fun onStart() { super.onStart(); kwSvcBind() }
     override fun onStop() { kwSvcUnbind(); super.onStop() }

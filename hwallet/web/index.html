@@ -7769,7 +7769,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.22';   /* v1.9.21: version bump */
+var APP_VERSION = '1.9.23';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8150,7 +8150,7 @@ var APP_VERSION = '1.9.22';   /* v1.9.21: version bump */
     var now = Date.now(); if (KWL.busy && now - KWL.busy < 15000) return; KWL.busy = now;
     try { HwNative.kwCheck(); } catch (e) { KWL.busy = 0; }
   }
-  window.hwKwFront = function () { window.hwKwPurge(); kwAsk(); };
+  window.hwKwFront = function () { window.hwKwPurge(); kwAsk(); try { if (window.hwIiSync) hwIiSync('id.ai'); } catch (e) {} };   /* v1.9.23: II names/dates refreshed headlessly when Hwallet comes back */
   window.hwKwState = function (json) {
     KWL.busy = 0; var r; try { r = JSON.parse(json) || {}; } catch (e) { return; }
     if (!started) return;
@@ -8882,10 +8882,44 @@ var APP_VERSION = '1.9.22';   /* v1.9.21: version bump */
   /* identities II has but whose names this phone never saw: one Kwallet approval reads them all (identity_info is private to the identity) */
   function iiFetchNames(site, rp, S) {
     var miss = iiMissing(S, rp);   /* v1.9.21: shared filter. v1.9.18: a 0 date is read again. v1.9.16: names and creation times */ if (!miss.length) return Promise.resolve(S);
-    return p17K(site, 'icp', 'icp_iiNames', { rpId: rp, nowMs: Date.now(), list: miss.map(function (x) { return { i: x.i, a: x.a }; }) }).then(function (r) {
-      return iiSubmitNames(r);
-    }, function () { return S; });   /* declined: the chooser shows identity numbers instead */
+    /* v1.9.23: headless over the K-H link: no Kwallet window, no PIN, no approval. Kwallet unreachable or locked: identity numbers */
+    return kQuiet('icp_iiNames', { rpId: rp, nowMs: Date.now(), list: miss.map(function (x) { return { i: x.i, a: x.a }; }) }).then(function (r) {
+      iiTake(rp, r); return iiSubmitNames(r);
+    }, function () { return iiState(); });
   }
+  /* v1.9.23: headless Kwallet reads (only icp_iiNames) over the bound K-H link. Kwallet signs them in its spare sign page with no
+     window; -> result, or rejects (no link, older Kwallet, a seed behind "Require PIN to sign", a locked vault, 9 s timeout). */
+  var KQ = {}, KQN = 0;
+  window.hwKQuiet = function (id, json) { var f = KQ[id]; if (!f) return; delete KQ[id]; var o = null; try { o = JSON.parse(json); } catch (e) {} f(o); };
+  function kQuiet(method, params) {
+    if (!(window.HwNative && HwNative.kQuiet) || !p17Paired('icp') || airW()) return Promise.reject(new Error('no link'));
+    var id = 'q' + (++KQN), body = JSON.stringify({ v: 2, id: rid(16), action: 'dapp', chain: 'icp', method: method, from: p17Addr('icp'), params: params });
+    return new Promise(function (res, rej) {
+      var t = setTimeout(function () { if (KQ[id]) { delete KQ[id]; rej(new Error('timeout')); } }, 11000);
+      KQ[id] = function (o) { clearTimeout(t); if (o && o.status === 'signed' && o.result) res(o.result); else rej(new Error((o && (o.error || o.status)) || 'no answer')); };
+      try { HwNative.kQuiet(id, body); } catch (e) { delete KQ[id]; clearTimeout(t); rej(e); }
+    });
+  }
+  /* v1.9.23: everything Hwallet needs for the id.ai chooser, fetched live and silently: the passkey IDs (from Kwallet, when this
+     phone has none, e.g. after a wipe), which identities II has for them (public lookups), then every missing name and creation
+     date (Kwallet signs the private identity_info reads headlessly). Runs when Hwallet starts or comes back, when the browser opens
+     Internet Identity, and before the passkey chooser; one run at a time per relying party, at most every 2 minutes unless forced. */
+  var IIQ = {}, IIQT = {};
+  function iiSync(rp, force) {
+    rp = rp || 'id.ai'; if (!A.icp || !p17Paired('icp') || airW()) return Promise.resolve(iiState());
+    if (IIQ[rp]) return IIQ[rp];
+    if (!force && Date.now() - (IIQT[rp] || 0) < 120000) return Promise.resolve(iiState());
+    IIQT[rp] = Date.now();
+    var S0 = iiState();
+    var ids = (S0.ids[rp] || []).length ? Promise.resolve() : kQuiet('icp_iiNames', { rpId: rp, nowMs: Date.now(), list: [] }).then(function (r) { iiTake(rp, r); }, function () {});
+    var job = ids.then(function () {
+      return IIRUN[rp] || (IIRUN[rp] = iiScan(rp).then(function (x) { delete IIRUN[rp]; return x; }, function () { delete IIRUN[rp]; return iiState(); }));
+    }).then(function (S) { return iiFetchNames(TC_SITE, rp, S || iiState()); }).catch(function () { return iiState(); })
+      .then(function (S) { delete IIQ[rp]; return S || iiState(); });
+    IIQ[rp] = job; return job;
+  }
+  function iiSyncSoon(rp) { setTimeout(function () { try { iiSync(rp); } catch (e) {} }, 1500); }
+  window.hwIiSync = function (rp) { iiSyncSoon(rp || 'id.ai'); };
   /* v1.9.16: Kwallet's signed identity_info reads (from icp_iiNames or riding on icp_passkey) -> II -> names + creation dates kept here */
   /* v1.9.21: identities still missing a name or a creation date (the same filter iiFetchNames uses) */
   function iiMissing(S, rp) { return iiKnown(S, rp).filter(function (x) { return !(x.a in S.names) || !S.made[x.a]; }); }
@@ -15523,6 +15557,8 @@ window.hwCrashPrompt = crashPrompt;
     if (e.t === 'nav') {
       BRM.update(BR, e.id, { url: e.url, title: e.title }); BRL[e.id] = Object.assign(BRL[e.id] || {}, { back: !!e.back, fwd: !!e.fwd, loading: !!e.loading, progress: +e.progress || 0, offline: !!e.offline, blk: +e.blk || 0, shield: !!e.shield });
       if (/^https:/.test(e.url || '')) { try { brWarm(new URL(e.url).origin); } catch (x) {} }
+      /* v1.9.23: Internet Identity opened: read the passkey identities, names and dates now (headless), before the user taps a passkey */
+      if (/^https:\/\/(www\.|beta\.)?(id\.ai|identity\.ic0\.app|identity\.internetcomputer\.org)(\/|$)/.test(e.url || '')) { try { var iih = new URL(e.url).hostname.replace(/^(www|beta)\./, ''); if (window.hwIiSync) hwIiSync(iih); } catch (x) {} }
       if (!e.loading && !e.offline && !t.inc && /^https?:/.test(e.url || '')) {
         if (BRL[e.id].hu !== e.url) { BRL[e.id].hu = e.url; if (BRH.add(BRHI, BRMV, e.url, e.title)) brHSave(); }
         else if (e.title && BRH.title(BRHI, BRMV, e.url, e.title)) brHSave();
@@ -20021,10 +20057,10 @@ window.hwCrashPrompt = crashPrompt;
          cleared first and each identity is tried once per app session), so this chooser shows names and dates */
       /* v1.9.22: identities without a name or date are read before the chooser opens: Kwallet signs these read-only calls with no
          sheet (only moving funds asks), so a fresh import shows names and dates at once. Once per identity per session, 8 s at most. */
+      /* v1.9.23: headless (no Kwallet window, no approval), and usually already done in the background, so nothing waits here */
       S = S || iiState(); delete IINEXT[rpK];
-      var m = iiMissing(S, rpK).filter(function (x) { return !IIAUTO[x.a]; }); if (!m.length) return S;
-      m.forEach(function (x) { IIAUTO[x.a] = 1; });
-      return Promise.race([iiFetchNames(site, rpK, S), iiWait(8000)]).then(function () { return iiState(); }, function () { return iiState(); });
+      if (!iiMissing(S, rpK).length && !IIQ[rpK]) { iiSyncSoon(rpK); return S; }
+      return Promise.race([iiSync(rpK, true), iiWait(8000)]).then(function () { return iiState(); }, function () { return iiState(); });
     });
     return scan.then(function (S) {   /* v1.9.16: no "Restore identities" sheet in front of the passkey any more (Settings > Internet Identity reads names and dates) */
       S = S || iiState(); var kn = iiKnown(S, rpK);
