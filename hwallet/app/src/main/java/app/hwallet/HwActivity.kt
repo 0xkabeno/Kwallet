@@ -113,6 +113,7 @@ class HwActivity : FragmentActivity() {
         signing = false; kwSeq++; kwUnlink()
         val d = res.data
         val rid = kwRid
+        HwStall.kw("result rid=$rid code=${res.resultCode} data=${d != null} file=${d?.getBooleanExtra("resf", false) == true}")
         /* v1.8.8 (push 13, R11a): a large answer (signed Monero set) is in the answer file; the page reads it from /kwres/<id> */
         val json = if (d?.getBooleanExtra("resf", false) == true && rid.isNotEmpty() && KwxProvider.file(this, "res", rid).length() > 0L)
             "{\"status\":\"file\",\"f\":${JSONObject.quote(rid)}}"
@@ -148,6 +149,7 @@ class HwActivity : FragmentActivity() {
             if (!kwUidOk(android.os.Binder.getCallingUid())) return false
             val id = data.readString() ?: ""; val st = data.readString() ?: ""; val det = data.readString() ?: ""
             val peer = try { data.readStrongBinder() } catch (_: Exception) { null }
+            HwStall.kw("kwallet status st=$st id=${id.take(48)} peer=${peer != null} seq=$seq cur=$kwSeq")
             runOnUiThread {
                 if (seq != kwSeq) return@runOnUiThread
                 if (peer != null && kwPeer == null) { try { peer.linkToDeath(kwDeath, 0); kwPeer = peer } catch (_: Exception) { kwDeath.binderDied() } }
@@ -166,6 +168,7 @@ class HwActivity : FragmentActivity() {
         catch (_: Exception) { if (signing) signFail("Cancelled. Nothing was signed") } finally { d.recycle() }
     }
     private fun signFail(why: String) {
+        HwStall.kw("signFail: $why")
         signing = false; kwSeq++; kwUnlink()
         web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote(JSONObject().put("status", "error").put("error", why).toString())})", null)
     }
@@ -173,6 +176,7 @@ class HwActivity : FragmentActivity() {
     private fun kwCode(): Long = try { androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(packageManager.getPackageInfo(KWALLET, 0)) } catch (_: Exception) { 0L }
     private fun launchSign(json: String, rid: String, file: Boolean) {
         val code = kwCode()
+        HwStall.kw("launchSign rid=$rid kwCode=$code file=$file len=${json.length} signing=$signing")
         if (code <= 0L) { web.evaluateJavascript("window.hwSignDone&&hwSignDone(${JSONObject.quote("{\"status\":\"missing\"}")})", null); return }
         val big = json.length > EXTRA_MAX
         /* a Kwallet before 3.98.8 only reads the request from the Intent extra: a large one cannot reach it */
@@ -193,16 +197,24 @@ class HwActivity : FragmentActivity() {
             signing = true; kwPaused = false; val seq = ++kwSeq; kwLinkSeq = seq
             i.putExtras(Bundle().apply { putBinder("kwlink", KwLink(seq)) })
             kwSign.launch(i, androidx.core.app.ActivityOptionsCompat.makeCustomAnimation(this@HwActivity, 0, 0))
+            HwStall.kw("kwSign.launch returned rid=$rid seq=$seq")
             /* v1.8.16: no limit. If Kwallet has not said "received" after 12 s, the waiting card says so (with Cancel); the
                request keeps waiting until Kwallet answers, dies, or the user cancels */
             ui.postDelayed({ if (signing && seq == kwSeq && kwPeer == null) kwJs("{\"st\":\"slow\"}") }, 12000L)
         } catch (e: Exception) {
+            HwStall.kw("launch threw ${e.javaClass.simpleName}: ${e.message}")
             signing = false
             signFail("Kwallet could not be opened (" + (e.javaClass.simpleName) + "). Try again")
         }
     }
     /* v1.3 (#46): enough threads for every chain's history and balances at once (was 6, which queued the Activity tab) */
-    private val net = java.util.concurrent.Executors.newFixedThreadPool(24)
+    private val net = java.util.concurrent.Executors.newFixedThreadPool(24, object : java.util.concurrent.ThreadFactory {
+        private val n = java.util.concurrent.atomic.AtomicInteger()
+        override fun newThread(r: Runnable) = Thread(r, "hw-net-" + n.incrementAndGet())
+    })
+    /** v1.9.19-dbg1: the Kwallet handoff has its own thread, so it can never queue behind network calls on `net` */
+    private val kwEx = java.util.concurrent.ThreadPoolExecutor(1, 1, 0L, java.util.concurrent.TimeUnit.MILLISECONDS, java.util.concurrent.LinkedBlockingQueue<Runnable>(),
+        java.util.concurrent.ThreadFactory { r -> Thread(r, "hw-kw").apply { isDaemon = true } })
     /** v1.1: true while Kwallet's sign page is open over Hwallet; the page keeps running to stream live data to it. */
     @Volatile private var signing = false
     private val socks = java.util.concurrent.ConcurrentHashMap<String, okhttp3.WebSocket>()
@@ -223,7 +235,11 @@ class HwActivity : FragmentActivity() {
             /* v1.8.8 (push 13, R9a / R11a): every request is also written to a handoff file (off the UI thread) and passed as a
              * content:// URI with a one-shot grant, so its size no longer matters; small ones still ride in the extra too
              * (an older Kwallet reads only that). */
-            net.execute {
+            val q = android.os.SystemClock.uptimeMillis()
+            val np = net as? java.util.concurrent.ThreadPoolExecutor
+            HwStall.kw("sign queued len=${json.length} net active=${np?.activeCount} queue=${np?.queue?.size}")
+            kwEx.execute {
+                HwStall.kw("sign started on hw-kw after ${android.os.SystemClock.uptimeMillis() - q} ms")
                 var rid = ""
                 try { rid = JSONObject(json).optString("id", "") } catch (_: Exception) {}
                 rid = rid.replace(Regex("[^A-Za-z0-9_-]"), "").take(48)
@@ -231,13 +247,25 @@ class HwActivity : FragmentActivity() {
                 var file = false
                 try { KwxProvider.clean(this@HwActivity); KwxProvider.file(this@HwActivity, "res", rid).delete(); KwxProvider.file(this@HwActivity, "req", rid).writeText(json); file = true } catch (_: Throwable) {}
                 val r = rid; val f = file
+                HwStall.kw("handoff file rid=$r written=$f")
                 runOnUiThread { launchSign(json, r, f) }
             }
         }
 
         /** v1.8.16: Cancel on Hwallet's "Waiting for Kwallet" card closes Kwallet's sheet (nothing is signed) */
         @android.webkit.JavascriptInterface
-        fun kwCancel(id: String) { runOnUiThread { this@HwActivity.kwCancel(id.take(64)) } }
+        fun kwCancel(id: String) { HwStall.kw("kwCancel from page"); runOnUiThread { this@HwActivity.kwCancel(id.take(64)) } }
+
+        /* ---- v1.9.19-dbg1: freeze catcher (test build) ---- */
+        @android.webkit.JavascriptInterface
+        fun pong(seq: Int) { HwStall.lastPong = android.os.SystemClock.uptimeMillis() }
+        @android.webkit.JavascriptInterface
+        fun jsLog(s: String) { HwStall.jsLog(s) }
+        @android.webkit.JavascriptInterface
+        fun stallReport() { runOnUiThread { showStallReport() } }
+        @android.webkit.JavascriptInterface
+        fun dbgMethods(): String = org.json.JSONArray(HwBridge::class.java.declaredMethods
+            .filter { java.lang.reflect.Modifier.isPublic(it.modifiers) && !it.isSynthetic }.map { it.name }.distinct()).toString()
 
         /** v1.8.12 (push 17, R1): the native Monero engine (monero_c wallet2). xmrNOk: the library loaded on this phone.
          *  xmrN: one engine op, answered later through window.hwXmrN(id, ok, json). xmrNStatus: cached heights, never blocks. */
@@ -1019,6 +1047,8 @@ class HwActivity : FragmentActivity() {
         if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl(startUrl())
         takeWc(intent)
+        if (intent?.getBooleanExtra("hw_stall_report", false) == true) { intent.removeExtra("hw_stall_report"); ui.postDelayed({ showStallReport() }, 800) }
+        stallStart()
         HwActDb.listener = { wid, json -> actPatch(wid, json) }
         /* v1.8.34: Kwallet cleared / uninstalled / erased / a seed removed while this screen is up: the page applies it now */
         KwWipe.onPurge = { runOnUiThread { try { if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwKwPurge&&hwKwPurge()", null) } catch (_: Throwable) {} } }
@@ -1196,7 +1226,7 @@ class HwActivity : FragmentActivity() {
     private fun isLight(c: Int): Boolean =
         (0.299 * Color.red(c) + 0.587 * Color.green(c) + 0.114 * Color.blue(c)) / 255.0 >= 0.5
 
-    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); if (intent.hasExtra("hw_wc_req")) wcWokeAt = System.currentTimeMillis(); takeWc(intent) }
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); if (intent.getBooleanExtra("hw_stall_report", false)) { intent.removeExtra("hw_stall_report"); ui.post { showStallReport() } }; if (intent.hasExtra("hw_wc_req")) wcWokeAt = System.currentTimeMillis(); takeWc(intent) }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -1372,14 +1402,103 @@ class HwActivity : FragmentActivity() {
     }
 
     override fun onResume() {
-        super.onResume(); fgNow = true; web.onResume(); br?.resume(); if (::web.isInitialized) tuneWebView(this, web)
+        super.onResume(); fgNow = true; HwStall.lastPong = android.os.SystemClock.uptimeMillis(); HwStall.dumpedFor = -1L; web.onResume(); br?.resume(); if (::web.isInitialized) tuneWebView(this, web)
         if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwFront&&hwFront()", null)
         /* v1.8.34: back in front: apply a purge that came in meanwhile, then ask Kwallet whether its seeds are still there */
         if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwKwFront&&hwKwFront()", null)
         if (pendingLive) ui.postDelayed({ if (pendingLive) startLiveSafe() }, 300)
         ui.postDelayed({ warmKwallet() }, 2500)  // P2a: keep Kwallet's sign sheet quick to open while Hwallet is in use
     }  // OEMs drop back to 60 Hz after resume
-    override fun onDestroy() { try { br?.destroy(); br = null } catch (_: Throwable) {}; try { socks.values.forEach { it.cancel() }; socks.clear(); HwActDb.listener = null; HwVpn.listeners.remove(vpnL); KwWipe.onPurge = null; KwWipe.onNames = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
+    override fun onDestroy() { try { br?.destroy(); br = null } catch (_: Throwable) {}; try { socks.values.forEach { it.cancel() }; socks.clear(); HwActDb.listener = null; HwVpn.listeners.remove(vpnL); KwWipe.onPurge = null; KwWipe.onNames = null; ui.removeCallbacksAndMessages(null); net.shutdownNow(); kwEx.shutdownNow(); wd?.quitSafely(); web.destroy() } catch (_: Throwable) {} ; super.onDestroy() }
+
+    /* ---- v1.9.19-dbg1: freeze catcher (test build only) ---- */
+    private var wd: android.os.HandlerThread? = null
+    private fun stallStart() {
+        if (wd != null) return
+        val t = android.os.HandlerThread("hw-wd").apply { start() }; wd = t
+        val h = android.os.Handler(t.looper)
+        val tick = object : Runnable {
+            override fun run() {
+                try { stallTick() } catch (e: Throwable) { android.util.Log.w("HwStall", "tick: $e") }
+                h.postDelayed(this, 1000L)
+            }
+        }
+        h.postDelayed(tick, 3000L)
+    }
+    private fun stallTick() {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (!fgNow || !pageReady || !::web.isInitialized) { HwStall.lastPong = now; return }
+        val seq = ++HwStall.pingSeq
+        ui.post {
+            HwStall.mainBeat = android.os.SystemClock.uptimeMillis()
+            try { web.evaluateJavascript("window.__hwPing&&__hwPing($seq)", null) } catch (_: Throwable) {}
+        }
+        val gap = now - HwStall.lastPong
+        if (gap > 3000L && HwStall.dumpedFor != HwStall.lastPong) {
+            HwStall.dumpedFor = HwStall.lastPong
+            HwStall.save(this, "page did not answer for $gap ms", stallState())
+            stallNotify()
+        }
+    }
+    private fun stallState(): String {
+        val now = android.os.SystemClock.uptimeMillis()
+        val np = net as? java.util.concurrent.ThreadPoolExecutor
+        val kp = kwEx
+        val vpn = try {
+            val f = java.util.concurrent.FutureTask(java.util.concurrent.Callable { HwVpn.stateJson() })
+            Thread(f, "hw-wd-vpn").apply { isDaemon = true }.start()
+            f.get(500, java.util.concurrent.TimeUnit.MILLISECONDS)
+        } catch (e: java.util.concurrent.TimeoutException) { "BLOCKED (HwVpn.stateJson did not return in 500 ms)" } catch (e: Throwable) { "error $e" }
+        return StringBuilder()
+            .append("since last pong: ").append(now - HwStall.lastPong).append(" ms · since main thread beat: ").append(now - HwStall.mainBeat).append(" ms\n")
+            .append("front: ").append(fgNow).append(" · pageReady: ").append(pageReady).append('\n')
+            .append("net pool: active=").append(np?.activeCount).append(" pool=").append(np?.poolSize).append(" queue=").append(np?.queue?.size)
+            .append(" done=").append(np?.completedTaskCount).append('\n')
+            .append("hw-kw: active=").append(kp.activeCount).append(" queue=").append(kp.queue.size).append('\n')
+            .append("signing=").append(signing).append(" kwRid=").append(kwRid).append(" kwSeq=").append(kwSeq)
+            .append(" kwPeer=").append(kwPeer != null).append(" kwPaused=").append(kwPaused).append('\n')
+            .append("vpn: ").append(vpn).append('\n').toString()
+    }
+    private fun stallNotify() {
+        try {
+            val nm = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
+            if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel("hw_dbg") == null)
+                nm.createNotificationChannel(android.app.NotificationChannel("hw_dbg", "Freeze reports (test build)", android.app.NotificationManager.IMPORTANCE_DEFAULT))
+            val i = Intent(this, HwActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP).putExtra("hw_stall_report", true)
+            val pi = android.app.PendingIntent.getActivity(this, 7701, i, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
+            nm.notify(7701, androidx.core.app.NotificationCompat.Builder(this, "hw_dbg").setSmallIcon(R.drawable.hw_stat)
+                .setContentTitle("Hwallet froze").setContentText("Tap to open the Freeze report").setAutoCancel(true).setContentIntent(pi).build())
+        } catch (e: Throwable) { android.util.Log.w("HwStall", "notify: $e") }
+    }
+    /** Native Freeze report: works even when the page is frozen (notification tap, or hold Volume down ~2 s) */
+    private fun stallReportText(): String = StringBuilder()
+        .append("Hwallet ").append(BuildConfig.VERSION_NAME).append(" Freeze report · ").append(java.util.Date()).append("\n\n")
+        .append("## Now\n").append(try { stallState() } catch (e: Throwable) { "state: $e" }).append('\n')
+        .append("## Kwallet handoff steps\n").append(HwStall.kwLines()).append("\n\n")
+        .append("## Page long tasks / slow bridge calls\n").append(HwStall.jsLines()).append("\n\n")
+        .append("## Saved freeze dumps (newest first)\n").append(HwStall.saved(this)).toString().take(400000)
+    private var stallDlg: android.app.AlertDialog? = null
+    private fun showStallReport() {
+        if (isFinishing || stallDlg?.isShowing == true) return
+        val text = stallReportText()
+        val tv = android.widget.TextView(this).apply {
+            setText(text); setTextIsSelectable(true); textSize = 10f; typeface = android.graphics.Typeface.MONOSPACE
+            val p = (12 * resources.displayMetrics.density).toInt(); setPadding(p, p, p, p)
+        }
+        val sv = android.widget.ScrollView(this).apply { addView(tv) }
+        stallDlg = android.app.AlertDialog.Builder(this).setTitle("Freeze report").setView(sv)
+            .setPositiveButton("Share") { _, _ ->
+                try { startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, "Hwallet freeze report").putExtra(Intent.EXTRA_TEXT, text.take(200000)), "Share Freeze report")) } catch (_: Throwable) {}
+            }
+            .setNeutralButton("Copy") { _, _ ->
+                try { (getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("Hwallet freeze report", text.take(200000))); android.widget.Toast.makeText(this, "Copied", android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) {}
+            }
+            .setNegativeButton("Close", null).show()
+    }
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (event.keyCode == android.view.KeyEvent.KEYCODE_VOLUME_DOWN && event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 25) { showStallReport(); return true }
+        return super.dispatchKeyEvent(event)
+    }
 }
 
 /** Smooth rendering like Chrome: highest refresh rate, no overscroll glow.

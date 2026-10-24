@@ -3169,6 +3169,43 @@ html:not(#s41_0):not(#s41_1):not(#s41_2):not(#s41_3):not(#s41_4):not(#s41_5):not
 .kwd-opt.on .kwd-r{background:var(--accent);border-color:var(--accent)}.kwd-opt.on .kwd-r::after{display:none}
 .kws-ico span.on{animation:kwBeatIco 1.4s ease-out infinite!important}
 </style>
+<script>/* Hwallet 1.9.19-dbg1: freeze catcher, page side (test build). Answers the native watchdog's ping, records long tasks
+   and HwNative calls over 200 ms (method name, time, current view) and hands them to the native Freeze report. */
+(function () {
+  var N = window.HwNative; if (!N) return;
+  var last = '';
+  function view() { try { return window.__hwView ? String(window.__hwView()) : '?'; } catch (e) { return '?'; } }
+  function rec(o) { o.view = view(); o.last = last; try { N.jsLog && N.jsLog(JSON.stringify(o)); } catch (e) {} }
+  window.__hwPing = function (s) { try { N.pong(s); } catch (e) {} };
+  try {
+    var names = [], seen = {}, k;
+    try { names = JSON.parse(String(N.dbgMethods ? N.dbgMethods() : '[]')) || []; } catch (e) {}
+    try { for (k in N) names.push(k); } catch (e) {}
+    var W = {}, n = 0;
+    names.forEach(function (m) {
+      if (seen[m]) return; seen[m] = 1;
+      var f; try { f = N[m]; } catch (e) { return; }
+      if (typeof f !== 'function') return;
+      if (m === 'pong' || m === 'jsLog') { W[m] = function () { return f.apply(N, arguments); }; n++; return; }
+      W[m] = function () {
+        var t = performance.now(); last = m;
+        try { return f.apply(N, arguments); }
+        finally { var d = performance.now() - t; if (d > 200) rec({ k: 'bridge', m: m, ms: Math.round(d) }); }
+      };
+      n++;
+    });
+    if (n > 10) Object.defineProperty(window, 'HwNative', { value: W, configurable: true, writable: true });
+  } catch (e) {}
+  try {
+    if (window.PerformanceObserver && (PerformanceObserver.supportedEntryTypes || []).indexOf('longtask') >= 0) {
+      new PerformanceObserver(function (l) { l.getEntries().forEach(function (e) { if (e.duration > 300) rec({ k: 'longtask', ms: Math.round(e.duration) }); }); }).observe({ entryTypes: ['longtask'] });
+    }
+  } catch (e) {}
+  /* timer drift: catches a busy page where longtask is missing (only while visible) */
+  var exp = Date.now() + 250;
+  setInterval(function () { var now = Date.now(), lag = now - exp; exp = now + 250; if (lag > 500 && !document.hidden) rec({ k: 'gap', ms: lag }); }, 250);
+})();
+</script>
 </head>
 <body data-theme="light">
 <script>try{document.body.setAttribute("data-theme",localStorage.getItem("wallet-theme")||"light")}catch(e){}try{var __u=localStorage.getItem("hw-ui");document.documentElement.setAttribute("data-ui",__u==="m3"||__u==="miuix"?__u:"og")}catch(e){document.documentElement.setAttribute("data-ui","og")}document.documentElement.className+=" hwa";try{var __a=window.HarkNative&&HarkNative.dynamicColors?JSON.parse(String(HarkNative.dynamicColors())||'{}').a1:null;if(__a&&__a['600']&&__a['200']){var __st=document.documentElement.style;__st.setProperty('--u-dyn-l',__a['600']);__st.setProperty('--u-dyn-lo',__a['0']||'#FFFFFF');__st.setProperty('--u-dyn-d',__a['200']);__st.setProperty('--u-dyn-do',__a['800']||'#000000')}}catch(e){}</script>
@@ -9171,7 +9208,7 @@ var APP_VERSION = '1.9.19';
   function brand(big) { return '<span class="hbrand' + (big ? ' big' : '') + '" aria-label="Hwallet"><span class="hk">H</span><span class="hw">wallet</span></span>'; }
 
   /* ---------- navigation: Wallet / Activity / Browser / Settings tabs + pushed pages ---------- */
-  var V = { v: 'home' }, stack = [], TABS = { home: 1, activity: 1, browser: 1, settings: 1 };
+  var V = { v: 'home' }, stack = [], TABS = { home: 1, activity: 1, browser: 1, settings: 1 }; window.__hwView = function () { return V && V.v; };
   function go(v, push) { if (push !== false) stack.push(V); V = Object.assign({}, v); buzz(6); snd('tick', 1000); render('in'); refreshVisible(); }
   /* v1.3 (#50): one very light tick for the bottom bar: the phone's own clock-tick haptic (native), never a second buzz */
   function lightTick() { if (!hapOn()) return; try { if (window.HwNative && HwNative.tick) { HwNative.tick(); return; } } catch (e) {} try { if (navigator.vibrate) navigator.vibrate(6); } catch (e) {} }
@@ -13056,7 +13093,7 @@ var APP_VERSION = '1.9.19';
     on('kws-crash', function () { ktick(); crashSheet(); });
     on('kws-lic', function () { ktick(); licenses(); });
     on('kws-src', function () { ktick(); openExt('https://github.com/0xkabeno/Kwallet'); });
-    on('kws-ver', function () { ktick(); });
+    on('kws-ver', function () { ktick(); try { if (window.HwNative && HwNative.stallReport) HwNative.stallReport(); } catch (e) {} });  /* 1.9.19-dbg1: Freeze report */
     capBind(kcats.net); kov.__capPaint = kcats.net.__capPaint;
     try { vpnBind(on); } catch (e) {}   /* v1.9.19 */
     kqa('[data-chn]').forEach(function (b) { b.onclick = function () { ktick(); chainsToggle(b.getAttribute('data-chn')); chnSync(); ksub('kws-c-chn', chnSum()); }; });
