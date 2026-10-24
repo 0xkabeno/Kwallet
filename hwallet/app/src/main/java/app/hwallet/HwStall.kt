@@ -29,6 +29,20 @@ object HwStall {
 
     private fun now(): String = synchronized(fmt) { fmt.format(Date()) }
 
+
+    /* dbg2: what each network thread is doing and since when */
+    private class Run(val t0: Long) { @Volatile var label = "task" }
+    private val runs = java.util.concurrent.ConcurrentHashMap<Thread, Run>()
+    fun taskStart(t: Thread) { runs[t] = Run(SystemClock.uptimeMillis()) }
+    fun taskEnd(t: Thread) { runs.remove(t) }
+    fun task(label: String) { runs[Thread.currentThread()]?.label = label.take(160) }
+    fun tasks(): String {
+        val now = SystemClock.uptimeMillis()
+        val l = runs.entries.sortedBy { it.value.t0 }
+        if (l.isEmpty()) return "  (none)"
+        return l.joinToString("\n") { "  " + it.key.name + " " + (now - it.value.t0) + " ms · " + it.value.label }
+    }
+
     fun jsLog(s: String) { synchronized(js) { js.addLast(now() + " " + s.take(600)); while (js.size > 40) js.removeFirst() } }
 
     /** One step of a Kwallet sign handoff (ids and status words only) */

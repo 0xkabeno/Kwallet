@@ -3177,6 +3177,42 @@ html:not(#s41_0):not(#s41_1):not(#s41_2):not(#s41_3):not(#s41_4):not(#s41_5):not
   function view() { try { return window.__hwView ? String(window.__hwView()) : '?'; } catch (e) { return '?'; } }
   function rec(o) { o.view = view(); o.last = last; try { N.jsLog && N.jsLog(JSON.stringify(o)); } catch (e) {} }
   window.__hwPing = function (s) { try { N.pong(s); } catch (e) {} };
+  /* dbg2: taps (what is under the finger), navigation + first frame after it, live page state for the report */
+  var TAPS = [], NAV = [];
+  function ring(a, o, n) { a.push(o); if (a.length > n) a.shift(); }
+  function ts() { var d = new Date(); return d.toTimeString().slice(0, 8) + '.' + ('00' + d.getMilliseconds()).slice(-3); }
+  function desc(el) {
+    if (!el || !el.tagName) return String(el);
+    var cs; try { cs = getComputedStyle(el); } catch (e) {}
+    var c = (typeof el.className === 'string' ? el.className : '').trim().split(/\s+/).slice(0, 3).join('.');
+    return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (c ? '.' + c : '') +
+      (cs ? ' [pos:' + cs.position + ' z:' + cs.zIndex + ' pe:' + cs.pointerEvents + ' op:' + cs.opacity + ' vis:' + cs.visibility + ']' : '');
+  }
+  window.addEventListener('pointerdown', function (e) {
+    try { var l = document.elementsFromPoint(e.clientX, e.clientY).slice(0, 4).map(desc); ring(TAPS, { t: ts(), x: Math.round(e.clientX), y: Math.round(e.clientY), view: view(), under: l }, 15); } catch (er) {}
+  }, true);
+  window.addEventListener('click', function (e) { try { ring(TAPS, { t: ts(), click: desc(e.target), view: view() }, 15); } catch (er) {} }, true);
+  window.__hwNav = function (ev) {
+    var o = { t: ts(), e: String(ev).slice(0, 80), frame: 'pending' }, t0 = performance.now(); ring(NAV, o, 20);
+    try { requestAnimationFrame(function () { o.frame = Math.round(performance.now() - t0) + ' ms'; }); } catch (er) {}
+  };
+  window.__hwDbg = function () {
+    var vw = innerWidth, vh = innerHeight, ov = [];
+    try {
+      var all = document.body.getElementsByTagName('*');
+      for (var i = 0; i < all.length && ov.length < 12; i++) {
+        var el = all[i], cs = getComputedStyle(el);
+        if (cs.position !== 'fixed' && cs.position !== 'absolute') continue;
+        if (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
+        var r = el.getBoundingClientRect(); if (r.width * r.height < vw * vh * 0.4) continue;
+        ov.push(desc(el) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+      }
+    } catch (e) { ov.push('scan error ' + e); }
+    var c = [vw / 2, vh / 2], top = [];
+    try { top = document.elementsFromPoint(c[0], c[1]).slice(0, 5).map(desc); } catch (e) {}
+    return JSON.stringify({ view: view(), hidden: document.hidden, vis: document.visibilityState, focus: desc(document.activeElement),
+      bodyClass: document.body && document.body.className, centre: top, fullOverlays: ov, nav: NAV, taps: TAPS, lastBridge: last }, null, 1);
+  };
   try {
     var names = [], seen = {}, k;
     try { names = JSON.parse(String(N.dbgMethods ? N.dbgMethods() : '[]')) || []; } catch (e) {}
@@ -9209,12 +9245,12 @@ var APP_VERSION = '1.9.19';
 
   /* ---------- navigation: Wallet / Activity / Browser / Settings tabs + pushed pages ---------- */
   var V = { v: 'home' }, stack = [], TABS = { home: 1, activity: 1, browser: 1, settings: 1 }; window.__hwView = function () { return V && V.v; };
-  function go(v, push) { if (push !== false) stack.push(V); V = Object.assign({}, v); buzz(6); snd('tick', 1000); render('in'); refreshVisible(); }
+  function go(v, push) { try { window.__hwNav && __hwNav('go ' + (v && v.v)); } catch (e) {} if (push !== false) stack.push(V); V = Object.assign({}, v); buzz(6); snd('tick', 1000); render('in'); refreshVisible(); }
   /* v1.3 (#50): one very light tick for the bottom bar: the phone's own clock-tick haptic (native), never a second buzz */
   function lightTick() { if (!hapOn()) return; try { if (window.HwNative && HwNative.tick) { HwNative.tick(); return; } } catch (e) {} try { if (navigator.vibrate) navigator.vibrate(6); } catch (e) {} }
   function scroller() { return $('pg') || document.scrollingElement; }
   function back() {
-    if (!stack.length) return false; var was = V.v; V = stack.pop(); buzz(4);
+    try { window.__hwNav && __hwNav('back from ' + V.v + ' depth ' + stack.length); } catch (e) {} if (!stack.length) return false; var was = V.v; V = stack.pop(); buzz(4);
     if (was === 'send' && sendIsBg(V)) { sendSheetClose(); refreshVisible(); return true; }  /* the screen behind the sheet is already there */
     render('back'); refreshVisible(); return true;
   }
@@ -9279,6 +9315,7 @@ var APP_VERSION = '1.9.19';
   }
 
   function render(anim) {
+    try { window.__hwNav && __hwNav('render ' + V.v + ' ' + anim); } catch (e) {}
     var box = $('app'); if (!box) return;
     try { ptrRoute(); } catch (e) {}   /* v1.8.11 (push 16): pull to refresh never carries over to another page */
     /* wave A (#103): Send opens as a sheet over the current screen, which stays as it is behind the dim */

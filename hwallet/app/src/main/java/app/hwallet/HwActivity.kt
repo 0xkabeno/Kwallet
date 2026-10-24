@@ -208,10 +208,14 @@ class HwActivity : FragmentActivity() {
         }
     }
     /* v1.3 (#46): enough threads for every chain's history and balances at once (was 6, which queued the Activity tab) */
-    private val net = java.util.concurrent.Executors.newFixedThreadPool(24, object : java.util.concurrent.ThreadFactory {
-        private val n = java.util.concurrent.atomic.AtomicInteger()
-        override fun newThread(r: Runnable) = Thread(r, "hw-net-" + n.incrementAndGet())
-    })
+    private val net: java.util.concurrent.ExecutorService = object : java.util.concurrent.ThreadPoolExecutor(24, 24, 0L, java.util.concurrent.TimeUnit.MILLISECONDS,
+        java.util.concurrent.LinkedBlockingQueue<Runnable>(), object : java.util.concurrent.ThreadFactory {
+            private val n = java.util.concurrent.atomic.AtomicInteger()
+            override fun newThread(r: Runnable) = Thread(r, "hw-net-" + n.incrementAndGet())
+        }) {
+        override fun beforeExecute(t: Thread, r: Runnable) { HwStall.taskStart(t) }
+        override fun afterExecute(r: Runnable, e: Throwable?) { HwStall.taskEnd(Thread.currentThread()) }
+    }
     /** v1.9.19-dbg1: the Kwallet handoff has its own thread, so it can never queue behind network calls on `net` */
     private val kwEx = java.util.concurrent.ThreadPoolExecutor(1, 1, 0L, java.util.concurrent.TimeUnit.MILLISECONDS, java.util.concurrent.LinkedBlockingQueue<Runnable>(),
         java.util.concurrent.ThreadFactory { r -> Thread(r, "hw-kw").apply { isDaemon = true } })
@@ -345,7 +349,9 @@ class HwActivity : FragmentActivity() {
          *  A keyed request answered 401/403/429 rests that key and returns status -429 so the page goes keyless. */
         @android.webkit.JavascriptInterface
         fun http3(id: String, method: String, url0: String, body0: String, timeoutMs: Int, contentType: String, headers: String) {
+            val lbl = "http " + method.take(6) + " " + (try { Uri.parse(url0).host ?: "?" } catch (_: Throwable) { "?" }) + " t=" + timeoutMs
             net.execute {
+                HwStall.task(lbl)
                 var st = 0; var out = ""
                 val used = HashSet<String>()
                 try {
@@ -1457,7 +1463,8 @@ class HwActivity : FragmentActivity() {
             .append("hw-kw: active=").append(kp.activeCount).append(" queue=").append(kp.queue.size).append('\n')
             .append("signing=").append(signing).append(" kwRid=").append(kwRid).append(" kwSeq=").append(kwSeq)
             .append(" kwPeer=").append(kwPeer != null).append(" kwPaused=").append(kwPaused).append('\n')
-            .append("vpn: ").append(vpn).append('\n').toString()
+            .append("vpn: ").append(vpn).append('\n')
+            .append("net tasks running (oldest first):\n").append(HwStall.tasks()).toString()
     }
     private fun stallNotify() {
         try {
@@ -1480,7 +1487,17 @@ class HwActivity : FragmentActivity() {
     private var stallDlg: android.app.AlertDialog? = null
     private fun showStallReport() {
         if (isFinishing || stallDlg?.isShowing == true) return
-        val text = stallReportText()
+        stallDlg = android.app.AlertDialog.Builder(this).setMessage("Collecting…").show()
+        var done = false
+        val fin = { page: String ->
+            if (!done) { done = true; try { stallDlg?.dismiss() } catch (_: Throwable) {}; stallDlg = null; showStallReport2(page) }
+        }
+        try { web.evaluateJavascript("window.__hwDbg?__hwDbg():'no __hwDbg'") { v -> fin(try { org.json.JSONTokener(v).nextValue().toString() } catch (_: Throwable) { v ?: "null" }) } } catch (e: Throwable) { fin("evaluate failed: $e") }
+        ui.postDelayed({ fin("PAGE DID NOT ANSWER within 1500 ms") }, 1500L)
+    }
+    private fun showStallReport2(page: String) {
+        if (isFinishing) return
+        val text = stallReportText().replaceFirst("## Kwallet handoff steps", "## Page state (live)\n" + page.take(60000) + "\n\n## Kwallet handoff steps")
         val tv = android.widget.TextView(this).apply {
             setText(text); setTextIsSelectable(true); textSize = 10f; typeface = android.graphics.Typeface.MONOSPACE
             val p = (12 * resources.displayMetrics.density).toInt(); setPadding(p, p, p, p)
