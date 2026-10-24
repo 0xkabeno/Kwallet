@@ -3188,7 +3188,13 @@ html:not(#s41_0):not(#s41_1):not(#s41_2):not(#s41_3):not(#s41_4):not(#s41_5):not
     return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (c ? '.' + c : '') +
       (cs ? ' [pos:' + cs.position + ' z:' + cs.zIndex + ' pe:' + cs.pointerEvents + ' op:' + cs.opacity + ' vis:' + cs.visibility + ']' : '');
   }
+  window.addEventListener('error', function (e) { rec({ k: 'error', msg: String(e.message).slice(0, 300), at: String(e.filename || '').slice(-40) + ':' + e.lineno + ':' + e.colno, st: String(e.error && e.error.stack || '').slice(0, 800) }); });
+  window.addEventListener('unhandledrejection', function (e) { var r = e.reason; rec({ k: 'reject', msg: String(r && r.message || r).slice(0, 300), st: String(r && r.stack || '').slice(0, 600) }); });
   window.addEventListener('pointerdown', function (e) {
+    var t = e.target;
+    try { if (t && t.classList && (t.classList.contains('hp-ov') || t.classList.contains('sheet-ov')) && !t.firstElementChild) {
+      rec({ k: 'stuck-layer', el: desc(t) }); e.preventDefault(); e.stopPropagation();
+      if (window.__hwUnstick) __hwUnstick(t); else t.parentNode.removeChild(t); return; } } catch (er) {}
     try { var l = document.elementsFromPoint(e.clientX, e.clientY).slice(0, 4).map(desc); ring(TAPS, { t: ts(), x: Math.round(e.clientX), y: Math.round(e.clientY), view: view(), under: l }, 15); } catch (er) {}
   }, true);
   window.addEventListener('click', function (e) { try { ring(TAPS, { t: ts(), click: desc(e.target), view: view() }, 15); } catch (er) {} }, true);
@@ -10697,9 +10703,18 @@ var APP_VERSION = '1.9.19';
      token row with balance, recipient with paste + QR, amount with Max and a USD toggle, a network fee chip, Continue -> Kwallet's sheet */
   var SNDBG = null;
   function sendSheetOpen() {
-    var ov = $('sndov'), fresh = !ov;
+    var ov = $('sndov'), fresh = !ov, html;
+    /* 1.9.19 fix: build the sheet first. sendHtml() threw on some real wallets after the empty overlay was already on the
+       page: a transparent full-screen layer that ate every tap (the "frozen" Send/Swap/Receive screens) until system Back */
+    try { html = sendHtml(); }
+    catch (e) {
+      try { window.HwNative && HwNative.jsLog && HwNative.jsLog(JSON.stringify({ k: 'sendHtml', err: String(e && e.message || e), st: String(e && e.stack || '').slice(0, 800), ch: V.ch, net: V.net, a: V.a })); } catch (e2) {}
+      if (!fresh) return;
+      V = stack.pop() || { v: 'home' }; render('back'); refreshVisible();
+      toast('Send could not open (' + String(e && e.message || e).slice(0, 80) + ')'); return;
+    }
     if (fresh) { ov = document.createElement('div'); ov.className = 'hp-ov snd-ov'; ov.id = 'sndov'; document.body.appendChild(ov); SNDBG = stack[stack.length - 1] || null; }
-    ov.innerHTML = '<div class="hp-dim"></div><div class="hp-sheet snd-sheet" role="dialog" aria-modal="true" aria-label="Send">' + sendHtml() + '</div>';
+    ov.innerHTML = '<div class="hp-dim"></div><div class="hp-sheet snd-sheet" role="dialog" aria-modal="true" aria-label="Send">' + html + '</div>';
     if (fresh) { void ov.offsetWidth; requestAnimationFrame(function () { ov.classList.add('in'); }); } else ov.classList.add('in');
     ov.querySelector('.hp-dim').onclick = function () { if (SND && SND.busy) return; back(); };
     ov.querySelector('[data-sx]').onclick = function () { if (SND && SND.busy) return; back(); };
@@ -10714,6 +10729,8 @@ var APP_VERSION = '1.9.19';
     ov.classList.remove('in'); ov.classList.add('out'); setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 220);
   }
   function sendIsBg(v) { return !!SNDBG && v === SNDBG; }
+  /* 1.9.19 fix: safety net for any sheet layer left empty (no sheet inside): the first tap on it closes it instead of being eaten */
+  window.__hwUnstick = function (ov) { if (ov && ov.id === 'sndov') { if (!back()) sendSheetClose(); } else if (ov && ov.parentNode) ov.parentNode.removeChild(ov); };
   function sendHtml() {
     var r = curAsset(), n = curNet(), c = CHBY[V.ch], name = n ? n.name : c.name;
     var ph = { eth: '0x…', sol: 'Solana address', btc: 'bc1…, 1… or 3…', trx: 'T…', sui: '0x…', xrp: 'r…', ada: 'addr1…', xmr: '4… or 8… Monero address', ton: 'UQ… or EQ…' }[V.ch];
