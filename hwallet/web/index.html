@@ -7769,7 +7769,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.21';   /* v1.9.21: version bump */
+var APP_VERSION = '1.9.22';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -20019,10 +20019,12 @@ window.hwCrashPrompt = crashPrompt;
     var scan = (op === 'create' ? iiFreshFull(rpK) : iiFresh(rpK)).then(function (S) {
       /* v1.9.21: the last sign-in left identities without a name or date: read them now with one Kwallet approval, once (the flag is
          cleared first and each identity is tried once per app session), so this chooser shows names and dates */
-      S = S || iiState(); if (!IINEXT[rpK]) return S; delete IINEXT[rpK];
+      /* v1.9.22: identities without a name or date are read before the chooser opens: Kwallet signs these read-only calls with no
+         sheet (only moving funds asks), so a fresh import shows names and dates at once. Once per identity per session, 8 s at most. */
+      S = S || iiState(); delete IINEXT[rpK];
       var m = iiMissing(S, rpK).filter(function (x) { return !IIAUTO[x.a]; }); if (!m.length) return S;
-      iiMissing(S, rpK).forEach(function (x) { IIAUTO[x.a] = 1; });
-      return iiFetchNames(site, rpK, S).then(function () { return iiState(); }, function () { return iiState(); });
+      m.forEach(function (x) { IIAUTO[x.a] = 1; });
+      return Promise.race([iiFetchNames(site, rpK, S), iiWait(8000)]).then(function () { return iiState(); }, function () { return iiState(); });
     });
     return scan.then(function (S) {   /* v1.9.16: no "Restore identities" sheet in front of the passkey any more (Settings > Internet Identity reads names and dates) */
       S = S || iiState(); var kn = iiKnown(S, rpK);

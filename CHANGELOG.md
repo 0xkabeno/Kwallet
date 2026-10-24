@@ -1,5 +1,8 @@
 # Changelog
 
+## Kwallet 3.99.22 / Hwallet 1.9.22
+- Internet Identity names and creation dates show in the first passkey chooser after a fresh import. Hwallet reads them before the chooser opens, and Kwallet signs these read-only identity_info calls with no sheet, because only moving funds asks for approval. If Kwallet can't open the pairing without your PIN, the usual check shows instead.
+
 ## Kwallet 3.99.21 / Hwallet 1.9.21
 - Fix: a new Internet Identity passkey gets the next number after the highest one II already has, never a lower gap. Hwallet waits for a full II check (up to 9 s) before creating one, instead of using the cached list.
 - Fix: Internet Identity names and creation times come back after a fresh install with the same seed. Pending replies are polled, failed reads are retried once, and anything still missing is read with one approval on the next passkey sheet. A saved name or date is never overwritten by an empty one.

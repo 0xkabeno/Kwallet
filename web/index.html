@@ -12944,7 +12944,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.21';   /* v1.9.21: version bump (gradle derives versionName 3.99.21 / versionCode 39921 from this) */
+const APP_VERSION = '3.99.22';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -25010,8 +25010,15 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       return { id: rec.id, m: o.m, p: o.p || '', index: rec.index | 0, seedType: o.st || rec.seedType || 'bip39' };
     } catch (e) { return null; }
   }
-  async function getSecret() {
+  async function getSecret(quiet) {
     var id = S.rec.id, r = null;
+    /* v3.99.22: non-critical, read-only work (II identity_info reads) opens the pairing store without asking; only moving funds asks.
+       When the store can't be opened without the PIN, the sheet shows and the usual check runs. */
+    if (quiet && !(REQ && REQ.air)) {
+      try { r = secretFor(await openStore(), id); if (!r && window.KwDB && KwDB.state() !== 'locked') r = secretFor(load(), id); } catch (e) { r = null; }
+      if (r) return r;
+      try { document.body.style.opacity = ''; } catch (e) {}
+    }
     if (REQ && REQ.air) {   /* v3.99.14: an air-gap seed (its own store, opened like the pairing store) */
       if ((window.KwDB && KwDB.state() === 'locked') || reqPin()) { if (!(await authOnce())) return null; }
       r = airFind(id); if (!r || !r.m) throw new Error('This air-gap seed is no longer on this phone');
@@ -25614,6 +25621,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     pairSeen(R, c, inf, rec);   /* pk39 B28 (dApp) */
     mount(); dappDraw(); arm(800);
     setInterval(tickLive, 1000); setInterval(tickExp, 250);
+    /* v3.99.22: reading identity names is read-only (each passkey signs one identity_info, nothing moves or changes): it runs with no sheet */
+    if (m === 'icp_iiNames') { try { document.body.style.opacity = '0'; } catch (e) {} setTimeout(function () { dappProceed({ level: DS.level, R: JSON.parse(JSON.stringify(DS.R)), c: DS.last }); }, 0); }
   }
   /* #82: the custom network fee of Solana (priority fee / compute units) and Tron (fee limit) */
   function solFee(R, v) {
@@ -26709,7 +26718,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (DS.rec && DS.rec.e2e) return finish({ status: 'rejected', error: 'The E2E test wallet cannot sign' });
     setBusy(true, 'Signing…');
     try {
-      var sec = await getSecret();
+      var sec = await getSecret(DS.m === 'icp_iiNames');
       if (!sec) { setBusy(false); buzz(8); return; }
       var R = snap.R, m = DS.m, P = R.params || {}, out = { status: 'signed', method: m };
       await new Promise(function (r) { setTimeout(r, 16); });
