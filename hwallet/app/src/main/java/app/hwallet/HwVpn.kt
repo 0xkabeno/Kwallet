@@ -66,6 +66,11 @@ object HwVpn {
 
     @Volatile var on = false; private set
     @Volatile var region = ""; private set
+    /* v1.9.30: Auto = Psiphon with no EgressRegion (Psiphon picks its best server), riding WARP like a country. If Psiphon
+       can't connect in Auto (twice) or isn't in this build, Auto falls back to plain WARP until the VPN is switched off/on. */
+    @Volatile private var autoWarp = false
+    @Volatile private var autoFails = 0
+    private fun psiMode(): Boolean = region.isNotEmpty() || !autoWarp
     @Volatile var dns = "cloudflare"; private set
     /** off | connecting | connected | reconnecting | error */
     @Volatile var status = "off"; private set
@@ -148,6 +153,7 @@ object HwVpn {
         val regionChanged = wantRegion != region
         val dnsChanged = wantDns != dns
         on = wantOn; region = wantRegion; dns = wantDns
+        if (toggled || regionChanged) { autoWarp = false; autoFails = 0 }
         save(c)
         if (dnsChanged) HwNet.dnsChanged()
         if (toggled || (on && regionChanged)) {
@@ -232,7 +238,8 @@ object HwVpn {
         if (proc != null) return
         val b = binU(c)
         if (!b.exists()) { setStatus("error", "Not supported on this phone"); return }
-        val country = region.isNotEmpty()
+        if (region.isEmpty() && !binP(c).exists()) autoWarp = true
+        val country = psiMode()
         if (country && !binP(c).exists()) { setStatus("error", "Countries aren\u2019t available in this build"); return }
         val dir = File(c.filesDir, "usque").apply { mkdirs() }
         val cfg = cfgU(c)
@@ -350,7 +357,7 @@ object HwVpn {
     private fun verify(my: Int, n: Int, psi: Boolean) {
         if (my != gen || !on || status == "connected" || verifying) return
         verifying = true
-        val pt = if (psi || region.isEmpty()) port else uport
+        val pt = if (psi || !psiMode()) port else uport
         Thread({
             var ok = false; var why = ""; var loc = ""
             try {
@@ -366,7 +373,7 @@ object HwVpn {
             ex.execute {
                 verifying = false
                 if (my != gen || !on || status == "connected") return@execute
-                if (ok && !psi && region.isNotEmpty()) { log("hwvpn: WARP check passed (warp=on), starting Psiphon " + region); startPsi(my) }
+                if (ok && !psi && psiMode()) { log("hwvpn: WARP check passed (warp=on), starting Psiphon " + regionName(region)); startPsi(my) }
                 else if (ok) { log("hwvpn: tunnel check passed" + (if (psi) " (exit $loc)" else " (warp=on)")); connectedNow() }
                 else {
                     if (n == 0 || n % 3 == 2) log("hwvpn: tunnel check failed: $why")
@@ -458,6 +465,7 @@ object HwVpn {
             procP = null
             if (!on) return@execute
             stopProc()
+            if (region.isEmpty() && status != "connected" && ++autoFails >= 2) { autoWarp = true; log("hwvpn: Auto: Psiphon failed twice, using WARP") }
             setStatus("reconnecting", "Couldn't connect to " + regionName(region) + ". Trying again\u2026")
             schedule()
         }
@@ -475,12 +483,12 @@ object HwVpn {
             uVar = curVar
             try { app?.getSharedPreferences(PREF, Context.MODE_PRIVATE)?.edit()?.putInt("uv", uVar)?.apply() } catch (_: Throwable) {}
         }
-        log("hwvpn: connected (WARP MASQUE " + VARS[curVar] + (if (region.isNotEmpty()) ", Psiphon " + region else "") + ")")
+        log("hwvpn: connected (WARP MASQUE " + VARS[curVar] + (if (psiMode()) ", Psiphon " + regionName(region) else "") + ")")
         setStatus("connected", "")
         val my = gen
         health?.cancel(false)
         health = ex.scheduleWithFixedDelay(Runnable {
-            if (my == gen && on && status == "connected" && (!probe(port) || (region.isNotEmpty() && !probe(uport)))) { log("hwvpn: local proxy stopped answering"); setStatus("reconnecting", "Lost the connection. Reconnecting\u2026"); restartProc() }
+            if (my == gen && on && status == "connected" && (!probe(port) || (psiMode() && !probe(uport)))) { log("hwvpn: local proxy stopped answering"); setStatus("reconnecting", "Lost the connection. Reconnecting\u2026"); restartProc() }
         }, 30, 30, TimeUnit.SECONDS)
     }
 

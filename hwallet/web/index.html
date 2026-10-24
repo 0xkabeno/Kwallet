@@ -7772,7 +7772,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.29';   /* v1.9.21: version bump */
+var APP_VERSION = '1.9.30';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -20482,7 +20482,7 @@ window.hwCrashPrompt = crashPrompt;
   function refreshChain(id) {
     if (busyR[id] || !A[id]) return busyR[id] || Promise.resolve();
     var before = snapOf(id);
-    busyR[id] = fetchChain(id).then(function () { if (id !== 'eth') refMark(id, true); saveCache(); incoming(id, before); }, function () { if (id !== 'eth') refMark(id, false); }).then(function () { busyR[id] = null; update(); });
+    var wid0 = curW() && curW().id; busyR[id] = fetchChain(id).then(function () { if (id !== 'eth') refMark(id, true); saveCache(); incoming(id, before, wid0); }, function () { if (id !== 'eth') refMark(id, false); }).then(function () { busyR[id] = null; update(); });
     return busyR[id];
   }
   function refreshAll(fast) { return Promise.all([fetchPrices(fast).then(update, function () {})].concat(CH.map(function (c) { return refreshChain(c.id); }))); }
@@ -20504,8 +20504,14 @@ window.hwCrashPrompt = crashPrompt;
     else { var b = C.b[id]; if (!b) return null; o['native'] = b.n; Object.keys(b.t || {}).forEach(function (k) { o[k] = b.t[k]; }); }
     return o;
   }
-  function incoming(id, before) {
-    if (!before || id === 'xmr') return; var after = snapOf(id); if (!after) return;   /* v1.8: Monero reports its own payments (segXmr) */
+  /* v1.9.30: the first balances of each seed and chain after a launch, a seed switch or an import are a silent baseline
+     (they used to be compared with another seed's or stale cached balances and replayed old receipts as new payments) */
+  var INARM = {};
+  function incoming(id, before, wid) {
+    if (!before || id === 'xmr') return; var w = curW(), ak = (w && w.id || '') + ':' + id;
+    if (wid !== undefined && w && w.id !== wid) return;
+    if (!INARM[ak]) { INARM[ak] = 1; return; }
+    var after = snapOf(id); if (!after) return;   /* v1.8: Monero reports its own payments (segXmr) */
     Object.keys(after).forEach(function (k) {
       var a0 = U(before[k]), a1 = U(after[k]); if (a0 == null || a1 == null || a1 <= a0) return;
       var r = null, net = null;

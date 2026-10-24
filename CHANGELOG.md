@@ -1,5 +1,9 @@
 # Changelog
 
+## Kwallet 3.99.30 / Hwallet 1.9.30
+- Incoming notifications: each seed's first balances after a launch, seed switch or import are a silent baseline, so only payments that arrive while the seed is open notify. Old receipts no longer replay on every switch or import, and a refresh that finishes after a seed switch is ignored.
+- VPN Auto: now Psiphon with no EgressRegion, so Psiphon picks its best server, riding WARP like a country. If Psiphon is missing or fails twice in Auto, it falls back to plain WARP until the VPN is toggled or the location changes.
+
 ## Kwallet 3.99.29 / Hwallet 1.9.29 (3.99.28 failed CI: androidx.webkit 1.12 needs compileSdk 35; native client hints are deferred, and the JS hints plus the Cloudflare stock-UA fallback ship)
 - Browser and Cloudflare: Sec-CH-UA client hints and navigator.userAgentData now come from the WebView itself (androidx.webkit 1.12.1 USER_AGENT_METADATA) and match the chosen Chromium-family user agent. The JS-only override is used only where the feature is missing.
 - When a Cloudflare challenge page loads with a spoofed user agent, that host runs with the stock user agent and allows third-party cookies for the Turnstile frame in that tab, then goes back when the tab leaves the host. Cloudflare binds its clearance to the real browser.
