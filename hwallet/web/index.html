@@ -599,6 +599,9 @@ body.md3 .scn-pl { background: var(--md-primary, var(--acc)); }
 .kwd-key .kwd-act{align-items:center}
 html:not(#k-a):not(#k-b):not(#k-c) .kwd-key .kwd-kclr{display:block;width:auto;max-width:calc(100% - 48px);margin:10px auto 0;padding:8px 12px;min-height:0;height:auto;border:0;border-radius:999px;background:transparent;color:var(--u-pri,var(--accent,var(--acc)));font:600 14px/20px var(--u-font,'InterE','Roboto',system-ui,sans-serif);text-align:center;white-space:normal;box-shadow:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 html:not(#k-a):not(#k-b):not(#k-c) .kwd-key .kwd-kclr:active{background:color-mix(in srgb,var(--u-pri,var(--accent,#888)) 12%,transparent)}
+/* v1.9.27: OG mode: --u-pri is a dark tone there, so the link vanished on the dark-green dialog; use the OG accent */
+html:not(#k-a):not(#k-b):not(#k-c):not(#k-d)[data-ui="og"] .kwd-key .kwd-kclr{color:#ACF47D!important;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(172,244,125,.45)}
+html:not(#k-a):not(#k-b):not(#k-c):not(#k-d)[data-ui="og"] .kwd-key .kwd-kclr:active{background:rgba(172,244,125,.12)!important}
 /* v1.6 (#77): Paste on the scan screen, above the flash button (or in its place when there is no flash) */
 .scn-paste { position: absolute; left: 50%; bottom: calc(var(--sab, 0px) + 124px); transform: translateX(-50%); height: 44px; padding: 0 18px 0 14px; border: 0; border-radius: 22px;
   display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,.42); color: #fff; font: 500 15px/1 'InterE','Roboto',system-ui,sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -7769,7 +7772,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.26';   /* v1.9.21: version bump */
+var APP_VERSION = '1.9.27';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;

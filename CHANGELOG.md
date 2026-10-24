@@ -1,5 +1,8 @@
 # Changelog
 
+## Kwallet 3.99.27 / Hwallet 1.9.27
+- OG mode: "Use the built-in key instead" in the API key dialog was dark text on the dark-green dialog. It now uses the OG green accent with an underline.
+
 ## Kwallet 3.99.26 / Hwallet 1.9.26
 - The Pair with Hwallet sheet is back to the compact 3.99.23 layout. I removed the hero card, radio rows and security strip. The only refinements are pressed-row feedback, tabular numbers and tighter section labels.
 - Includes the 3.99.25 sealed II read keys.
