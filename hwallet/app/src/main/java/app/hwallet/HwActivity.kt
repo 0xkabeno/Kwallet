@@ -1464,6 +1464,28 @@ class HwActivity : FragmentActivity() {
     private val KW_SVC_WARM = android.os.IBinder.FIRST_CALL_TRANSACTION + 12
     private val KW_SVC_FEED = android.os.IBinder.FIRST_CALL_TRANSACTION + 13
     private val KW_SVC_QUIET = android.os.IBinder.FIRST_CALL_TRANSACTION + 14
+    /** v1.9.24: hand Kwallet our event Binder; Kwallet calls it (one-way) the moment anything changes there */
+    private val KW_SVC_WATCH = android.os.IBinder.FIRST_CALL_TRANSACTION + 15
+    /** Kwallet's state stamp from the last ping (install id + pairing mirror time); a change = something happened in Kwallet */
+    @Volatile private var kwStamp = ""
+    /** main thread: tell the page what Kwallet just did (wipe | gone | names | pair | stamp | died | up) */
+    private fun kwEvent(ev: String) {
+        try { if (pageReady && ::web.isInitialized) web.evaluateJavascript("window.hwKwEvent&&hwKwEvent(${JSONObject.quote(ev.take(16))})", null) } catch (_: Throwable) {}
+    }
+    /** the Binder Kwallet calls back on; only Kwallet's uid (signature checked) is listened to */
+    private val kwWatch = object : android.os.Binder() {
+        override fun onTransact(code: Int, data: android.os.Parcel, reply: android.os.Parcel?, flags: Int): Boolean {
+            if (code != android.os.IBinder.FIRST_CALL_TRANSACTION) return super.onTransact(code, data, reply, flags)
+            val uid = android.os.Binder.getCallingUid()
+            val ok = try { (packageManager.getPackagesForUid(uid) ?: emptyArray()).any { it == KWALLET } && packageManager.checkSignatures(packageName, KWALLET) == android.content.pm.PackageManager.SIGNATURE_MATCH } catch (_: Exception) { false }
+            if (!ok) return false
+            val ev = try { data.readString() ?: "" } catch (_: Exception) { "" }
+            val st = try { data.readString() ?: "" } catch (_: Exception) { "" }
+            if (st.isNotEmpty()) kwStamp = st
+            if (ev.isNotEmpty()) runOnUiThread { kwEvent(ev) }
+            return true
+        }
+    }
     /** v1.9.23: Kwallet's link protocol from its last ping (2+ = headless identity reads) */
     @Volatile private var kwSvcProto = 0
     private val KW_SVC_BEAT = 5000L
@@ -1479,7 +1501,7 @@ class HwActivity : FragmentActivity() {
     @Volatile private var kwSvcPinging = false
     private val kwLinkEx = java.util.concurrent.ThreadPoolExecutor(1, 1, 15L, java.util.concurrent.TimeUnit.SECONDS, java.util.concurrent.LinkedBlockingQueue<Runnable>(),
         java.util.concurrent.ThreadFactory { r -> Thread(r, "hw-link").apply { isDaemon = true } }).apply { allowCoreThreadTimeOut(true) }
-    private val kwSvcDeath = android.os.IBinder.DeathRecipient { runOnUiThread { kwSvcLost("Kwallet died") } }
+    private val kwSvcDeath = android.os.IBinder.DeathRecipient { runOnUiThread { kwSvcLost("Kwallet died"); kwEvent("died") } }   // v1.9.24: Clear data / force stop is seen at once
     private val kwSvcConn = object : android.content.ServiceConnection {
         override fun onServiceConnected(name: android.content.ComponentName?, service: android.os.IBinder?) {
             val b = service ?: run { kwSvcLost("no binder"); return }
@@ -1488,6 +1510,9 @@ class HwActivity : FragmentActivity() {
             kwSvc = b
             android.util.Log.i("HwLink", "K-H link up")
             if (kwSvcWant) warmKwallet(true)
+            /* v1.9.24: register for Kwallet's instant events (a Kwallet before 3.99.24 ignores this code) */
+            kwLinkEx.execute { val d = android.os.Parcel.obtain(); try { d.writeStrongBinder(kwWatch); b.transact(KW_SVC_WATCH, d, null, android.os.IBinder.FLAG_ONEWAY) } catch (_: Exception) {} finally { d.recycle() } }
+            kwEvent("up")
         }
         /* Kwallet's process went away; the system reconnects by itself (BIND_AUTO_CREATE), and the beat rebinds if it does not */
         override fun onServiceDisconnected(name: android.content.ComponentName?) { kwSvcDrop() }
@@ -1560,7 +1585,7 @@ class HwActivity : FragmentActivity() {
         var ok = false; var ready = true
         try {
             ok = b.transact(KW_SVC_PING, d, r, 0)
-            if (ok) { kwSvcProto = r.readInt(); ready = r.readInt() == 1 }
+            if (ok) { kwSvcProto = r.readInt(); ready = r.readInt() == 1; if (kwSvcProto >= 3) { val st = try { r.readString() ?: "" } catch (_: Exception) { "" }; if (st.isNotEmpty() && st != kwStamp) { val was = kwStamp; kwStamp = st; if (was.isNotEmpty()) runOnUiThread { kwEvent("stamp") } } } }
         } catch (_: Exception) { ok = false } finally { d.recycle(); r.recycle(); kwSvcPinging = false }
         runOnUiThread {
             if (kwSvc !== b) return@runOnUiThread

@@ -1,5 +1,10 @@
 # Changelog
 
+## Kwallet 3.99.24 / Hwallet 1.9.24
+- Real-time K-H link. Hwallet hands Kwallet an event Binder (SVC_WATCH, protocol 3), and Kwallet pushes wipe, erase, pairing, seed removed and rename to it one-way, within milliseconds. Hwallet also reacts at once when Kwallet's process dies (Clear data, force stop) and when the state stamp in the 5 s ping changes. Each event applies the pending purge and re-checks Kwallet's state with no throttle, so Hwallet never keeps working against a wiped Kwallet.
+- The selected seed is everything. Internet Identity runs and throttles are per seed. Switching seeds, a new import or a new pairing fetches that seed's passkey IDs, identities, names and dates live, and the passkey chooser waits (10 s at most) for a seed this phone hasn't seen yet.
+- Pair with Hwallet: a fintech layout. There's a hero card for the picked seed (monogram, name, type and status chips, seed ID), radio seed rows, a refined address-number stepper and a "Keys stay in Kwallet" strip.
+
 ## Kwallet 3.99.23 / Hwallet 1.9.23
 - Internet Identity reads are now headless. Hwallet asks Kwallet over the bound K-H link (KwLinkService SVC_QUIET), and Kwallet's spare sign page signs the read-only identity_info calls with no window, sheet, PIN or approval. Hwallet fetches passkey IDs, identities, names and creation dates when it starts or comes back, when the browser opens Internet Identity, and before the passkey chooser. Select passkey then goes straight to the chooser with names loaded. Only icp_iiNames runs this way. Signing in still needs Confirm, and funds always go through the sheet. A seed behind "Require PIN to sign" or a locked vault answers "locked", and Hwallet shows identity numbers without asking.
 - Kwallet address finder: TON addresses from other apps. It adds TON paths m/44'/607'/0'/0'/{i}' (Tychi, Tether WDK), m/44'/607'/{i}'/0'/0' and m/44'/607'/0'/{i}', plus TON-native keys (Tonkeeper / Tonhub words, no path). It matches W5, v4R2, v3R2 and v3R1 wallets. A W5 or v4R2 match from a full pasted address is saved for that seed, and its next Hwallet pairing (#0) uses that TON account for sending.

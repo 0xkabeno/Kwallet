@@ -38,12 +38,18 @@ class KwLinkService : Service() {
 
     private val link = object : Binder() {
         override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
-            if (code != SVC_PING && code != SVC_WARM && code != SVC_FEED && code != SVC_QUIET) return super.onTransact(code, data, reply, flags)
+            if (code != SVC_PING && code != SVC_WARM && code != SVC_FEED && code != SVC_QUIET && code != SVC_WATCH) return super.onTransact(code, data, reply, flags)
             if (!callerOk(Binder.getCallingUid())) return false
             when (code) {
                 SVC_PING -> {
                     reply?.writeInt(PROTO)
                     reply?.writeInt(if (KwWarm.ready()) 1 else 0)
+                    reply?.writeString(KwLinkState.stamp(applicationContext))   // v3.99.24 (proto 3): changes whenever Kwallet's state does
+                }
+                /* v3.99.24: Hwallet's event Binder; KwLinkState calls it one-way the instant Kwallet is wiped, erased, paired or changed */
+                SVC_WATCH -> {
+                    val cb = try { data.readStrongBinder() } catch (_: Exception) { null }
+                    if (cb != null) KwLinkState.watch(cb)
                 }
                 SVC_WARM -> ui.post { KwWarm.warm(applicationContext, "link") }
                 SVC_FEED -> {
@@ -77,11 +83,12 @@ class KwLinkService : Service() {
     override fun onUnbind(intent: Intent?): Boolean { Log.i("KwLink", "Hwallet unbound the link"); return false }
 
     companion object {
-        const val PROTO = 2   // v3.99.23: 2 = SVC_QUIET
+        const val PROTO = 3   // v3.99.23: 2 = SVC_QUIET; v3.99.24: 3 = SVC_WATCH + state stamp in the ping
         /* same numbers in Hwallet's HwActivity (KW_SVC_*) */
         const val SVC_PING = IBinder.FIRST_CALL_TRANSACTION + 11
         const val SVC_WARM = IBinder.FIRST_CALL_TRANSACTION + 12
         const val SVC_FEED = IBinder.FIRST_CALL_TRANSACTION + 13
         const val SVC_QUIET = IBinder.FIRST_CALL_TRANSACTION + 14
+        const val SVC_WATCH = IBinder.FIRST_CALL_TRANSACTION + 15
     }
 }

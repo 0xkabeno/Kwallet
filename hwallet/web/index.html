@@ -7979,6 +7979,7 @@ var APP_VERSION = '1.9.23';   /* v1.9.21: version bump */
     A = w ? chainView(w.A) : {}; if (w) A.label = w.label;   /* v1.8.13: chains turned off are left out */
     C.b = jget('hw-bal:' + wk(), {}) || {}; C.res = {}; ACT = jget('hw-acts:' + wk(), []) || []; HIST = {}; jset('hw-wid', id);
     try { if (window.hwXmrWalletChanged) hwXmrWalletChanged(); } catch (e) {}
+    try { if (A.icp && window.hwIiSync) hwIiSync('id.ai'); } catch (e) {}   /* v1.9.24: the selected seed's II names and dates, fetched live */
   }
   function saveWallets() { jset('hw-wallets', W); try { kwMapSync(W); } catch (e) {} }
   /* ---------- v1.8.34: Kwallet wipe link ----------
@@ -8150,6 +8151,15 @@ var APP_VERSION = '1.9.23';   /* v1.9.21: version bump */
     var now = Date.now(); if (KWL.busy && now - KWL.busy < 15000) return; KWL.busy = now;
     try { HwNative.kwCheck(); } catch (e) { KWL.busy = 0; }
   }
+  /* v1.9.24: Kwallet pushes every change over the K-H link the moment it happens (wipe, erase, pairing, seed removed, rename),
+     and Hwallet also hears Kwallet's process die (Clear data, force stop) and a changed state stamp on the 5 s ping. Each one
+     applies any pending purge and asks Kwallet's state now (no throttle), then refreshes the selected seed's II data. */
+  var KWEV = 0;
+  window.hwKwEvent = function (ev) {
+    try { window.hwKwPurge(); } catch (e) {}
+    if (ev === 'names') { try { window.hwKwNames(); } catch (e) {} }
+    clearTimeout(KWEV); KWEV = setTimeout(function () { KWL.busy = 0; KWL.tries = 0; kwAsk(); try { if (A.icp && window.hwIiSync) { IIQT = {}; hwIiSync('id.ai'); } } catch (e) {} }, ev === 'died' ? 400 : 30);
+  };
   window.hwKwFront = function () { window.hwKwPurge(); kwAsk(); try { if (window.hwIiSync) hwIiSync('id.ai'); } catch (e) {} };   /* v1.9.23: II names/dates refreshed headlessly when Hwallet comes back */
   window.hwKwState = function (json) {
     KWL.busy = 0; var r; try { r = JSON.parse(json) || {}; } catch (e) { return; }
@@ -8839,6 +8849,8 @@ var APP_VERSION = '1.9.23';   /* v1.9.21: version bump */
     return { n: typeof n === 'string' ? n : '', c: c > 1.4e12 && c < 4.1e12 ? c : 0 };
   }
   function iiKey() { return 'hw-ii:' + (A.icp || ''); }
+  /* v1.9.24: in-flight runs and throttles are per seed (the selected seed is everything): a seed switch or a new pairing never waits on, or is skipped by, another seed's run */
+  function iiK(rp) { return (A.icp || '') + '|' + rp; }
   /* per seed: { ids: { rp: [credHex x20] }, reg: { 'rp|i': anchor }, names: { anchor: name } } */
   function iiState() { var s = jget(iiKey(), null); return s && typeof s === 'object' ? { ids: s.ids || {}, reg: s.reg || {}, names: s.names || {}, at: s.at || {}, made: s.made || {} } : { ids: {}, reg: {}, names: {}, at: {}, made: {} }; }
   function iiSave(s) { if (A.icp) jset(iiKey(), s); }
@@ -8868,14 +8880,14 @@ var APP_VERSION = '1.9.23';   /* v1.9.21: version bump */
   var IIRUN = {};
   function iiFresh(rp) {
     var S = iiState(); if (!(S.ids[rp] || []).length) return Promise.resolve(S);
-    var job = IIRUN[rp] || (IIRUN[rp] = iiScan(rp).then(function (x) { delete IIRUN[rp]; return x; }, function () { delete IIRUN[rp]; return iiState(); }));
+    var job = IIRUN[iiK(rp)] || (IIRUN[iiK(rp)] = iiScan(rp).then(function (x) { delete IIRUN[iiK(rp)]; return x; }, function () { delete IIRUN[iiK(rp)]; return iiState(); }));
     if (Date.now() - (+S.at[rp] || 0) < 600000 || iiKnown(S, rp).length) return Promise.resolve(S);   /* v1.9.15: known identities open the sheet at once; the scan refreshes behind it */
     return Promise.race([job, new Promise(function (res) { setTimeout(function () { res(iiState()); }, 4000); })]);
   }
   /* v1.9.21: a new identity waits for a complete II scan (not the cached list), so Kwallet sees every number II already holds */
   function iiFreshFull(rp) {
     var S = iiState(); if (!(S.ids[rp] || []).length) return Promise.resolve(S);
-    var job = IIRUN[rp] || (IIRUN[rp] = iiScan(rp).then(function (x) { delete IIRUN[rp]; return x; }, function () { delete IIRUN[rp]; return iiState(); }));
+    var job = IIRUN[iiK(rp)] || (IIRUN[iiK(rp)] = iiScan(rp).then(function (x) { delete IIRUN[iiK(rp)]; return x; }, function () { delete IIRUN[iiK(rp)]; return iiState(); }));
     return Promise.race([job, new Promise(function (res) { setTimeout(function () { res(iiState()); }, 9000); })]);
   }
   function iiKnown(S, rp) { return Object.keys(S.reg).filter(function (k) { return k.indexOf(rp + '|') === 0; }).map(function (k) { var a = S.reg[k]; return { i: +k.split('|')[1], a: a, n: S.names[a] || '', c: +(S.made || {})[a] || 0 }; }); }
@@ -8907,16 +8919,16 @@ var APP_VERSION = '1.9.23';   /* v1.9.21: version bump */
   var IIQ = {}, IIQT = {};
   function iiSync(rp, force) {
     rp = rp || 'id.ai'; if (!A.icp || !p17Paired('icp') || airW()) return Promise.resolve(iiState());
-    if (IIQ[rp]) return IIQ[rp];
-    if (!force && Date.now() - (IIQT[rp] || 0) < 120000) return Promise.resolve(iiState());
-    IIQT[rp] = Date.now();
+    if (IIQ[iiK(rp)]) return IIQ[iiK(rp)];
+    if (!force && Date.now() - (IIQT[iiK(rp)] || 0) < 120000) return Promise.resolve(iiState());
+    IIQT[iiK(rp)] = Date.now();
     var S0 = iiState();
     var ids = (S0.ids[rp] || []).length ? Promise.resolve() : kQuiet('icp_iiNames', { rpId: rp, nowMs: Date.now(), list: [] }).then(function (r) { iiTake(rp, r); }, function () {});
     var job = ids.then(function () {
-      return IIRUN[rp] || (IIRUN[rp] = iiScan(rp).then(function (x) { delete IIRUN[rp]; return x; }, function () { delete IIRUN[rp]; return iiState(); }));
+      return IIRUN[iiK(rp)] || (IIRUN[iiK(rp)] = iiScan(rp).then(function (x) { delete IIRUN[iiK(rp)]; return x; }, function () { delete IIRUN[iiK(rp)]; return iiState(); }));
     }).then(function (S) { return iiFetchNames(TC_SITE, rp, S || iiState()); }).catch(function () { return iiState(); })
-      .then(function (S) { delete IIQ[rp]; return S || iiState(); });
-    IIQ[rp] = job; return job;
+      .then(function (S) { delete IIQ[iiK(rp)]; return S || iiState(); });
+    IIQ[iiK(rp)] = job; return job;
   }
   function iiSyncSoon(rp) { setTimeout(function () { try { iiSync(rp); } catch (e) {} }, 1500); }
   window.hwIiSync = function (rp) { iiSyncSoon(rp || 'id.ai'); };
@@ -8957,7 +8969,7 @@ var APP_VERSION = '1.9.23';   /* v1.9.21: version bump */
   function iiAfterSignIn(rp, calls) {
     var p = calls && calls.length
       ? iiSubmitCalls(calls).then(function (x) { return x.failed.length ? iiWait(1500).then(function () { return iiSubmitCalls(x.failed); }) : x; })
-      : (IIRUN[rp] || iiScan(rp));
+      : (IIRUN[iiK(rp)] || iiScan(rp));
     return p.catch(function () {}).then(function () {
       var m = iiMissing(iiState(), rp).filter(function (x) { return !IIAUTO[x.a]; });
       if (m.length) IINEXT[rp] = true;
@@ -20059,8 +20071,9 @@ window.hwCrashPrompt = crashPrompt;
          sheet (only moving funds asks), so a fresh import shows names and dates at once. Once per identity per session, 8 s at most. */
       /* v1.9.23: headless (no Kwallet window, no approval), and usually already done in the background, so nothing waits here */
       S = S || iiState(); delete IINEXT[rpK];
-      if (!iiMissing(S, rpK).length && !IIQ[rpK]) { iiSyncSoon(rpK); return S; }
-      return Promise.race([iiSync(rpK, true), iiWait(8000)]).then(function () { return iiState(); }, function () { return iiState(); });
+      /* v1.9.24: a seed this phone knows nothing about yet (new import, new pairing, after a wipe) waits for the live fetch too */
+      if (iiKnown(S, rpK).length && !iiMissing(S, rpK).length && !IIQ[iiK(rpK)]) { iiSyncSoon(rpK); return S; }
+      return Promise.race([iiSync(rpK, true), iiWait(10000)]).then(function () { return iiState(); }, function () { return iiState(); });
     });
     return scan.then(function (S) {   /* v1.9.16: no "Restore identities" sheet in front of the passkey any more (Settings > Internet Identity reads names and dates) */
       S = S || iiState(); var kn = iiKnown(S, rpK);

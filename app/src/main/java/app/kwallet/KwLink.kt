@@ -91,6 +91,7 @@ object KwLinkState {
         }
         if (gone.isNotEmpty()) notifyH(c, "gone", gone)
         if (renamed.length() > 0) notifyH(c, "names", renamed.keys().asSequence().toList(), renamed)
+        push(c, if (gone.isNotEmpty()) "gone" else if (renamed.length() > 0) "names" else "pair")   // v3.99.24
     }
 
     /** an in-app erase (Clear > Erase everything, the forgotten-PIN erase, Export + erase): new install id, empty mirror,
@@ -102,6 +103,23 @@ object KwLinkState {
             prefs(c).edit().putString("kid", newId()).putString("mirror", JSONObject().put("sids", JSONArray()).put("partial", false).put("at", System.currentTimeMillis()).toString()).commit()
         }
         notifyH(c, "wipe", old)
+        push(c, "wipe")   // v3.99.24
+    }
+
+    /* ---- v3.99.24: instant events over the K-H link. Hwallet (while on screen) hands us a Binder; every change here is sent to
+       it one-way at once (milliseconds), next to the broadcast that still covers a Hwallet in the background. ---- */
+    @Volatile private var hw: android.os.IBinder? = null
+    fun watch(b: android.os.IBinder) {
+        try { b.linkToDeath({ if (hw === b) hw = null }, 0) } catch (_: Exception) { return }
+        hw = b
+    }
+    /** install id + the mirror's write time: Hwallet's ping compares it and asks again when it moved */
+    fun stamp(c: Context): String = installId(c).take(12) + ":" + (mirror(c)?.optLong("at") ?: 0L)
+    fun push(c: Context, ev: String) {
+        val b = hw ?: return
+        val d = android.os.Parcel.obtain()
+        try { d.writeString(ev); d.writeString(stamp(c)); b.transact(android.os.IBinder.FIRST_CALL_TRANSACTION, d, null, android.os.IBinder.FLAG_ONEWAY) }
+        catch (_: Exception) { if (hw === b) hw = null } finally { d.recycle() }
     }
 
     private fun hwalletOk(c: Context): Boolean = try {
