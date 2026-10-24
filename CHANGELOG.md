@@ -1,5 +1,9 @@
 # Changelog
 
+## Kwallet 3.99.26 / Hwallet 1.9.26
+- The Pair with Hwallet sheet is back to the compact 3.99.23 layout. I removed the hero card, radio rows and security strip. The only refinements are pressed-row feedback, tabular numbers and tighter section labels.
+- Includes the 3.99.25 sealed II read keys.
+
 ## Kwallet 3.99.25 / Hwallet 1.9.25
 - Internet Identity names and dates now load silently with Require PIN to sign on. Until now the headless read answered "locked" there, because the signing copy doesn't exist in that mode, so Hwallet only showed numbers. Kwallet now keeps sealed II read keys: just the passkey keys of passkeys #1 to #20 for id.ai, identity.ic0.app and identity.internetcomputer.org. They hold no seed and no ICP key, so nothing that can move funds. They're sealed with the phone's secure-hardware key, written whenever the vault is open (unlock, import, pairing), and used only to sign read-only identity_info calls. Erase removes them.
 

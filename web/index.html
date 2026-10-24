@@ -12963,7 +12963,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.25';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
+const APP_VERSION = '3.99.26';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -24165,21 +24165,14 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     function det() { var o = L[pick], id = sidFmt(o.sid), n = pairWords(o);
       return (id ? HWP.kv('Seed ID', '<span class="hp-mono">' + esc(id) + '</span>', '', { sm: true }) : '') + HWP.kv('Type', o.st === 'xmr' ? 'Monero' : o.st === 'poly' ? 'Polyseed' : 'BIP39', o.p ? 'With passphrase' : '', { sm: true }) + (n ? HWP.kv('Words', String(n), '', { sm: true }) : '') +
         HWP.kv('Goes to Hwallet', 'Public addresses', 'Monero view key', { sm: true }); }
-    /* v3.99.24: fintech layout. A hero card for the picked seed (monogram, name, type chips, seed ID, address number), then the
-       seed list as selectable rows with a radio, the address number stepper, a security strip and Details. Same ids, same handlers. */
-    function hero() { var o = L[pick], nm = String(o.label || 'Wallet'), w = pairWords(o), id = sidFmt(o.sid), xm = o.st === 'xmr' || o.st === 'poly';
-      var ch = [xm ? (o.st === 'poly' ? 'Polyseed' : 'Monero') : 'BIP39'].concat(w ? [w + ' words'] : [], o.p ? ['Passphrase'] : [], [o.recs.length ? 'Paired #' + o.recs.map(function (x) { return x.index | 0; }).join(', #') : 'New']);
-      return '<div class="kpr-hero" id="kpr-hero"><div class="kpr-av" aria-hidden="true">' + esc(nm.replace(/[^A-Za-z0-9]/g, '').slice(0, 1).toUpperCase() || 'W') + '</div><div class="kpr-hm"><div class="kpr-hn">' + esc(nm) + '</div>' +
-        (id ? '<div class="kpr-hid">Seed ID <span class="hp-mono">' + esc(id) + '</span></div>' : '') + '<div class="kpr-chips">' + ch.map(function (c, i) { return '<u class="kpr-chip' + (i === ch.length - 1 ? ' kpr-st' : '') + '">' + esc(c) + '</u>'; }).join('') + '</div></div></div>'; }
-    var sec = '<div class="kpr-sec"><span class="kpr-shd" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></svg></span><div><b>Keys stay in Kwallet</b><small>Hwallet gets public addresses only' + (L[pick] && (L[pick].st === 'xmr' || L[pick].st === 'poly') ? ' and the Monero view key' : '') + '. Every signature is approved here.</small></div></div>';
-    var body = hero() + (hasCur ? '<div class="kpr-lb">Connected to Hwallet</div>' + HWP.card(opts(true), 'hp-cmp kss-ls kpr-curc', 'kss-pl0') + (L.length > 1 ? '<div class="kpr-lb">Other wallets</div>' : '') : '') + HWP.card(opts(), 'hp-cmp kss-ls', 'kss-pl') +
+    var body = (hasCur ? '<div class="kpr-lb">Connected to Hwallet</div>' + HWP.card(opts(true), 'hp-cmp kss-ls kpr-curc', 'kss-pl0') + (L.length > 1 ? '<div class="kpr-lb">Other wallets</div>' : '') : '') + HWP.card(opts(), 'hp-cmp kss-ls', 'kss-pl') +
       HWP.card(HWP.kv('Address number', '<div class="kss-stp"><button type="button" data-ns="-1" aria-label="Previous">\u2212</button><input id="kss-n" type="number" min="0" inputmode="numeric" value="' + num + '" aria-label="Address number"><button type="button" data-ns="1" aria-label="Next">+</button></div>', '', { cls: 'hp-wr kss-nrr' })) +
-      sec + HWP.details(det(), false, 'kss-det');
+      HWP.details(det(), false, 'kss-det');
     page.innerHTML = '<div class="hp-sheet kss-hp">' + HWP.sheet(pairHead(L[pick]) + body, HWP.foot({ no: 'Cancel', ok: 'Pair', okId: 'kss-go', noId: 'kss-no', hint: '' })) + '</div>';
     try { page.querySelector('.kss-hp').classList.add('kss-pair', 'kpr40'); } catch (e) {}
     /* a new pick redraws the parts that show it (rows, asset card, chip, Details) in place; the stepper keeps its node */
     function redraw() { $('kss-pl').innerHTML = opts(); if (hasCur && $('kss-pl0')) $('kss-pl0').innerHTML = opts(true); var dc = $('kss-det'), cc = dc && dc.querySelector('.hp-card'); if (cc) cc.innerHTML = det();
-      var hh = $('kpr-hero'); if (hh) hh.outerHTML = hero(); var nt = $('kpr-note'); if (nt) { var tmp = document.createElement('div'); tmp.innerHTML = pairHead(L[pick]); var nn = tmp.querySelector('#kpr-note'); if (nn) nt.outerHTML = nn.outerHTML; } wire(); }
+      var nt = $('kpr-note'); if (nt) { var tmp = document.createElement('div'); tmp.innerHTML = pairHead(L[pick]); var nn = tmp.querySelector('#kpr-note'); if (nn) nt.outerHTML = nn.outerHTML; } wire(); }
     $('kss-no').onclick = page.querySelector('[data-hp-x]').onclick = function () { finish({ status: 'rejected' }); };
     var ni = $('kss-n');
     function wire() { var mb = page.querySelector('[data-more]'); if (mb) mb.onclick = function () { allSlots = true; buzz(6); redraw(); };
@@ -27063,33 +27056,12 @@ html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#
 html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#ks8):not(#ks9):not(#ks10):not(#ks11):not(#ks12)[data-ui="miuix"] .hp-sheet .hp-btn{border-radius:16px!important}
 html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#ks8):not(#ks9):not(#ks10):not(#ks11):not(#ks12)[data-ui="m3"] .hp-sheet .hp-btn.hp-ok,html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#ks8):not(#ks9):not(#ks10):not(#ks11):not(#ks12)[data-ui="miuix"] .hp-sheet .hp-btn.hp-ok{background:var(--u-pri)!important;color:var(--u-onpri)!important}
 </style>
-<style id="k9924pair">
-/* v3.99.24: Pair with Hwallet, fintech layout */
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-hero{display:flex;gap:14px;align-items:center;margin:2px 0 14px;padding:16px;border-radius:20px;background:linear-gradient(135deg,#1f2a17 0%,#22252b 55%,#1b1d22 100%);box-shadow:inset 0 0 0 1px rgba(172,244,125,.14),0 8px 24px rgba(0,0,0,.25)}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-av{flex:0 0 48px;width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:#ACF47D;color:#07090E;font:700 21px/1 'InterE',system-ui,sans-serif;letter-spacing:-.3px}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-hm{min-width:0;flex:1}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-hn{font:650 18px/23px 'InterE',system-ui,sans-serif;color:#fff;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-hid{margin-top:2px;font:400 12.5px/17px 'InterE',system-ui,sans-serif;color:#8E9198}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-hid .hp-mono{color:#C9CBD0;letter-spacing:.4px}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-chip{text-decoration:none;height:22px;padding:0 9px;border-radius:11px;background:rgba(255,255,255,.07);color:#D9DADE;font:600 11.5px/22px 'InterE',system-ui,sans-serif;letter-spacing:.15px}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-chip.kpr-st{background:rgba(172,244,125,.16);color:#ACF47D}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-lb{padding:4px 4px 8px;font:600 11.5px/16px 'InterE',system-ui,sans-serif;color:#8E9198;letter-spacing:.08em;text-transform:uppercase}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kss-pr{position:relative;min-height:56px!important;padding-left:48px!important;transition:background .15s}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kss-pr::before{content:'';position:absolute;left:16px;top:50%;width:18px;height:18px;margin-top:-9px;border-radius:50%;box-shadow:inset 0 0 0 2px #4A4C53;transition:box-shadow .15s}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kss-pr.on{background:rgba(172,244,125,.06)!important}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kss-pr.on::before{box-shadow:inset 0 0 0 5px #ACF47D}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kss-pr.kpr-more::before{content:'+';box-shadow:none;color:#ACF47D;font:600 18px/18px 'InterE',system-ui,sans-serif;text-align:center}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kss-pr [data-n]{display:inline-block;min-width:26px;padding:0 7px;border-radius:9px;background:rgba(255,255,255,.07);font:600 12px/20px RobotoMonoE,ui-monospace,monospace;text-align:center}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kss-stp button{width:36px;height:36px;border-radius:12px;background:#2E2F34;color:#fff;font:600 18px/36px 'InterE',system-ui,sans-serif;border:0}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kss-stp input{width:64px;text-align:center;font:600 16px/36px RobotoMonoE,ui-monospace,monospace;color:#fff;background:transparent;border:0}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-sec{display:flex;gap:12px;align-items:flex-start;margin:4px 0 10px;padding:12px 14px;border-radius:16px;background:rgba(172,244,125,.07);box-shadow:inset 0 0 0 1px rgba(172,244,125,.12)}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-shd{flex:0 0 28px;width:28px;height:28px;border-radius:9px;background:rgba(172,244,125,.16);color:#ACF47D;display:flex;align-items:center;justify-content:center}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-shd svg{width:16px;height:16px}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-sec b{display:block;font:600 13.5px/18px 'InterE',system-ui,sans-serif;color:#F4F5F7}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-sec small{display:block;margin-top:2px;font:400 12.5px/17px 'InterE',system-ui,sans-serif;color:#9A9DA4}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .hp-foot .hp-ok{background:#ACF47D!important;color:#07090E!important;font-weight:650!important}
-html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair #kss-pa{display:none!important}
+<style id="k9925pair">
+/* v3.99.25: Pair sheet, light refinement only (3.99.23 layout kept): pressed feedback, tabular numbers, tighter labels */
+html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kss-pr{transition:background .12s ease}
+html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kss-pr:active{background:rgba(255,255,255,.05)!important}
+html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kss-pr [data-n],html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair #kss-n{font-variant-numeric:tabular-nums}
+html:not(#kp1):not(#kp2):not(#kp3) .kss-hp.kss-pair .kpr-lb{letter-spacing:.06em}
 </style>
 <style id="k99pair">
 /* v3.99.1: Pair sheet: the seed Hwallet uses now is its own card under a small 'Connected to Hwallet' label; the other seeds
