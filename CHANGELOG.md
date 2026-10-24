@@ -1,5 +1,16 @@
 # Changelog
 
+## Kwallet 3.99.20 / Hwallet 1.9.20
+- Fix (critical): Send and Swap no longer freeze. A missing "+" in the Send sheet broke it on every chain. A sheet that fails now backs out with a message instead of leaving an invisible layer over the screen.
+- Kwallet: with Require PIN to sign on, every PIN check from Hwallet (signing, dApp requests, new address numbers, pairing) uses Kwallet's official lock screen and asks every time. Back cancels the request.
+- Kwallet: the stray line under the connected wallet on the Pair sheet is gone.
+- Hwallet <-> Kwallet link: a persistent signature-protected link (KwLinkService) the whole time Hwallet is open. It has a 5 s heartbeat and auto-reconnect, pre-warms Kwallet's sign sheet when Send/Swap/dApp sheets open, and carries live fees over the link (with a broadcast fallback). It's off while Hwallet is in the background.
+- Hwallet: Save to address book sheet now matches each UI style.
+- Hwallet: Activity shows the real site icon (saved on connect, cached per site, with a favicon fallback).
+- Hwallet: Refresh moves to the next RPC as soon as one fails or stalls, and only names a chain that failed on every node. The network pool is bigger (48), with at most 4 requests in flight per host.
+- Hwallet: Swap quotes show as soon as the first provider answers, and better ones replace it. There's a 6 s quote timeout and a 350 ms typing debounce.
+- The test-build debug tools are removed.
+
 ## Kwallet 3.99.19 / Hwallet 1.9.19
 - Kwallet: the Internet Identity passkey chooser stays short with many identities (selected + most recent, "Show all N identities" with search).
 - Hwallet: VPN for Hwallet (Settings > Network & VPN). App-only: no system VPN prompt, other apps aren't affected. Every Hwallet request, WebSocket, both WebViews and the WalletConnect / TonConnect traffic go through it. Auto (Cloudflare WARP) or a country (WARP + Psiphon exit: 31 countries). Kill switch: when the tunnel drops, Hwallet pauses traffic ("VPN reconnecting, traffic paused") instead of going direct. Connects with endpoint scanning over IPv4 from the first try (Auto alternates plain WARP and WARP-in-WARP; a country uses Psiphon), remembers the last working server, and shows plain-English status with a "View log" sheet (last 200 lines, keys redacted, Copy). Engine: warp-plus 1.2.6 (bepass-org, MIT; includes Psiphon tunnel core, GPL-3.0), the prebuilt arm64 binary, downloaded and SHA-256 checked by CI, never committed. 64-bit ARM phones only.

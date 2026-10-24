@@ -68,6 +68,14 @@
             </intent-filter>
         </receiver>
 
+        <!-- K-H link: the persistent K <-> H link. Hwallet binds it only while it is on screen (ping every ~5 s, warm the sign
+             page, live fee / balance / price feed for the open sheet). Signature permission to bind + caller uid / signature
+             check on every transaction. Not a foreground service; it starts nothing visible and uses no network. -->
+        <service
+            android:name=".KwLinkService"
+            android:exported="true"
+            android:permission="app.kwallet.permission.SIGN_FEED" />
+
         <!-- v3.98.32: Hwallet reads this Kwallet's install id and the public IDs of its paired seeds (no PIN, no keys), so it
              erases wallets of seeds Kwallet no longer holds. Signature permission + caller uid / signature check in code. -->
         <provider

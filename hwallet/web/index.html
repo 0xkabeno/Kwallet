@@ -1583,6 +1583,8 @@ body[data-theme=dark] .snd-bks{color:#8fb0ff}
 .bk-f{padding:8px 16px 20px;display:flex;flex-direction:column;gap:12px}
 .bk-a{display:flex;align-items:center;gap:10px}
 .bk-f input{height:48px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);padding:0 14px;font:inherit;font-size:16px}
+/* v1.9.20: address line of the Save to address book sheet */
+.bk-a.bk-a2{margin:2px 4px 4px}.bk-a.bk-a2 .sp{margin:0;font-size:14px;color:var(--muted)}
 
 /* v1.8: Monero scan card, receive addresses, scan start and node sheets */
 .xs{margin:-6px 16px 14px}
@@ -3169,83 +3171,18 @@ html:not(#s41_0):not(#s41_1):not(#s41_2):not(#s41_3):not(#s41_4):not(#s41_5):not
 .kwd-opt.on .kwd-r{background:var(--accent);border-color:var(--accent)}.kwd-opt.on .kwd-r::after{display:none}
 .kws-ico span.on{animation:kwBeatIco 1.4s ease-out infinite!important}
 </style>
-<script>/* Hwallet 1.9.19-dbg1: freeze catcher, page side (test build). Answers the native watchdog's ping, records long tasks
-   and HwNative calls over 200 ms (method name, time, current view) and hands them to the native Freeze report. */
+<script>/* v1.9.20: the 1.9.19-dbg freeze catcher (tap logging, nav/render timing, overlay scanner, page-state reporter,
+   long-task / bridge / error logging for the Freeze report) is removed. Kept from it: the empty-sheet-layer safety net. */
 (function () {
-  var N = window.HwNative; if (!N) return;
-  var last = '';
-  function view() { try { return window.__hwView ? String(window.__hwView()) : '?'; } catch (e) { return '?'; } }
-  function rec(o) { o.view = view(); o.last = last; try { N.jsLog && N.jsLog(JSON.stringify(o)); } catch (e) {} }
-  window.__hwPing = function (s) { try { N.pong(s); } catch (e) {} };
-  /* dbg2: taps (what is under the finger), navigation + first frame after it, live page state for the report */
-  var TAPS = [], NAV = [];
-  function ring(a, o, n) { a.push(o); if (a.length > n) a.shift(); }
-  function ts() { var d = new Date(); return d.toTimeString().slice(0, 8) + '.' + ('00' + d.getMilliseconds()).slice(-3); }
-  function desc(el) {
-    if (!el || !el.tagName) return String(el);
-    var cs; try { cs = getComputedStyle(el); } catch (e) {}
-    var c = (typeof el.className === 'string' ? el.className : '').trim().split(/\s+/).slice(0, 3).join('.');
-    return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (c ? '.' + c : '') +
-      (cs ? ' [pos:' + cs.position + ' z:' + cs.zIndex + ' pe:' + cs.pointerEvents + ' op:' + cs.opacity + ' vis:' + cs.visibility + ']' : '');
-  }
-  window.addEventListener('error', function (e) { rec({ k: 'error', msg: String(e.message).slice(0, 300), at: String(e.filename || '').slice(-40) + ':' + e.lineno + ':' + e.colno, st: String(e.error && e.error.stack || '').slice(0, 800) }); });
-  window.addEventListener('unhandledrejection', function (e) { var r = e.reason; rec({ k: 'reject', msg: String(r && r.message || r).slice(0, 300), st: String(r && r.stack || '').slice(0, 600) }); });
+  /* 1.9.19 fix: a tap on a sheet layer left empty (no sheet inside) closes that layer instead of being eaten */
   window.addEventListener('pointerdown', function (e) {
     var t = e.target;
     try { if (t && t.classList && (t.classList.contains('hp-ov') || t.classList.contains('sheet-ov')) && !t.firstElementChild) {
-      rec({ k: 'stuck-layer', el: desc(t) }); e.preventDefault(); e.stopPropagation();
-      if (window.__hwUnstick) __hwUnstick(t); else t.parentNode.removeChild(t); return; } } catch (er) {}
-    try { var l = document.elementsFromPoint(e.clientX, e.clientY).slice(0, 4).map(desc); ring(TAPS, { t: ts(), x: Math.round(e.clientX), y: Math.round(e.clientY), view: view(), under: l }, 15); } catch (er) {}
+      e.preventDefault(); e.stopPropagation();
+      if (window.__hwUnstick) __hwUnstick(t); else t.parentNode.removeChild(t); } } catch (er) {}
   }, true);
-  window.addEventListener('click', function (e) { try { ring(TAPS, { t: ts(), click: desc(e.target), view: view() }, 15); } catch (er) {} }, true);
-  window.__hwNav = function (ev) {
-    var o = { t: ts(), e: String(ev).slice(0, 80), frame: 'pending' }, t0 = performance.now(); ring(NAV, o, 20);
-    try { requestAnimationFrame(function () { o.frame = Math.round(performance.now() - t0) + ' ms'; }); } catch (er) {}
-  };
-  window.__hwDbg = function () {
-    var vw = innerWidth, vh = innerHeight, ov = [];
-    try {
-      var all = document.body.getElementsByTagName('*');
-      for (var i = 0; i < all.length && ov.length < 12; i++) {
-        var el = all[i], cs = getComputedStyle(el);
-        if (cs.position !== 'fixed' && cs.position !== 'absolute') continue;
-        if (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
-        var r = el.getBoundingClientRect(); if (r.width * r.height < vw * vh * 0.4) continue;
-        ov.push(desc(el) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
-      }
-    } catch (e) { ov.push('scan error ' + e); }
-    var c = [vw / 2, vh / 2], top = [];
-    try { top = document.elementsFromPoint(c[0], c[1]).slice(0, 5).map(desc); } catch (e) {}
-    return JSON.stringify({ view: view(), hidden: document.hidden, vis: document.visibilityState, focus: desc(document.activeElement),
-      bodyClass: document.body && document.body.className, centre: top, fullOverlays: ov, nav: NAV, taps: TAPS, lastBridge: last }, null, 1);
-  };
-  try {
-    var names = [], seen = {}, k;
-    try { names = JSON.parse(String(N.dbgMethods ? N.dbgMethods() : '[]')) || []; } catch (e) {}
-    try { for (k in N) names.push(k); } catch (e) {}
-    var W = {}, n = 0;
-    names.forEach(function (m) {
-      if (seen[m]) return; seen[m] = 1;
-      var f; try { f = N[m]; } catch (e) { return; }
-      if (typeof f !== 'function') return;
-      if (m === 'pong' || m === 'jsLog') { W[m] = function () { return f.apply(N, arguments); }; n++; return; }
-      W[m] = function () {
-        var t = performance.now(); last = m;
-        try { return f.apply(N, arguments); }
-        finally { var d = performance.now() - t; if (d > 200) rec({ k: 'bridge', m: m, ms: Math.round(d) }); }
-      };
-      n++;
-    });
-    if (n > 10) Object.defineProperty(window, 'HwNative', { value: W, configurable: true, writable: true });
-  } catch (e) {}
-  try {
-    if (window.PerformanceObserver && (PerformanceObserver.supportedEntryTypes || []).indexOf('longtask') >= 0) {
-      new PerformanceObserver(function (l) { l.getEntries().forEach(function (e) { if (e.duration > 300) rec({ k: 'longtask', ms: Math.round(e.duration) }); }); }).observe({ entryTypes: ['longtask'] });
-    }
-  } catch (e) {}
-  /* timer drift: catches a busy page where longtask is missing (only while visible) */
-  var exp = Date.now() + 250;
-  setInterval(function () { var now = Date.now(), lag = now - exp; exp = now + 250; if (lag > 500 && !document.hidden) rec({ k: 'gap', ms: lag }); }, 250);
+  /* v1.9.20: harmless stubs in case anything still asks for the old debug hooks */
+  window.__hwPing = function () {}; window.__hwDbg = window.__hwPageState = function () { return '{}'; };
 })();
 </script>
 </head>
@@ -7809,7 +7746,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.19';
+var APP_VERSION = '1.9.20';
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8286,7 +8223,15 @@ var APP_VERSION = '1.9.19';
     var ord = urls.slice().sort(function (a, b) { return (FAST[a] || 999) - (FAST[b] || 999); });
     function one(u) { var t0 = performance.now(); return fn(u).then(function (r) { var ms = performance.now() - t0; FAST[u] = FAST[u] ? FAST[u] * 0.6 + ms * 0.4 : ms; return r; }, function (e) { FAST[u] = (FAST[u] || 800) + 1500; throw e; }); }
     var first = ord.slice(0, 2), rest = ord.slice(2);
-    return anyOf(first.map(one)).catch(function (e) { return rest.reduce(function (p, u) { return p.catch(function () { return one(u); }); }, Promise.reject(e)); });
+    /* v1.9.20: the next node is tried right away when the first two fail, and also when neither answered within 2.5 s
+       (a slow node no longer holds the chain until its timeout); the rest still go one by one */
+    var p1 = anyOf(first.map(one)); if (!rest.length) return p1;
+    var p1ok = false, restP = null; p1.then(function () { p1ok = true; }, function () {});
+    var runRest = function (e) { return restP || (restP = rest.reduce(function (p, u) { return p.catch(function () { return one(u); }); }, Promise.reject(e))); };
+    var viaFail = p1.catch(function (e) { return runRest(e); });
+    if (+window.__hwCap > 0) return viaFail;   /* v1.9.20: no extra requests at a low data speed limit */
+    var hedge = new Promise(function (r) { setTimeout(r, 2500); }).then(function () { if (p1ok) throw new Error('answered'); return runRest(new Error('slow')); });
+    return anyOf([p1, viaFail, hedge]);
   }
   /* v1.9.14: Sui switched its public JSON-RPC off (publicnode and Mysten fullnodes now answer "deprecated, use gRPC or
      GraphQL"), which left Sui balances empty. Every Sui JSON-RPC call Hwallet makes is answered here from Sui's public
@@ -8590,9 +8535,10 @@ var APP_VERSION = '1.9.19';
   function hexAscii(h) { try { h = String(h || ''); if (!h || h.length % 2) return ''; var s = ''; for (var i = 0; i < h.length; i += 2) s += String.fromCharCode(parseInt(h.substr(i, 2), 16)); return /^[\x20-\x7e]+$/.test(s) ? s : ''; } catch (e) { return ''; } }
   function fetchChain(id) {
     /* wave B (#107): one retry after 1.5 s before a chain keeps its last values */
+    /* v1.9.20: race() already falls through every node of the chain; one modest retry (600 ms) instead of two long ones */
     var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
-    var again = function (f) { return f().catch(function () { return wait(1500).then(f); }).catch(function () { return wait(4000).then(f); }); };
-    if (id === 'eth') return Promise.all(EVM.map(function (n) { return again(function () { return balEvm(n); }).then(function (o) { if (o) C.b['evm:' + n.id] = o; return o; }, function () { return null; }); }));
+    var again = function (f) { return f().catch(function () { return wait(600).then(f); }); };
+    if (id === 'eth') return Promise.all(EVM.map(function (n) { return again(function () { return balEvm(n); }).then(function (o) { if (o) C.b['evm:' + n.id] = o; refMark('evm:' + n.id, true); return o; }, function () { refMark('evm:' + n.id, false); return null; }); }));
     var f = { ton: balTon, near: balNear, icp: balIcp, sol: balSol, btc: balBtc, trx: balTrx, sui: balSui, xrp: balXrp, ada: balAda, xmr: function () { return xmrKick(); } }[id];  /* v1.8: Monero = the on-phone view-key scan */
     if (!f) return Promise.resolve(null);
     return again(function () { return f(CHBY[id]); }).then(function (o) { if (o) C.b[id] = o; return o; });
@@ -9250,13 +9196,13 @@ var APP_VERSION = '1.9.19';
   function brand(big) { return '<span class="hbrand' + (big ? ' big' : '') + '" aria-label="Hwallet"><span class="hk">H</span><span class="hw">wallet</span></span>'; }
 
   /* ---------- navigation: Wallet / Activity / Browser / Settings tabs + pushed pages ---------- */
-  var V = { v: 'home' }, stack = [], TABS = { home: 1, activity: 1, browser: 1, settings: 1 }; window.__hwView = function () { return V && V.v; };
-  function go(v, push) { try { window.__hwNav && __hwNav('go ' + (v && v.v)); } catch (e) {} if (push !== false) stack.push(V); V = Object.assign({}, v); buzz(6); snd('tick', 1000); render('in'); refreshVisible(); }
+  var V = { v: 'home' }, stack = [], TABS = { home: 1, activity: 1, browser: 1, settings: 1 };   /* v1.9.20: dbg nav hooks removed */
+  function go(v, push) { if (push !== false) stack.push(V); V = Object.assign({}, v); buzz(6); snd('tick', 1000); render('in'); refreshVisible(); }
   /* v1.3 (#50): one very light tick for the bottom bar: the phone's own clock-tick haptic (native), never a second buzz */
   function lightTick() { if (!hapOn()) return; try { if (window.HwNative && HwNative.tick) { HwNative.tick(); return; } } catch (e) {} try { if (navigator.vibrate) navigator.vibrate(6); } catch (e) {} }
   function scroller() { return $('pg') || document.scrollingElement; }
   function back() {
-    try { window.__hwNav && __hwNav('back from ' + V.v + ' depth ' + stack.length); } catch (e) {} if (!stack.length) return false; var was = V.v; V = stack.pop(); buzz(4);
+    if (!stack.length) return false; var was = V.v; V = stack.pop(); buzz(4);
     if (was === 'send' && sendIsBg(V)) { sendSheetClose(); refreshVisible(); return true; }  /* the screen behind the sheet is already there */
     render('back'); refreshVisible(); return true;
   }
@@ -9321,7 +9267,6 @@ var APP_VERSION = '1.9.19';
   }
 
   function render(anim) {
-    try { window.__hwNav && __hwNav('render ' + V.v + ' ' + anim); } catch (e) {}
     var box = $('app'); if (!box) return;
     try { ptrRoute(); } catch (e) {}   /* v1.8.11 (push 16): pull to refresh never carries over to another page */
     /* wave A (#103): Send opens as a sheet over the current screen, which stays as it is behind the dim */
@@ -10708,7 +10653,6 @@ var APP_VERSION = '1.9.19';
        page: a transparent full-screen layer that ate every tap (the "frozen" Send/Swap/Receive screens) until system Back */
     try { html = sendHtml(); }
     catch (e) {
-      try { window.HwNative && HwNative.jsLog && HwNative.jsLog(JSON.stringify({ k: 'sendHtml', err: String(e && e.message || e), st: String(e && e.stack || '').slice(0, 800), ch: V.ch, net: V.net, a: V.a })); } catch (e2) {}
       if (!fresh) return;
       V = stack.pop() || { v: 'home' }; render('back'); refreshVisible();
       toast('Send could not open (' + String(e && e.message || e).slice(0, 80) + ')'); return;
@@ -11374,7 +11318,11 @@ var APP_VERSION = '1.9.19';
   }
   function bookAsk(ch, a, done, title) {
     var cn = bookName(ch, a), cm = bookMemo(ch, a);
-    sheet('<div class="tp-h"><h3>' + esc(title || (cn ? 'Edit address' : 'Save address')) + '</h3></div><div class="bk-f"><div class="bk-a">' + bookLogo(ch) + '<span class="mono">' + esc(short(a, 8)) + '</span></div><input id="bk-n" maxlength="40" placeholder="Name (e.g. Mom, Binance)" autocomplete="off" value="' + esc(cn) + '"><input id="bk-memo" maxlength="120" placeholder="Memo or tag (optional)" autocomplete="off" value="' + esc(cm) + '" style="margin-top:8px"><button class="btn pri wide" id="bk-ok">Save</button></div>', function (ov, close) {
+    /* v1.9.20: same build as the other bottom sheets in every style (sheet h3, .lbl + .inp fields, .row2 with the standard .btn.pri) */
+    sheet('<h3>' + esc(title || (cn ? 'Edit address' : 'Save address')) + '</h3><div class="bk-a bk-a2">' + bookLogo(ch) + '<span class="sp mono">' + esc(short(a, 8)) + '</span></div>' +
+      '<div class="lbl">Name</div><div class="inp"><input id="bk-n" maxlength="40" placeholder="Name (e.g. Mom, Binance)" autocomplete="off" value="' + esc(cn) + '"></div>' +
+      '<div class="lbl">Memo or tag (optional)</div><div class="inp"><input id="bk-memo" maxlength="120" placeholder="Memo or tag (optional)" autocomplete="off" value="' + esc(cm) + '"></div>' +
+      '<div class="row2"><button type="button" class="btn" data-x>Cancel</button><button type="button" class="btn pri" id="bk-ok">Save</button></div>', function (ov, close) {
       var i = ov.querySelector('#bk-n'); setTimeout(function () { try { i.focus(); } catch (e) {} }, 250);
       ov.querySelector('#bk-ok').onclick = function () { var nm = i.value.trim(); if (!nm) { i.focus(); return; } bookSave(ch, a, nm, ov.querySelector('#bk-memo').value.trim()); buzz(8); toast('Saved'); close(); try { if (V.v === 'activity' || V.v === 'coin') histRefresh(); } catch (e) {} if (done) done(nm); };
     });
@@ -11667,6 +11615,7 @@ var APP_VERSION = '1.9.19';
   function ev39Row(e) {
     var o = itm({ ch: e.ch || '', net: e.ch === 'eth' ? e.net : undefined, hash: e.id, t: e.t, dir: e.dir, key: 'native', s: e.s || '', amt: e.amt || '', cp: '', st: 'ok', ev: 1, kind: ev39Kind(e), lbl: e.lbl, site: e.site, origin: e.origin });
     if (e.idn) o.idn = String(e.idn).slice(0, 64); if (e.sp) o.sp = String(e.sp).slice(0, 80);
+    if (e.icon && evIcoOk(e.icon)) o.icon = evIcoOk(e.icon);   /* v1.9.20: the native DB keeps labels only; the per-host cache (evIcoPut) covers it there */
     return o;
   }
   function ev39Ok(rows) { return (rows || []).filter(function (e) { return e && (e.ch ? (e.ch === 'eth' ? !e.net || chainOnFor('eth', e.net) : chainOnFor(e.ch)) : e.kind === 'alert'); }); }
@@ -11706,7 +11655,8 @@ var APP_VERSION = '1.9.19';
   }
   function ev39Ch(ns, o) { var ch = { eip155: 'eth', solana: 'sol', tron: 'trx', sui: 'sui', cardano: 'ada', cip34: 'ada', xrpl: 'xrp', btc: 'btc', bip122: 'btc', ton: 'ton', icp: 'icp', near: 'near' }[ns] || ''; var net = null; if (ch === 'eth') { try { var n = EVMID[brCid(o)]; net = n ? n.id : (EVM[0] || {}).id; } catch (e) { net = (EVM[0] || {}).id; } } return { ch: ch, net: net }; }
   function ev39Conn(o, site, nss, off) {
-    (nss || []).forEach(function (ns) { var c = ev39Ch(ns, o); if (!c.ch) return; ev39Add({ ch: c.ch, net: c.net, dir: off ? 'disconnect' : 'connect', lbl: off ? 'Disconnected' : 'Connected', site: String((site && (site.name || site.host)) || o || '').slice(0, 60), origin: String(o || '').slice(0, 200) }); });
+    var ico = evIcoOk(site && site.icon); try { evIcoPut(hostOf(o || ''), ico); } catch (e) {}   /* v1.9.20: the dApp's icon is kept with the record and per host */
+    (nss || []).forEach(function (ns) { var c = ev39Ch(ns, o); if (!c.ch) return; ev39Add({ ch: c.ch, net: c.net, dir: off ? 'disconnect' : 'connect', lbl: off ? 'Disconnected' : 'Connected', site: String((site && (site.name || site.host)) || o || '').slice(0, 60), origin: String(o || '').slice(0, 200), icon: ico }); });
   }
   /* from callK(): a Kwallet answer to a dApp request */
   function ev39K(req, o) {
@@ -12388,10 +12338,43 @@ var APP_VERSION = '1.9.19';
     if (d === 'disconnect') return 'Disconnected from ' + site;
     return String(x.lbl || 'App') + ' \u00b7 ' + site;
   }
-  function evIcon(x) { try { var r = brSites()[x.origin]; return r && r.icon ? r.icon : ''; } catch (e) { return ''; } }
+  /* v1.9.20: dApp icons in Activity. Order: the icon saved with the record, the per-host cache (hw-ev-ico, written when a
+     connect is recorded and when a fallback loads), the browser's connected-site record, https://<host>/favicon.ico, then
+     DuckDuckGo's public favicon service; the letter only when every one fails (img onerror, hwIcoErr). */
+  var EVICO = null;
+  function evIcoOk(u) { u = String(u || ''); return (/^https:\/\//.test(u) && u.length < 400) || (/^data:image\/(png|jpeg|webp|gif|svg\+xml)[;,]/.test(u) && u.length < 12000) ? u : ''; }
+  function evIcoAll() { if (!EVICO) { try { EVICO = jget('hw-ev-ico', {}) || {}; } catch (e) { EVICO = {}; } } return EVICO; }
+  function evIcoHost(h) { h = String(h || '').toLowerCase(); return /^[a-z0-9.-]+\.[a-z0-9-]{2,}(:\d+)?$/.test(h) ? h : ''; }
+  function evIcoPut(host, u) {
+    host = evIcoHost(host); u = evIcoOk(u); if (!host || !u || (/^data:/.test(u) && u.length > 4000)) return;
+    var M = evIcoAll(); if (M[host] === u) return; delete M[host]; M[host] = u;
+    var ks = Object.keys(M); while (ks.length > 200) delete M[ks.shift()];
+    try { jset('hw-ev-ico', M); } catch (e) {}
+  }
+  function evIcon(x) {
+    var h = evIcoHost(hostOf(x.origin || '')), u = evIcoOk(x.icon);
+    if (!u && h) u = evIcoOk(evIcoAll()[h]);
+    if (!u) try { var r = brSites()[x.origin]; u = r && r.icon ? evIcoOk(r.icon) : ''; } catch (e) {}
+    return u;
+  }
+  function evSiteIcon(x) {
+    var h = evIcoHost(hostOf(x.origin || '')), nm = String(x.site || h || 'App'), L = [], first = evIcon(x);
+    if (h) { L.push('https://' + h + '/favicon.ico'); L.push('https://icons.duckduckgo.com/ip3/' + h.replace(/:\d+$/, '') + '.ico'); }
+    if (first) L = L.filter(function (u) { return u !== first; }); else first = L.shift();
+    if (!first) return siteLetter({ name: nm, host: h });
+    return '<img class="lg md dsi" alt="" src="' + esc(first) + '" data-h="' + esc(h) + '" data-f="' + esc(L.join(' ')) + '" data-l="' + esc(nm.slice(0, 1).toUpperCase()) + '" onload="hwIcoOk(this)" onerror="hwIcoErr(this)">';
+  }
+  window.hwIcoErr = function (im) {
+    try {
+      var L = String(im.getAttribute('data-f') || '').split(' ').filter(Boolean), n = L.shift();
+      if (n) { im.setAttribute('data-f', L.join(' ')); im.src = n; return; }
+      im.onerror = null; im.replaceWith(Object.assign(document.createElement('span'), { className: 'lg lt md', textContent: im.getAttribute('data-l') || '?' }));
+    } catch (e) {}
+  };
+  window.hwIcoOk = function (im) { try { var h = im.getAttribute('data-h'); if (h && im.naturalWidth > 1) evIcoPut(h, im.currentSrc || im.src); } catch (e) {} };
   function evRowHtml(x, i) {
     var cat = actCat(x), chn = x.ch ? actChainName(actChainKey(x)) : '';
-    var lg = cat === 'alert' ? '<span class="lg lt md hw-evb">' + sv('bell', 'ic') + '</span>' : siteIcon({ name: x.site || hostOf(x.origin || '') || 'App', host: hostOf(x.origin || ''), icon: evIcon(x) });
+    var lg = cat === 'alert' ? '<span class="lg lt md hw-evb">' + sv('bell', 'ic') + '</span>' : evSiteIcon(x);   /* v1.9.20 */
     var sub = cat === 'alert' ? String(x.site || '') : [cat === 'approval' && x.sp ? 'Spender ' + short(x.sp, 4) : (x.origin ? hostOf(x.origin) : ''), chn].filter(Boolean).join(' \u00b7 ');
     var right = cat === 'approval' ? String(x.amt || '') : cat === 'alert' ? 'Alert' : x.dir === 'disconnect' ? 'Ended' : 'Done';
     var when = new Date(x.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -13147,7 +13130,7 @@ var APP_VERSION = '1.9.19';
     on('kws-crash', function () { ktick(); crashSheet(); });
     on('kws-lic', function () { ktick(); licenses(); });
     on('kws-src', function () { ktick(); openExt('https://github.com/0xkabeno/Kwallet'); });
-    on('kws-ver', function () { ktick(); try { if (window.HwNative && HwNative.stallReport) HwNative.stallReport(); } catch (e) {} });  /* 1.9.19-dbg1: Freeze report */
+    on('kws-ver', function () { ktick(); });   /* v1.9.20: dbg Freeze report hook removed */
     capBind(kcats.net); kov.__capPaint = kcats.net.__capPaint;
     try { vpnBind(on); } catch (e) {}   /* v1.9.19 */
     kqa('[data-chn]').forEach(function (b) { b.onclick = function () { ktick(); chainsToggle(b.getAttribute('data-chn')); chnSync(); ksub('kws-c-chn', chnSum()); }; });
@@ -15931,20 +15914,21 @@ window.hwCrashPrompt = crashPrompt;
     if (!A[pay.ch] || !A[recv.ch]) return null;
     return ocTokens().then(function (L) {
       var pa = ocAsset(L, pay), ra = ocAsset(L, recv); if (!pa || !ra) throw new Error('Pair not on NEAR Intents');
-      return http(OC + '/v0/quote', { method: 'POST', body: JSON.stringify(ocBody(pa, ra, amt, true)), timeout: 12000 }).then(function (j) { var o = ocParse(j, amt); o.pa = pa; o.ra = ra; return o; });
+      return http(OC + '/v0/quote', { method: 'POST', body: JSON.stringify(ocBody(pa, ra, amt, true)), timeout: QMS }).then(function (j) { var o = ocParse(j, amt); o.pa = pa; o.ra = ra; return o; });   /* v1.9.20: quote timeout QMS */
     });
   }
   function lifiChain(t) { return t.ch === 'eth' ? EVMBY[t.net].chainId : t.ch === 'sol' ? LIFI_SOL : null; }
   function lifiTok(t) { return t.gas ? (t.ch === 'sol' ? SYSP : '0x0000000000000000000000000000000000000000') : t.a; }
-  function lifiGet(path) {
-    return keyed('lifi', function () { return http(LIFI + path, { headers: { 'x-lifi-api-key': '{{K:lifi}}' }, timeout: 15000 }); }, function () { return http(LIFI + path, { timeout: 15000 }); });
+  function lifiGet(path, ms) {   /* v1.9.20: ms (quotes pass QMS); status / integrator calls keep 15 s */
+    ms = ms || 15000;
+    return keyed('lifi', function () { return http(LIFI + path, { headers: { 'x-lifi-api-key': '{{K:lifi}}' }, timeout: ms }); }, function () { return http(LIFI + path, { timeout: ms }); });
   }
   function qLifi(pay, recv, amt) {
     var fc = lifiChain(pay), tc = lifiChain(recv); if (!fc || !tc || (pay.ch === 'sol' && recv.ch === 'sol')) return null;
     var from = pay.ch === 'sol' ? A.sol : A.eth, to = recv.ch === 'sol' ? A.sol : A.eth; if (!from || !to) return null;
     var qs = '?fromChain=' + fc + '&toChain=' + tc + '&fromToken=' + lifiTok(pay) + '&toToken=' + lifiTok(recv) + '&fromAmount=' + amt + '&fromAddress=' + from + '&toAddress=' + to +
       '&slippage=' + (slipBps() / 10000) + '&integrator=kwallet&fee=0.003';
-    return lifiGet('/quote' + qs).then(function (j) {
+    return lifiGet('/quote' + qs, QMS).then(function (j) {   /* v1.9.20 */
       var e = j.estimate || {}, svc = 0n, prov = 0, provT = [];
       (e.feeCosts || []).forEach(function (f) {
         if (f.feeSplit) { svc += U(f.feeSplit.integratorFee) || 0n; var lf = U(f.feeSplit.lifiFee) || 0n, p = +f.priceUSD || +(f.token && f.token.priceUSD) || 0; prov += Number(lf) / Math.pow(10, (f.token && f.token.decimals) || 0) * p; provT.push('LI.FI'); }
@@ -15986,17 +15970,18 @@ window.hwCrashPrompt = crashPrompt;
   function ixFeeAta(c) {
     return { programId: ATAP, accounts: [{ pubkey: A.sol, isSigner: true, isWritable: true }, { pubkey: c.ata, isSigner: false, isWritable: true }, { pubkey: c.owner, isSigner: false, isWritable: false }, { pubkey: c.mint, isSigner: false, isWritable: false }, { pubkey: SYSP, isSigner: false, isWritable: false }, { pubkey: c.prog || SPL, isSigner: false, isWritable: false }], data: b64e(Uint8Array.from([1])) };
   }
-  function jupBuild(pay, recv, amt, fa) {
+  function jupBuild(pay, recv, amt, fa, ms) {
+    ms = ms || 12000;   /* v1.9.20: quotes pass QMS; the build for the actual swap keeps 12 s */
     var inM = pay.gas ? WSOL : pay.a, outM = recv.gas ? WSOL : recv.a;
     var swf = SW && SW.pay ? swFee() : null, jt = swf && swf.lv === 'custom' && swf.jito ? String(swf.jito) : '';
     var qs = 'inputMint=' + inM + '&outputMint=' + outM + '&amount=' + amt + '&taker=' + A.sol + '&slippageBps=' + slipBps() + (fa ? '&platformFeeBps=' + SWBPS + '&feeAccount=' + fa.acct : '') + (jt ? '&tipAmount=' + jt : '');
     return keyed('jupiter', function () {
-      return http('https://api.jup.ag/swap/v2/build?' + qs, { headers: { 'x-api-key': '{{K:jupiter}}' }, timeout: 12000 }).then(function (j) { j.v = 2; return j; });
+      return http('https://api.jup.ag/swap/v2/build?' + qs, { headers: { 'x-api-key': '{{K:jupiter}}' }, timeout: ms }).then(function (j) { j.v = 2; return j; });
     }, function () {
       /* keyless: Metis v1 on lite-api (quote + swap-instructions) */
       var q1 = 'inputMint=' + inM + '&outputMint=' + outM + '&amount=' + amt + '&slippageBps=' + slipBps() + (fa ? '&platformFeeBps=' + SWBPS + (fa.t22 ? '&instructionVersion=V2' : '') : '');
-      return http('https://lite-api.jup.ag/swap/v1/quote?' + q1, { timeout: 12000 }).then(function (q) {
-        return http('https://lite-api.jup.ag/swap/v1/swap-instructions', { method: 'POST', timeout: 12000, body: JSON.stringify({ quoteResponse: q, userPublicKey: A.sol, feeAccount: fa ? fa.acct : undefined, wrapAndUnwrapSol: true, dynamicComputeUnitLimit: true, prioritizationFeeLamports: jt ? { jitoTipLamports: Number(jt) } : undefined }) }).then(function (s) {
+      return http('https://lite-api.jup.ag/swap/v1/quote?' + q1, { timeout: ms }).then(function (q) {
+        return http('https://lite-api.jup.ag/swap/v1/swap-instructions', { method: 'POST', timeout: ms, body: JSON.stringify({ quoteResponse: q, userPublicKey: A.sol, feeAccount: fa ? fa.acct : undefined, wrapAndUnwrapSol: true, dynamicComputeUnitLimit: true, prioritizationFeeLamports: jt ? { jitoTipLamports: Number(jt) } : undefined }) }).then(function (s) {
           return Object.assign({ v: 1, outAmount: q.outAmount, otherAmountThreshold: q.otherAmountThreshold, platformFee: q.platformFee, priceImpactPct: q.priceImpactPct }, s);
         });
       });
@@ -16007,7 +15992,7 @@ window.hwCrashPrompt = crashPrompt;
     var inM = pay.gas ? WSOL : pay.a, outM = recv.gas ? WSOL : recv.a;
     return jupFeeAcct(inM, outM).then(function (fa) {
       /* a Token-2022 fee account the route refuses (e.g. transfer-hook mints) falls back to the swap without the service fee */
-      return jupBuild(pay, recv, amt, fa).catch(function (e) { if (!(fa && fa.t22)) throw e; fa = null; return jupBuild(pay, recv, amt, null); }).then(function (j) {
+      return jupBuild(pay, recv, amt, fa, QMS).catch(function (e) { if (!(fa && fa.t22)) throw e; fa = null; return jupBuild(pay, recv, amt, null, QMS); }).then(function (j) {
         var pf = j.platformFee || {}, svc = fa ? String(pf.amount || 0) : '0', onOut = fa && fa.mint === outM;
         return { out: String(j.outAmount || 0), min: String(j.otherAmountThreshold || 0), svcBps: fa ? SWBPS : 0, svcRaw: svc, svcIn: fa ? !onOut : true, svcNote: fa ? '' : 'Not available for this pair', provTxt: 'None', fa: fa, raw: j };
       }).then(function (o) { if (!(fa && fa.create)) return o; return solRent(fa.len || 165).then(function (r) { o.rent = String(r); return o; }); });
@@ -16018,7 +16003,7 @@ window.hwCrashPrompt = crashPrompt;
     if (pay.ch !== 'trx' || recv.ch !== 'trx' || !A.trx) return null;
     var sp = swSplit(amt);
     var u = 'https://rot.endjgfsv.link/swap/router?fromToken=' + sunTok(pay) + '&toToken=' + sunTok(recv) + '&amountIn=' + sp.rest + '&typeList=PSM,CURVE,CURVE_COMBINATION,WTRX,SUNSWAP_V1,SUNSWAP_V2,SUNSWAP_V3';
-    return http(u, { timeout: 10000 }).then(function (j) {
+    return http(u, { timeout: QMS }).then(function (j) {   /* v1.9.20 */
       var best = null; ((j && j.data) || []).forEach(function (r) { if (!best || +r.amountOut > +best.amountOut) best = r; });
       if (!best) throw new Error('No SunSwap route');
       var out = decRaw(best.amountOut, recv.d) || 0n, min = out * BI(10000 - slipBps()) / 10000n;
@@ -16026,32 +16011,45 @@ window.hwCrashPrompt = crashPrompt;
       return { out: String(out), min: String(min), usdOut: +best.outUsd || 0, svcBps: SWBPS, svcRaw: String(sp.fee), svcIn: true, swapIn: String(sp.rest), provTxt: pf > 0 ? 'Pool fees ' + sigFig(pf) + ' ' + pay.s + (pfUsd ? ' (' + fmtUsd(pfUsd) + ')' : '') : 'None', route: best, raw: j };
     });
   }
+  /* v1.9.20: progressive quotes. Every provider is asked at once; the first valid quote shows (and ends the loading state)
+     as soon as it lands, a better one replaces it (unless the user picked a provider), the rest fill in as they answer.
+     QMS = per-request quote timeout. Answers for an older request (SW.seq moved on: new amount, pair, requote) are dropped. */
+  var QMS = 6000;
   function swQuote(bg) {
     var my = ++SW.seq; SW.err = ''; SW.bg = !!bg;
     var p = SW.pay, r = SW.recv, amt = p ? decRaw(SW.amt, p.d) : null;
-    if (!p || !r || !amt || amt <= 0n) { SW.quotes = []; SW.sel = ''; swPaint(); return Promise.resolve(); }
-    var jobs = [['near', qNear], ['jupiter', qJup], ['lifi', qLifi], ['sunswap', qSun]].map(function (x) {
-      var pr = null; try { pr = x[1](p, r, amt); } catch (e) { pr = Promise.reject(e); }
-      if (!pr) return null;
-      return pr.then(function (o) { o.id = x[0]; o.name = PROV[x[0]]; o.ok = U(o.out) > 0n; o.amt = String(amt); return o; }, function (e) { return { id: x[0], name: PROV[x[0]], ok: false, err: String(e && e.message || e).slice(0, 160) }; });
-    }).filter(Boolean);
-    SW.loading = jobs.length > 0; if (!bg) swPaint(); else swLive();
-    if (!jobs.length) { SW.quotes = []; SW.loading = false; SW.err = 'No provider swaps this pair yet.'; swPaint(); return Promise.resolve(); }
-    return Promise.all(jobs).then(function (qs) {
+    if (!p || !r || !amt || amt <= 0n) { SW.quotes = []; SW.sel = ''; SW.loading = false; swPaint(); return Promise.resolve(); }
+    var got = [], shown = (curQ() || {}).out;
+    var okq = function (q) { return q && q.ok; };
+    function apply(fin) {
       if (my !== SW.seq) return;
-      /* v1.7.1 (R4): a background requote that brings nothing usable keeps the last good quotes on screen (never a stale 0) */
-      if (bg && !qs.some(function (q) { return U(q.out) > 0n; }) && SW.quotes.some(function (q) { return q.ok; })) { SW.loading = false; SW.at = Date.now(); swLive(); return; }
-      var prevOut = (curQ() || {}).out;
+      var qs = got.slice();
+      if (bg) {
+        /* v1.7.1 (R4): a background requote that brings nothing usable keeps the last good quotes on screen (never a stale 0) */
+        if (fin && !qs.some(okq) && SW.quotes.some(okq)) { SW.loading = false; SW.at = Date.now(); swLive(); return; }
+        if (!fin) SW.quotes.forEach(function (q) { if (q.ok && !qs.some(function (x) { return x.id === q.id; })) qs.push(q); });   /* not answered yet: last quote stays */
+      }
       qs.sort(function (a, b) { if (a.ok !== b.ok) return a.ok ? -1 : 1; var x = U(a.out) || 0n, y = U(b.out) || 0n; return x > y ? -1 : x < y ? 1 : 0; });
-      SW.quotes = qs; SW.loading = false; SW.at = Date.now();
+      SW.quotes = qs; SW.at = Date.now();
+      if (fin || qs.some(okq)) SW.loading = false;
       var keep = SW.userSel && qs.some(function (q) { return q.id === SW.sel && q.ok; });
       if (!keep) { SW.sel = qs[0] && qs[0].ok ? qs[0].id : ''; SW.userSel = false; }
       SW.fix = null;
-      if (!qs.some(function (q) { return q.ok; })) { var fe = swFriendly(qs, p, r); SW.err = fe.t; SW.fix = fe.fix; }
+      if (fin && !qs.some(okq)) { var fe = swFriendly(qs, p, r); SW.err = fe.t; SW.fix = fe.fix; }
       swPaint(); if (DET && DET.isConnected) detPaint();
-      var nq = curQ(); if (bg && nq && prevOut && nq.out !== prevOut) swFlash(U(nq.out) > U(prevOut) ? 'up' : 'dn');
+      var nq = curQ(); if (bg && nq && shown && nq.out !== shown) swFlash(U(nq.out) > U(shown) ? 'up' : 'dn');
+      if (nq) shown = nq.out;
       swLive();
-    }, function () { if (my === SW.seq) { SW.loading = false; swPaint(); } });
+    }
+    var jobs = [['near', qNear], ['jupiter', qJup], ['lifi', qLifi], ['sunswap', qSun]].map(function (x) {
+      var pr = null; try { pr = x[1](p, r, amt); } catch (e) { pr = Promise.reject(e); }
+      if (!pr) return null;
+      return pr.then(function (o) { o.id = x[0]; o.name = PROV[x[0]]; o.ok = U(o.out) > 0n; o.amt = String(amt); return o; }, function (e) { return { id: x[0], name: PROV[x[0]], ok: false, err: String(e && e.message || e).slice(0, 160) }; })
+        .then(function (q) { if (my !== SW.seq) return q; got.push(q); if (q.ok) apply(false); return q; });
+    }).filter(Boolean);
+    SW.loading = jobs.length > 0; if (!bg) swPaint(); else swLive();
+    if (!jobs.length) { SW.quotes = []; SW.loading = false; SW.err = 'No provider swaps this pair yet.'; swPaint(); return Promise.resolve(); }
+    return Promise.all(jobs).then(function () { apply(true); }, function () { if (my === SW.seq) { SW.loading = false; swPaint(); } });
   }
   /* v1.7.1 (R4): the rate line, output and $ values flash softly when a live requote changes them */
   function swFlash(dir) {
@@ -16376,7 +16374,7 @@ window.hwCrashPrompt = crashPrompt;
   var swT = 0, swIv = 0;
   function swapAfter() {
     var inp = $('sw-amt'); if (!inp) return;
-    inp.oninput = function () { var v = inp.value.replace(',', '.').replace(/[^0-9.]/g, ''); if (v !== inp.value) inp.value = v; SW.amt = v; SW.quotes = []; SW.sel = ''; swPaint(); clearTimeout(swT); swT = setTimeout(swQuote, 320); };
+    inp.oninput = function () { var v = inp.value.replace(',', '.').replace(/[^0-9.]/g, ''); if (v !== inp.value) inp.value = v; SW.amt = v; SW.quotes = []; SW.sel = ''; SW.seq++; SW.loading = false; swPaint(); clearTimeout(swT); swT = setTimeout(swQuote, 350); };   /* v1.9.20: 350 ms debounce; SW.seq++ drops answers still on the way for the old amount */
     document.querySelectorAll('#swp [data-sw]').forEach(function (b) { b.onclick = function () { swAct(b.getAttribute('data-sw')); }; });
     $('sw-go').onclick = swGo;
     swPreload();
@@ -17229,10 +17227,18 @@ window.hwCrashPrompt = crashPrompt;
     /* hard stop: whatever the refresh does, the spinner is gone after 12 s */
     setTimeout(function () { if (tok === PTR.tok && PTR.busy) ptrHardReset(); }, PTR_HARD);
     var t0 = Date.now();
+    /* v1.9.20: no toast for a chain that is only slow. Once the refresh this pull started has finished, name the chains
+       that failed on every node (and the retry) during it; nothing for background refreshes (they never come here) */
+    var key0 = PTR.key;
+    job.then(function () {
+      if (fromBtn || key0 !== ptrKey()) return;
+      var bad = refFailedSince(t0); if (!bad.length) return;
+      var nm = bad.length === 1 ? bad[0] : bad.length === 2 ? bad[0] + ' and ' + bad[1] : bad.slice(0, -1).join(', ') + ' and ' + bad[bad.length - 1];
+      toast(nm + ' did not answer. Showing ' + (bad.length === 1 ? 'its last balance' : 'their last balances'));
+    }, function () {});
     function fin() {
       if (done) return; done = true;
       setTimeout(function () {
-        if (late && tok === PTR.tok && PTR.key === ptrKey() && !fromBtn) toast('Some networks did not answer. Showing the last known balances');
         ptrReset(tok);
       }, Math.max(0, 480 - (Date.now() - t0)));
     }
@@ -20301,10 +20307,24 @@ window.hwCrashPrompt = crashPrompt;
 
   /* ---------- live data: refresh loop (1 s possible), in-app WebSockets, incoming detection ---------- */
   var busyR = {};
+  /* v1.9.20: when each chain (EVM: each network) last answered / failed on every node, for the pull-to-refresh toast */
+  var REFST = {};
+  function refMark(k, ok) { REFST = REFST || {}; var r = REFST[k] || (REFST[k] = { ok: 0, bad: 0 }); r[ok ? 'ok' : 'bad'] = Date.now(); }
+  function refFailedSince(t0) {
+    var out = [];
+    Object.keys(REFST || {}).forEach(function (k) {
+      var r = REFST[k]; if (!(r.bad >= t0) || r.ok > r.bad) return;
+      var nm = '';
+      if (/^evm:/.test(k)) { var n = EVMBY[k.slice(4)]; if (n && chainOn(k)) nm = n.name; }
+      else if (A[k] && CHBY[k] && chainOn(k)) nm = CHBY[k].name;
+      if (nm && out.indexOf(nm) < 0) out.push(nm);
+    });
+    return out;
+  }
   function refreshChain(id) {
     if (busyR[id] || !A[id]) return busyR[id] || Promise.resolve();
     var before = snapOf(id);
-    busyR[id] = fetchChain(id).then(function () { saveCache(); incoming(id, before); }, function () {}).then(function () { busyR[id] = null; update(); });
+    busyR[id] = fetchChain(id).then(function () { if (id !== 'eth') refMark(id, true); saveCache(); incoming(id, before); }, function () { if (id !== 'eth') refMark(id, false); }).then(function () { busyR[id] = null; update(); });
     return busyR[id];
   }
   function refreshAll(fast) { return Promise.all([fetchPrices(fast).then(update, function () {})].concat(CH.map(function (c) { return refreshChain(c.id); }))); }

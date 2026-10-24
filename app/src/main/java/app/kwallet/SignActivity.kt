@@ -138,9 +138,14 @@ class SignActivity : KwActivity() {
         override fun onReceive(c: Context, i: Intent) {
             val id = i.getStringExtra("id") ?: return
             val f = i.getStringExtra("feed") ?: return
-            if (replied || id.isEmpty() || id != reqId || f.length > 262144) return
-            wv?.evaluateJavascript("window.kwFeed&&kwFeed(${JSONObject.quote(f)})", null)
+            onFeed(id, f)
         }
+    }
+    /** K-H link: one live feed for the open request, from the SIGN_FEED broadcast or from Hwallet's bound link
+     *  (KwLinkService). Main thread. Both paths hand the page exactly the same data. */
+    internal fun onFeed(id: String, f: String) {
+        if (replied || id.isEmpty() || id != reqId || f.length > 262144) return
+        wv?.evaluateJavascript("window.kwFeed&&kwFeed(${JSONObject.quote(f)})", null)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -160,6 +165,7 @@ class SignActivity : KwActivity() {
         super.onCreate(null)
         @Suppress("DEPRECATION") overridePendingTransition(0, 0)
         if (!ok) { replied = true; finish(); return }
+        open = this   // K-H link: KwLinkService delivers Hwallet's live feed here
         dogH.postDelayed(dogReveal, 10000)
         try {
             hLink = intent.extras?.getBinder("kwlink")
@@ -246,6 +252,7 @@ class SignActivity : KwActivity() {
         try { hLink?.unlinkToDeath(hDeath, 0) } catch (_: Exception) {}
         if (!replied) linkSend("rejected", "Kwallet closed the sheet")
         hLink = null
+        if (open === this) open = null
         if (feedOn) { try { unregisterReceiver(feedRx) } catch (_: Exception) {}; feedOn = false }
         wv = null
         KwWarm.release(this)
@@ -262,6 +269,8 @@ class SignActivity : KwActivity() {
         const val LINK_STATUS = android.os.IBinder.FIRST_CALL_TRANSACTION + 1
         const val LINK_CANCEL = android.os.IBinder.FIRST_CALL_TRANSACTION + 2
         const val LINK_PING = android.os.IBinder.FIRST_CALL_TRANSACTION + 3
+        /** K-H link: the sign page open for Hwallet right now (main thread writes), for KwLinkService's feed */
+        @Volatile var open: SignActivity? = null
     }
 }
 

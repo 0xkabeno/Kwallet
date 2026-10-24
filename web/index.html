@@ -5397,7 +5397,12 @@ window.KwDB = (function () {
     mode: pinMode,
     /* pk33 B16: sign page only. The real PIN page as a one-off overlay: o = { sub, ok(), cancel() }. false = not available */
     ask: function (o) {
-      o = o || {}; if (!SIGNM || locked || !stored() || !window.crypto || !crypto.subtle) return false;
+      o = o || {};
+      /* v3.99.20: the sign page (also a pre-warmed one) is always SIGNM; re-check in case the bridge flag was read late */
+      if (!SIGNM && (window.__kwSign || (window.KwSign && /(^|#)sign\b/.test(location.hash)))) SIGNM = true;
+      /* v3.99.20: a lock already up on the sign page (an earlier ask) is re-used: fresh callbacks, shown again, never a bail-out */
+      if (SIGNM && locked && stored()) { onOk = null; onCancel = null; onForgot = null; locked = false; busy = false; }
+      if (!SIGNM || locked || !stored() || !window.crypto || !crypto.subtle) return false;
       kLook(true);   /* pk35 B18: Kwallet's own theme + UI style, as on its app lock */
       root.style.display = ''; root.classList.remove('kl-out');   /* pk35 B18: measure the K pose un-scaled (.kl-out = scale 1.04) */
       VW = window.innerWidth; VH = window.innerHeight; try { fit(); layout(); sizeCoins(); } catch (e) {}
@@ -12939,7 +12944,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.19';
+const APP_VERSION = '3.99.20';   /* v3.99.20: version bump (gradle derives versionName 3.99.20 / versionCode 39920 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -24944,14 +24949,20 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   function closePin(v) { if (pinOpen && !$('kss-pin')) { try { KwLock.abort(); } catch (e) {} }   /* pk33 B16 */
     var p = pinOpen; pinOpen = null; var el = $('kss-pin'); if (el) { el.remove(); kspBars(null); } if (p) p(v); }
   function pinSheet(res, msg) {
-    /* pk33 B16: a pairing request asks for the PIN on Kwallet's real lock screen (same component as the app), one-off */
-    if (REQ && REQ.action === 'pair' && window.KwLock && KwLock.ask) {
-      /* pk35 B18: the lock looks exactly like K's app lock; Back cancels the pairing ('rejected' to Hwallet) */
+    /* pk33 B16: a pairing request asks for the PIN on Kwallet's real lock screen (same component as the app), one-off.
+       v3.99.20: owner's rule - EVERY PIN auth on the sign page (sign, dApp, new address number, pair) uses Kwallet's official
+       lock (KwLock.ask), every time, also on a pre-warmed page; the old '.ksp' page is only a fallback if KwLock is truly unavailable */
+    if (window.KwLock && KwLock.ask) {
+      /* v3.99.20: no PIN stored = no PIN auth required (authOnce only gets here with a PIN, so this is a race guard) */
+      if (KwLock.hasPin && !KwLock.hasPin()) { res(true); return; }
+      /* pk35 B18: the lock looks exactly like K's app lock; Back / Cancel rejects the request ('rejected' to Hwallet) */
       var po = function (v) { if (v) res(true); else finish({ status: 'rejected' }); };
       var fin = function (v) { if (pinOpen === po) { pinOpen = null; po(v); } };
-      var oldS = $('kss-pin'); if (oldS) oldS.remove();
+      var oldS = $('kss-pin'); if (oldS) { oldS.remove(); kspBars(null); }   /* v3.99.20: never leave the .ksp page up under the lock */
+      pinOpen = po;   /* v3.99.20: set before ask() so a callback fired at once still finds its owner */
       if (KwLock.ask({ err: msg || '', ok: function () { fin(true); }, cancel: function () { fin(false); },
-          forgot: function () { if (pinOpen === po) { pinOpen = null; finish({ status: 'rejected', error: 'forgot' }); } } })) { pinOpen = po; return; }
+          forgot: function () { if (pinOpen === po) { pinOpen = null; finish({ status: 'rejected', error: 'forgot' }); } } })) return;
+      if (pinOpen === po) pinOpen = null;   /* v3.99.20: lock truly unavailable (no WebCrypto / not the sign page): fall back below */
     }
     var pass = false; try { pass = localStorage.getItem('kw-pin-kind') === 'pass'; } catch (e) {}
     var tries = 0, entry = '', el = document.createElement('div'); el.className = 'ksp' + (pass ? ' ksp-pw' : ''); el.id = 'kss-pin';
@@ -26873,6 +26884,9 @@ html:not(#ks1):not(#ks2):not(#ks3):not(#ks4):not(#ks5):not(#ks6):not(#ks7):not(#
 .kpr-lb ~ .kpr-lb{padding-top:14px}
 .kss-pair .kpr-curc{margin-bottom:0}
 .kss-pair .kpr-curc + .kpr-lb{margin-top:2px}
+/* v3.99.20: with only the connected wallet, the 'other wallets' card (#kss-pl) is empty and its border / inset shadow drew a stray
+   divider between the 'Wallet 1  #0' row and the 'Address number' row; hide it while empty (every data-ui style) */
+html:not(#k9920a):not(#k9920b) .kss-hp.kss-pair #kss-pl:empty{display:none!important}
 </style>
 
 </body>

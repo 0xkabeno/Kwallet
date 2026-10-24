@@ -64,6 +64,8 @@ object KwWarm {
         host = a
         return w
     }
+    /** K-H link: a sign page is pre-loaded or open (KwLinkService's ping answer; Hwallet warms again when it is not) */
+    fun ready(): Boolean = pre != null || host != null
     fun release(a: SignActivity) { if (host === a) host = null }
     /** after a request: have the next sign page ready (once the closing animation is done) */
     fun again(app: Context) { ui.postDelayed({ if (host == null) warm(app, "after sign") }, 1200) }
