@@ -108,6 +108,10 @@ class HwLiveService : Service() {
 
     /* balances: key -> base units; per-chain timing + backoff */
     private val snap = ConcurrentHashMap<String, BigInteger>()
+    /* v1.9.31: a seed switch/import/restart must never replay old on-chain funds as new payments. The snapshot is keyed by wallet id + address, the first
+       successful check of each chain after reload() only sets a silent baseline, and a check started before reload() is dropped */
+    private val armed = ConcurrentHashMap<String, Boolean>()
+    @Volatile private var gen = 0
     private val nextAt = ConcurrentHashMap<String, Long>()
     private val backoff = ConcurrentHashMap<String, Long>()
     private val busy = ConcurrentHashMap<String, Boolean>()
@@ -307,6 +311,7 @@ class HwLiveService : Service() {
         closeSockets()
         running = true
         histAt.clear(); catchUp = true
+        gen++; armed.clear()
         val ex = Executors.newScheduledThreadPool(8)
         exec = ex
         ex.scheduleWithFixedDelay({ tick() }, 0, 1, TimeUnit.SECONDS)
@@ -520,7 +525,7 @@ class HwLiveService : Service() {
     }
 
     private fun poll(c: JSONObject) {
-        val id = c.optString("id"); busy[id] = true
+        val id = c.optString("id"); busy[id] = true; val g = gen
         try {
             val out = HashMap<String, BigInteger>()
             val addr = c.optString("addr"); val rpc = arr(c.optJSONArray("rpc")); val toks = c.optJSONArray("tokens") ?: JSONArray()
@@ -586,7 +591,7 @@ class HwLiveService : Service() {
                 }
             }
             backoff.remove(id)
-            compare(c, out)
+            if (g == gen) compare(c, out)
         } catch (_: RateLimit) {
             backoff[id] = minOf(60000L, maxOf(2000L, (backoff[id] ?: 1000L) * 2))
         } catch (_: Exception) {
@@ -596,10 +601,17 @@ class HwLiveService : Service() {
 
     private fun compare(c: JSONObject, now: Map<String, BigInteger>) {
         var changed = false
-        for ((k, v) in now) {
+        val cid = c.optString("id"); val addr = c.optString("addr")
+        val cur = cfg.optJSONArray("watch"); var live = false
+        if (cur != null) for (i in 0 until cur.length()) { val o = cur.optJSONObject(i) ?: continue; if (o.optString("id") == cid && o.optString("addr") == addr) live = true }
+        if (!live) return
+        val first = armed.put(cid, true) == null
+        for ((k0, v) in now) {
+            val k = wid() + "|" + addr + "|" + k0
             val old = snap[k]
-            if (old != null && v > old && cfg.optBoolean("alerts", true)) alert(c, k, v.subtract(old))
-            if (old != null && v < old && cfg.optBoolean("alerts", true) && cfg.optBoolean("outAlerts", true)) alert(c, k, old.subtract(v), true)   // v1.9.14: money left the wallet
+            val ok = !first && old != null && cfg.optBoolean("alerts", true)
+            if (ok && v > old!!) alert(c, k0, v.subtract(old))
+            if (ok && v < old!! && cfg.optBoolean("outAlerts", true)) alert(c, k0, old.subtract(v), true)   // v1.9.14: money left the wallet
             if (old != v) { if (old != null) histKick(c.optString("id"), 300L); snap[k] = v; changed = true }
         }
         if (changed) saveSnap()
@@ -639,7 +651,7 @@ class HwLiveService : Service() {
     private fun loadSnap() {
         try {
             val s = getSharedPreferences(PREF, Context.MODE_PRIVATE).getString("snap", null) ?: return
-            val o = JSONObject(s); val it = o.keys(); while (it.hasNext()) { val k = it.next(); try { snap[k] = BigInteger(o.getString(k)) } catch (_: Exception) {} }
+            val o = JSONObject(s); val it = o.keys(); while (it.hasNext()) { val k = it.next(); if (!k.contains('|')) continue; try { snap[k] = BigInteger(o.getString(k)) } catch (_: Exception) {} }
         } catch (_: Exception) {}
     }
 

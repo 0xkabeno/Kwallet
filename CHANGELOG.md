@@ -1,5 +1,8 @@
 # Changelog
 
+## Kwallet 3.99.31 / Hwallet 1.9.31
+- Old payments no longer come back as new: the background service (HwLiveService) keyed balances by chain only, so after a seed switch or import it compared the new seed with the previous one and pushed old on-chain funds as Received/Sent alerts. Balances are now keyed by wallet id + address; the first check of each chain after a switch, import or restart is a silent baseline; a check that started before the switch is dropped; legacy keys are discarded. History still loads silently in the background; only live payments notify.
+
 ## Kwallet 3.99.30 / Hwallet 1.9.30
 - Incoming notifications: each seed's first balances after a launch, seed switch or import are a silent baseline, so only payments that arrive while the seed is open notify. Old receipts no longer replay on every switch or import, and a refresh that finishes after a seed switch is ignored.
 - VPN Auto: now Psiphon with no EgressRegion, so Psiphon picks its best server, riding WARP like a country. If Psiphon is missing or fails twice in Auto, it falls back to plain WARP until the VPN is toggled or the location changes.
