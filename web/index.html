@@ -12963,7 +12963,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.24';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
+const APP_VERSION = '3.99.25';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -23056,12 +23056,42 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
      It is sealed with a key that never leaves this phone's secure hardware. Require PIN to sign removes it. */
   function syncStore(all) {
     all = all || load();
+    try { iiSeal(all); } catch (e) {}   /* v3.99.24: II read keys, also with Require PIN to sign */
     if (reqPin() || !all.length || !teeOk() || !(window.crypto && crypto.subtle)) { try { localStorage.removeItem(SK); } catch (e) {} return Promise.resolve(false); }
     var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
     var body = new TextEncoder().encode(JSON.stringify(all.map(function (r) { return { id: r.id, m: r.m, p: r.p || '', index: r.index, seedType: r.seedType }; })));
     return teeKey(salt).then(function (k) { return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv, additionalData: new TextEncoder().encode(SK) }, k, body); })
       .then(function (ct) { localStorage.setItem(SK, JSON.stringify({ v: 1, salt: b64(salt), iv: b64(iv), ct: b64(ct) })); return true; }, function () { return false; });
   }
+  /* v3.99.24: "II read keys". With Require PIN to sign, the signing copy is gone, so the headless identity_info reads had no key.
+     This copy holds ONLY the passkey keys of Internet Identity passkeys #1..#20 (id.ai, identity.ic0.app,
+     identity.internetcomputer.org) of each ICP pairing: no seed, no ICP key, nothing that can move funds. It is sealed with the
+     same secure-hardware key and written whenever the vault is open; the quiet path signs only read-only identity_info with it. */
+  var IISK = 'kw-ii-sk', IIRPS = ['id.ai', 'identity.ic0.app', 'identity.internetcomputer.org'];
+  function iiSeal(all) {
+    all = all || load(); var KP = window.KwPasskey;
+    if (!all.length || !KP || !teeOk() || !(window.crypto && crypto.subtle)) return Promise.resolve(false);
+    var out = {};
+    all.forEach(function (r) {
+      try {
+        if (!r || !r.m || (r.seedType && r.seedType !== 'bip39') || !r.addrs || !r.addrs.icp) return;
+        var mm = String(r.m).trim().toLowerCase().split(/\s+/).join(' ');
+        var d = FastCore.derive(FastCore.makeCtx({ net: 'icp', pathTpl: DEFAULT_PATH.icp, seedHex: getBip39SeedHex(mm, r.p || ''), pass: r.p || '', seedType: 'bip39' }), r.index | 0, true);
+        if (!d || d.address !== r.addrs.icp || !d.privateKey) return;
+        var o = {}; IIRPS.forEach(function (rp) { var L = []; for (var i = 0; i < 20; i++) L.push(KP.keyHex(d.privateKey, rp, i)); o[rp] = L; });
+        d.privateKey = null; d.pem = null; out[r.id] = o;
+      } catch (e) {}
+    });
+    var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), body = new TextEncoder().encode(JSON.stringify(out)); out = null;
+    return teeKey(salt).then(function (k) { return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv, additionalData: new TextEncoder().encode(IISK) }, k, body); })
+      .then(function (ct) { localStorage.setItem(IISK, JSON.stringify({ v: 1, salt: b64(salt), iv: b64(iv), ct: b64(ct) })); return true; }, function () { return false; });
+  }
+  function iiOpen(id) {
+    var o = jget(IISK, null); if (!o || o.v !== 1 || !teeOk()) return Promise.resolve(null);
+    return teeKey(ub64(o.salt)).then(function (k) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: ub64(o.iv), additionalData: new TextEncoder().encode(IISK) }, k, ub64(o.ct)); })
+      .then(function (b) { var a = JSON.parse(new TextDecoder().decode(b)); return a && a[id] ? a[id] : null; }, function () { return null; });
+  }
+  window.kwIiOpen = iiOpen;
   function openStore() {
     var o = jget(SK, null); if (!o || o.v !== 1 || reqPin() || !teeOk()) return Promise.resolve(null);
     return teeKey(ub64(o.salt)).then(function (k) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: ub64(o.iv), additionalData: new TextEncoder().encode(SK) }, k, ub64(o.ct)); })
@@ -23094,7 +23124,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   function kwMirrorBoot() { var P = jget(PUB, null); if (Array.isArray(P) && (+jget(PUBV, 0) || 0) >= PUBVER) kwMirror(P); }
   /* an in-app erase: the pairings, their public index and signing copy, the seed names, then Hwallet is told */
   window.KwHwWipe = function () {
-    [PK, PUB, PUBV, SK, 'kw-seed-names', 'kw-hw-bal'].forEach(function (x) { try { localStorage.removeItem(x); } catch (e) {} });
+    [PK, PUB, PUBV, SK, 'kw-ii-sk', 'kw-seed-names', 'kw-hw-bal'].forEach(function (x) { try { localStorage.removeItem(x); } catch (e) {} });
     try { if (window.HarkNative && HarkNative.kwWiped) HarkNative.kwWiped(); } catch (e) {}
   };
   function setReqPin(on) {
@@ -23107,6 +23137,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* v3.98.4: rewrite the public index once (it gains the Monero view-only data), then fill old records that lack it */
     if (!Array.isArray(jget(PUB, null)) || (+jget(PUBV, 0) || 0) < PUBVER) writePub(a);
     if (!reqPin() && !jget(SK, null)) syncStore(a);
+    else if (!jget(IISK, null)) { try { iiSeal(a); } catch (e) {} }   /* v3.99.24 */
     if (a.some(xmrMissing)) upgradeXmr().catch(function () {});
     if (a.some(function (r) { return !/^\d{10}$/.test(r.sid || ''); })) setTimeout(function () { try { sidFill(); } catch (e) {} }, 300);
   }
@@ -25731,7 +25762,23 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (rec.seedType && rec.seedType !== 'bip39') return reply({ status: 'error', error: 'seed type' });
       var sec = null;
       try { sec = secretFor(await openStore(), rec.id); if (!sec && window.KwDB && KwDB.state() !== 'locked' && !reqPin()) sec = secretFor(load(), rec.id); } catch (e) { sec = null; }
-      if (!sec) return reply({ status: 'locked' });
+      if (!sec) {   /* v3.99.24: Require PIN to sign: the sealed II read keys (passkey keys only) */
+        var ks = null; try { ks = window.kwIiOpen ? await kwIiOpen(rec.id) : null; } catch (e) { ks = null; }
+        var kl = ks && ks[rpN]; ks = null;
+        if (!Array.isArray(kl) || kl.length < 20) return reply({ status: 'locked' });
+        try {
+          var now = +P.nowMs, II = 'rdmx6-jaaaa-aaaaa-aaadq-cai';
+          var calls = nl.map(function (x) {
+            var h = kl[x.i]; if (!h) return null;
+            var arg = KwPasskey.unhex('4449444c000178' + (function (v) { var t = ''; for (var k = 0; k < 8; k++) { t += ('0' + Number(v & 255n).toString(16)).slice(-2); v >>= 8n; } return t; })(BigInt(x.a)));
+            var c = KwChains.icp.pkCall({ cose: KwPasskey.coseD(h), canister: II, method: 'identity_info', arg: arg, nowMs: now, signFn: function (msg) { return KwPasskey.assertD({ d: h, rpId: rpN, idx: x.i, challenge: msg, origin: 'https://' + rpN }); } });
+            return { i: x.i, a: x.a, envelope: c.raw, requestId: c.hash };
+          }).filter(Boolean);
+          var idl = kl.map(function (h, i) { return KwPasskey.idD(h, rpN, i); });
+          kl = null;
+          return reply({ status: 'signed', method: 'icp_iiNames', result: { calls: calls, ids: { rp: rpN, ids: idl } } });
+        } catch (e) { kl = null; return reply({ status: 'error', error: String(e && e.message || e).slice(0, 160) }); }
+      }
       var keepS = S, keepD = DS, pk = null;
       try {
         S = DS = { R: R, rec: rec, c: 'icp', net: 'icp', m: 'icp_iiNames', pkRp: rpN, nmList: nl.map(function (x) { return { i: x.i | 0, a: String(x.a) }; }) };
@@ -26314,7 +26361,18 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* v3.99.12: the public credential IDs of passkeys #1..#n for a relying party (Hwallet asks II which ones are registered) */
     function coseOf(key, rpId, idx) { var d = keyOf(key, rpId, idx), q = pub(d); d = 0n; return hex(cose(q)); }
     function ids(key, rpId, n) { var o = []; for (var i = 0; i < n; i++) { var d = keyOf(key, rpId, i); o.push(hex(credOf(rpId, i, pub(d)))); d = 0n; } return o; }
-    return { make: make, assert: assert, ids: ids, coseOf: coseOf, idxOf: idxOf, unhex: unhex, hex: hex, _t: { pub: pub, sign: sign, verify: verify, keyOf: keyOf, sha: sha } };
+    /* v3.99.24: the same passkey from its own sealed key (no ICP key, no seed): for headless identity_info reads */
+    function keyHex(key, rpId, idx) { var d = keyOf(key, rpId, idx), h = hex(be(d, 32)); d = 0n; return h; }
+    function dOf(h) { var d = bn(unhex(h)); if (d <= 0n || d >= N) throw new Error('bad key'); return d; }
+    function coseD(h) { var d = dOf(h), q = pub(d); d = 0n; return hex(cose(q)); }
+    function idD(h, rpId, idx) { var d = dOf(h), q = pub(d); d = 0n; return hex(credOf(rpId, idx, q)); }
+    function assertD(o) {
+      var d = dOf(o.d), q = pub(d), cred = credOf(o.rpId, o.idx, q);
+      var ad = cat([sha(te.encode(o.rpId)), new Uint8Array([0x1d, 0, 0, 0, 0])]), cd = client('webauthn.get', o.challenge, o.origin);
+      var sg = sign(d, sha(cat([ad, sha(cd)]))); d = 0n;
+      return { credId: hex(cred), clientData: hex(cd), authData: hex(ad), sig: hex(sg), cose: hex(cose(q)) };
+    }
+    return { make: make, assert: assert, ids: ids, coseOf: coseOf, idxOf: idxOf, unhex: unhex, hex: hex, keyHex: keyHex, coseD: coseD, idD: idD, assertD: assertD, _t: { pub: pub, sign: sign, verify: verify, keyOf: keyOf, sha: sha } };
   })();
   try { window.KwPasskey = KwPasskey; } catch (e) {}
   var PK_N = 20;   /* v3.99.12: passkeys #1..#20 of each relying party are looked up on II */

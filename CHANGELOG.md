@@ -1,5 +1,8 @@
 # Changelog
 
+## Kwallet 3.99.25 / Hwallet 1.9.25
+- Internet Identity names and dates now load silently with Require PIN to sign on. Until now the headless read answered "locked" there, because the signing copy doesn't exist in that mode, so Hwallet only showed numbers. Kwallet now keeps sealed II read keys: just the passkey keys of passkeys #1 to #20 for id.ai, identity.ic0.app and identity.internetcomputer.org. They hold no seed and no ICP key, so nothing that can move funds. They're sealed with the phone's secure-hardware key, written whenever the vault is open (unlock, import, pairing), and used only to sign read-only identity_info calls. Erase removes them.
+
 ## Kwallet 3.99.24 / Hwallet 1.9.24
 - Real-time K-H link. Hwallet hands Kwallet an event Binder (SVC_WATCH, protocol 3), and Kwallet pushes wipe, erase, pairing, seed removed and rename to it one-way, within milliseconds. Hwallet also reacts at once when Kwallet's process dies (Clear data, force stop) and when the state stamp in the 5 s ping changes. Each event applies the pending purge and re-checks Kwallet's state with no throttle, so Hwallet never keeps working against a wiped Kwallet.
 - The selected seed is everything. Internet Identity runs and throttles are per seed. Switching seeds, a new import or a new pairing fetches that seed's passkey IDs, identities, names and dates live, and the passkey chooser waits (10 s at most) for a seed this phone hasn't seen yet.
