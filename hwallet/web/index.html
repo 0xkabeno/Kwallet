@@ -9338,7 +9338,25 @@ var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
     if (id === 'eth') { var t = ethTotal(); return t == null ? '—' : fmtU(t, 18) + ' ETH'; }
     var b = C.b[id]; return b ? fmtU(b.n, CHBY[id].dec) + ' ' + CHBY[id].sym : '—';
   }
-  function totalUsd() { var t = 0; CH.forEach(function (c) { t += chainUsd(c.id); }); return t; }
+  function totalUsd() {
+    /* v1.9.36: coins turned off in Home > Chains ⋮ > Coins are left out of the total */
+    var OF = coinOff(); if (!OF.length) { var t0 = 0; CH.forEach(function (c) { t0 += chainUsd(c.id); }); return t0; }
+    var t = 0;
+    CH.forEach(function (c) {
+      if (!A[c.id]) return;
+      if (c.id === 'eth') { EVM.forEach(function (n) { assets('eth', n.id).forEach(function (r) { if (OF.indexOf(coinIdOf('eth', n.id, r)) < 0) t += usdOf(r); }); }); return; }
+      assets(c.id).forEach(function (r) { if (OF.indexOf(coinIdOf(c.id, null, r)) < 0) t += usdOf(r); });
+    });
+    return t;
+  }
+  /* v1.9.36: coins the user turned off (Home > Chains ⋮ > Coins). Ids match the Home rows: c:<chain> for a chain's own
+     coin (c:eth = ETH on every network), t:eth:<network>:<key> for EVM tokens and other gas coins, t:<chain>::<key> for tokens */
+  function coinOff() { var a = jget('hw-coinoff', []); return Array.isArray(a) ? a : []; }
+  function coinIdOf(ch, net, r) {
+    if (ch === 'eth') { var n = net && EVMBY[net]; if (!net || (r.gas && n && n.sym === 'ETH')) return 'c:eth'; return 't:eth:' + net + ':' + r.key; }
+    return r.gas || r.key === 'native' ? 'c:' + ch : 't:' + ch + '::' + r.key;
+  }
+  function coinIsOff(ch, net, r) { var a = coinOff(); return a.length ? a.indexOf(coinIdOf(ch, net, r)) >= 0 : false; }
   function anyKnown() { return CH.some(function (c) { return A[c.id] && known(c.id); }); }
 
   /* ---------- logos: bundled official logos (Gem/Trust asset repos, MIT; Monero from getmonero.org). Letter avatar only when nothing official exists ---------- */
@@ -9555,6 +9573,8 @@ var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
       var a = assets(c.id); out.push({ id: 'c:' + c.id, ch: c.id, net: null, r: a[0], coin: 1 });
       a.slice(1).forEach(function (r) { if (U(r.raw) > 0n) extra.push({ id: 't:' + c.id + '::' + r.key, ch: c.id, net: null, r: r }); });
     });
+    /* v1.9.36: coins turned off in Coins are not shown at all (not even in the hidden group) */
+    var OFF = coinOff(); if (OFF.length) { out = out.filter(function (x) { return OFF.indexOf(x.id) < 0; }); extra = extra.filter(function (x) { return OFF.indexOf(x.id) < 0; }); }
     /* v1.7.2 (S15/S18): pinned rows first; hidden rows and (with the toggle on) spam/dust tokens move to a "hidden" group */
     var PN = rowPins(), HD = rowHidden(), spam = jget('hw-hide-spam', true) !== false; HOMEHID = [];
     extra = extra.filter(function (x) { if (PN.indexOf(x.id) >= 0) return true; if (HD.indexOf(x.id) >= 0 || (spam && spamLike(x.r))) { HOMEHID.push(x); return false; } return true; });
@@ -9693,6 +9713,7 @@ var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
         EVM.forEach(function (n) { assets('eth', n.id).forEach(function (r) { if (r.gas && n.sym === 'ETH') return; out.push({ id: 'p:eth:' + n.id + ':' + r.key, ch: 'eth', net: n.id, r: r }); }); });
       } else assets(c.id).forEach(function (r, i) { out.push({ id: 'p:' + c.id + ':' + r.key, ch: c.id, net: null, r: r, coin: i === 0 }); });
     });
+    if (coinOff().length) out = out.filter(function (x) { return !coinIsOff(x.ch, x.net, x.r); });   /* v1.9.36 */
     /* funded assets first (by value), then each chain's own coin in home order, zero-balance tokens folded */
     var fund = out.filter(function (x) { return U(x.r.raw) > 0n; }).sort(function (a, b) { return usdOf(b.r) - usdOf(a.r); });
     var coins = out.filter(function (x) { return fund.indexOf(x) < 0 && x.coin; }); coins.forEach(function (x) { x.keep = true; });
@@ -19864,7 +19885,8 @@ window.hwCrashPrompt = crashPrompt;
       return '<button class="ar sm tap tc-ar" data-tc="' + k + '"' + (on ? '' : ' disabled') + '>' + alogo(ch, null, { gas: 1, s: CHBY[ch].sym }, 'md').replace(/class="lg /g, 'class="lg md ') + '<span class="am"><span class="an">' + esc(name) + '</span><span class="ap" data-tcs="' + k + '">' + esc(why) + '</span></span>' +
         (on ? '<span class="ax"><span class="aa" data-tca="' + k + '">\u2026</span><span class="au" data-tcu="' + k + '"></span></span>' : '') + '</button>';
     }
-    sheet('<h3>Clean up</h3><div class="lst">' + row('sol', 'sol', 'Solana') + row('sui', 'sui', 'Sui') + row('xrp', 'xrp', 'XRP Ledger') + '</div>', function (ov, close) {
+    sheet('<h3>Coins</h3><div class="lst"><button class="ar sm tap" data-coins><span class="lg md lt">' + sv('search') + '</span><span class="am"><span class="an">Show or hide coins</span><span class="ap">' + esc(coinOff().length ? coinOff().length + ' hidden' : 'Every coin and token Hwallet finds') + '</span></span>' + sv('chev', 'ic chev') + '</button></div>' +
+      '<h3>Clean up</h3><div class="lst">' + row('sol', 'sol', 'Solana') + row('sui', 'sui', 'Sui') + row('xrp', 'xrp', 'XRP Ledger') + '</div>', function (ov, close) {
       function put(k, sub, amt, usd) {
         var a = ov.querySelector('[data-tcs="' + k + '"]'), b = ov.querySelector('[data-tca="' + k + '"]'), c = ov.querySelector('[data-tcu="' + k + '"]');
         if (a) a.textContent = sub; if (b) b.innerHTML = amt; if (c) c.innerHTML = usd;
@@ -19889,6 +19911,7 @@ window.hwCrashPrompt = crashPrompt;
         put('xrp', [pl(nl, 'trust line'), pl(no, 'other object')].filter(Boolean).join(' \u00b7 ') + ' \u00b7 ' + more, '<span style="color:var(--hp-up,var(--up,#34c77b))">+' + esc(tcXrpS(dr)) + ' XRP</span>', gp ? money(fmtUsd(toNum(dr, 6) * gp)) : '');
       }, function (e) { put('xrp', e && e.unfunded ? 'Not activated yet' : 'Couldn\u2019t read the account', e && e.unfunded ? '0 XRP' : '\u2014', ''); });
       ov.addEventListener('click', function (e) {
+        if (e.target.closest('[data-coins]')) { buzz(4); close(); setTimeout(coinsSheet, 200); return; }   /* v1.9.36 */
         var b = e.target.closest('[data-tc]'); if (!b || b.disabled) return; var k = b.getAttribute('data-tc'); buzz(4); close();
         setTimeout(function () { if (k === 'sol') tcSolOpen(); else if (k === 'xrp') tcXrpOpen(); else tcSuiOpen(); }, 200);
       });
@@ -19898,6 +19921,46 @@ window.hwCrashPrompt = crashPrompt;
   function tcPl(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
   function tcChunks(a, n) { var o = []; for (var i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o; }
   /* the panel frame: HWP.overlay with the chain chip, Hwallet's own header line, a title; body / foot repainted in place */
+  /* v1.9.36: Home > Chains ⋮ > Coins. Every coin and token Hwallet knows for this wallet (each chain's coin, every EVM
+     network's gas coin and tokens, every token of the other chains, funded or not), with a switch each. Off = not shown
+     anywhere in Hwallet's lists (Home, Send, Receive, Search) and left out of the total, whatever it holds. Chains are not
+     touched: the chain keeps fetching, so the coin comes back with its live balance when it is switched on. Built from the
+     shared sheet, list rows and switch, so it follows the Gem, Material 3 and Miuix styles. */
+  function coinsAll() {
+    var out = [], seen = {};
+    function add(ch, net, r) { var id = coinIdOf(ch, net, r); if (seen[id]) return; seen[id] = 1; out.push({ id: id, ch: ch, net: net, r: ch === 'eth' && id === 'c:eth' ? ethCombined() : r, where: ch === 'eth' ? (id === 'c:eth' ? 'Ethereum and its networks' : (EVMBY[net] || {}).name || 'EVM') : CHBY[ch].name }); }
+    CH.forEach(function (c) {
+      if (!A[c.id] || !chainOn(c.id)) return;
+      if (c.id === 'eth') { EVM.forEach(function (n) { if (!chainOn('evm:' + n.id)) return; assets('eth', n.id).forEach(function (r) { add('eth', n.id, r); }); }); return; }
+      assets(c.id).forEach(function (r) { add(c.id, null, r); });
+    });
+    var g = out.filter(function (x) { return x.id.indexOf('c:') === 0; }), t = out.filter(function (x) { return x.id.indexOf('c:') !== 0; });
+    t.sort(function (a, b) { var d = usdOf(b.r) - usdOf(a.r); if (d) return d; var fa = U(a.r.raw) > 0n, fb = U(b.r.raw) > 0n; if (fa !== fb) return fa ? -1 : 1; return String(a.r.s || '').localeCompare(String(b.r.s || '')); });
+    return g.concat(t);
+  }
+  function coinsSheet() {
+    var L = coinsAll(), q = '';
+    function row(x, i) {
+      var off = coinIsOffId(x.id), nm = x.r.gas && x.ch !== 'eth' ? coinName(x.ch) : x.r.n || x.r.s, bal = x.r.raw == null ? '' : fmtA(x.r.raw, x.r.d) + ' ' + x.r.s;
+      return '<button class="ar sm tap hd-tg" data-ci="' + i + '">' + alogo(x.ch, x.net, x.r) + '<span class="am"><span class="an">' + esc(nm) + '</span><span class="ap">' + esc(x.where) + (bal ? ' · <span data-money>' + esc(bal) + '</span>' : '') + '</span></span><span class="tg' + (off ? '' : ' on') + '"><i></i></span></button>';
+    }
+    function body() {
+      var v = L.map(function (x, i) { return [x, i]; }).filter(function (p) { var x = p[0]; return !q || (String(x.r.s || '') + ' ' + String(x.r.n || '') + ' ' + x.where).toLowerCase().indexOf(q) >= 0; });
+      return v.length ? v.map(function (p) { return row(p[0], p[1]); }).join('') : '<div class="ar"><span class="am"><span class="ap">Nothing found</span></span></div>';
+    }
+    sheet('<h3>Coins</h3><p class="hint">Turn a coin off to hide it everywhere in Hwallet and leave it out of your total, even when it holds funds. Its chain keeps running.</p>' +
+      '<div class="srch">' + sv('search') + '<input data-cq placeholder="Search coins" autocomplete="off" spellcheck="false"></div><div class="lst" data-cl>' + body() + '</div>', function (ov) {
+      var lst = ov.querySelector('[data-cl]'), inp = ov.querySelector('[data-cq]');
+      inp.oninput = function () { q = String(inp.value || '').trim().toLowerCase(); lst.innerHTML = body(); };
+      lst.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-ci]'); if (!b) return; var x = L[+b.getAttribute('data-ci')]; if (!x) return;
+        var a = coinOff(), k = a.indexOf(x.id); if (k >= 0) a.splice(k, 1); else a.unshift(x.id); jset('hw-coinoff', a.slice(0, 500));
+        var tg = b.querySelector('.tg'); if (tg) tg.classList.toggle('on', k >= 0); buzz(6);
+        try { lastSig = ''; update(); } catch (er) {}
+      });
+    });
+  }
+  function coinIsOffId(id) { return coinOff().indexOf(id) >= 0; }
   function tcPanel(ch, sub, title) {
     var ov = HWP.overlay(HWP.topBar(CHBY[ch].name, LOGO[CHBY[ch].logo] || '') + HWP.headOwn(sub) + HWP.title(title) + '<div data-tcb>' + HWP.cap('Loading live from the network\u2026') + '</div>', '<div data-tcf></div>');
     var el = ov.el, P = { el: ov.el, close: ov.close, open: true };
