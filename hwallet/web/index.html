@@ -8376,10 +8376,10 @@ var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
        (a slow node no longer holds the chain until its timeout); the rest still go one by one */
     var p1 = anyOf(first.map(one)); if (!rest.length) return p1;
     var p1ok = false, restP = null; p1.then(function () { p1ok = true; }, function () {});
-    var runRest = function (e) { return restP || (restP = rest.reduce(function (p, u) { return p.catch(function () { return one(u); }); }, Promise.reject(e))); };
+    var runRest = function (e) { return restP || (restP = anyOf(rest.map(one))); };   /* v1.9.36: the backup nodes are asked together, first answer wins */
     var viaFail = p1.catch(function (e) { return runRest(e); });
     if (+window.__hwCap > 0) return viaFail;   /* v1.9.20: no extra requests at a low data speed limit */
-    var hedge = new Promise(function (r) { setTimeout(r, 2500); }).then(function () { if (p1ok) throw new Error('answered'); return runRest(new Error('slow')); });
+    var hedge = new Promise(function (r) { setTimeout(r, 1200); })   /* v1.9.36: backups after 1.2 s (was 2.5 s) */.then(function () { if (p1ok) throw new Error('answered'); return runRest(new Error('slow')); });
     return anyOf([p1, viaFail, hedge]);
   }
   /* v1.9.14: Sui switched its public JSON-RPC off (publicnode and Mysten fullnodes now answer "deprecated, use gRPC or
@@ -8686,7 +8686,7 @@ var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
     /* wave B (#107): one retry after 1.5 s before a chain keeps its last values */
     /* v1.9.20: race() already falls through every node of the chain; one modest retry (600 ms) instead of two long ones */
     var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
-    var again = function (f) { return f().catch(function () { return wait(600).then(f); }); };
+    var again = function (f) { return f().catch(function () { return wait(300).then(f); }); };
     var B0 = C.b;   /* v1.9.36: a result that lands after a seed switch belongs to the old seed: dropped, never written into the new seed's balances */
     if (id === 'eth') return Promise.all(EVM.map(function (n) { return again(function () { return balEvm(n); }).then(function (o) { if (o && C.b === B0) C.b['evm:' + n.id] = o; refMark('evm:' + n.id, true); return o; }, function () { refMark('evm:' + n.id, false); return null; }); }));
     var f = { ton: balTon, near: balNear, icp: balIcp, sol: balSol, btc: balBtc, trx: balTrx, sui: balSui, xrp: balXrp, ada: balAda, xmr: function () { return xmrKick(); } }[id];  /* v1.8: Monero = the on-phone view-key scan */
@@ -21278,6 +21278,8 @@ window.hwCrashPrompt = crashPrompt;
     if (A.sol) wsOne(CHBY.sol.ws, function (s) { s.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'accountSubscribe', params: [A.sol, { commitment: 'confirmed', encoding: 'base64' }] })); s.send(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'logsSubscribe', params: [{ mentions: [A.sol] }, { commitment: 'confirmed' }] })); }, function (m) { if (m.method === 'accountNotification' || m.method === 'logsNotification') wsHit('sol'); });
     if (A.btc) wsOne('wss://mempool.space/api/v1/ws', function (s) { s.send(JSON.stringify({ 'track-address': A.btc })); }, function (m) { if (m['address-transactions'] || m['block-transactions']) wsHit('btc'); });
     if (A.xrp) wsOne('wss://xrplcluster.com', function (s) { s.send(JSON.stringify({ id: 1, command: 'subscribe', accounts: [A.xrp] })); }, function (m) { if (m.type === 'transaction') wsHit('xrp'); });
+    /* v1.9.36: TON live too (TonAPI's account stream); any transaction of the address refreshes TON at once */
+    if (A.ton && window.EventSource) try { var es = new EventSource('https://tonapi.io/v2/sse/accounts/transactions?accounts=' + encodeURIComponent(A.ton)); es.onmessage = function () { wsHit('ton'); }; WS.push({ dead: false, s: es }); } catch (e) {}
   }
   /* v1.9.14: price alerts. Saved here, checked by the native live service once a minute (and on screen with every price
      update), fired once per crossing. */
