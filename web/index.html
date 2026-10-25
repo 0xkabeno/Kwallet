@@ -12963,7 +12963,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.38';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
+const APP_VERSION = '3.99.39';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -26006,15 +26006,18 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
             if (Array.isArray(P.allow) && P.allow.length && !al.length) return 'Internet Identity asked for a passkey that is not in Kwallet.';
             /* v3.99.12: one row per identity: this phone's passkeys plus the ones II knows (a fresh install with the same seed) */
             var rows = {};
-            pkL.forEach(function (e) { rows[e.i] = { i: e.i, a: e.a || '', n: e.n || '', u: e.u || 0, c: e.r ? 0 : (+e.t || 0) }; });   /* v3.99.16: c = when this phone made it */
+            pkL.forEach(function (e) { rows[e.i] = { i: e.i, a: e.a || '', n: e.n || '', u: e.u || 0, c: e.r ? 0 : (+e.t || 0), r: e.r ? 1 : 0 }; });   /* v3.99.16: c = when this phone made it. v3.99.39: r kept */
             kn.forEach(function (x) { var r0 = rows[x.i] || (rows[x.i] = { i: x.i, a: '', n: '', u: 0, r: 1 }); r0.a = x.a; if (x.n) r0.n = x.n; if (x.c) r0.c = x.c; });   /* II's creation time wins */
             var lst = Object.keys(rows).map(function (k) { return rows[k]; });
             if (al.length) { lst = lst.filter(function (r) { return al.indexOf(r.i) >= 0; }); al.forEach(function (i) { if (!lst.some(function (r) { return r.i === i; })) lst.push({ i: i, a: '', n: '', u: 0 }); }); }
             /* identities II does not know (anymore) are left out once II has answered */
             /* v3.99.15: this phone's own passkeys always stay (a slow or partial II lookup must not hide them) */
-            if (kn.length && !al.length) lst = lst.filter(function (r) { return !r.r || kn.some(function (x) { return x.i === r.i; }); });
+            /* v3.99.39: an identity Hwallet once reported (r) shows only while II still reports it. When Hwallet's live check of all 20
+               passkeys just finished (full), only what II has now is listed; nothing is guessed. */
+            if (!al.length) lst = lst.filter(function (r) { return !r.r || kn.some(function (x) { return x.i === r.i; }); });
+            if (P.full && !al.length) lst = lst.filter(function (r) { return kn.some(function (x) { return x.i === r.i; }); });
             lst.sort(function (x, y) { return (y.u || 0) - (x.u || 0) || x.i - y.i; });
-            if (!lst.length) lst = [{ i: 0, a: '', n: '', u: 0 }];
+            if (!lst.length) return P.full ? 'This seed has no passkey on Internet Identity yet. On ' + esc(rp) + ', create an identity (or add a passkey) with Kwallet first.' : 'No passkey of this seed was found on Internet Identity. Check your connection and try again, or create an identity with Kwallet first.';   /* v3.99.39: no made-up Passkey #1 */
             DS.pkRows = lst.slice(0, 20); DS.pkCands = DS.pkRows.map(function (r) { return r.i; }); DS.pkSel = DS.pkCands[0];
             DS.view = { title: 'Sign in with passkey' };
             var nm = DS.pkRows[0];
@@ -26540,6 +26543,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     else if (m === 'icp_passkey') {   /* v3.99.10 (F6b) */
       var chP = KwPasskey.unhex(String(P.challenge)), L = pkList(from), now = Date.now();
       /* v3.99.12: remember what II told Hwallet (identity number, name) for every passkey of this relying party */
+      if (P.full) L = L.filter(function (e) { return !(e.rp === DS.pkRp && e.r && !(DS.pkKnown || []).some(function (x) { return x.i === e.i; })); });   /* v3.99.39 */
       (DS.pkKnown || []).forEach(function (x) { var e = L.filter(function (q) { return q.rp === DS.pkRp && q.i === x.i; })[0]; if (!e) { e = { rp: DS.pkRp, i: x.i, c: '', h: '', n: '', t: now, u: 0, r: 1 }; L.push(e); } e.a = x.a; if (x.n) e.n = x.n; });
       if (P.op === 'create') {
         r = KwPasskey.make({ key: pk, rpId: DS.pkRp, idx: DS.pkCands[0], challenge: chP, origin: String(P.origin) });
