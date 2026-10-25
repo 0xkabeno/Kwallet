@@ -7882,7 +7882,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.35';   /* v1.9.21: version bump */
+var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8084,10 +8084,13 @@ var APP_VERSION = '1.9.35';   /* v1.9.21: version bump */
     if (!W.some(function (w) { return w.id === WID; })) WID = W[0] ? W[0].id : '';
     C = jget('hw-cache', null) || {}; if (!C.px) C.px = {}; if (!C.ch) C.ch = {}; C.res = {};
     TOK = jget('hw-tokens', {}) || {}; META = jget('hw-tokmeta', {}) || {}; RCP = jget('hw-recips', []) || [];
+    try { if (!jget('hw-balfix36', 0)) { W.forEach(function (w) { var k = w.id; jset('hw-bal:' + k, {}); if (w.ai != null) jset('hw-bal:' + k + '~' + w.ai, {}); }); jset('hw-balfix36', 1); } } catch (e) {}   /* v1.9.36: cached balances may hold another seed's funds; reread live */
     useWallet(WID);
   }
   function curW() { for (var i = 0; i < W.length; i++) if (W[i].id === WID) return W[i]; return null; }
   function useWallet(id) {
+    try { if (saveT) { clearTimeout(saveT); saveT = 0; jset('hw-bal:' + wk(), C.b); } } catch (e) {}   /* v1.9.36: the old seed's pending save goes to the old seed */
+    try { busyR = {}; INARM = {}; } catch (e) {}   /* v1.9.36: the new seed refreshes at once; its first balances are a silent baseline (no old payments notified) */
     WID = id; var w = curW(); chOffLoad(w); if (w && !(chOffMap()[w.id])) chOffSave();   /* v1.8.29: this seed's own chain switches */
     A = w ? chainView(w.A) : {}; if (w) A.label = w.label;   /* v1.8.13: chains turned off are left out */
     C.b = jget('hw-bal:' + wk(), {}) || {}; C.res = {}; ACT = jget('hw-acts:' + wk(), []) || []; HIST = {}; jset('hw-wid', id);
@@ -8684,10 +8687,11 @@ var APP_VERSION = '1.9.35';   /* v1.9.21: version bump */
     /* v1.9.20: race() already falls through every node of the chain; one modest retry (600 ms) instead of two long ones */
     var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
     var again = function (f) { return f().catch(function () { return wait(600).then(f); }); };
-    if (id === 'eth') return Promise.all(EVM.map(function (n) { return again(function () { return balEvm(n); }).then(function (o) { if (o) C.b['evm:' + n.id] = o; refMark('evm:' + n.id, true); return o; }, function () { refMark('evm:' + n.id, false); return null; }); }));
+    var B0 = C.b;   /* v1.9.36: a result that lands after a seed switch belongs to the old seed: dropped, never written into the new seed's balances */
+    if (id === 'eth') return Promise.all(EVM.map(function (n) { return again(function () { return balEvm(n); }).then(function (o) { if (o && C.b === B0) C.b['evm:' + n.id] = o; refMark('evm:' + n.id, true); return o; }, function () { refMark('evm:' + n.id, false); return null; }); }));
     var f = { ton: balTon, near: balNear, icp: balIcp, sol: balSol, btc: balBtc, trx: balTrx, sui: balSui, xrp: balXrp, ada: balAda, xmr: function () { return xmrKick(); } }[id];  /* v1.8: Monero = the on-phone view-key scan */
     if (!f) return Promise.resolve(null);
-    return again(function () { return f(CHBY[id]); }).then(function (o) { if (o) C.b[id] = o; return o; });
+    return again(function () { return f(CHBY[id]); }).then(function (o) { if (o && C.b === B0) C.b[id] = o; return o; });
   }
 
   PREP = PREP || {};
@@ -18389,6 +18393,7 @@ window.hwCrashPrompt = crashPrompt;
     var seenK = 'hw-xmr-seen:' + xmrPrimary(), seen = jget(seenK, null), first = !seen; seen = seen || {};
     var news = (st.txs || []).filter(function (t) { return t.dir === 'in' && !t.failed && !seen[t.hash]; });
     (st.txs || []).forEach(function (t) { seen[t.hash] = 1; }); jset(seenK, seen);
+    news = news.filter(function (t) { return t.pool || (t.ts && Date.now() - t.ts < 18e5); });   /* v1.9.36: a rescan or catch-up finds old payments; only new ones notify */
     if (fresh && !first) news.forEach(function (t) {
       var amt = fmtA(t.inA, 12) + ' XMR';
       var fg = true; try { fg = !window.HwNative || !HwNative.isFg || HwNative.isFg(); } catch (e) {}
@@ -21194,8 +21199,8 @@ window.hwCrashPrompt = crashPrompt;
   function refreshChain(id) {
     if (busyR[id] || !A[id]) return busyR[id] || Promise.resolve();
     var before = snapOf(id);
-    var wid0 = curW() && curW().id; busyR[id] = fetchChain(id).then(function () { if (id !== 'eth') refMark(id, true); saveCache(); incoming(id, before, wid0); }, function () { if (id !== 'eth') refMark(id, false); }).then(function () { busyR[id] = null; update(); });
-    return busyR[id];
+    var wid0 = curW() && curW().id, B0 = C.b, p = fetchChain(id).then(function () { if (C.b !== B0) return; if (id !== 'eth') refMark(id, true); saveCache(); incoming(id, before, wid0); }, function () { if (C.b !== B0) return; if (id !== 'eth') refMark(id, false); }).then(function () { if (busyR[id] === p) busyR[id] = null; update(); });
+    busyR[id] = p; return p;
   }
   function refreshAll(fast) { return Promise.all([fetchPrices(fast).then(update, function () {})].concat(CH.map(function (c) { return refreshChain(c.id); }))); }
   function refreshVisible(force) {
