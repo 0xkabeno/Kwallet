@@ -3240,6 +3240,34 @@ html.hw-brfront #br-v>*{visibility:hidden!important}
 .br-gcols button.on{border-color:var(--text)}
 .br-gin{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:15px;margin:4px 0 12px}
 </style>
+<style id="hw-brx2">
+/* v1.9.39: Kiwi/Chrome-style group card (the group's colour fills the card), bottom group strip, drag to merge, Undo */
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gcard{background:var(--gc)!important;border:0!important;padding:0 6px 6px}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gcard .br-ch{padding:10px 4px 8px 10px}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gcard .br-ch .br-gdot{display:none}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gcard .br-ct,html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gcard .br-cx{color:#0b1830!important;font-weight:600}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gcard .br-g4{background:transparent!important;padding:0!important;gap:6px!important}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gcard .br-g4>span{background:var(--card)!important;border-radius:10px}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gcard .br-g4>span.br-g4e{background:rgba(255,255,255,.35)!important}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gcard.on{box-shadow:0 0 0 2px var(--text)}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gs{order:9;justify-content:flex-start;gap:10px!important;padding:8px 12px calc(8px)!important;background:var(--card)!important;border-top:1px solid var(--line)}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gs .br-gsu{flex:0 0 auto;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:transparent;border:0;color:var(--text);padding:0}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gs .br-gsu svg{width:22px;height:22px}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gs .br-gsi{position:relative;width:44px!important;height:44px!important;border-radius:50%!important;background:var(--card2)!important;border:2px solid transparent!important;overflow:visible}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gs .br-gsi.on{border-color:var(--gc)!important}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gs .br-gsx{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--gc);color:#0b1830;display:grid;place-items:center;font-size:13px;font-weight:700;line-height:1}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gs .br-gsx svg{width:14px;height:14px}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gs .br-gsp{margin-left:auto;width:40px!important;height:40px!important;border:0!important;border-radius:50%!important}
+html:not(#zc0):not(#zc1):not(#zc2):not(#zc3):not(#zc4):not(#zc5):not(#zc6):not(#zc7):not(#zc8):not(#zc9):not(#zc10):not(#zc11):not(#zc12):not(#zc13):not(#zc14):not(#zc15) .br-gs .br-gsp svg{width:24px;height:24px}
+.br-card.br-drag{position:relative;z-index:30;pointer-events:none;box-shadow:0 12px 28px rgba(0,0,0,.45);opacity:.94;transition:none!important}
+.br-card.br-tgt,.br-gcard.br-tgt{outline:3px solid var(--acc);outline-offset:-3px;transform:scale(.95);transition:transform .12s ease}
+.br-gout{position:absolute;left:12px;right:12px;bottom:12px;z-index:31;height:56px;border-radius:16px;display:grid;place-items:center;background:var(--card);border:2px dashed var(--line);color:var(--text);font-weight:600;font-size:14px}
+.br-gout.on{border-color:var(--acc);background:var(--card2)}
+.br-snack{position:fixed;left:12px;right:12px;z-index:70;min-height:48px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:6px 8px 6px 16px;border-radius:14px;background:#2b2f36;color:#f1f3f4;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.35);transform:translateY(12px);opacity:0;transition:transform .18s ease,opacity .18s ease}
+.br-snack.show{transform:none;opacity:1}
+.br-snack span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.br-snack button{flex:0 0 auto;border:0;background:none;color:#8ab4f8;font:inherit;font-weight:700;padding:10px 12px;border-radius:10px}
+</style>
 </head>
 <body data-theme="light">
 <script>try{document.body.setAttribute("data-theme",localStorage.getItem("wallet-theme")||"light")}catch(e){}try{var __u=localStorage.getItem("hw-ui");document.documentElement.setAttribute("data-ui",__u==="m3"||__u==="miuix"?__u:"og")}catch(e){document.documentElement.setAttribute("data-ui","og")}document.documentElement.className+=" hwa";try{var __a=window.HarkNative&&HarkNative.dynamicColors?JSON.parse(String(HarkNative.dynamicColors())||'{}').a1:null;if(__a&&__a['600']&&__a['200']){var __st=document.documentElement.style;__st.setProperty('--u-dyn-l',__a['600']);__st.setProperty('--u-dyn-lo',__a['0']||'#FFFFFF');__st.setProperty('--u-dyn-d',__a['200']);__st.setProperty('--u-dyn-do',__a['800']||'#000000')}}catch(e){}</script>
@@ -7911,7 +7939,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.38';   /* v1.9.21: version bump */
+var APP_VERSION = '1.9.39';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -9091,15 +9119,17 @@ var APP_VERSION = '1.9.38';   /* v1.9.21: version bump */
     c = typeof c === 'bigint' ? Number(c / 1000000n) : 0;   /* v1.9.16: created_at : opt Timestamp (ns) -> ms, 0 when II has none */
     return { n: typeof n === 'string' ? n : '', c: c > 1.4e12 && c < 4.1e12 ? c : 0 };
   }
-  function iiKey() { return 'hw-ii:' + (A.icp || ''); }
+  /* v1.9.39: hw-ii2 (was hw-ii): every seed starts from a clean, live read once. Identities of another seed could be saved under
+     the seed that was open when a slow scan or a poll finished; every write now goes to the seed the read started on. */
+  function iiKey() { return 'hw-ii2:' + (A.icp || ''); }
   /* v1.9.24: in-flight runs and throttles are per seed (the selected seed is everything): a seed switch or a new pairing never waits on, or is skipped by, another seed's run */
   function iiK(rp) { return (A.icp || '') + '|' + rp; }
   /* per seed: { ids: { rp: [credHex x20] }, reg: { 'rp|i': anchor }, names: { anchor: name } } */
-  function iiState() { var s = jget(iiKey(), null); return s && typeof s === 'object' ? { ids: s.ids || {}, reg: s.reg || {}, names: s.names || {}, at: s.at || {}, made: s.made || {} } : { ids: {}, reg: {}, names: {}, at: {}, made: {} }; }
-  function iiSave(s) { if (A.icp) jset(iiKey(), s); }
+  function iiState(key) { var s = jget(key || iiKey(), null); return s && typeof s === 'object' ? { ids: s.ids || {}, reg: s.reg || {}, names: s.names || {}, at: s.at || {}, made: s.made || {} } : { ids: {}, reg: {}, names: {}, at: {}, made: {} }; }
+  function iiSave(s, key) { if (key) { if (key !== 'hw-ii2:') jset(key, s); } else if (A.icp) jset(iiKey(), s); }
   /* every passkey ID Kwallet gave us for this relying party, looked up on II (20 small public queries in parallel) */
   function iiScan(rp) {
-    var S = iiState(), L = S.ids[rp] || []; if (!L.length) return Promise.resolve(S);
+    var key = iiKey(), S = iiState(key), L = S.ids[rp] || []; if (!L.length) return Promise.resolve(S);
     /* v1.9.14: batches of 5 with up to 3 tries each (0.6 s, 1.5 s back-off), so a flaky connection no longer drops identities.
        A passkey that never answered keeps what we knew, and the scan is only stamped fresh when every passkey answered. */
     function one(h, i, t) {
@@ -9115,8 +9145,9 @@ var APP_VERSION = '1.9.38';   /* v1.9.21: version bump */
       return Promise.all(part).then(function (x) { R = R.concat(x); return next(); });
     }
     return next().then(function (R) {
-      var S2 = iiState(), all = true; R.forEach(function (x) { var k = rp + '|' + x.i; if (!x.ok) { all = false; return; } if (x.a) S2.reg[k] = x.a; });   /* v1.9.15: an empty answer never erases an identity we knew */
-      if (all) S2.at[rp] = Date.now(); iiSave(S2); return S2;
+      /* v1.9.39: II's answer is the truth: a passkey II answered for with no identity is dropped (a lookup that failed keeps what we knew) */
+      var S2 = iiState(key), all = true; R.forEach(function (x) { var k = rp + '|' + x.i; if (!x.ok) { all = false; return; } if (x.a) S2.reg[k] = x.a; else delete S2.reg[k]; });
+      if (all) S2.at[rp] = Date.now(); iiSave(S2, key); return key === iiKey() ? S2 : iiState();
     });
   }
   /* v1.9.13: a scan from the last 10 minutes is used as is (the sheet opens at once) and refreshed quietly; older ones get 4 s */
@@ -9138,8 +9169,9 @@ var APP_VERSION = '1.9.38';   /* v1.9.21: version bump */
   function iiFetchNames(site, rp, S) {
     var miss = iiMissing(S, rp);   /* v1.9.21: shared filter. v1.9.18: a 0 date is read again. v1.9.16: names and creation times */ if (!miss.length) return Promise.resolve(S);
     /* v1.9.23: headless over the K-H link: no Kwallet window, no PIN, no approval. Kwallet unreachable or locked: identity numbers */
+    var key = iiKey();
     return kQuiet('icp_iiNames', { rpId: rp, nowMs: Date.now(), list: miss.map(function (x) { return { i: x.i, a: x.a }; }) }).then(function (r) {
-      iiTake(rp, r); return iiSubmitNames(r);
+      if (key !== iiKey()) return iiState(); iiTake(rp, r, key); return iiSubmitNames(r);
     }, function () { return iiState(); });
   }
   /* v1.9.23: headless Kwallet reads (only icp_iiNames) over the bound K-H link. Kwallet signs them in its spare sign page with no
@@ -9166,7 +9198,7 @@ var APP_VERSION = '1.9.38';   /* v1.9.21: version bump */
     if (!force && Date.now() - (IIQT[iiK(rp)] || 0) < 120000) return Promise.resolve(iiState());
     IIQT[iiK(rp)] = Date.now();
     var S0 = iiState();
-    var ids = (S0.ids[rp] || []).length ? Promise.resolve() : kQuiet('icp_iiNames', { rpId: rp, nowMs: Date.now(), list: [] }).then(function (r) { iiTake(rp, r); }, function () {});
+    var key0 = iiKey(), ids = (S0.ids[rp] || []).length ? Promise.resolve() : kQuiet('icp_iiNames', { rpId: rp, nowMs: Date.now(), list: [] }).then(function (r) { iiTake(rp, r, key0); }, function () {});
     var job = ids.then(function () {
       return IIRUN[iiK(rp)] || (IIRUN[iiK(rp)] = iiScan(rp).then(function (x) { delete IIRUN[iiK(rp)]; return x; }, function () { delete IIRUN[iiK(rp)]; return iiState(); }));
     }).then(function (S) { return iiFetchNames(TC_SITE, rp, S || iiState()); }).catch(function () { return iiState(); })
@@ -9193,15 +9225,16 @@ var APP_VERSION = '1.9.38';   /* v1.9.21: version bump */
      overwritten with an empty name or 0 (an empty answer only marks the identity as read) */
   function iiSubmitCalls(calls) {
     calls = (calls || []).filter(function (c) { return c && c.envelope && c.requestId && c.a != null; });
+    var key = iiKey();
     return Promise.all(calls.map(function (c) { return iiReadOne(c, 0); })).then(function (L) {
-      var S2 = iiState(), failed = [];
+      var S2 = iiState(key), failed = [];
       L.forEach(function (x, i) {
         if (!x) { failed.push(calls[i]); return; }
         var a = String(x.a);
         if (x.n) S2.names[a] = String(x.n).slice(0, 64); else if (!(a in S2.names)) S2.names[a] = '';
         if (x.c) S2.made[a] = x.c; else if (!(a in S2.made)) S2.made[a] = 0;
       });
-      iiSave(S2); return { S: S2, failed: failed };
+      iiSave(S2, key); return { S: S2, failed: failed };
     });
   }
   function iiSubmitNames(r) { return iiSubmitCalls((r && r.calls) || []).then(function (x) { return x.S; }); }   /* v1.9.21: via iiSubmitCalls */
@@ -9235,12 +9268,12 @@ var APP_VERSION = '1.9.38';   /* v1.9.21: version bump */
       b.onclick = function () { b.disabled = true; b.textContent = 'Waiting for Kwallet\u2026'; iiFetchNames(TC_SITE, rp, iiState()).then(function () { close(); setTimeout(iiSheet, 280); }, function () { close(); }); };
     });
   }
-  function iiTake(rp, r) {   /* what Kwallet's passkey answer tells us (public IDs, names it knows) */
+  function iiTake(rp, r, key) {   /* what Kwallet's passkey answer tells us (public IDs, names it knows) */
     try {
-      var S = iiState(), ch = false;
+      key = key || iiKey(); var S = iiState(key), ch = false;
       if (r && r.ids && r.ids.rp === rp && Array.isArray(r.ids.ids) && r.ids.ids.every(function (h) { return /^[0-9a-f]{42}$/.test(h); })) { S.ids[rp] = r.ids.ids.slice(0, 20); ch = true; }
       ((r && r.names) || []).forEach(function (x) { if (x && x.a && /^\d{1,20}$/.test(String(x.a)) && x.n && !(x.a in S.names)) { S.names[String(x.a)] = String(x.n).slice(0, 64); ch = true; } });
-      if (ch) iiSave(S);
+      if (ch) iiSave(S, key);
     } catch (e) {}
   }
   /* token prices from DefiLlama for Cardano native assets and NEAR tokens (cardano:<policy><name>, near:<contract>), every 5 minutes */
@@ -10395,7 +10428,7 @@ var APP_VERSION = '1.9.38';   /* v1.9.21: version bump */
     /* v1.9.0: NEAR access key (nonce lookups) and the ICP public key + ledger account ID */
     try { var tpk = p.pks && String(p.pks.ton || ''); if (na.ton && /^[0-9a-f]{64}$/i.test(tpk)) jset('hw-tonpk:' + na.ton, tpk.toLowerCase()); if (na.ton && /^[A-Za-z0-9+/=]{40,2000}$/.test(String(p.tonInit || ''))) jset('hw-toninit:' + na.ton, String(p.tonInit)); } catch (e) {}   /* v1.9.14 */
     try { var npk = p.pks && String(p.pks.near || ''); if (na.near && /^ed25519:[1-9A-HJ-NP-Za-km-z]{43,44}$/.test(npk)) jset('hw-nearpk:' + na.near, npk); } catch (e) {}
-    try { var iids = p.pks && p.pks.iiIds; if (na.icp && Array.isArray(iids) && iids.length <= 20 && iids.every(function (h) { return /^[0-9a-f]{42}$/.test(String(h)); })) { var ik = 'hw-ii:' + na.icp, is0 = jget(ik, null) || {}; is0.ids = is0.ids || {}; is0.ids['id.ai'] = iids.slice(); jset(ik, is0); } } catch (e) {}   /* v1.9.12 */
+    try { var iids = p.pks && p.pks.iiIds; if (na.icp && Array.isArray(iids) && iids.length <= 20 && iids.every(function (h) { return /^[0-9a-f]{42}$/.test(String(h)); })) { var ik = 'hw-ii2:' + na.icp, is0 = jget(ik, null) || {}; is0.ids = is0.ids || {}; is0.ids['id.ai'] = iids.slice(); jset(ik, is0); } } catch (e) {}   /* v1.9.12 */
     try { var ipk = p.pks && String(p.pks.icp || ''), iac = p.pks && String(p.pks.icpAcct || ''); if (na.icp && /^04[0-9a-f]{128}$/.test(ipk)) jset('hw-icppk:' + na.icp, ipk); if (na.icp && /^[0-9a-f]{64}$/.test(iac)) jset('hw-icpacct:' + na.icp, iac); } catch (e) {}
     return na;
   }
@@ -15109,7 +15142,7 @@ window.hwCrashPrompt = crashPrompt;
   function brGrpAdd(tabId, gid) { var t = BRM.get(BR, tabId); if (!t || t.inc || !brGrp(gid)) return; t.g = gid; BRM.prune(BR); brSave(true); }
   function brGrpOut(tabId) { var t = BRM.get(BR, tabId); if (!t) return; delete t.g; BRM.prune(BR); if (BRU.grp && !brGrpTabs(BRU.grp).length) BRU.grp = null; brSave(true); }
   function brGrpUngroup(gid) { BR.tabs.forEach(function (t) { if (t.g === gid) delete t.g; }); BRM.prune(BR); if (BRU.grp === gid) BRU.grp = null; brSave(true); brPaint(); }
-  function brGrpClose(gid) { brGrpTabs(gid).forEach(function (t) { brIncDrop(t.id); BRM.close(BR, t.id); delete BRL[t.id]; brNat('brClose', t.id); }); BRM.prune(BR); if (BRU.grp === gid) BRU.grp = null; brSave(true); brShown = ''; brPaint(); }
+  function brGrpClose(gid) { var sn = brSnap(brGrpTabs(gid).map(function (t) { return t.id; })), gn = brGrp(gid); setTimeout(function () { brUndoShow((gn && gn.name ? gn.name : 'Group') + ' closed', sn); }, 0); brGrpTabs(gid).forEach(function (t) { brIncDrop(t.id); BRM.close(BR, t.id); delete BRL[t.id]; brNat('brClose', t.id); }); BRM.prune(BR); if (BRU.grp === gid) BRU.grp = null; brSave(true); brShown = ''; brPaint(); }
   function brGrpNewTab(gid) { var id = brNew('', false); if (brGrp(gid)) { var t = BRM.get(BR, id); if (t) { t.g = gid; brSave(true); brPaint(); } } }
   function brCardHtml(t) {
     var th = brNat('brThumb', t.id) || '', g = t.g && !BRU.grp ? brGrp(t.g) : null;
@@ -15123,7 +15156,7 @@ window.hwCrashPrompt = crashPrompt;
       if (k === 3 && ts.length > 4) return '<span><b>+' + (ts.length - 3) + '</b></span>';
       var th = brNat('brThumb', t.id) || ''; return '<span>' + (th ? '<img alt="" src="' + esc(th) + '">' : brFav(t, 'br-favb')) + '</span>';
     });
-    while (cells.length < 4) cells.push('<span></span>');
+    while (cells.length < 4) cells.push('<span class="br-g4e"></span>');
     return '<div class="br-gcard' + (on ? ' on' : '') + '" data-grp="' + esc(g.id) + '" style="--gc:' + brGrpCol(g) + '"><div class="br-ch"><span class="br-gdot"></span><span class="br-ct">' + esc(brGrpName(g)) + '</span>' +
       '<button class="br-cx" data-gclose="' + esc(g.id) + '" aria-label="Close group">' + sv('close') + '</button></div><div class="br-g4">' + cells.join('') + '</div></div>';
   }
@@ -15148,33 +15181,14 @@ window.hwCrashPrompt = crashPrompt;
   }
   /* the strip of the current tab's group, under the address bar */
   function brGsHtml() {
-    var t = brCur(), g = t && t.g ? brGrp(t.g) : null; if (!g) return '';
-    return '<div class="br-gs" id="br-gs" style="--gc:' + brGrpCol(g) + '"><button class="br-gsn" data-br="gopen" data-g="' + esc(g.id) + '">' + esc(brGrpName(g)) + '</button>' +
-      brGrpTabs(g.id).map(function (x) { return '<button class="br-gsi' + (x.id === BR.act ? ' on' : '') + '" data-gsel="' + esc(x.id) + '" aria-label="' + esc(x.title || brHostOf(x.url) || 'New tab') + '">' + brFav(x) + '</button>'; }).join('') +
+    var t = brCur(), g = t && t.g ? brGrp(t.g) : null; if (!g || BRU.sw || BRU.hist) return '';
+    /* v1.9.39: Kiwi/Chrome's bottom strip: ^ opens the group, each tab is a round icon (x on the open one), + adds a tab to the group */
+    return '<div class="br-gs" id="br-gs" style="--gc:' + brGrpCol(g) + '"><button class="br-gsu" data-br="gopen" data-g="' + esc(g.id) + '" aria-label="Show group ' + esc(brGrpName(g)) + '">' + brSvg('M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z') + '</button>' +
+      brGrpTabs(g.id).map(function (x) { var on = x.id === BR.act; return '<button class="br-gsi' + (on ? ' on' : '') + '" data-gsel="' + esc(x.id) + '" aria-label="' + esc(x.title || brHostOf(x.url) || 'New tab') + '">' + brFav(x) + (on ? '<span class="br-gsx" data-gsx="' + esc(x.id) + '" aria-label="Close tab">' + sv('close') + '</span>' : '') + '</button>'; }).join('') +
       '<button class="br-gsp" data-br="gnew" data-g="' + esc(g.id) + '" aria-label="New tab in group">' + sv('plus') + '</button></div>';
   }
   function brGsSig() { var t = brCur(), g = t && t.g ? brGrp(t.g) : null; return g ? g.id + g.name + g.c + BR.act + brGrpTabs(g.id).map(function (x) { return x.id + (x.icon || '') + (x.url || '').slice(0, 60); }).join('|') : ''; }
   var brGsLast = '';
-  /* a tab's group options (long-press a tab card, or Browser ⋮ > Add tab to group) */
-  function brTabGrpSheet(id) {
-    var t = BRM.get(BR, id); if (!t) return;
-    if (t.inc) { toast('Incognito tabs cannot be grouped'); return; }
-    var others = (BR.groups || []).filter(function (g) { return g.id !== t.g; });
-    brSheet('<h3>' + esc(t.title || brHostOf(t.url) || 'New tab') + '</h3><div class="lst">' +
-      '<button class="br-row" data-tg="new"><span class="br-ri">' + sv('plus') + '</span><span class="am"><span class="an">Add tab to new group</span></span></button>' +
-      others.map(function (g) { return '<button class="br-row" data-tg="' + esc(g.id) + '" style="--gc:' + brGrpCol(g) + '"><span class="br-ri"><span class="br-gdot" style="width:12px;height:12px;border-radius:50%;background:var(--gc)"></span></span><span class="am"><span class="an">Add to ' + esc(brGrpName(g)) + '</span><span class="ap">' + brGrpTabs(g.id).length + ' tabs</span></span></button>'; }).join('') +
-      (t.g ? '<button class="br-row" data-tg="out"><span class="br-ri">' + sv('back') + '</span><span class="am"><span class="an">Remove from group</span></span></button>' : '') +
-      '<button class="br-row" data-tg="close"><span class="br-ri">' + sv('close') + '</span><span class="am"><span class="an">Close tab</span></span></button></div>', function (ov, close) {
-      ov.addEventListener('click', function (e) {
-        var b = e.target.closest('[data-tg]'); if (!b) return; var k = b.getAttribute('data-tg'); buzz(6); close();
-        if (k === 'new') { var g = brGrpNew(id); if (g) setTimeout(function () { brGrpEdit(g.id, true); }, 220); }
-        else if (k === 'out') brGrpOut(id);
-        else if (k === 'close') { brClose(id); return; }
-        else brGrpAdd(id, k);
-        brShown = ''; brPaint();
-      });
-    });
-  }
   /* name and colour of a group (Chrome's group editor) */
   function brGrpEdit(gid, fresh) {
     var g = brGrp(gid); if (!g) return;
@@ -15204,17 +15218,88 @@ window.hwCrashPrompt = crashPrompt;
       });
     });
   }
-  /* long-press a tab card = its group options (a swipe still closes it) */
-  var BRLP = null, brLpJust = 0;
+  /* v1.9.39: Chrome's way to group: press and hold a tab, drag it onto another tab (a new group of the two) or onto a group (it
+     joins). Inside a group, drag a tab onto "Remove from group" to take it out. A swipe still closes a tab. */
+  var BRDG = null, brLpJust = 0;
+  function brMerge(a, b) {
+    var ta = BRM.get(BR, a), tb = BRM.get(BR, b); if (!ta || !tb || a === b) return false;
+    if (ta.inc || tb.inc) { toast('Incognito tabs are not grouped'); return false; }
+    var gid = tb.g && brGrp(tb.g) ? tb.g : null;
+    if (!gid) { var g = brGrpNew(b); if (!g) return false; gid = g.id; }
+    ta.g = gid; BR.tabs.splice(BR.tabs.indexOf(ta), 1); BR.tabs.splice(BR.tabs.indexOf(tb) + 1, 0, ta);
+    BRM.prune(BR); brSave(true); return true;
+  }
+  function brDgEnd(cancel) {
+    var D = BRDG; BRDG = null; if (!D) return; clearTimeout(D.t); if (!D.on) return;
+    brLpJust = Date.now();
+    var tg = D.tg, out = D.out && D.out.classList.contains('on');
+    D.c.classList.remove('br-drag'); D.c.style.transform = ''; if (tg) tg.classList.remove('br-tgt'); if (D.out) D.out.remove();
+    if (cancel) return;
+    if (out && BRU.grp) { buzz([10, 30, 10]); brGrpOut(D.id); brPaint(); return; }
+    if (!tg) return;
+    var ok = false;
+    if (tg.hasAttribute('data-grp')) { var t0 = BRM.get(BR, D.id); if (t0 && t0.inc) toast('Incognito tabs are not grouped'); else { brGrpAdd(D.id, tg.getAttribute('data-grp')); ok = true; } }
+    else ok = brMerge(D.id, tg.getAttribute('data-tab-id'));
+    if (ok) { buzz([10, 30, 10]); brPaint(); }
+  }
   document.addEventListener('touchstart', function (e) {
-    var c = e.target && e.target.closest && e.target.closest('.br-grid .br-card'); clearTimeout(BRLP && BRLP.t); BRLP = null;
-    if (!c || e.touches.length !== 1 || e.target.closest('.br-cx')) return;
-    var t0 = e.touches[0], id = c.getAttribute('data-tab-id');
-    BRLP = { x: t0.clientX, y: t0.clientY, t: setTimeout(function () { if (!BRLP) return; BRLP = null; brLpJust = Date.now() + 100000; buzz(12); brTabGrpSheet(id); }, 480) };
+    brDgEnd(true);
+    var c = e.target && e.target.closest && e.target.closest('.br-grid .br-card'); if (!c || e.touches.length !== 1 || e.target.closest('.br-cx')) return;
+    var t0 = e.touches[0], D = BRDG = { c: c, id: c.getAttribute('data-tab-id'), x: t0.clientX, y: t0.clientY, on: false, tg: null, out: null };
+    D.t = setTimeout(function () {
+      if (BRDG !== D) return; D.on = true; BRSW = null; brLpJust = Date.now() + 100000; buzz(12);
+      var r = c.getBoundingClientRect(); D.ox = D.x - r.left; D.oy = D.y - r.top; c.classList.add('br-drag');
+      if (BRU.grp) { var br = document.getElementById('br'); if (br) { D.out = document.createElement('div'); D.out.className = 'br-gout'; D.out.textContent = 'Remove from group'; br.appendChild(D.out); } }
+    }, 420);
   }, { passive: true });
-  document.addEventListener('touchmove', function (e) { if (!BRLP) return; var t0 = e.touches[0]; if (Math.abs(t0.clientX - BRLP.x) > 8 || Math.abs(t0.clientY - BRLP.y) > 8) { clearTimeout(BRLP.t); BRLP = null; } }, { passive: true });
-  document.addEventListener('touchend', function () { if (BRLP) { clearTimeout(BRLP.t); BRLP = null; } if (brLpJust > Date.now()) brLpJust = Date.now(); }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    var D = BRDG; if (!D) return; var t0 = e.touches[0];
+    if (!D.on) { if (Math.abs(t0.clientX - D.x) > 8 || Math.abs(t0.clientY - D.y) > 8) { clearTimeout(D.t); BRDG = null; } return; }
+    if (e.cancelable) e.preventDefault();
+    D.c.style.transform = 'translate3d(' + (t0.clientX - D.x) + 'px,' + (t0.clientY - D.y) + 'px,0) scale(1.03)';
+    var el = document.elementFromPoint(t0.clientX, t0.clientY), tg = el && el.closest ? el.closest('.br-grid .br-card, .br-grid .br-gcard') : null;
+    if (tg === D.c) tg = null;
+    if (tg !== D.tg) { if (D.tg) D.tg.classList.remove('br-tgt'); if (tg) { tg.classList.add('br-tgt'); buzz(4); } D.tg = tg; }
+    if (D.out) { var o = D.out.getBoundingClientRect(), on = t0.clientY >= o.top - 8; if (on !== D.out.classList.contains('on')) { D.out.classList.toggle('on', on); if (on) buzz(4); } }
+  }, { passive: false });
+  document.addEventListener('touchend', function () { if (BRDG) brDgEnd(false); if (brLpJust > Date.now()) brLpJust = Date.now(); }, { passive: true });
+  document.addEventListener('touchcancel', function () { brDgEnd(true); }, { passive: true });
   document.addEventListener('click', function (e) { if (Date.now() - brLpJust < 450 && e.target.closest && e.target.closest('.br-grid .br-card')) { e.stopPropagation(); e.preventDefault(); } }, true);
+  document.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('.br-grid .br-card')) e.preventDefault(); });
+  /* v1.9.39: Undo after closing a tab, a group or all tabs (Chrome's snackbar, 5 s). The tabs come back where they were, in
+     their group, and the page reloads. */
+  var BRUN = null;
+  function brSnap(ids) {
+    var sn = { tabs: [], groups: [], act: BR.act };
+    BR.tabs.forEach(function (t, k) { if (ids.indexOf(t.id) >= 0) { sn.tabs.push({ t: t, idx: k }); if (t.g) { var g = brGrp(t.g); if (g && !sn.groups.some(function (x) { return x.id === g.id; })) sn.groups.push(JSON.parse(JSON.stringify(g))); } } });
+    return sn;
+  }
+  function brUndo(sn) {
+    if (!BR.groups) BR.groups = [];
+    sn.groups.forEach(function (g) { if (!brGrp(g.id)) BR.groups.push(g); });
+    sn.tabs.forEach(function (x) { if (BRM.get(BR, x.t.id)) return; BR.tabs.splice(Math.min(x.idx, BR.tabs.length), 0, x.t); });
+    if (sn.act && BRM.get(BR, sn.act)) BR.act = sn.act; else if (!BR.act && BR.tabs.length) BR.act = BR.tabs[BR.tabs.length - 1].id;
+    BRM.prune(BR); brSave(true); brShown = ''; brGsLast = ''; brPaint();
+  }
+  function brUndoHide() { var u = BRUN; BRUN = null; if (!u) return; clearTimeout(u.t); u.d.classList.remove('show'); setTimeout(function () { u.d.remove(); }, 200); }
+  function brUndoShow(msg, sn) {
+    brUndoHide(); if (!sn || !sn.tabs.length) return;
+    var d = document.createElement('div'); d.className = 'br-snack'; d.setAttribute('role', 'status');
+    d.innerHTML = '<span>' + esc(msg) + '</span><button type="button">Undo</button>';
+    document.body.appendChild(d);
+    setTimeout(function () {
+      if (!d.isConnected) return;
+      /* never over the live page (the tab's WebView sits above Hwallet there): over the group strip or the address bar instead */
+      var br = document.getElementById('br'), gs = document.getElementById('br-gs'), bar = br && br.querySelector('.br-bar'), H = window.innerHeight;
+      if (BRU.sw || !brCur() || !brCur().url) { var rb = br ? br.getBoundingClientRect() : { bottom: H }; d.style.bottom = Math.round(H - rb.bottom + 12) + 'px'; }
+      else if (gs) { var rg = gs.getBoundingClientRect(); d.style.top = Math.round(rg.top + Math.max(0, (rg.height - 48) / 2)) + 'px'; }
+      else if (bar) { var ra = bar.getBoundingClientRect(); d.style.top = Math.round(ra.top + Math.max(0, (ra.height - 48) / 2)) + 'px'; }
+      else d.style.bottom = '80px';
+      d.classList.add('show');
+    }, 30);
+    d.querySelector('button').addEventListener('click', function (e) { e.stopPropagation(); e.preventDefault(); buzz(8); brUndoHide(); brUndo(sn); });
+    BRUN = { d: d, t: setTimeout(brUndoHide, 5000) };
+  }
   /* v1.9.13: swipe a tab card left or right to close it (Chrome-style). A tick when the swipe passes the point of no return,
      a firmer one when the tab closes; a short swipe springs back; vertical scrolling of the grid is untouched. */
   var BRSW = null, brSwJust = 0;
@@ -15247,7 +15332,7 @@ window.hwCrashPrompt = crashPrompt;
     var t = brCur();
     if (BRU.hist) el.innerHTML = '<div class="br-sw br-h">' + brHistHtml() + '</div>';
     else if (BRU.sw) el.innerHTML = '<div class="br-sw">' + brSwHtml() + '</div>';
-    else el.innerHTML = brBarHtml() + brGsHtml() + '<div class="br-v" id="br-v">' + (t && t.url && !BRU.edit ? '<div class="br-ph">' + brFav(t, 'br-favb') + '<span>' + esc(t.title || brHostOf(t.url)) + '</span></div>' : brStartHtml()) + '</div>';
+    else el.innerHTML = brBarHtml() + '<div class="br-v" id="br-v">' + (t && t.url && !BRU.edit ? '<div class="br-ph">' + brFav(t, 'br-favb') + '<span>' + esc(t.title || brHostOf(t.url)) + '</span></div>' : brStartHtml()) + '</div>' + brGsHtml();
     brPlace();
   }
   function brPaintBar() {
@@ -15257,7 +15342,7 @@ window.hwCrashPrompt = crashPrompt;
     var i = document.getElementById('br-in'); if (i && document.activeElement !== i) i.value = t ? brHostOf(t.url) || t.url : '';
     var lk = el.querySelector('.br-lk'); if (lk) { var s = t && /^https:/.test(t.url); lk.classList.toggle('s', !!s); lk.innerHTML = sv(s ? 'lock' : 'globe'); }
     var tc = el.querySelector('.br-tc span'); if (tc) tc.textContent = BR.tabs.length > 99 ? ':D' : BR.tabs.length;
-    var gsg = brGsSig(); if (gsg !== brGsLast) { brGsLast = gsg; var gs = document.getElementById('br-gs'), nh = brGsHtml(); if (gs && nh) gs.outerHTML = nh; }
+    var gsg = brGsSig(); if (gsg !== brGsLast) { brGsLast = gsg; var gs = document.getElementById('br-gs'), nh = brGsHtml(); if (gs && nh) gs.outerHTML = nh; else if (!!gs !== !!nh) { if (gs) gs.remove(); else { var vv0 = document.getElementById('br-v'); if (vv0) vv0.insertAdjacentHTML('afterend', nh); } brShown = ''; brPlace(); } }
     if (window.hwTr) hwTr.paint();
   }
   /* lay the active tab's native WebView over #br-v (or hide it while a sheet, the switcher or the address bar is up) */
@@ -15328,11 +15413,13 @@ window.hwCrashPrompt = crashPrompt;
   }
   function brNew(url, inc) { if (inc === undefined) { var c0 = brCur(); inc = !!(url && c0 && c0.inc); } var id = BRM.add(BR, url ? brUrl(url, brEng()) : '', inc); brSave(true); BRU.sw = false; BRU.edit = !url; brPaint(); if (!url) setTimeout(function () { var i = document.getElementById('br-in'); if (i) i.focus(); }, 60); return id; }
   function brSelect(id) { if (!BRM.select(BR, id)) return; brSave(); BRU.grp = null; BRU.sw = false; BRU.edit = false; brShown = ''; brPaint(); }
-  function brClose(id) {
+  function brClose(id, quiet) {
+    var sn = quiet ? null : brSnap([id]);
     brIncDrop(id);
+    if (sn) setTimeout(function () { brUndoShow('Tab closed', sn); }, 0);
     BRM.close(BR, id); BRM.prune(BR); if (BRU.grp && !brGrpTabs(BRU.grp).length) BRU.grp = null; delete BRL[id]; brNat('brClose', id); brSave(true); brShown = ''; brPaint();
   }
-  function brCloseAll() { BR.tabs.forEach(function (t) { brIncDrop(t.id); brNat('brClose', t.id); }); BRU.grp = null; BR = BRM.fresh(); BRL = {}; brSave(true); brShown = ''; brPaint(); }
+  function brCloseAll() { var sn = brSnap(BR.tabs.map(function (t) { return t.id; })); BR.tabs.forEach(function (t) { brIncDrop(t.id); brNat('brClose', t.id); }); BRU.grp = null; BR = BRM.fresh(); setTimeout(function () { brUndoShow(sn.tabs.length === 1 ? 'Tab closed' : sn.tabs.length + ' tabs closed', sn); }, 0); BRL = {}; brSave(true); brShown = ''; brPaint(); }
   /* v1.8.15 (3.7): a wallet connection approved in an incognito tab is dropped when that tab closes (and at the next start,
      if Hwallet was closed with the tab open): it never stays under Connected sites */
   var BRINC = jget('hw-br-incc', {}) || {};
@@ -15418,7 +15505,7 @@ window.hwCrashPrompt = crashPrompt;
       if (b.classList.contains('br-card')) { buzz(4); brSelect(b.getAttribute('data-tab-id')); return; }
       if (b.hasAttribute('data-gclose')) { e.stopPropagation(); var gc = b.getAttribute('data-gclose'), gn = brGrpTabs(gc).length; if (!b.dataset.sure && gn > 1) { b.dataset.sure = '1'; toast('Tap \u00d7 again to close ' + gn + ' tabs'); buzz(6); setTimeout(function () { if (b.isConnected) delete b.dataset.sure; }, 2500); return; } buzz(8); brGrpClose(gc); return; }
       if (b.hasAttribute('data-grp')) { buzz(4); BRU.grp = b.getAttribute('data-grp'); brPaint(); return; }
-      if (b.hasAttribute('data-gsel')) { buzz(4); brSelect(b.getAttribute('data-gsel')); return; }
+      if (b.hasAttribute('data-gsel')) { var gx = e.target.closest('[data-gsx]'); if (gx) { e.stopPropagation(); buzz(6); brClose(gx.getAttribute('data-gsx')); return; } buzz(4); if (b.getAttribute('data-gsel') !== BR.act) brSelect(b.getAttribute('data-gsel')); return; }
       if (k === 'gback') { buzz(4); BRU.grp = null; brPaint(); return; }
       if (k === 'gname') { buzz(4); if (BRU.grp) brGrpEdit(BRU.grp, false); return; }
       if (k === 'gmore') { buzz(4); if (BRU.grp) brGrpMore(BRU.grp); return; }
@@ -15543,12 +15630,11 @@ window.hwCrashPrompt = crashPrompt;
     var t = brCur(), L = t ? BRL[t.id] || {} : {}, web = !!(t && /^https?:/.test(t.url || '')), bm = web && brBmHas(t.url);
     /* v1.8.8 (R2a/R4): one nav row across the full width: back, forward, reload, new tab, bookmark (star), desktop view */
     brDrop('<div class="br-mn br-mn6"><button data-m="back"' + (L.back ? '' : ' disabled') + ' aria-label="Back">' + sv('back') + '</button><button data-m="fwd"' + (L.fwd || (t && !t.url && t.fwd) ? '' : ' disabled') + ' aria-label="Forward">' + sv('fwd') + '</button>' +
-      '<button data-m="reload"' + (t ? '' : ' disabled') + ' aria-label="Reload">' + sv('reload') + '</button><button data-m="new" aria-label="New tab">' + sv('plus') + '</button>' +
+      '<button data-m="reload"' + (t ? '' : ' disabled') + ' aria-label="Reload">' + sv('reload') + '</button>' +
       '<button data-m="star"' + (web ? '' : ' disabled') + ' class="' + (bm ? 'on' : '') + '" aria-pressed="' + bm + '" aria-label="' + (bm ? 'Remove bookmark' : 'Bookmark this page') + '">' + brSvg(bm ? STAR : STARO) + '</button>' +
-      '<button data-m="desk"' + (web && window.HwNative && HwNative.brDesk ? '' : ' disabled') + ' class="' + (L.desk ? 'on' : '') + '" aria-pressed="' + !!L.desk + '" aria-label="Desktop view">' + brSvg(DESK) + '</button></div>' +
-      brVpnRow() + brTgl(t, L) + (window.hwTr ? hwTr.menuHtml(t) : '') + '<div class="lst">' + (t && !t.inc ? '<button class="br-row" data-m="grp"><span class="br-ri">' + brSvg('M3 5h8v6H3V5zm10 0h8v6h-8V5zM3 13h8v6H3v-6zm10 0h8v6h-8v-6z') + '</span><span class="am"><span class="an">' + (t.g ? 'Tab group' : 'Add tab to group') + '</span>' + (t.g && brGrp(t.g) ? '<span class="ap">' + esc(brGrpName(brGrp(t.g))) + '</span>' : '') + '</span></button>' : '') + (t ? '<button class="br-row" data-m="copy"><span class="br-ri">' + sv('copy') + '</span><span class="am"><span class="an">Copy link</span><span class="ap">' + esc(short(t.url, 18)) + '</span></span></button>' +
+      '</div>' +   /* v1.9.39: no New tab (tab switcher +) and no Desktop view (User agent) here */
+      brVpnRow() + brTgl(t, L) + (window.hwTr && Date.now() - brTrLp < 1500 ? hwTr.menuHtml(t) : '') + '<div class="lst">' + (t ? '<button class="br-row" data-m="copy"><span class="br-ri">' + sv('copy') + '</span><span class="am"><span class="an">Copy link</span><span class="ap">' + esc(short(t.url, 18)) + '</span></span></button>' +
       '<button class="br-row" data-m="ext"><span class="br-ri">' + sv('ext') + '</span><span class="am"><span class="an">Open in another browser</span></span></button>' : '') +
-      '<button class="br-row" data-m="newinc"><span class="br-ri">' + brSvg(INCI) + '</span><span class="am"><span class="an">New incognito tab</span><span class="ap">No history, cookies or site data kept</span></span></button>' +
       '<button class="br-row" data-m="bms"><span class="br-ri">' + brSvg(BMI) + '</span><span class="am"><span class="an">Bookmarks</span></span><span class="br-rv">' + (function () { var n = brBm().length; return n ? n : ''; })() + '</span></button>' +
       '<button class="br-row" data-m="hist"><span class="br-ri">' + sv('hist') + '</span><span class="am"><span class="an">History</span></span></button>' +
       '<button class="br-row" data-m="sites"><span class="br-ri">' + sv('link') + '</span><span class="am"><span class="an">Connected sites</span></span></button>' +
@@ -15578,7 +15664,6 @@ window.hwCrashPrompt = crashPrompt;
         else if (m === 'bms') setTimeout(brBmSheet, 200);
         else if (m === 'hist') { BRU.hist = true; brPaint(); }
         else if (m === 'set') setTimeout(brSettings, 200);
-        else if (m === 'grp') setTimeout(function () { if (t.g && brGrp(t.g)) { if (BRL[t.id] && BRL[t.id].open) brNat('brSnap', t.id); BRU.grp = t.g; BRU.sw = true; BRU.edit = false; brPaint(); } else brTabGrpSheet(t.id); }, 200);
       });
     });
   }
@@ -21145,7 +21230,8 @@ window.hwCrashPrompt = crashPrompt;
        identity skips their numbers. II unreachable: Kwallet works from what this phone knows, as before. */
     var rpK = /^(identity\.ic0\.app|identity\.internetcomputer\.org|id\.ai)$/.test(rp) ? rp : 'id.ai';
     try { if (window.HwNative && HwNative.warmK) HwNative.warmK(); } catch (e) {}
-    var scan = (op === 'create' ? iiFreshFull(rpK) : iiFresh(rpK)).then(function (S) {
+    var key0 = iiKey();   /* v1.9.39: every write of this request goes to this seed */
+    var scan = iiFreshFull(rpK).then(function (S) {   /* v1.9.39: a sign-in also waits for the live scan (it used to open on the cache) */
       /* v1.9.21: the last sign-in left identities without a name or date: read them now with one Kwallet approval, once (the flag is
          cleared first and each identity is tried once per app session), so this chooser shows names and dates */
       /* v1.9.22: identities without a name or date are read before the chooser opens: Kwallet signs these read-only calls with no
@@ -21159,12 +21245,14 @@ window.hwCrashPrompt = crashPrompt;
     return scan.then(function (S) {   /* v1.9.16: no "Restore identities" sheet in front of the passkey any more (Settings > Internet Identity reads names and dates) */
       S = S || iiState(); var kn = iiKnown(S, rpK);
       if (kn.length) { q.known = kn.slice(0, 50); q.taken = kn.map(function (x) { return x.i; }); }
+      /* v1.9.39: II answered for every passkey of this seed just now: Kwallet shows exactly these identities (none = none) */
+      if ((S.ids[rpK] || []).length && Date.now() - (+S.at[rpK] || 0) < 120000) q.full = 1;
       /* v1.9.16: identities whose name or creation date this phone hasn't read yet: Kwallet signs those reads on the same Confirm */
       if (op === 'get') { var miss = kn.slice(0, 20);   /* v1.9.18: every sign-in re-reads names and creation times from II, on any phone with this seed */ if (miss.length) { q.read = miss.map(function (x) { return { i: x.i, a: x.a }; }); q.nowMs = Date.now(); } }
       if (!site.icon && LOGO.internetcomputer) site = Object.assign({}, site, { icon: LOGO.internetcomputer });   /* v1.9.18: II always shows a logo */
       return p17K(site, 'icp', 'icp_passkey', q);
     }).then(function (r) {
-      iiTake(rpK, r);
+      iiTake(rpK, r, key0);
       /* v1.9.19: "Signed in to id.ai · <identity name>" in Activity (site and the identity's name only) */
       try {
         if (r && (op === 'get' || op === 'create')) {
@@ -21181,7 +21269,7 @@ window.hwCrashPrompt = crashPrompt;
       if (op === 'create' && r && r.credId) {
         var nm = q.name, ix = +r.idx, tries = 0;
         (function poll() { setTimeout(function () { iiLookup(r.credId).then(function (a) {
-          if (a) { var S2 = iiState(); if (ix >= 0) S2.reg[rpK + '|' + ix] = a; if (nm && !S2.names[a]) S2.names[a] = nm;   /* v1.9.21: an empty saved name may be filled */ iiSave(S2); }
+          if (a) { var S2 = iiState(key0); if (ix >= 0) S2.reg[rpK + '|' + ix] = a; if (nm && !S2.names[a]) S2.names[a] = nm;   /* v1.9.21: an empty saved name may be filled */ iiSave(S2, key0); }
           else if (++tries < 8) poll();
         }, function () { if (++tries < 8) poll(); }); }, 15000); })();
       }
