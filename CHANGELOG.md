@@ -4,6 +4,13 @@
 
 - Hwallet: Coins (Home > Chains ⋮) is per seed, like Chains. Hiding a coin in one wallet never hides it in another; the 1.9.36 list moves to the wallet that is open the first time 1.9.37 reads it, and a removed wallet's list is deleted with it.
 - Hwallet: Coins lists only the coins this wallet holds, on every chain (balance above 0). Empty coins are not listed, so funded spam tokens are easy to find and turn off.
+- Hwallet: smarter polling for live transactions. The refresh timer skips a chain that was just read: chains with a live stream open (EVM, Solana, Bitcoin, XRP, TON, Sui) are re-read every 15 s as a safety net, keyless TronGrid at most every 3 s, and a chain whose nodes all failed backs off 1, 2, 4 … 60 s instead of hammering them. For 60 s after a payment in or out, a send or a stream event, the chain polls at your full refresh speed again. Pulls, stream events and sends are never delayed.
+- Hwallet: the live streams follow a seed switch at once (they stayed off until the app was reopened), and a stream that reconnects reads the chain once to catch up.
+- Hwallet: Sui has two sources and a live stream. Balances race Sui GraphQL against Sui's gRPC API (StateService.ListBalances over gRPC-web; Mysten's fullnode, then Suiscan's), first answer wins. Sui payments arrive live through SubscriptionService.SubscribeTransactions filtered to your address.
+- Hwallet: coins turned off in Coins send no notifications in that seed, in the app and from the background service.
+- Hwallet: Cardano DEX orders show in History as "order open" until the order output is spent (filled by the batcher or cancelled in the app), then "order filled or closed", read live on Koios.
+- Kwallet: Cardano DEX orders read like a swap on any other chain: "You swap 1 ADA", "You receive at least … USDA", then the deposit that comes back and the batcher fee on their own rows. Minswap V1 orders, V2 orders with big-number amounts or "swap all", and V2 orders nested inside a router datum are now recognised. The ADA the transaction locks moves to Details.
+- Releases: the notes are this version's CHANGELOG section, and the release targets the tagged commit.
 
 ## Kwallet 3.99.36 / Hwallet 1.9.36
 
