@@ -619,6 +619,8 @@ class HwLiveService : Service() {
 
     private fun alert(c: JSONObject, key: String, amt: BigInteger, out: Boolean = false) {
         val tok = key.substringAfter(":")
+        /* v1.9.37: coins turned off in Hwallet's Coins sheet (for this seed) send no notification */
+        c.optJSONArray("mute")?.let { m -> for (i in 0 until m.length()) if (m.optString(i).equals(tok, ignoreCase = true)) return }
         var sym = c.optString("sym"); var dec = c.optInt("dec", 18)
         if (tok != "native") {
             val toks = c.optJSONArray("tokens") ?: JSONArray()
