@@ -19,7 +19,7 @@ import javax.crypto.spec.SecretKeySpec
  * This is obfuscation, not unbreakable: a determined person with the APK can still extract a built-in key.
  */
 object HwKeys {
-    val NAMES = listOf("alchemy", "etherscan", "helius", "trongrid", "lifi", "jupiter", "reown")
+    val NAMES = listOf("alchemy", "etherscan", "helius", "trongrid", "lifi", "jupiter", "reown", "koios")
     private val HOSTS = mapOf(
         "alchemy" to listOf(".g.alchemy.com"),
         "etherscan" to listOf("api.etherscan.io"),
@@ -27,7 +27,8 @@ object HwKeys {
         "trongrid" to listOf("api.trongrid.io"),
         "lifi" to listOf("li.quest"),
         "jupiter" to listOf("api.jup.ag"),
-        "reown" to listOf("relay.walletconnect.org", "relay.walletconnect.com", "rpc.walletconnect.org", "rpc.walletconnect.com")
+        "reown" to listOf("relay.walletconnect.org", "relay.walletconnect.com", "rpc.walletconnect.org", "rpc.walletconnect.com"),
+        "koios" to listOf("api.koios.rest")   // v1.9.38: the user's own Koios key (Bearer), never sent to another host
     )
     private val PH = Regex("\\{\\{K:([a-z]+)\\}\\}")
     private val cache = HashMap<String, String>()
