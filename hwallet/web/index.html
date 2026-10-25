@@ -7882,7 +7882,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.34';   /* v1.9.21: version bump */
+var APP_VERSION = '1.9.35';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -19850,7 +19850,7 @@ window.hwCrashPrompt = crashPrompt;
       return '<button class="ar sm tap tc-ar" data-tc="' + k + '"' + (on ? '' : ' disabled') + '>' + alogo(ch, null, { gas: 1, s: CHBY[ch].sym }, 'md').replace(/class="lg /g, 'class="lg md ') + '<span class="am"><span class="an">' + esc(name) + '</span><span class="ap" data-tcs="' + k + '">' + esc(why) + '</span></span>' +
         (on ? '<span class="ax"><span class="aa" data-tca="' + k + '">\u2026</span><span class="au" data-tcu="' + k + '"></span></span>' : '') + '</button>';
     }
-    sheet('<h3>Clean up</h3><div class="lst">' + row('sol', 'sol', 'Solana') + row('sui', 'sui', 'Sui') + '</div>', function (ov, close) {
+    sheet('<h3>Clean up</h3><div class="lst">' + row('sol', 'sol', 'Solana') + row('sui', 'sui', 'Sui') + row('xrp', 'xrp', 'XRP Ledger') + '</div>', function (ov, close) {
       function put(k, sub, amt, usd) {
         var a = ov.querySelector('[data-tcs="' + k + '"]'), b = ov.querySelector('[data-tca="' + k + '"]'), c = ov.querySelector('[data-tcu="' + k + '"]');
         if (a) a.textContent = sub; if (b) b.innerHTML = amt; if (c) c.innerHTML = usd;
@@ -19867,9 +19867,16 @@ window.hwCrashPrompt = crashPrompt;
         put('sui', [pl(cl.reduce(function (t, g) { return t + g.del.length; }, 0), 'coin') ? pl(cl.reduce(function (t, g) { return t + g.del.length; }, 0), 'coin') + ' to merge' : '', pl(bu.length, 'dust token')].filter(Boolean).join(' \u00b7 '),
           reb ? '<span style="color:var(--hp-up,var(--up,#34c77b))">\u2248 +' + esc(fmtU(reb, 9, 6)) + ' SUI</span>' : '0 SUI', reb && gp ? money(fmtUsd(toNum(reb, 9) * gp)) : '');
       }, function () { put('sui', 'Couldn\u2019t read coins', '\u2014', ''); });
+      /* v1.9.35: XRP Ledger, the owner reserve of what can be removed (+ the base reserve by deleting the account) */
+      if (A.xrp && chainOn('xrp')) tcXrpLoad().then(function (rows) {
+        var ok = rows.filter(function (r) { return r.canRemove || r.canBurn; }), dr = ok.reduce(function (t, r) { return t + r.res; }, 0n), gp = px('ripple'), more = '+' + tcXrpS(rows.R.base) + ' XRP more by deleting the account';
+        var nl = ok.filter(function (r) { return r.kind === 'line'; }).length, no = ok.length - nl;
+        if (!dr) { put('xrp', (rows.length ? 'Nothing to reclaim' : 'No trust lines or offers') + ' \u00b7 ' + more, '0 XRP', ''); return; }
+        put('xrp', [pl(nl, 'trust line'), pl(no, 'other object')].filter(Boolean).join(' \u00b7 ') + ' \u00b7 ' + more, '<span style="color:var(--hp-up,var(--up,#34c77b))">+' + esc(tcXrpS(dr)) + ' XRP</span>', gp ? money(fmtUsd(toNum(dr, 6) * gp)) : '');
+      }, function (e) { put('xrp', e && e.unfunded ? 'Not activated yet' : 'Couldn\u2019t read the account', e && e.unfunded ? '0 XRP' : '\u2014', ''); });
       ov.addEventListener('click', function (e) {
         var b = e.target.closest('[data-tc]'); if (!b || b.disabled) return; var k = b.getAttribute('data-tc'); buzz(4); close();
-        setTimeout(function () { if (k === 'sol') tcSolOpen(); else tcSuiOpen(); }, 200);
+        setTimeout(function () { if (k === 'sol') tcSolOpen(); else if (k === 'xrp') tcXrpOpen(); else tcSuiOpen(); }, 200);
       });
     });
   }
@@ -20233,6 +20240,303 @@ window.hwCrashPrompt = crashPrompt;
       if (x.effects && x.effects.status && x.effects.status.status !== 'success') throw new Error('The transaction failed on chain: ' + String(x.effects.status.error || '').slice(0, 100));
       return x.digest;
     });
+  }
+
+  /* ----- XRP Ledger (v1.9.35): reserve recovery, next to Solana and Sui -----
+     Every trust line, open offer, check and ticket of the active address, read live (account_objects, validated ledger).
+     Removing one gives back its owner reserve (reserve_inc from server_state, 0.2 XRP today) only when the reserve is on
+     this account's side of it (the lsfLowReserve / lsfHighReserve flag of a trust line), so "XRP to reclaim" is counted
+     per object. Trust line at 0: TrustSet limit 0 with this side's defaults (NoRipple as the account's DefaultRipple says,
+     no freeze, qualities 0). With a balance: Return (Payment back to the issuer, where the tokens are destroyed) and
+     remove, offered as Burn and remove under $0.10 or with no live price. Offers: OfferCancel. Checks: CheckCancel.
+     Tickets: a no-op AccountSet that uses the ticket. One transaction after another, each signed in Kwallet (via 'clean')
+     and waited for in a validated ledger before the next. At the bottom, Delete account (AccountDelete): destination and
+     tag, the protocol's checks shown live (Sequence + 255 <= ledger index, deletion blockers, at most 1000 objects, NFT
+     mint rule), typed confirmation, fee = one owner reserve set explicitly, submitted with fail_hard. */
+  var TC_XRP_BLOCK = { Escrow: 'escrow', PayChannel: 'payment channel', NFTokenPage: 'NFT page', MPToken: 'MPT holding', MPTokenIssuance: 'MPT issuance', Bridge: 'bridge', XChainOwnedClaimID: 'cross-chain claim', XChainOwnedCreateAccountClaimID: 'cross-chain claim', Vault: 'vault', PermissionedDomain: 'permissioned domain', Sponsorship: 'sponsorship' };
+  function tcXrpS(d) { return fmtU(d < 0n ? 0n : d, 6, 6); }
+  function tcXrpAmt(a) { return typeof a === 'string' ? fmtA(U(a) || 0n, 6) + ' XRP' : a && a.value != null ? String(+a.value) + ' ' + xrpCode(a.currency) : '?'; }
+  function tcXrpRes() {
+    return xrpc('server_state', {}).then(function (r) {
+      var v = r && r.state && r.state.validated_ledger; if (!v || v.reserve_inc == null) throw new Error('no server_state');
+      return { base: BI(String(v.reserve_base)), inc: BI(String(v.reserve_inc)), seq: +v.seq || 0 };
+    }).catch(function () {
+      return xrpc('server_info', {}).then(function (r) {
+        var v = r && r.info && r.info.validated_ledger; if (!v || v.reserve_inc_xrp == null) throw new Error('No XRP Ledger node answered');
+        return { base: BI(String(Math.round(+v.reserve_base_xrp * 1e6))), inc: BI(String(Math.round(+v.reserve_inc_xrp * 1e6))), seq: +v.seq || 0 };
+      });
+    });
+  }
+  function tcXrpObjs(a) {
+    var out = [];
+    function page(m, n) {
+      var p = { account: a, ledger_index: 'validated', limit: 400 }; if (m) p.marker = m;
+      return xrpc('account_objects', p).then(function (r) {
+        if (!r || r.error) throw new Error((r && (r.error_message || r.error)) || 'account_objects failed');
+        (r.account_objects || []).forEach(function (o) { out.push(o); });
+        if (r.marker && n < 10) return page(r.marker, n + 1);
+      });
+    }
+    return page(null, 0).then(function () { return out; });
+  }
+  function tcXrpNeg(v) { v = String(v); return v.charAt(0) === '-' ? v.slice(1) : /^0*\.?0*$/.test(v) || +v === 0 ? '0' : '-' + v; }
+  function tcXrpLoad() {
+    var a = A.xrp;
+    return xrpc('account_info', { account: a, ledger_index: 'validated' }).then(function (ai) {
+      var ad = ai && ai.account_data;
+      if (!ad) { if (ai && ai.error === 'actNotFound') { var e0 = new Error('This XRP account is not activated yet'); e0.unfunded = true; throw e0; } throw new Error((ai && (ai.error_message || ai.error)) || 'Could not read the XRP account'); }
+      return Promise.all([tcXrpRes(), tcXrpObjs(a)]).then(function (x) {
+        var R = x[0], objs = x[1], inc = R.inc, defRipple = !!((+ad.Flags || 0) & 0x00800000), rows = [], block = [];
+        objs.forEach(function (o) {
+          var T = o.LedgerEntryType, F = +o.Flags || 0;
+          if (T === 'RippleState') {
+            var lo = o.LowLimit && o.LowLimit.issuer === a, peerL = lo ? o.HighLimit : o.LowLimit, me = lo ? o.LowLimit : o.HighLimit;
+            var bal = lo ? String(o.Balance.value) : tcXrpNeg(o.Balance.value), nb = +bal;
+            var r = { kind: 'line', k: o.index, cur: String(o.Balance.currency), peer: String(peerL.issuer), bal: bal, zero: nb === 0, neg: nb < 0, limit: String(me.value),
+              myRes: !!(F & (lo ? 0x00010000 : 0x00020000)), myNR: !!(F & (lo ? 0x00100000 : 0x00200000)), myFz: !!(F & (lo ? 0x00400000 : 0x00800000)), myAuth: !!(F & (lo ? 0x00040000 : 0x00080000)),
+              qIn: +(lo ? o.LowQualityIn : o.HighQualityIn) || 0, qOut: +(lo ? o.LowQualityOut : o.HighQualityOut) || 0, peerRes: !!(F & (lo ? 0x00020000 : 0x00010000)), act: 'keep' };
+            r.sym = xrpCur32(r.cur).replace(/[<>&"']/g, '').slice(0, 12) || xrpCode(r.cur); r.res = r.myRes ? inc : 0n; r.defNR = !defRipple;
+            rows.push(r);
+          } else if (T === 'Offer' && o.Account === a) rows.push({ kind: 'offer', k: o.index, seq: o.Sequence, gets: o.TakerGets, pays: o.TakerPays, res: inc, act: 'keep', sym: 'Offer' });
+          else if (T === 'Check') rows.push({ kind: 'check', k: o.index, mine: o.Account === a, amt: o.SendMax, to: o.Account === a ? o.Destination : o.Account, res: o.Account === a ? inc : 0n, act: 'keep', sym: 'Check' });
+          else if (T === 'Ticket') rows.push({ kind: 'ticket', k: o.index, tseq: o.TicketSequence, res: inc, act: 'keep', sym: 'Ticket' });
+          else if (TC_XRP_BLOCK[T] && !(T === 'MPTokenIssuance' && o.Issuer !== a)) block.push(TC_XRP_BLOCK[T]);
+        });
+        var lines = rows.filter(function (r) { return r.kind === 'line' && !r.zero && !r.neg; });
+        return Promise.all(lines.map(function (r) {
+          return Promise.race([xrpTokInfo(r.cur + '.' + r.peer), sleep(7000).then(function () { return { icon: '', px: 0 }; })]).then(function (i) { r.icon = i.icon || ''; r.px = i.px || 0; }, function () {});
+        })).then(function () {
+          rows.forEach(function (r) {
+            if (r.kind === 'line') {
+              r.usd = r.zero ? 0 : r.px ? Math.abs(+r.bal) * r.px : null; r.unp = !(r.px > 0);
+              r.canRemove = r.zero && r.myRes && !r.myAuth;
+              r.canRet = !r.zero && !r.neg && r.myRes && !r.myAuth;
+              r.canBurn = r.canRet && (r.unp || r.usd < TC_DUST);
+              r.why = r.neg ? 'You owe the issuer on this line' : r.myAuth ? 'You authorized this line, it can\u2019t be reset' : !r.myRes ? 'Holds none of your reserve' : '';
+            } else { r.canRemove = true; r.why = ''; }
+            r.ok = r.canRemove || r.canRet;
+          });
+          rows.sort(function (x, y) { var g = function (r) { return r.ok ? (r.kind === 'line' && !r.zero ? 1 : 0) : 2; }; return g(x) - g(y) || (y.res > x.res ? 1 : y.res < x.res ? -1 : 0); });
+          rows.R = R; rows.ad = ad; rows.block = block; rows.objCount = objs.length;
+          return rows;
+        });
+      });
+    });
+  }
+  function tcXrpOpen() {
+    if (!A.xrp) return;
+    var P = tcPanel('xrp', 'Hwallet \u00b7 Reserve', 'Reclaim XRP reserve'), rows = [], busy = false, paired = !!(A.paired && A.paired.xrp);
+    function sel() { return rows.filter(function (r) { return r.act !== 'keep'; }); }
+    function label(r) {
+      if (r.kind === 'line') return r.sym;
+      if (r.kind === 'offer') return 'Offer #' + r.seq;
+      if (r.kind === 'check') return r.mine ? 'Check you wrote' : 'Check sent to you';
+      return 'Ticket #' + r.tseq;
+    }
+    function bal(r) {
+      if (r.kind === 'line') return r.zero ? 'Trust line \u00b7 0 ' + r.sym : r.neg ? 'Trust line \u00b7 ' + r.bal + ' ' + r.sym : 'Trust line \u00b7 ' + fmtA(iou32(r.bal), 15) + ' ' + r.sym + (r.usd != null ? ' \u00b7 ' + fmtUsd(r.usd) : ' \u00b7 no live price');
+      if (r.kind === 'offer') return 'Sells ' + tcXrpAmt(r.gets) + ' for ' + tcXrpAmt(r.pays);
+      if (r.kind === 'check') return tcXrpAmt(r.amt) + ' \u00b7 ' + HWP.shortA(r.to);
+      return 'Unused ticket';
+    }
+    var ACT = { remove: 'Remove', ret: 'Return and remove', burn: 'Burn and remove', cancel: 'Cancel' };
+    function paint() {
+      if (!P.open) return;
+      var R = rows.R || { inc: 0n, base: 0n }, s = sel(), tot = s.reduce(function (t, r) { return t + r.res; }, 0n), nb = s.filter(function (r) { return r.act === 'burn' || r.act === 'ret'; }).length, gpx = px('ripple');
+      var easy = rows.filter(function (r) { return r.canRemove; });
+      var h = HWP.cap('Each trust line, offer, check or ticket holds ' + esc(tcXrpS(R.inc)) + ' XRP of your reserve. Removing it gives that XRP back. A token balance has to go back to its issuer first, where it is destroyed: Burn is offered under $0.10 or with no live price, and it can\u2019t be undone.');
+      var unb = s.filter(function (r) { return r.act === 'burn' && r.unp; }).length, big = s.filter(function (r) { return r.act === 'ret' && !r.canBurn; });
+      if (unb) h += HWP.warns([esc(tcPl(unb, 'token') + ' with no live price selected to burn. Hwallet can\u2019t tell what ' + (unb === 1 ? 'it is' : 'they are') + ' worth: burn only what you know is worthless. This can\u2019t be undone.')], true);
+      if (big.length) h += HWP.warns([esc('Return gives ' + big.map(function (r) { return fmtA(iou32(r.bal), 15) + ' ' + r.sym + ' (' + fmtUsd(r.usd) + ')'; }).join(', ') + ' back to the issuer for nothing. Sell or send it instead if it has value.')], true);
+      if (!paired) h += HWP.warns(['This address is watch only. Pair it with Kwallet to sign.']);
+      if (!rows.length) h += HWP.card(HWP.kv('Trust lines, offers, checks, tickets', 'None', '', { sm: true }));
+      else {
+        if (easy.length > 1) h += HWP.card(HWP.kv('Select all that cost nothing', String(easy.length), '+' + esc(tcXrpS(easy.reduce(function (t, r) { return t + r.res; }, 0n))) + ' XRP', { sm: true, tap: true, chev: true, attr: ' data-tcall' }));
+        h += HWP.changes(rows.map(function (r) {
+          var b = bal(r), note = r.act !== 'keep' ? ACT[r.act] + ' \u00b7 ' + b : r.ok ? b + ' \u00b7 tap to choose' : b + ' \u00b7 ' + r.why;
+          return { icon: r.icon || (r.kind === 'line' ? '' : LOGO.ripple || ''), sym: 'XRP', lbl: label(r), note: note, sign: r.act !== 'keep' && r.res ? '+' : '', amt: tcXrpS(r.res), usd: gpx && r.res ? fmtUsd(toNum(r.res, 6) * gpx) : '' };
+        }));
+        h += HWP.rows([['Selected', esc(tcPl(s.length, 'item')) + (nb ? ' \u00b7 ' + nb + ' token' + (nb === 1 ? '' : 's') + ' returned' : '')], ['XRP to reclaim', '<span class="hp-pos">+' + esc(tcXrpS(tot)) + ' XRP</span>', gpx ? fmtUsd(toNum(tot, 6) * gpx) : '']]);
+        h += HWP.cap('One transaction per step, each shown in Kwallet before you sign. Network fees are paid from your XRP.');
+      }
+      h += HWP.card(HWP.kv('Delete account', '+' + esc(tcXrpS(R.base)) + ' XRP', 'Fee ' + esc(tcXrpS(R.inc)) + ' XRP', { sm: true, tap: true, chev: true, attr: ' data-tcdel', lsub: 'Sends everything to another account' }));
+      P.body(h);
+      var okT = s.length ? (nb ? 'Return and remove ' : 'Remove ') + tcPl(s.length, 'item') : 'Select items';
+      P.foot(HWP.foot({ no: 'Close', ok: busy ? 'Waiting for Kwallet\u2026' : okT, okId: 'tc-ok', noId: 'tc-no', disabled: busy || !s.length || !paired }));
+      bindP();
+    }
+    function bindP() {
+      var el = P.el, all = el.querySelector('[data-tcall]'), del = el.querySelector('[data-tcdel]');
+      if (all) all.onclick = function () { buzz(4); var on = rows.some(function (r) { return r.canRemove && r.act === 'keep'; }); rows.forEach(function (r) { if (r.canRemove) r.act = on ? (r.kind === 'line' || r.kind === 'ticket' ? 'remove' : 'cancel') : 'keep'; }); paint(); };
+      if (del) del.onclick = function () { buzz(4); if (busy) return; tcXrpDel(rows); };
+      var rr = el.querySelectorAll('.hp-chg > .hp-r');
+      for (var i = 0; i < rr.length; i++) (function (r, n) {
+        n.classList.add('hp-tap');
+        n.onclick = function () {
+          buzz(4); if (busy) return;
+          if (!r.ok) { toast(r.why || 'Nothing to remove here'); return; }
+          var v = '+' + tcXrpS(r.res) + ' XRP', o = [{ k: 'keep', l: 'Keep', sub: 'Leave it as it is' }];
+          if (r.kind === 'line') {
+            if (r.canRemove) o.push({ k: 'remove', l: 'Remove trust line', sub: 'The balance is 0. Gives back its reserve', v: v });
+            if (r.canBurn) o.push({ k: 'burn', l: 'Burn and remove', sub: (r.unp ? 'No live price, its value is unknown. ' : '') + 'Sends ' + fmtA(iou32(r.bal), 15) + ' ' + r.sym + (r.unp ? '' : ' (' + fmtUsd(r.usd) + ')') + ' back to the issuer, can\u2019t be undone', v: v });
+            else if (r.canRet) o.push({ k: 'ret', l: 'Return and remove', sub: 'Gives ' + fmtA(iou32(r.bal), 15) + ' ' + r.sym + ' (' + fmtUsd(r.usd) + ') back to the issuer for nothing', v: v });
+          } else if (r.kind === 'ticket') o.push({ k: 'remove', l: 'Remove ticket', sub: 'Uses it with a transaction that changes nothing', v: v });
+          else o.push({ k: 'cancel', l: r.kind === 'offer' ? 'Cancel offer' : 'Cancel check', sub: r.kind === 'check' && !r.mine ? 'Its reserve is the sender\u2019s, but it blocks deleting the account' : 'Gives back its reserve', v: r.res ? v : '' });
+          tcPick(label(r), r.act, o, function (k) { r.act = k; paint(); });
+        };
+      })(rows[i], rr[i]);
+      var no = el.querySelector('#tc-no'), ok = el.querySelector('#tc-ok');
+      if (no) no.onclick = function () { P.open = false; P.close(); };
+      if (ok) ok.onclick = function () { if (ok.disabled || busy) return; buzz(8); go(); };
+    }
+    function load() {
+      busy = false; P.body(HWP.cap('Loading live from the network\u2026')); P.foot('');
+      tcXrpLoad().then(function (r) { rows = r; paint(); }, function (e) { if (!P.open) return; P.body(HWP.warns([esc(e && e.unfunded ? 'This XRP account is not activated yet, so it holds no reserve.' : 'Could not read your XRP account. ' + tcErr(e, 'xrp'))], !(e && e.unfunded)) + (e && e.unfunded ? '' : HWP.card(HWP.kv('Try again', '', '', { sm: true, tap: true, chev: true, attr: ' data-tcre' })))); var b = P.el.querySelector('[data-tcre]'); if (b) b.onclick = load; });
+    }
+    function go() {
+      var s = sel(); if (!s.length) return;
+      busy = true; paint();
+      tcXrpRun(s).then(function (n) {
+        toast(n > 1 ? n + ' transactions done' : 'Done'); buzz([10, 40, 10]);
+        try { refreshChain('xrp'); } catch (e) {}
+        if (P.open) load();
+      }, function (e) {
+        busy = false; toast(String(e && e.message || e).slice(0, 90));
+        if (P.open) load();   /* the steps that went through show as removed */
+      });
+    }
+    P.reload = load; tcXrpOpen.P = P;
+    load();
+  }
+  /* rows -> transactions, in order (a returned balance always before its TrustSet) */
+  function tcXrpTxs(s) {
+    var out = [];
+    s.forEach(function (r) {
+      if (r.kind === 'line') {
+        if (r.act === 'ret' || r.act === 'burn') out.push({ r: r, pay: 1, tx: { TransactionType: 'Payment', Destination: r.peer, Amount: { currency: r.cur, issuer: r.peer, value: r.bal } }, title: (r.act === 'burn' ? 'Burn ' : 'Return ') + fmtA(iou32(r.bal), 15) + ' ' + r.sym + (r.act === 'ret' ? ' to the issuer' : '') });
+        var f = 0; if (r.defNR && !r.myNR) f |= 0x00020000; if (!r.defNR && r.myNR) f |= 0x00040000; if (r.myFz) f |= 0x00200000;
+        var t = { TransactionType: 'TrustSet', LimitAmount: { currency: r.cur, issuer: r.peer, value: '0' }, Flags: f };
+        if (r.qIn) t.QualityIn = 0; if (r.qOut) t.QualityOut = 0;
+        out.push({ r: r, tx: t, title: 'Remove trust line \u00b7 ' + r.sym + ' \u00b7 +' + tcXrpS(r.res) + ' XRP' });
+      } else if (r.kind === 'offer') out.push({ r: r, tx: { TransactionType: 'OfferCancel', OfferSequence: r.seq }, title: 'Cancel offer #' + r.seq + ' \u00b7 +' + tcXrpS(r.res) + ' XRP' });
+      else if (r.kind === 'check') out.push({ r: r, tx: { TransactionType: 'CheckCancel', CheckID: r.k }, title: 'Cancel check' + (r.res ? ' \u00b7 +' + tcXrpS(r.res) + ' XRP' : '') });
+      else if (r.kind === 'ticket') out.push({ r: r, tx: { TransactionType: 'AccountSet', Sequence: 0, TicketSequence: r.tseq }, title: 'Remove ticket #' + r.tseq + ' \u00b7 +' + tcXrpS(r.res) + ' XRP' });
+    });
+    return out;
+  }
+  /* a hash -> validated result (tesSUCCESS or throws), polled like the Solana cleanup */
+  function tcXrpWait(hash) {
+    var k = 0;
+    function poll() {
+      return xrpc('tx', { transaction: hash }).then(function (r) {
+        if (r && r.validated) { var tr = r.meta && r.meta.TransactionResult; if (tr !== 'tesSUCCESS') throw new Error('The XRP Ledger refused it: ' + tr); return true; }
+        if (++k > 25) throw new Error('Not confirmed yet. Check again in a minute');
+        return sleep(1500).then(poll);
+      }, function (e) { if (e && /refused it/.test(String(e.message))) throw e; if (++k > 25) throw new Error('Not confirmed yet. Check again in a minute'); return sleep(1500).then(poll); });
+    }
+    return sleep(1500).then(poll);
+  }
+  /* one transaction: fill (Sequence, fee, last ledger), live preview, Kwallet signs, submit with fail_hard, wait */
+  function tcXrpOne(tx, title, extra) {
+    return xrpFill(tx).then(function (t) {
+      return liveFirst(function () { return xrpSimQ(t); }, 6000).then(function (s0) {
+        return p17K(TC_SITE, 'xrpl', 'xrpl_signTransaction', { tx: t }, Object.assign(title ? { via: 'clean', clean: { title: title } } : {}, s0 ? { sim: s0 } : {}, extra || {}));
+      });
+    }).then(function (r) {
+      if (r && r.publicKey) jset('hw-xrppk:' + A.xrp, r.publicKey);
+      return xrpc('submit', { tx_blob: r.tx_blob, fail_hard: true }).then(function (s) {
+        var e = s.engine_result || '';
+        if (!(/^tes/.test(e) || e === 'terQUEUED')) throw new Error('Rejected by the XRP Ledger: ' + e + ' ' + String(s.engine_result_message || '').slice(0, 100));
+        try { dappLog('xrp', r.hash, TC_SITE); } catch (x) {}
+        return tcXrpWait(r.hash).then(function () { return r.hash; });
+      });
+    });
+  }
+  function tcXrpRun(s) {
+    var txs = tcXrpTxs(s), SS = txs.length > 1 ? swSteps(txs.map(function (x) { return x.title; })) : null, done = 0, tagged = {};
+    toast('Preparing\u2026');
+    var chain = txs.reduce(function (p, x, i) {
+      return p.then(function () {
+        if (SS) SS.at(i);
+        /* an issuer that requires a destination tag gets tag 0 on the return (the tokens are destroyed either way) */
+        var pre = x.pay ? (tagged[x.tx.Destination] != null ? Promise.resolve(tagged[x.tx.Destination]) : xrpc('account_info', { account: x.tx.Destination, ledger_index: 'validated' }).then(function (ai) { var f = +(ai && ai.account_data && ai.account_data.Flags) || 0; tagged[x.tx.Destination] = f; return f; }, function () { return 0; })) : Promise.resolve(0);
+        return pre.then(function (f) {
+          if (x.pay && (f & 0x01000000)) throw new Error('The ' + x.r.sym + ' issuer only accepts payments it authorized, so it can\u2019t be returned');
+          if (x.pay && (f & 0x00020000)) x.tx.DestinationTag = 0;
+          return tcXrpOne(x.tx, x.title);
+        }).then(function () { done++; });
+      });
+    }, Promise.resolve());
+    return chain.then(function () { if (SS) SS.end(); return done; }, function (e) { if (SS) SS.end(); if (done) { try { refreshChain('xrp'); } catch (x) {} } throw e; });
+  }
+  /* Delete account: everything checked live, typed confirmation, then one AccountDelete (fee = one owner reserve) */
+  function tcXrpDel(rows) {
+    var R = rows.R, ad = rows.ad, me = A.xrp, paired = !!(A.paired && A.paired.xrp), busy = false, dst = '', tag = '', typed = '', dChk = null, dChkFor = '';
+    var P = tcPanel('xrp', 'Hwallet \u00b7 Account', 'Delete account');
+    var gpx = px('ripple'), balD = U(ad.Balance) || 0n, getD = balD - R.inc;
+    function issues() {
+      var out = [], left = (+ad.Sequence || 0) + 255 - R.seq;
+      if (left > 0) out.push('The account is too new. It can be deleted after ' + left + ' more ledgers (about ' + Math.max(1, Math.ceil(left * 4 / 60)) + ' min).');
+      var lines = rows.filter(function (r) { return r.kind === 'line'; }).length, chk = rows.filter(function (r) { return r.kind === 'check'; }).length;
+      if (lines) out.push('Remove ' + tcPl(lines, 'trust line') + ' first.');
+      if (chk) out.push('Cancel ' + tcPl(chk, 'check') + ' first.');
+      var bl = {}; (rows.block || []).forEach(function (b) { bl[b] = (bl[b] || 0) + 1; });
+      Object.keys(bl).forEach(function (b) { out.push('This account has ' + tcPl(bl[b], b) + ', which Hwallet can\u2019t remove here.'); });
+      if (rows.objCount > 1000) out.push('The account owns more than 1000 ledger objects.');
+      var minted = +ad.MintedNFTokens || 0, burned = +ad.BurnedNFTokens || 0;
+      if (minted > burned) out.push('This account issued NFTs that still exist. Burn them first.');
+      if (minted && (+ad.FirstNFTokenSequence || 0) + minted + 255 > R.seq) out.push('This account minted NFTs too recently. Try again later.');
+      if (getD <= 0n) out.push('The balance doesn\u2019t cover the ' + tcXrpS(R.inc) + ' XRP fee.');
+      return out;
+    }
+    function dstErr() {
+      if (!dst) return 'Enter the address that receives your XRP';
+      if (!/^r[1-9A-HJ-NP-Za-km-z]{24,34}$/.test(dst)) return /^X/.test(dst) ? 'Use the classic r\u2026 address and put the tag below' : 'Not an XRP address';
+      if (dst === me) return 'The destination must be another account';
+      if (tag !== '' && !(/^\d{1,10}$/.test(tag) && +tag <= 4294967295)) return 'The tag is a whole number up to 4294967295';
+      if (dChkFor === dst && dChk) { if (dChk.missing) return 'The destination isn\u2019t an activated XRP account'; if ((dChk.f & 0x00020000) && tag === '') return 'This destination needs a destination tag (exchanges always do)'; if (dChk.f & 0x01000000) return 'This destination only accepts payments from accounts it authorized'; }
+      return '';
+    }
+    function check() {
+      if (!/^r[1-9A-HJ-NP-Za-km-z]{24,34}$/.test(dst) || dst === me || dChkFor === dst) return;
+      dChkFor = dst; dChk = null;
+      xrpc('account_info', { account: dst, ledger_index: 'validated' }).then(function (ai) { if (dChkFor !== dst) return; dChk = ai && ai.account_data ? { f: +ai.account_data.Flags || 0 } : ai && ai.error === 'actNotFound' ? { missing: 1 } : null; if (!dChk) dChkFor = ''; paint(true); }, function () { if (dChkFor === dst) dChkFor = ''; });
+    }
+    function paint(keep) {
+      if (!P.open) return;
+      var is = issues(), de = dstErr(), ready = !is.length && !de && dChkFor === dst && dChk && !dChk.missing && typed === 'DELETE' && paired;
+      var h = HWP.warns(['<b>This deletes your XRP account.</b> ' + esc('All of its XRP minus the ' + tcXrpS(R.inc) + ' XRP fee goes to the destination, and the fee is burned even if the deletion fails. This address can be used again only after it is funded again with at least ' + tcXrpS(R.base) + ' XRP.')], true);
+      h += HWP.rows([['Balance', esc(tcXrpS(balD)) + ' XRP', gpx ? fmtUsd(toNum(balD, 6) * gpx) : ''], ['Fee (burned)', esc(tcXrpS(R.inc)) + ' XRP', ''], ['Destination receives', '<span class="hp-pos">' + esc(tcXrpS(getD)) + ' XRP</span>', gpx && getD > 0n ? fmtUsd(toNum(getD, 6) * gpx) : '']]);
+      h += is.length ? HWP.warns(is.map(esc), true) : HWP.card(HWP.kv('Checks', '<span class="hp-pos">All passed</span>', 'Age, blockers, objects, NFTs', { sm: true }));
+      if (!paired) h += HWP.warns(['This address is watch only. Pair it with Kwallet to sign.']);
+      if (!keep) {
+        h += '<div data-tcin><label class="hp-pcl">Destination address</label><div class="hp-pcf"><input id="tcx-dst" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="r\u2026" value="' + esc(dst) + '"></div>' +
+          '<label class="hp-pcl">Destination tag (needed for exchanges)</label><div class="hp-pcf"><input id="tcx-tag" inputmode="numeric" autocomplete="off" placeholder="Optional" value="' + esc(tag) + '"></div>' +
+          '<label class="hp-pcl">Type DELETE to confirm</label><div class="hp-pcf"><input id="tcx-ok" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="DELETE" value="' + esc(typed) + '"></div></div>';
+        h += '<div data-tcde></div>';
+        P.body(h);
+        var bd = P.el.querySelector('#tcx-dst'), bt = P.el.querySelector('#tcx-tag'), bo = P.el.querySelector('#tcx-ok');
+        bd.oninput = function () { dst = bd.value.trim(); check(); paint(true); };
+        bt.oninput = function () { tag = bt.value.trim(); paint(true); };
+        bo.oninput = function () { typed = bo.value.trim(); paint(true); };
+      }
+      var em = P.el.querySelector('[data-tcde]'); if (em) em.innerHTML = de && dst ? HWP.cap('<span style="color:var(--hp-neg,#e5484d)">' + esc(de) + '</span>') : dst && dChkFor === dst && !dChk ? HWP.cap('Checking the destination\u2026') : '';
+      P.foot(HWP.foot({ no: 'Back', ok: busy ? 'Waiting for Kwallet\u2026' : 'Delete account', okId: 'tcx-go', noId: 'tcx-no', disabled: busy || !ready }));
+      var no = P.el.querySelector('#tcx-no'), ok = P.el.querySelector('#tcx-go');
+      if (no) no.onclick = function () { P.open = false; P.close(); };
+      if (ok) ok.onclick = function () { if (ok.disabled || busy) return; buzz(8); go(); };
+    }
+    function go() {
+      busy = true; paint(true);
+      var t = { TransactionType: 'AccountDelete', Destination: dst, Fee: String(R.inc) };
+      if (tag !== '') t.DestinationTag = +tag;
+      tcXrpOne(t, '').then(function () {
+        toast('Account deleted'); buzz([10, 40, 10]);
+        try { refreshChain('xrp'); } catch (e) {}
+        P.open = false; P.close(); var M = tcXrpOpen.P; if (M && M.open) { M.open = false; M.close(); }
+      }, function (e) { busy = false; toast(String(e && e.message || e).slice(0, 90)); paint(true); });
+    }
+    paint();
   }
 
   /* ---------- Cardano ---------- */
