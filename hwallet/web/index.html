@@ -3211,6 +3211,35 @@ html:not(#s41_0):not(#s41_1):not(#s41_2):not(#s41_3):not(#s41_4):not(#s41_5):not
   window.__hwPing = function () {}; window.__hwDbg = window.__hwPageState = function () { return '{}'; };
 })();
 </script>
+<style id="hw-brx">
+/* v1.9.38: Browser ⋮ drops down from the button over the live page (the page stays visible, nothing is dimmed) */
+.br-ddo{position:fixed;top:0;right:0;bottom:0;left:0;z-index:45;background:transparent}
+html:not(#zb0):not(#zb1):not(#zb2):not(#zb3):not(#zb4):not(#zb5):not(#zb6):not(#zb7):not(#zb8):not(#zb9):not(#zb10):not(#zb11):not(#zb12):not(#zb13):not(#zb14):not(#zb15) .br-ddo>.sheet.br-dd{position:fixed!important;left:auto!important;width:min(316px,calc(100vw - 16px))!important;max-width:none!important;margin:0!important;padding:6px 8px 8px!important;border-radius:18px!important;background:var(--bg)!important;box-shadow:0 10px 30px rgba(0,0,0,.38),0 2px 8px rgba(0,0,0,.22)!important;border:1px solid var(--line)!important;overflow-y:auto!important;overscroll-behavior:contain;transform:scale(.92)!important;opacity:0;transition:transform .16s cubic-bezier(.2,.8,.2,1),opacity .14s ease!important;will-change:transform,opacity}
+html:not(#zb0):not(#zb1):not(#zb2):not(#zb3):not(#zb4):not(#zb5):not(#zb6):not(#zb7):not(#zb8):not(#zb9):not(#zb10):not(#zb11):not(#zb12):not(#zb13):not(#zb14):not(#zb15) .br-ddo.show>.sheet.br-dd{transform:none!important;opacity:1}
+html:not(#zb0):not(#zb1):not(#zb2):not(#zb3):not(#zb4):not(#zb5):not(#zb6):not(#zb7):not(#zb8):not(#zb9):not(#zb10):not(#zb11):not(#zb12):not(#zb13):not(#zb14):not(#zb15) .br-ddo>.sheet.br-dd .br-mn{margin-bottom:6px!important}
+html.hw-brfront #br-v>*{visibility:hidden!important}
+/* v1.9.38: tab groups */
+.br-gs{display:flex;align-items:center;gap:6px;padding:4px 10px 6px;flex:0 0 auto;overflow-x:auto;scrollbar-width:none}
+.br-gs::-webkit-scrollbar{display:none}
+.br-gs .br-gsn{display:flex;align-items:center;gap:6px;flex:0 0 auto;max-width:34vw;padding:4px 10px;border-radius:999px;background:var(--gc);color:#111;font-size:12.5px;font-weight:600;border:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.br-gs .br-gsi{flex:0 0 auto;width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:var(--card);border:2px solid transparent;padding:0}
+.br-gs .br-gsi.on{border-color:var(--gc)}
+.br-gs .br-gsi .br-fav{width:18px;height:18px}
+.br-gs .br-gsp{flex:0 0 auto;width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:transparent;border:1px dashed var(--line);color:var(--text);padding:0}
+.br-gs .br-gsp svg{width:18px;height:18px}
+.br-gcard{background:var(--card);border-radius:18px;overflow:hidden;border:2px solid var(--gc);display:flex;flex-direction:column;cursor:pointer}
+.br-gcard .br-ch .br-gdot,.br-swh .br-gdot{width:12px;height:12px;border-radius:50%;background:var(--gc);flex:0 0 auto}
+.br-g4{aspect-ratio:3/4;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;padding:4px;background:var(--card2)}
+.br-g4>span{border-radius:10px;overflow:hidden;background:var(--card);display:grid;place-items:center;position:relative}
+.br-g4>span img{width:100%;height:100%;object-fit:cover;object-position:top}
+.br-g4>span b{font-size:13px;color:var(--muted)}
+.br-card.br-ing{box-shadow:inset 0 3px 0 var(--gc)}
+.br-swh .br-gname{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:none;border:0;color:var(--text);font:inherit;font-weight:700;font-size:16px;padding:0;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.br-gcols{display:flex;flex-wrap:wrap;gap:10px;padding:4px 4px 10px}
+.br-gcols button{width:34px;height:34px;border-radius:50%;border:3px solid transparent;background:var(--gc);padding:0}
+.br-gcols button.on{border-color:var(--text)}
+.br-gin{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:15px;margin:4px 0 12px}
+</style>
 </head>
 <body data-theme="light">
 <script>try{document.body.setAttribute("data-theme",localStorage.getItem("wallet-theme")||"light")}catch(e){}try{var __u=localStorage.getItem("hw-ui");document.documentElement.setAttribute("data-ui",__u==="m3"||__u==="miuix"?__u:"og")}catch(e){document.documentElement.setAttribute("data-ui","og")}document.documentElement.className+=" hwa";try{var __a=window.HarkNative&&HarkNative.dynamicColors?JSON.parse(String(HarkNative.dynamicColors())||'{}').a1:null;if(__a&&__a['600']&&__a['200']){var __st=document.documentElement.style;__st.setProperty('--u-dyn-l',__a['600']);__st.setProperty('--u-dyn-lo',__a['0']||'#FFFFFF');__st.setProperty('--u-dyn-d',__a['200']);__st.setProperty('--u-dyn-do',__a['800']||'#000000')}}catch(e){}</script>
@@ -7882,7 +7911,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.37';   /* v1.9.21: version bump */
+var APP_VERSION = '1.9.38';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8514,7 +8543,17 @@ var APP_VERSION = '1.9.37';   /* v1.9.21: version bump */
   function xrpc(method, params) {
     return race(CHBY.xrp.rpc, function (u) { return http(u, { method: 'POST', body: JSON.stringify({ method: method, params: [params || {}] }), timeout: 5000 }).then(function (j) { return j.result || {}; }); });
   }
-  function koios(path, body) { return race(CHBY.ada.rest, function (u) { return http(u + path, body ? { method: 'POST', body: JSON.stringify(body) } : {}); }); }
+  /* v1.9.38: Koios's keyless tier allows 5,000 requests a day per IP and answers 429 for 60 s when it is crossed. With a
+     Koios key (Settings > API keys, free tier 50,000 a day) every call carries it; on a 429 Cardano rests 60 s instead of
+     asking again and again, and Home shows the last balance without an error. */
+  var KOIOS429 = 0;
+  function koiosHit(e) { if (e && (e.status === 429 || /HTTP 429/.test(String(e.message || '')))) KOIOS429 = Date.now() + 60000; throw e; }
+  function koiosBusy() { return KOIOS429 > Date.now() && !hasKey('koios'); }
+  function koios(path, body) {
+    var o = function (k) { var x = body ? { method: 'POST', body: JSON.stringify(body) } : {}; if (k) x.headers = { Authorization: 'Bearer {{K:koios}}' }; return x; };
+    var free = function () { if (koiosBusy()) return Promise.reject(Object.assign(new Error('HTTP 429: Koios rate limit, resting'), { status: 429 })); return race(CHBY.ada.rest, function (u) { return http(u + path, o(false)); }).catch(koiosHit); };
+    return keyed('koios', function () { return http(CHBY.ada.rest[0] + path, o(true)); }, free);
+  }
   /* TronGrid without a key allows about 3 requests a second: requests go one after another, with one retry after a 429 */
   var trq = Promise.resolve();
   function tron(path, body, k) {
@@ -13003,7 +13042,7 @@ var APP_VERSION = '1.9.37';   /* v1.9.21: version bump */
   /* v1.6 (A2): Settings > API keys. Hwallet ships the owner's keys sealed in the APK; the user may set their own per
      provider (it wins). The page never reads a key back: it only learns "user", "app" or "" (keyless right now). */
   var KEYP = [['alchemy', 'Alchemy', 'EVM nodes'], ['etherscan', 'Etherscan V2', 'EVM history'], ['helius', 'Helius', 'Solana node'], ['trongrid', 'TronGrid', 'Tron node'],
-    ['lifi', 'LI.FI', 'Swaps and bridges'], ['jupiter', 'Jupiter', 'Solana swaps'], ['reown', 'Reown', 'WalletConnect project ID']];
+    ['lifi', 'LI.FI', 'Swaps and bridges'], ['jupiter', 'Jupiter', 'Solana swaps'], ['reown', 'Reown', 'WalletConnect project ID'], ['koios', 'Koios', 'Cardano node (free key: 50,000 requests a day)']];
   var KEYI = 'M12.65 10A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z';
   function keysHtml() {
     if (!nat('setUserKey') || !nat('keyState')) return '';
@@ -14808,12 +14847,21 @@ window.hwCrashPrompt = crashPrompt;
 
   /* ---------- the tab list (pure; tested headless) ---------- */
   var BRM = {
-    fresh: function () { return { tabs: [], act: null, seq: 0 }; },
+    fresh: function () { return { tabs: [], act: null, seq: 0, groups: [] }; },
     clean: function (S) {
       if (!S || !Array.isArray(S.tabs)) return BRM.fresh();
       S.tabs = S.tabs.filter(function (t) { return t && typeof t.id === 'string' && /^t[0-9a-z]+$/.test(t.id); });
       if (!S.tabs.some(function (t) { return t.id === S.act; })) S.act = S.tabs.length ? S.tabs[S.tabs.length - 1].id : null;
-      S.seq = +S.seq || S.tabs.length; return S;
+      S.seq = +S.seq || S.tabs.length;
+      /* v1.9.38: tab groups ({ id, name, c }); a tab names its group in t.g; a group with no tab is dropped */
+      S.groups = Array.isArray(S.groups) ? S.groups.filter(function (g) { return g && typeof g.id === 'string' && /^g[0-9a-z]+$/.test(g.id); }) : [];
+      BRM.prune(S); return S;
+    },
+    prune: function (S) {
+      if (!Array.isArray(S.groups)) S.groups = [];
+      var ids = {}; S.groups.forEach(function (g) { ids[g.id] = 1; });
+      var used = {}; S.tabs.forEach(function (t) { if (t.g && (!ids[t.g] || t.inc)) delete t.g; if (t.g) used[t.g] = 1; });
+      S.groups = S.groups.filter(function (g) { return used[g.id]; });
     },
     get: function (S, id) { for (var i = 0; i < S.tabs.length; i++) if (S.tabs[i].id === id) return S.tabs[i]; return null; },
     add: function (S, url, inc) {
@@ -14881,7 +14929,7 @@ window.hwCrashPrompt = crashPrompt;
   function brHSave() { clearTimeout(brHSaveT); brHSaveT = setTimeout(function () { var w = function () { jset('hw-br-hist', BRHI); jset('hw-br-mv', BRMV); }; if (window.requestIdleCallback) requestIdleCallback(w, { timeout: 3000 }); else w(); }, 1500); }
   function brHClear() { try { omWipe(); } catch (e) {} BRHI = []; BRMV = {}; clearTimeout(brHSaveT); jset('hw-br-hist', BRHI); jset('hw-br-mv', BRMV); }
   /* v1.8.13: incognito tabs are never written to storage (they are gone after a restart) */
-  function brKeep() { var tabs = BR.tabs.filter(function (t) { return !t.inc; }), act = BR.act; if (!tabs.some(function (t) { return t.id === act; })) act = tabs.length ? tabs[tabs.length - 1].id : null; return { tabs: tabs, act: act, seq: BR.seq }; }
+  function brKeep() { var tabs = BR.tabs.filter(function (t) { return !t.inc; }), act = BR.act; if (!tabs.some(function (t) { return t.id === act; })) act = tabs.length ? tabs[tabs.length - 1].id : null; return { tabs: tabs, act: act, seq: BR.seq, groups: BR.groups || [] }; }
   function brSave(now) { clearTimeout(brSaveT); if (now) jset('hw-br', brKeep()); else brSaveT = setTimeout(function () { jset('hw-br', brKeep()); }, 400); }
   function brN() { return !!(window.HwNative && HwNative.brOpen); }
   function brNat(f) { try { if (window.HwNative && HwNative[f]) return HwNative[f].apply(HwNative, Array.prototype.slice.call(arguments, 1)); } catch (e) { console.error(e); } return null; }
@@ -14919,7 +14967,7 @@ window.hwCrashPrompt = crashPrompt;
   }
 
   /* ---------- the chrome ---------- */
-  var BRU = { sw: false, edit: false, hist: false, mv: false };
+  var BRU = { sw: false, edit: false, hist: false, mv: false, grp: null };
   /* v1.7 (P1, #99): major dApps carry real icons bundled in the APK (assets/dapps/<key>.png; sources in NOTICE). Every other
      site gets its own icon fetched once by HwBrowser (manifest > apple-touch-icon > favicon, cached on disk) and read
      here by host; a letter tile shows only until it is there or when a site has none. */
@@ -15044,18 +15092,129 @@ window.hwCrashPrompt = crashPrompt;
     return '<header class="br-swh"><button class="ib" data-br="hback" aria-label="Back">' + sv('back') + '</button><b>History</b>' + (n ? '<button class="br-txt" data-br="hclear">Clear all</button>' : '') + '</header>' +
       '<div class="br-hv">' + (n ? out : '<div class="wc-empty br-none"><b>No history yet</b><span>Sites you open in the Browser show here.</span></div>') + '</div>';
   }
+  /* v1.9.38: Chrome-style tab groups. Long-press a tab (or Browser ⋮ > Add tab to group) to group it; a group is one card in
+     the switcher (its first four tabs as a 2x2 preview), opens to its own grid, and a strip of its tabs sits under the
+     address bar while you browse one of them. Groups are kept with the tabs (incognito tabs are never grouped). */
+  var GCOL = ['#9aa0a6', '#8ab4f8', '#f28b82', '#fdd663', '#81c995', '#ff8bcb', '#c58af9', '#78d9ec', '#fcad70'];
+  function brGrp(id) { var a = BR.groups || []; for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i]; return null; }
+  function brGrpTabs(id) { return BR.tabs.filter(function (t) { return t.g === id; }); }
+  function brGrpCol(g) { return GCOL[(g && g.c) | 0] || GCOL[0]; }
+  function brGrpName(g) { if (g && g.name) return g.name; var n = g ? brGrpTabs(g.id).length : 0; return n + ' tab' + (n === 1 ? '' : 's'); }
+  function brGrpNew(tabId) {
+    var t = BRM.get(BR, tabId); if (!t || t.inc) return null; if (!BR.groups) BR.groups = [];
+    var used = BR.groups.map(function (g) { return g.c | 0; }), c = 1; for (var k = 1; k < GCOL.length; k++) if (used.indexOf(k) < 0) { c = k; break; }
+    var g = { id: 'g' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), name: '', c: c };
+    BR.groups.push(g); t.g = g.id; BRM.prune(BR); brSave(true); return g;
+  }
+  function brGrpAdd(tabId, gid) { var t = BRM.get(BR, tabId); if (!t || t.inc || !brGrp(gid)) return; t.g = gid; BRM.prune(BR); brSave(true); }
+  function brGrpOut(tabId) { var t = BRM.get(BR, tabId); if (!t) return; delete t.g; BRM.prune(BR); if (BRU.grp && !brGrpTabs(BRU.grp).length) BRU.grp = null; brSave(true); }
+  function brGrpUngroup(gid) { BR.tabs.forEach(function (t) { if (t.g === gid) delete t.g; }); BRM.prune(BR); if (BRU.grp === gid) BRU.grp = null; brSave(true); brPaint(); }
+  function brGrpClose(gid) { brGrpTabs(gid).forEach(function (t) { brIncDrop(t.id); BRM.close(BR, t.id); delete BRL[t.id]; brNat('brClose', t.id); }); BRM.prune(BR); if (BRU.grp === gid) BRU.grp = null; brSave(true); brShown = ''; brPaint(); }
+  function brGrpNewTab(gid) { var id = brNew('', false); if (brGrp(gid)) { var t = BRM.get(BR, id); if (t) { t.g = gid; brSave(true); brPaint(); } } }
+  function brCardHtml(t) {
+    var th = brNat('brThumb', t.id) || '', g = t.g && !BRU.grp ? brGrp(t.g) : null;
+    return '<div class="br-card' + (t.id === BR.act ? ' on' : '') + (t.inc ? ' br-inc' : '') + '" data-tab-id="' + esc(t.id) + '"><div class="br-ch">' + (t.inc ? '<span class="br-incb" title="Incognito">' + brSvg(INCI) + '</span>' : brFav(t)) + '<span class="br-ct">' + (t.inc ? '<em class="br-inct">Incognito</em> ' : '') + esc(t.title || brHostOf(t.url) || (t.inc ? 'New incognito tab' : 'New tab')) + '</span>' +
+      '<button class="br-cx" data-close="' + esc(t.id) + '" aria-label="Close tab">' + sv('close') + '</button></div>' +
+      '<div class="br-th">' + (th ? '<img alt="" src="' + esc(th) + '">' : '<span class="br-thf">' + brFav(t, 'br-favb') + '<span>' + esc(brHostOf(t.url)) + '</span></span>') + '</div></div>';
+  }
+  function brGcardHtml(g) {
+    var ts = brGrpTabs(g.id).slice().reverse(), on = ts.some(function (t) { return t.id === BR.act; });
+    var cells = ts.slice(0, 4).map(function (t, k) {
+      if (k === 3 && ts.length > 4) return '<span><b>+' + (ts.length - 3) + '</b></span>';
+      var th = brNat('brThumb', t.id) || ''; return '<span>' + (th ? '<img alt="" src="' + esc(th) + '">' : brFav(t, 'br-favb')) + '</span>';
+    });
+    while (cells.length < 4) cells.push('<span></span>');
+    return '<div class="br-gcard' + (on ? ' on' : '') + '" data-grp="' + esc(g.id) + '" style="--gc:' + brGrpCol(g) + '"><div class="br-ch"><span class="br-gdot"></span><span class="br-ct">' + esc(brGrpName(g)) + '</span>' +
+      '<button class="br-cx" data-gclose="' + esc(g.id) + '" aria-label="Close group">' + sv('close') + '</button></div><div class="br-g4">' + cells.join('') + '</div></div>';
+  }
   function brSwHtml() {
-    var n = BR.tabs.length;
+    var n = BR.tabs.length, G = BRU.grp ? brGrp(BRU.grp) : null;
+    if (G) {
+      var gt = brGrpTabs(G.id);
+      return '<header class="br-swh br-swh2" style="--gc:' + brGrpCol(G) + '"><button class="ib br-swi" data-br="gback" aria-label="Back">' + sv('back') + '</button><button class="br-gname" data-br="gname"><span class="br-gdot"></span><span>' + esc(brGrpName(G)) + '</span></button>' +
+        '<button class="ib br-swi" data-br="gnew" aria-label="New tab in group" title="New tab in group">' + sv('plus') + '</button><button class="ib br-swi" data-br="gmore" aria-label="Group options" title="Group options">' + sv('more') + '</button><button class="br-txt pri br-swd" data-br="done">Done</button></header>' +
+        '<div class="br-grid">' + gt.slice().reverse().map(brCardHtml).join('') + '</div>';
+    }
     /* v1.8.15 (4.3): Chrome-style header: "N tabs" on one line, small icon buttons for a new tab and an incognito tab,
        Close all in the overflow menu, Done on the right */
+    var seen = {}, items = [];
+    BR.tabs.slice().reverse().forEach(function (t) {
+      var g = t.g ? brGrp(t.g) : null;
+      if (!g) { items.push(brCardHtml(t)); return; }
+      if (seen[g.id]) return; seen[g.id] = 1; items.push(brGcardHtml(g));
+    });
     return '<header class="br-swh br-swh2"><b class="br-swn">' + n + ' tab' + (n === 1 ? '' : 's') + '</b><button class="ib br-swi" data-br="new" aria-label="New tab" title="New tab">' + sv('plus') + '</button><button class="ib br-swi" data-br="newinc" aria-label="New incognito tab" title="New incognito tab">' + brSvg(INCI) + '</button>' + (n ? '<button class="ib br-swi" data-br="swmore" aria-label="More" title="More">' + sv('more') + '</button>' : '') + '<button class="br-txt pri br-swd" data-br="done">Done</button></header>' +
-      '<div class="br-grid">' + (n ? BR.tabs.slice().reverse().map(function (t) {
-        var th = brNat('brThumb', t.id) || '';
-        return '<div class="br-card' + (t.id === BR.act ? ' on' : '') + (t.inc ? ' br-inc' : '') + '" data-tab-id="' + esc(t.id) + '"><div class="br-ch">' + (t.inc ? '<span class="br-incb" title="Incognito">' + brSvg(INCI) + '</span>' : brFav(t)) + '<span class="br-ct">' + (t.inc ? '<em class="br-inct">Incognito</em> ' : '') + esc(t.title || brHostOf(t.url) || (t.inc ? 'New incognito tab' : 'New tab')) + '</span>' +
-          '<button class="br-cx" data-close="' + esc(t.id) + '" aria-label="Close tab">' + sv('close') + '</button></div>' +
-          '<div class="br-th">' + (th ? '<img alt="" src="' + esc(th) + '">' : '<span class="br-thf">' + brFav(t, 'br-favb') + '<span>' + esc(brHostOf(t.url)) + '</span></span>') + '</div></div>';
-      }).join('') : '<div class="wc-empty br-none"><b>No open tabs</b><span>Open a site from the address bar.</span></div>') + '</div>';
+      '<div class="br-grid">' + (n ? items.join('') : '<div class="wc-empty br-none"><b>No open tabs</b><span>Open a site from the address bar.</span></div>') + '</div>';
   }
+  /* the strip of the current tab's group, under the address bar */
+  function brGsHtml() {
+    var t = brCur(), g = t && t.g ? brGrp(t.g) : null; if (!g) return '';
+    return '<div class="br-gs" id="br-gs" style="--gc:' + brGrpCol(g) + '"><button class="br-gsn" data-br="gopen" data-g="' + esc(g.id) + '">' + esc(brGrpName(g)) + '</button>' +
+      brGrpTabs(g.id).map(function (x) { return '<button class="br-gsi' + (x.id === BR.act ? ' on' : '') + '" data-gsel="' + esc(x.id) + '" aria-label="' + esc(x.title || brHostOf(x.url) || 'New tab') + '">' + brFav(x) + '</button>'; }).join('') +
+      '<button class="br-gsp" data-br="gnew" data-g="' + esc(g.id) + '" aria-label="New tab in group">' + sv('plus') + '</button></div>';
+  }
+  function brGsSig() { var t = brCur(), g = t && t.g ? brGrp(t.g) : null; return g ? g.id + g.name + g.c + BR.act + brGrpTabs(g.id).map(function (x) { return x.id + (x.icon || '') + (x.url || '').slice(0, 60); }).join('|') : ''; }
+  var brGsLast = '';
+  /* a tab's group options (long-press a tab card, or Browser ⋮ > Add tab to group) */
+  function brTabGrpSheet(id) {
+    var t = BRM.get(BR, id); if (!t) return;
+    if (t.inc) { toast('Incognito tabs cannot be grouped'); return; }
+    var others = (BR.groups || []).filter(function (g) { return g.id !== t.g; });
+    brSheet('<h3>' + esc(t.title || brHostOf(t.url) || 'New tab') + '</h3><div class="lst">' +
+      '<button class="br-row" data-tg="new"><span class="br-ri">' + sv('plus') + '</span><span class="am"><span class="an">Add tab to new group</span></span></button>' +
+      others.map(function (g) { return '<button class="br-row" data-tg="' + esc(g.id) + '" style="--gc:' + brGrpCol(g) + '"><span class="br-ri"><span class="br-gdot" style="width:12px;height:12px;border-radius:50%;background:var(--gc)"></span></span><span class="am"><span class="an">Add to ' + esc(brGrpName(g)) + '</span><span class="ap">' + brGrpTabs(g.id).length + ' tabs</span></span></button>'; }).join('') +
+      (t.g ? '<button class="br-row" data-tg="out"><span class="br-ri">' + sv('back') + '</span><span class="am"><span class="an">Remove from group</span></span></button>' : '') +
+      '<button class="br-row" data-tg="close"><span class="br-ri">' + sv('close') + '</span><span class="am"><span class="an">Close tab</span></span></button></div>', function (ov, close) {
+      ov.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-tg]'); if (!b) return; var k = b.getAttribute('data-tg'); buzz(6); close();
+        if (k === 'new') { var g = brGrpNew(id); if (g) setTimeout(function () { brGrpEdit(g.id, true); }, 220); }
+        else if (k === 'out') brGrpOut(id);
+        else if (k === 'close') { brClose(id); return; }
+        else brGrpAdd(id, k);
+        brShown = ''; brPaint();
+      });
+    });
+  }
+  /* name and colour of a group (Chrome's group editor) */
+  function brGrpEdit(gid, fresh) {
+    var g = brGrp(gid); if (!g) return;
+    brSheet('<h3>' + (fresh ? 'New tab group' : 'Edit group') + '</h3><input class="br-gin" id="br-gin" type="text" maxlength="40" placeholder="Name this group" value="' + esc(g.name || '') + '" autocomplete="off">' +
+      '<div class="br-gcols">' + GCOL.map(function (c, k) { return '<button data-gc="' + k + '" class="' + ((g.c | 0) === k ? 'on' : '') + '" style="--gc:' + c + '" aria-label="Colour ' + (k + 1) + '"></button>'; }).join('') + '</div>' +
+      '<div class="row2"><button class="btn" data-x>Cancel</button><button class="btn pri" data-gok>Done</button></div>', function (ov, close) {
+      var inp = ov.querySelector('#br-gin'), col = g.c | 0;
+      ov.addEventListener('click', function (e) {
+        var c = e.target.closest('[data-gc]'); if (c) { col = +c.getAttribute('data-gc'); [].forEach.call(ov.querySelectorAll('[data-gc]'), function (q) { q.classList.toggle('on', q === c); }); buzz(4); return; }
+        if (e.target.closest('[data-gok]')) { g.name = String(inp.value || '').trim().slice(0, 40); g.c = col; brSave(true); close(); brGsLast = ''; brPaint(); }
+      });
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var ok = ov.querySelector('[data-gok]'); if (ok) ok.click(); } });
+    });
+  }
+  function brGrpMore(gid) {
+    var g = brGrp(gid); if (!g) return; var n = brGrpTabs(gid).length;
+    brSheet('<div class="lst"><button class="br-row" data-gm="edit"><span class="br-ri">' + brSvg('M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z') + '</span><span class="am"><span class="an">Rename and colour</span></span></button>' +
+      '<button class="br-row" data-gm="ungroup"><span class="br-ri">' + sv('back') + '</span><span class="am"><span class="an">Ungroup</span><span class="ap">Keeps the ' + n + ' tab' + (n === 1 ? '' : 's') + ' open</span></span></button>' +
+      '<button class="br-row" data-gm="close"><span class="br-ri">' + sv('close') + '</span><span class="am"><span class="an">Close group</span><span class="ap">Closes ' + n + ' tab' + (n === 1 ? '' : 's') + '</span></span></button></div>', function (ov, close) {
+      ov.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-gm]'); if (!b) return; var k = b.getAttribute('data-gm');
+        if (k === 'close' && !b.dataset.sure) { b.dataset.sure = '1'; var a = b.querySelector('.an'); if (a) a.textContent = 'Tap again to close ' + n + ' tab' + (n === 1 ? '' : 's'); buzz(6); return; }
+        buzz(6); close();
+        if (k === 'edit') setTimeout(function () { brGrpEdit(gid, false); }, 220);
+        else if (k === 'ungroup') brGrpUngroup(gid);
+        else brGrpClose(gid);
+      });
+    });
+  }
+  /* long-press a tab card = its group options (a swipe still closes it) */
+  var BRLP = null, brLpJust = 0;
+  document.addEventListener('touchstart', function (e) {
+    var c = e.target && e.target.closest && e.target.closest('.br-grid .br-card'); clearTimeout(BRLP && BRLP.t); BRLP = null;
+    if (!c || e.touches.length !== 1 || e.target.closest('.br-cx')) return;
+    var t0 = e.touches[0], id = c.getAttribute('data-tab-id');
+    BRLP = { x: t0.clientX, y: t0.clientY, t: setTimeout(function () { if (!BRLP) return; BRLP = null; brLpJust = Date.now() + 100000; buzz(12); brTabGrpSheet(id); }, 480) };
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) { if (!BRLP) return; var t0 = e.touches[0]; if (Math.abs(t0.clientX - BRLP.x) > 8 || Math.abs(t0.clientY - BRLP.y) > 8) { clearTimeout(BRLP.t); BRLP = null; } }, { passive: true });
+  document.addEventListener('touchend', function () { if (BRLP) { clearTimeout(BRLP.t); BRLP = null; } if (brLpJust > Date.now()) brLpJust = Date.now(); }, { passive: true });
+  document.addEventListener('click', function (e) { if (Date.now() - brLpJust < 450 && e.target.closest && e.target.closest('.br-grid .br-card')) { e.stopPropagation(); e.preventDefault(); } }, true);
   /* v1.9.13: swipe a tab card left or right to close it (Chrome-style). A tick when the swipe passes the point of no return,
      a firmer one when the tab closes; a short swipe springs back; vertical scrolling of the grid is untouched. */
   var BRSW = null, brSwJust = 0;
@@ -15088,7 +15247,7 @@ window.hwCrashPrompt = crashPrompt;
     var t = brCur();
     if (BRU.hist) el.innerHTML = '<div class="br-sw br-h">' + brHistHtml() + '</div>';
     else if (BRU.sw) el.innerHTML = '<div class="br-sw">' + brSwHtml() + '</div>';
-    else el.innerHTML = brBarHtml() + '<div class="br-v" id="br-v">' + (t && t.url && !BRU.edit ? '<div class="br-ph">' + brFav(t, 'br-favb') + '<span>' + esc(t.title || brHostOf(t.url)) + '</span></div>' : brStartHtml()) + '</div>';
+    else el.innerHTML = brBarHtml() + brGsHtml() + '<div class="br-v" id="br-v">' + (t && t.url && !BRU.edit ? '<div class="br-ph">' + brFav(t, 'br-favb') + '<span>' + esc(t.title || brHostOf(t.url)) + '</span></div>' : brStartHtml()) + '</div>';
     brPlace();
   }
   function brPaintBar() {
@@ -15098,6 +15257,7 @@ window.hwCrashPrompt = crashPrompt;
     var i = document.getElementById('br-in'); if (i && document.activeElement !== i) i.value = t ? brHostOf(t.url) || t.url : '';
     var lk = el.querySelector('.br-lk'); if (lk) { var s = t && /^https:/.test(t.url); lk.classList.toggle('s', !!s); lk.innerHTML = sv(s ? 'lock' : 'globe'); }
     var tc = el.querySelector('.br-tc span'); if (tc) tc.textContent = BR.tabs.length > 99 ? ':D' : BR.tabs.length;
+    var gsg = brGsSig(); if (gsg !== brGsLast) { brGsLast = gsg; var gs = document.getElementById('br-gs'), nh = brGsHtml(); if (gs && nh) gs.outerHTML = nh; }
     if (window.hwTr) hwTr.paint();
   }
   /* lay the active tab's native WebView over #br-v (or hide it while a sheet, the switcher or the address bar is up) */
@@ -15150,7 +15310,7 @@ window.hwCrashPrompt = crashPrompt;
     brNat('brOpen', t.id, t.url || '', t.scroll || 0);
   }
   function brMount() { var el = brEl(); if (el.hidden) { el.hidden = false; } BRU.edit = false; BRU.mv = false; brPaint(); }
-  function brUnmount() { var el = document.getElementById('br'); if (!el || el.hidden) return; el.hidden = true; BRU.sw = false; BRU.edit = false; BRU.hist = false; BRU.mv = false; brNat('brHide'); brShown = 'hidden'; }
+  function brUnmount() { try { brDropClose(true); } catch (e) {} var el = document.getElementById('br'); if (!el || el.hidden) return; el.hidden = true; BRU.grp = null; BRU.sw = false; BRU.edit = false; BRU.hist = false; BRU.mv = false; brNat('brHide'); brShown = 'hidden'; }
   var brMo = new MutationObserver(function () { if (V.v === 'browser') brPlace(); });
   brMo.observe(document.body, { childList: true });
   window.addEventListener('resize', function () { if (V.v === 'browser') brPlace(); });
@@ -15167,12 +15327,12 @@ window.hwCrashPrompt = crashPrompt;
     brPaint(); return t.id;
   }
   function brNew(url, inc) { if (inc === undefined) { var c0 = brCur(); inc = !!(url && c0 && c0.inc); } var id = BRM.add(BR, url ? brUrl(url, brEng()) : '', inc); brSave(true); BRU.sw = false; BRU.edit = !url; brPaint(); if (!url) setTimeout(function () { var i = document.getElementById('br-in'); if (i) i.focus(); }, 60); return id; }
-  function brSelect(id) { if (!BRM.select(BR, id)) return; brSave(); BRU.sw = false; BRU.edit = false; brShown = ''; brPaint(); }
+  function brSelect(id) { if (!BRM.select(BR, id)) return; brSave(); BRU.grp = null; BRU.sw = false; BRU.edit = false; brShown = ''; brPaint(); }
   function brClose(id) {
     brIncDrop(id);
-    BRM.close(BR, id); delete BRL[id]; brNat('brClose', id); brSave(true); brShown = ''; brPaint();
+    BRM.close(BR, id); BRM.prune(BR); if (BRU.grp && !brGrpTabs(BRU.grp).length) BRU.grp = null; delete BRL[id]; brNat('brClose', id); brSave(true); brShown = ''; brPaint();
   }
-  function brCloseAll() { BR.tabs.forEach(function (t) { brIncDrop(t.id); brNat('brClose', t.id); }); BR = BRM.fresh(); BRL = {}; brSave(true); brShown = ''; brPaint(); }
+  function brCloseAll() { BR.tabs.forEach(function (t) { brIncDrop(t.id); brNat('brClose', t.id); }); BRU.grp = null; BR = BRM.fresh(); BRL = {}; brSave(true); brShown = ''; brPaint(); }
   /* v1.8.15 (3.7): a wallet connection approved in an incognito tab is dropped when that tab closes (and at the next start,
      if Hwallet was closed with the tab open): it never stays under Connected sites */
   var BRINC = jget('hw-br-incc', {}) || {};
@@ -15246,7 +15406,7 @@ window.hwCrashPrompt = crashPrompt;
         brMvEdit(false); return;
       }
       if (Date.now() - brMvJust < 450 && e.target.closest('#br-mv')) return;
-      var b = e.target.closest('button, .br-card, .br-hr'); if (!b) return;
+      var b = e.target.closest('button, .br-card, .br-gcard, .br-hr'); if (!b) return;
       var k = b.getAttribute('data-br');
       if (b.hasAttribute('data-hdel')) { e.stopPropagation(); buzz(6); BRH.del(BRHI, +b.getAttribute('data-hdel')); brHSave(); brPaint(); return; }
       if (b.hasAttribute('data-hgo')) { buzz(4); brGo(b.getAttribute('data-hgo')); return; }
@@ -15256,8 +15416,16 @@ window.hwCrashPrompt = crashPrompt;
       if (b.hasAttribute('data-close')) { e.stopPropagation(); buzz(6); brClose(b.getAttribute('data-close')); return; }
       if (b.hasAttribute('data-go')) { buzz(4); var i = document.getElementById('br-in'); if (i) i.blur(); brGo(b.getAttribute('data-go')); return; }
       if (b.classList.contains('br-card')) { buzz(4); brSelect(b.getAttribute('data-tab-id')); return; }
+      if (b.hasAttribute('data-gclose')) { e.stopPropagation(); var gc = b.getAttribute('data-gclose'), gn = brGrpTabs(gc).length; if (!b.dataset.sure && gn > 1) { b.dataset.sure = '1'; toast('Tap \u00d7 again to close ' + gn + ' tabs'); buzz(6); setTimeout(function () { if (b.isConnected) delete b.dataset.sure; }, 2500); return; } buzz(8); brGrpClose(gc); return; }
+      if (b.hasAttribute('data-grp')) { buzz(4); BRU.grp = b.getAttribute('data-grp'); brPaint(); return; }
+      if (b.hasAttribute('data-gsel')) { buzz(4); brSelect(b.getAttribute('data-gsel')); return; }
+      if (k === 'gback') { buzz(4); BRU.grp = null; brPaint(); return; }
+      if (k === 'gname') { buzz(4); if (BRU.grp) brGrpEdit(BRU.grp, false); return; }
+      if (k === 'gmore') { buzz(4); if (BRU.grp) brGrpMore(BRU.grp); return; }
+      if (k === 'gnew') { buzz(4); var gg = b.getAttribute('data-g') || BRU.grp; BRU.grp = null; if (gg) brGrpNewTab(gg); return; }
+      if (k === 'gopen') { buzz(4); var t2 = brCur(); if (t2 && BRL[t2.id] && BRL[t2.id].open) brNat('brSnap', t2.id); BRU.grp = b.getAttribute('data-g'); BRU.sw = true; BRU.edit = false; brPaint(); return; }
       if (k === 'tabs') { buzz(4); var t = brCur(); if (t && BRL[t.id] && BRL[t.id].open) brNat('brSnap', t.id); BRU.sw = true; BRU.edit = false; brPaint(); }
-      else if (k === 'done') { BRU.sw = false; brPaint(); }
+      else if (k === 'done') { BRU.sw = false; BRU.grp = null; brPaint(); }
       else if (k === 'new') { buzz(4); brNew('', false); }
       else if (k === 'newinc') { buzz(4); brNew('', true); toast('Incognito tab: no history, cookies or site data are kept after you close it'); }
       else if (k === 'closeall') { if (b.dataset.sure) { buzz([10, 30, 10]); brCloseAll(); } else { b.dataset.sure = '1'; b.textContent = 'Close all?'; setTimeout(function () { if (b.isConnected) { delete b.dataset.sure; b.textContent = 'Close all'; } }, 2500); } }
@@ -15304,14 +15472,81 @@ window.hwCrashPrompt = crashPrompt;
       });
     });
   }
+  /* v1.9.38: Browser ⋮ is a drop-down from the button, over the live page. The page is not hidden or dimmed: Hwallet's
+     own WebView is raised above the tab natively (HwNative.brFront) and paints nothing but the bar and the menu over it;
+     the page area is see-through while the menu is open. Tap outside or Back closes it. */
+  var BRDD = null, BRFR = null;
+  function brDropOk() { return !!(window.HwNative && HwNative.brFront); }
+  function brFrontOn() {
+    if (BRFR) return; var v = document.getElementById('br-v'), br = document.getElementById('br'); if (!v || !br) return;
+    var r = v.getBoundingClientRect(), saved = [], hid = [];
+    function cut(el) {
+      var c = getComputedStyle(el).backgroundColor; saved.push([el, el.style.getPropertyValue('background'), el.style.getPropertyPriority('background')]);
+      var er = el.getBoundingClientRect(), a = Math.max(0, Math.round(r.top - er.top)), b = Math.max(0, Math.round(r.bottom - er.top));
+      if (!c || c === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(c)) { el.style.setProperty('background', 'transparent', 'important'); return; }
+      el.style.setProperty('background', 'linear-gradient(to bottom,' + c + ' ' + a + 'px,transparent ' + a + 'px,transparent ' + b + 'px,' + c + ' ' + b + 'px)', 'important');
+    }
+    [document.documentElement, document.body, br, v].forEach(cut);
+    [].forEach.call(document.body.children, function (k) {
+      if (k === br || (k.classList && k.classList.contains('br-ddo')) || /^(SCRIPT|STYLE|LINK|META)$/.test(k.tagName)) return;
+      var kr = k.getBoundingClientRect(); if (kr.bottom > r.top && kr.top < r.bottom && kr.right > r.left && kr.left < r.right) { hid.push([k, k.style.visibility]); k.style.visibility = 'hidden'; }
+    });
+    BRFR = { saved: saved, hid: hid };
+    document.documentElement.classList.add('hw-brfront');
+    brNat('brFront', true);
+  }
+  function brFrontOff() {
+    var F = BRFR; if (!F) return; BRFR = null;
+    brNat('brFront', false);
+    /* the tab is back on top first, then Hwallet repaints its page area (no flash) */
+    setTimeout(function () {
+      if (BRFR) return;
+      F.saved.forEach(function (x) { if (x[1]) x[0].style.setProperty('background', x[1], x[2]); else x[0].style.removeProperty('background'); });
+      F.hid.forEach(function (x) { x[0].style.visibility = x[1]; });
+      document.documentElement.classList.remove('hw-brfront');
+    }, 80);
+  }
+  function brDrop(h, f) {
+    brDropClose(true);
+    var ov = document.createElement('div'); ov.className = 'br-ddo';
+    ov.innerHTML = '<div class="sheet br-sh br-dd" role="menu">' + h + '</div>';
+    var dd = ov.firstChild, btn = document.querySelector('#br [data-br="menu"]'), r = btn ? btn.getBoundingClientRect() : null, W = window.innerWidth, H = window.innerHeight;
+    var vv = document.getElementById('br-v'), vr = vv ? vv.getBoundingClientRect() : { top: 0, bottom: H };
+    if (r && r.top > H / 2) { dd.style.bottom = Math.round(H - r.top + 6) + 'px'; dd.style.maxHeight = Math.max(200, Math.round(r.top - Math.max(vr.top, 0) - 12)) + 'px'; dd.style.transformOrigin = '100% 100%'; }
+    else { var top = r ? r.bottom + 4 : vr.top + 4; dd.style.top = Math.round(top) + 'px'; dd.style.maxHeight = Math.max(200, Math.round(H - top - 12)) + 'px'; dd.style.transformOrigin = '100% 0'; }
+    dd.style.right = Math.round(r ? Math.max(6, W - r.right) : 8) + 'px';
+    document.body.appendChild(ov);
+    if (brDropOk() && brShown && brShown !== 'hidden') brFrontOn();   /* a live page under the menu stays on screen */
+    void dd.offsetWidth; ov.classList.add('show'); buzz(4);
+    var close = function () { if (BRDD === ov) brDropClose(); };
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov._close = close; BRDD = ov;
+    if (f) f(ov, close);
+    return ov;
+  }
+  function brDropClose(now) {
+    var ov = BRDD; if (!ov) return false; BRDD = null; clearInterval(ov._vt);
+    ov.classList.remove('show'); brFrontOff();
+    if (now) ov.remove(); else setTimeout(function () { ov.remove(); }, 170);
+    return true;
+  }
+  /* Back: the drop-down first, then an open group back to all tabs */
+  window.hwBrBack = function () { if (brDropClose()) return true; if (BRU.sw && BRU.grp && V.v === 'browser') { BRU.grp = null; brPaint(); return true; } return false; };
+  /* v1.9.38: VPN on/off in Browser ⋮ (the same app-only VPN as Settings > Network & VPN) */
+  function brVpnRow() {
+    if (typeof vpnNat !== 'function' || !vpnNat()) return '';
+    var v = vpnRead();
+    return '<div class="lst br-tgl"><button class="br-row br-sw2' + (v.on ? ' on' : '') + '" data-m="vpn"><span class="br-ri">' + brSvg(typeof KI_GLOBE === 'string' ? KI_GLOBE : 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z') + '</span><span class="am"><span class="an">VPN</span><span class="ap">' + esc(brVpnSub(v)) + '</span></span><span class="kws-sw" aria-hidden="true"></span></button></div>';
+  }
+  function brVpnSub(v) { v = v || VPN; if (!v.on) return 'Off \u00b7 ' + vpnWhere(v); return vpnSum().replace(/^VPN /, '').replace(/^on/, 'On'); }
   function brMenu() {
     var t = brCur(), L = t ? BRL[t.id] || {} : {}, web = !!(t && /^https?:/.test(t.url || '')), bm = web && brBmHas(t.url);
     /* v1.8.8 (R2a/R4): one nav row across the full width: back, forward, reload, new tab, bookmark (star), desktop view */
-    brSheet('<div class="br-mn br-mn6"><button data-m="back"' + (L.back ? '' : ' disabled') + ' aria-label="Back">' + sv('back') + '</button><button data-m="fwd"' + (L.fwd || (t && !t.url && t.fwd) ? '' : ' disabled') + ' aria-label="Forward">' + sv('fwd') + '</button>' +
+    brDrop('<div class="br-mn br-mn6"><button data-m="back"' + (L.back ? '' : ' disabled') + ' aria-label="Back">' + sv('back') + '</button><button data-m="fwd"' + (L.fwd || (t && !t.url && t.fwd) ? '' : ' disabled') + ' aria-label="Forward">' + sv('fwd') + '</button>' +
       '<button data-m="reload"' + (t ? '' : ' disabled') + ' aria-label="Reload">' + sv('reload') + '</button><button data-m="new" aria-label="New tab">' + sv('plus') + '</button>' +
       '<button data-m="star"' + (web ? '' : ' disabled') + ' class="' + (bm ? 'on' : '') + '" aria-pressed="' + bm + '" aria-label="' + (bm ? 'Remove bookmark' : 'Bookmark this page') + '">' + brSvg(bm ? STAR : STARO) + '</button>' +
       '<button data-m="desk"' + (web && window.HwNative && HwNative.brDesk ? '' : ' disabled') + ' class="' + (L.desk ? 'on' : '') + '" aria-pressed="' + !!L.desk + '" aria-label="Desktop view">' + brSvg(DESK) + '</button></div>' +
-      brTgl(t, L) + (window.hwTr ? hwTr.menuHtml(t) : '') + '<div class="lst">' + (t ? '<button class="br-row" data-m="copy"><span class="br-ri">' + sv('copy') + '</span><span class="am"><span class="an">Copy link</span><span class="ap">' + esc(short(t.url, 18)) + '</span></span></button>' +
+      brVpnRow() + brTgl(t, L) + (window.hwTr ? hwTr.menuHtml(t) : '') + '<div class="lst">' + (t && !t.inc ? '<button class="br-row" data-m="grp"><span class="br-ri">' + brSvg('M3 5h8v6H3V5zm10 0h8v6h-8V5zM3 13h8v6H3v-6zm10 0h8v6h-8v-6z') + '</span><span class="am"><span class="an">' + (t.g ? 'Tab group' : 'Add tab to group') + '</span>' + (t.g && brGrp(t.g) ? '<span class="ap">' + esc(brGrpName(brGrp(t.g))) + '</span>' : '') + '</span></button>' : '') + (t ? '<button class="br-row" data-m="copy"><span class="br-ri">' + sv('copy') + '</span><span class="am"><span class="an">Copy link</span><span class="ap">' + esc(short(t.url, 18)) + '</span></span></button>' +
       '<button class="br-row" data-m="ext"><span class="br-ri">' + sv('ext') + '</span><span class="am"><span class="an">Open in another browser</span></span></button>' : '') +
       '<button class="br-row" data-m="newinc"><span class="br-ri">' + brSvg(INCI) + '</span><span class="am"><span class="an">New incognito tab</span><span class="ap">No history, cookies or site data kept</span></span></button>' +
       '<button class="br-row" data-m="bms"><span class="br-ri">' + brSvg(BMI) + '</span><span class="am"><span class="an">Bookmarks</span></span><span class="br-rv">' + (function () { var n = brBm().length; return n ? n : ''; })() + '</span></button>' +
@@ -15319,9 +15554,12 @@ window.hwCrashPrompt = crashPrompt;
       '<button class="br-row" data-m="sites"><span class="br-ri">' + sv('link') + '</span><span class="am"><span class="an">Connected sites</span></span></button>' +
       '<button class="br-row" data-m="set"><span class="br-ri">' + sv('gear') + '</span><span class="am"><span class="an">Browser settings</span><span class="ap">Storage, search, translation</span></span></button></div>', function (ov, close) {
       if (window.hwTr) hwTr.menuBind(ov, t);
+      ov._vt = setInterval(function () { if (!ov.isConnected) { clearInterval(ov._vt); return; } var vb = ov.querySelector('[data-m="vpn"]'); if (!vb) return; var vv = VPN; vb.classList.toggle('on', !!vv.on); var vs = vb.querySelector('.ap'); if (vs) vs.textContent = brVpnSub(vv); }, 1000);
       ov.addEventListener('click', function (e) {
         var b = e.target.closest('[data-m]'); if (!b || b.disabled) return; var m = b.getAttribute('data-m'); buzz(4);
         if (m === 'tral' || m === 'trnv') return;
+        /* v1.9.38: the VPN switches in place; the menu stays open and follows the connection */
+        if (m === 'vpn') { var v0 = vpnRead(); if (!v0.on && v0.supported === false) { toast('The VPN is not supported on this phone'); return; } vpnSet({ on: !v0.on }); buzz(10); var v1 = vpnRead(); b.classList.toggle('on', !!v1.on); var vs = b.querySelector('.ap'); if (vs) vs.textContent = brVpnSub(v1); return; }
         /* v1.8.8: the star and desktop view switch in place; the sheet stays open */
         if (m === 'star') { var nb = brBmToggle(t); b.classList.toggle('on', nb); b.setAttribute('aria-pressed', nb); b.innerHTML = brSvg(nb ? STAR : STARO); var rv = ov.querySelector('[data-m="bms"] .br-rv'); if (rv) rv.textContent = brBm().length || ''; return; }
         if (m === 'desk') { var nd = !b.classList.contains('on'); b.classList.toggle('on', nd); b.setAttribute('aria-pressed', nd); L.desk = nd; brNat('brDesk', t.id, nd); setTimeout(close, 120); return; }
@@ -15340,6 +15578,7 @@ window.hwCrashPrompt = crashPrompt;
         else if (m === 'bms') setTimeout(brBmSheet, 200);
         else if (m === 'hist') { BRU.hist = true; brPaint(); }
         else if (m === 'set') setTimeout(brSettings, 200);
+        else if (m === 'grp') setTimeout(function () { if (t.g && brGrp(t.g)) { if (BRL[t.id] && BRL[t.id].open) brNat('brSnap', t.id); BRU.grp = t.g; BRU.sw = true; BRU.edit = false; brPaint(); } else brTabGrpSheet(t.id); }, 200);
       });
     });
   }
@@ -21401,13 +21640,15 @@ window.hwCrashPrompt = crashPrompt;
     if (p.next && now < p.next) return true;
     if (HOT[id] > now) return false;
     try { if (ACT.some(function (x) { return x.st === 'pending' && x.ch === id; })) return false; } catch (e) {}
-    var min = WSUP[id] ? 15000 : id === 'trx' && !hasKey('trongrid') ? 3000 : 0;
+    if (id === 'ada' && koiosBusy()) return true;
+    var min = WSUP[id] ? 15000 : id === 'trx' && !hasKey('trongrid') ? 3000 : id === 'ada' ? (hasKey('koios') ? 5000 : 30000) : 0;
     return !!(min && p.last && now - p.last < min);
   }
   function paceMark(id, ok) { var p = PACE[id] || (PACE[id] = { fail: 0 }), now = Date.now(); p.last = now; if (ok) { p.fail = 0; p.next = 0; } else { p.fail = Math.min(6, (p.fail || 0) + 1); p.next = now + Math.min(60000, 1000 * Math.pow(2, p.fail - 1)); } }
   function refreshChain(id) {
     if (busyR[id] || !A[id]) return busyR[id] || Promise.resolve();
     if (LOOPTICK && paceSkip(id)) return Promise.resolve();
+    if (id === 'ada' && koiosBusy() && C.b.ada) return Promise.resolve();   /* v1.9.38: Koios is resting after a 429 */
     (PACE[id] || (PACE[id] = { fail: 0 })).last = Date.now();
     var before = snapOf(id);
     var wid0 = curW() && curW().id, B0 = C.b, p = fetchChain(id).then(function () { paceMark(id, true); if (C.b !== B0) return; if (id !== 'eth') refMark(id, true); saveCache(); incoming(id, before, wid0); }, function () { paceMark(id, false); if (C.b !== B0) return; if (id !== 'eth') refMark(id, false); }).then(function () { if (busyR[id] === p) busyR[id] = null; update(); });
@@ -21568,6 +21809,7 @@ window.hwCrashPrompt = crashPrompt;
 
   /* ---------- Android back ---------- */
   window.kwBack = function () {
+    if (window.hwBrBack && hwBrBack()) return true;   /* v1.9.38 */
     if (window.HWP && HWP.pickerBack()) return true;
     var ov = document.querySelectorAll('.sheet-ov.show'); if (ov.length) { ov[ov.length - 1]._close(); return true; }
     var kd = document.querySelectorAll('.kwd-ov.show'); if (kd.length) { var d = kd[kd.length - 1]; if (d._close) d._close(); else { d.classList.remove('show'); setTimeout(function () { d.remove(); }, 160); } return true; }
