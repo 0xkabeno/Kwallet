@@ -201,18 +201,31 @@ jobs:
           git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "ci-dist: $GITHUB_REF_NAME ${GITHUB_SHA::7}"
           git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/ci-dist
 
+      # v3.99.37: the release notes are this version's CHANGELOG section (GitHub's auto notes compared against main and
+      # listed the wrong changes), and the release targets the tagged commit itself.
+      - name: Release notes from CHANGELOG
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          awk 'f && /^## /{exit} /^## /{f=1; next} f' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          cat > "$RUNNER_TEMP/intro.md" <<'NOTES_EOF'
+          **Kwallet @TAG@** — offline multi-chain HD wallet generator, plus **Hwallet v@HV@**, its online watch-only companion.
+
+          - `Kwallet-*.apk` — Android app (no internet permission)
+          - `Kwallet-*.html` — the same app as one HTML file; open it in any browser, offline
+          - `Hwallet-*.apk` — Android watch-only app: live balances, asks Kwallet on the same phone to sign
+          - `Hwallet-*.html` — Hwallet in a browser (balances; signing needs the Android apps)
+          - `SHA256SUMS.txt` — verify your download before use
+          NOTES_EOF
+          sed -i "s/@HV@/${{ steps.ver.outputs.hversion }}/; s/@TAG@/${GITHUB_REF_NAME}/" "$RUNNER_TEMP/intro.md"
+          { cat "$RUNNER_TEMP/intro.md"; echo; echo '### Changes'; echo; cat "$RUNNER_TEMP/notes.md"; } > "$RUNNER_TEMP/changes.md"
+          cat "$RUNNER_TEMP/changes.md"
+
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           name: Kwallet ${{ github.ref_name }}
           files: dist/*
-          generate_release_notes: true
-          body: |
-            **Kwallet ${{ github.ref_name }}** — offline multi-chain HD wallet generator, plus **Hwallet v${{ steps.ver.outputs.hversion }}**, its online watch-only companion.
-
-            - `Kwallet-*.apk` — Android app (no internet permission)
-            - `Kwallet-*.html` — the same app as one HTML file; open it in any browser, offline
-            - `Hwallet-*.apk` — Android watch-only app: live balances, asks Kwallet on the same phone to sign
-            - `Hwallet-*.html` — Hwallet in a browser (balances; signing needs the Android apps)
-            - `SHA256SUMS.txt` — verify your download before use
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: false
+          body_path: ${{ runner.temp }}/changes.md
