@@ -22797,25 +22797,44 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     return walk(d);
   }
   function pdC(x) { if (!x || x.t !== 'tag') return null; var g = Number(x.tag), i = g >= 121 && g <= 127 ? g - 121 : g >= 1280 && g <= 1400 ? g - 1280 + 7 : -1; if (i < 0) return null; var f = untag(x.v); return f && f.t === 'a' ? { i: i, f: f.v } : null; }
-  function pdI(x) { x = x && x.t === 'tag' && (Number(x.tag) === 2) ? x : x; return x && x.t === 'u' ? x.v : null; }
+  function pdI(x) {   /* v3.99.37: CBOR bignums (tag 2) too, not only small ints */
+    if (x && x.t === 'tag' && Number(x.tag) === 2) { var b = untag(x.v); if (b && b.t === 'b') { var n = 0n; for (var i = 0; i < b.v.length; i++) n = (n << 8n) | BigInt(b.v[i]); return n; } return null; }
+    return x && x.t === 'u' ? x.v : null;
+  }
+  function pdB(x) { x = untag(x); return x && x.t === 'b' ? x.v : null; }
   /* Minswap V2 OrderDatum: Constr0 [canceller, refund_receiver, refund_datum, success_receiver, success_datum, lp_asset,
      step, max_batcher_fee, expiry]. Step SwapExactIn = Constr0 [direction, Constr0 [amount] | Constr1 [deducted], min_receive, killable].
      Anything else stays a generic order. */
+  /* v3.99.37: Minswap V1 OrderDatum: Constr0 [sender, receiver, receiver_datum_hash, step, batcher_fee, deposit_ada], step
+     SwapExactIn = Constr0 [desired_asset Constr0 [policy, name], minimum_receive] (ADA in = output ADA - fee - deposit).
+     V2 SwapExactIn with SwapAmountOption All [deducted] is read too, and a V2 order nested one level deeper (routers). */
   function adaOrder(d, vv) {
-    var o = { dex: '', swapIn: null, minOut: null, batch: null, back: null, aToB: null };
+    var o = { dex: '', swapIn: null, minOut: null, batch: null, back: null, aToB: null, want: null };
+    function v2(top) {
+      if (!top || top.i !== 0 || top.f.length < 8) return false;
+      var step = pdC(top.f[6]), bf = pdI(top.f[7]);
+      if (!step || step.i !== 0 || step.f.length < 3) return false;
+      var dir = pdC(step.f[0]), amt = pdC(step.f[1]), mn = pdI(step.f[2]);
+      if (!dir || !amt || mn == null || bf == null) return false;
+      o.dex = 'Minswap'; o.aToB = dir.i === 1; o.minOut = mn; o.batch = bf;
+      if (amt.i === 0 && amt.f.length) o.swapIn = pdI(amt.f[0]);
+      else if (amt.i === 1 && amt.f.length && !vv.ma) { var dd = pdI(amt.f[0]); if (dd != null) { var si = vv.c - bf - dd; if (si > 0n) { o.swapIn = si; o.back = dd; } } }
+      if (o.swapIn != null && o.back == null && !vv.ma) { var bk = vv.c - o.swapIn - bf; o.back = bk > 0n ? bk : 0n; }
+      return true;
+    }
+    function v1(top) {
+      if (!top || top.i !== 0 || top.f.length !== 6) return false;
+      var step = pdC(top.f[3]), bf = pdI(top.f[4]), dep = pdI(top.f[5]);
+      if (!step || step.i !== 0 || step.f.length !== 2 || bf == null || dep == null) return false;
+      var as = pdC(step.f[0]), mn = pdI(step.f[1]); if (!as || as.f.length < 2 || mn == null) return false;
+      var pol = pdB(as.f[0]), nm = pdB(as.f[1]); if (!pol || !nm) return false;
+      o.dex = 'Minswap'; o.minOut = mn; o.batch = bf; o.back = dep; o.want = { pol: hex(pol), name: hex(nm) };
+      if (!vv.ma) { var si = vv.c - bf - dep; o.swapIn = si > 0n ? si : null; }
+      return true;
+    }
     try {
       var top = pdC(d);
-      if (top && top.i === 0 && top.f.length >= 8) {
-        var step = pdC(top.f[6]), bf = pdI(top.f[7]);
-        if (step && step.i === 0 && step.f.length >= 3) {
-          var dir = pdC(step.f[0]), amt = pdC(step.f[1]), mn = pdI(step.f[2]);
-          if (dir && amt && mn != null && bf != null) {
-            o.dex = 'Minswap'; o.aToB = dir.i === 1; o.minOut = mn; o.batch = bf;
-            if (amt.i === 0 && amt.f.length) o.swapIn = pdI(amt.f[0]);
-            if (o.swapIn != null && !vv.ma) { var bk = vv.c - o.swapIn - bf; o.back = bk > 0n ? bk : 0n; }
-          }
-        }
-      }
+      if (!v2(top) && !v1(top) && top) top.f.some(function (x) { return v2(pdC(x)); });
     } catch (e) {}
     return o;
   }
@@ -26199,6 +26218,21 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     }
     /* transactions: balance changes (Hwallet's simulation when there is one, else what Kwallet decoded) */
     var sim = R.sim && Array.isArray(R.sim.deltas) ? R.sim.deltas : null, rows, lines = [], needBlind = false;
+    /* v3.99.37: a recognised DEX order on Cardano leads with the swap itself, like a swap on any other chain: the ADA you
+       swap and the least you get back (it arrives in the batcher's later transaction). The deposit that comes back and
+       the batcher fee have their own rows; the ADA this transaction locks goes to Details. */
+    var adaOd = null;
+    if (v.chain === 'ada' && v.av) v.av.outs.some(function (x) { if (x.order && x.order.dex && x.order.swapIn != null && !x.ma) { adaOd = x; return true; } return false; });
+    if (adaOd) {
+      var od0 = adaOd.order, wk = od0.want ? od0.want.pol + '.' + od0.want.name : '', mt0 = wk ? ((R.adaMeta || {})[wk] || {}) : {}, asc0 = '';
+      if (od0.want) try { asc0 = new TextDecoder('utf-8', { fatal: true }).decode(KwD17.util.unhex(od0.want.name)); if (!/^[\x20-\x7e]{1,16}$/.test(asc0)) asc0 = ''; } catch (e) { asc0 = ''; }
+      var sym0 = String(mt0.s || asc0 || '').slice(0, 12), dec0 = mt0.d != null ? +mt0.d : /^(USDA|USDM|IUSD|DJED|USDC|USDT|USDCX|WUSDC|WUSDT)$/i.test(sym0) ? 6 : null;
+      var legs = [{ s: '-', v: od0.swapIn, nat: 1, note: 'You swap' }];
+      if (od0.minOut != null && sym0) legs.push({ s: '+', v: od0.minOut, t: wk, sym: sym0, dec: dec0, px: +mt0.px > 0 ? +mt0.px : 0, min: 1, note: 'You receive at least \u00b7 in the batcher\u2019s transaction' });
+      else if (od0.minOut != null) legs.push({ s: '+', v: od0.minOut, sym: 'token units', dec: null, min: 1, note: 'At least, of the token you buy \u00b7 in the batcher\u2019s transaction' });
+      if (sim) o.det += '<div class="hp-note">This transaction itself moves ' + esc(chgRows(sim).map(function (r) { return (r.sign === '-' ? '\u2212' : '+') + r.amt + ' ' + r.sym; }).join(', ')) + ': the ADA locked in the order plus the network fee.</div>';
+      sim = legs; R = Object.assign({}, R, { sim: Object.assign({}, R.sim || {}, { deltas: legs, ada: 1 }) });
+    }
     /* v3.99.33: an XRP app fee inside a swap Batch has its own row, so the hero shows only the swap legs */
     if (sim && !R.sim.quote && v.chain === 'xrp' && v.xv && v.xv.appFee) sim = sim.map(function (d) { if (!d || !d.nat || d.s !== '-') return d; var nv = (U(d.v) || 0n) - v.xv.appFee; return nv > 0n ? Object.assign({}, d, { v: String(nv) }) : null; }).filter(Boolean);
     if (sim && R.sim.quote) { rows = chgRows(sim); o.main += kHero(rows); o.det += '<div class="hp-note">The XRP Ledger cannot simulate this transaction, so Hwallet estimates the swap from the live AMM pool. The ledger enforces the minimum shown.</div>'; }
@@ -26279,8 +26313,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       av.outs.filter(function (x) { return x.order; }).forEach(function (x) {
         var od = x.order, nm = od.dex || 'DEX', cc = '';
         cc += HWP.kv(nm + ' swap order', fmt(x.c, 6, 6) + ' ADA' + (x.ma ? ' + ' + x.ma + ' token' + (x.ma === 1 ? '' : 's') : ''), 'Locked for you until ' + esc(nm) + '\u2019s batcher fills it', { sm: true });
-        if (od.swapIn != null && !x.ma) cc += HWP.kv('You swap', fmt(od.swapIn, 6, 6) + ' ADA', 'The token arrives in a later transaction', { sm: true });
-        if (od.back != null) cc += HWP.kv('Comes back to you', '\u2248 ' + fmt(od.back, 6, 6) + ' ADA', 'Deposit returned with your tokens', { sm: true });
+        if (od.swapIn != null && !x.ma && x !== adaOd) cc += HWP.kv('You swap', fmt(od.swapIn, 6, 6) + ' ADA', 'The token arrives in a later transaction', { sm: true });
+        if (od.back != null) cc += HWP.kv('Deposit, comes back', '\u2248 ' + fmt(od.back, 6, 6) + ' ADA', 'Returned with your tokens when the order fills or is cancelled', { sm: true });
         if (od.batch != null) cc += HWP.kv('Batcher fee', 'Up to ' + fmt(od.batch, 6, 6) + ' ADA', 'Paid from the order', { sm: true });
         if (od.swapIn == null) cc += HWP.kv('How it works', 'Swap happens later', 'The tokens and leftover ADA come back to your address; you can cancel the order in ' + esc(nm) + ' until then', { sm: true });
         o.main += HWP.card(cc);
