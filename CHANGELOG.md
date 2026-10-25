@@ -1,5 +1,12 @@
 # Changelog
 
+## Kwallet 3.99.38 / Hwallet 1.9.38
+
+- Hwallet Browser: ⋮ drops down from the button as a solid menu over the page, Chrome-style. The page stays on screen and is not dimmed or blacked out; tap outside or Back to close it. Sub-pages (Bookmarks, History, settings) still open as sheets.
+- Hwallet Browser: VPN switch in ⋮, the same app-only VPN as Settings > Network & VPN. It switches in place and shows the live state (Off, On · location, reconnecting).
+- Hwallet Browser: Chrome-style tab groups. Long-press a tab in the switcher (or ⋮ > Add tab to group) to start a group or add the tab to one; name it and pick one of nine colours. A group is one card in the switcher with its first four tabs as a preview, and opens to its own grid with New tab in group, Rename and colour, Ungroup and Close group. While you browse a grouped tab, a strip of its tabs sits under the address bar with a + for a new tab in the group. Groups are kept with your tabs; incognito tabs are never grouped.
+- Hwallet: Cardano no longer shows "did not answer" after Koios's keyless limit (5,000 requests a day per IP, then 429 for 60 s). Cardano's timer read is every 30 s without a key, and after a 429 Cardano rests 60 s and keeps its last balance quietly instead of asking again. Settings > API keys takes a Koios key (free tier: 50,000 requests a day), sent only to api.koios.rest.
+
 ## Kwallet 3.99.37 / Hwallet 1.9.37
 
 - Hwallet: Coins (Home > Chains ⋮) is per seed, like Chains. Hiding a coin in one wallet never hides it in another; the 1.9.36 list moves to the wallet that is open the first time 1.9.37 reads it, and a removed wallet's list is deleted with it.
