@@ -1,5 +1,10 @@
 # Changelog
 
+## Kwallet 3.99.37 / Hwallet 1.9.37
+
+- Hwallet: Coins (Home > Chains ⋮) is per seed, like Chains. Hiding a coin in one wallet never hides it in another; the 1.9.36 list moves to the wallet that is open the first time 1.9.37 reads it, and a removed wallet's list is deleted with it.
+- Hwallet: Coins lists only the coins this wallet holds, on every chain (balance above 0). Empty coins are not listed, so funded spam tokens are easy to find and turn off.
+
 ## Kwallet 3.99.36 / Hwallet 1.9.36
 
 - Hwallet: each seed shows only its own funds. A balance check that was still loading when you switched seeds used to land in the new seed and be saved there; results from a seed you switched away from are now dropped, the old seed's pending save goes to the old seed, and the new seed refreshes at once. Balances cached by 1.9.35 and earlier are cleared once and reread live.
