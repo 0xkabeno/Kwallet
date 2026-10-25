@@ -8519,7 +8519,8 @@ var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
   var trq = Promise.resolve();
   function tron(path, body, k) {
     var job = trq.then(function () {
-      return race(CHBY.trx.rest, function (u) { return http(u + path, body ? { method: 'POST', body: JSON.stringify(body) } : {}); });
+      /* v1.9.36: /v1/* is TronGrid's own API (PublicNode answers 404), so only /wallet/* calls race both nodes */
+      return race(/^\/v1\//.test(path) ? CHBY.trx.rest.slice(0, 1) : CHBY.trx.rest, function (u) { return http(u + path, body ? { method: 'POST', body: JSON.stringify(body) } : {}); });
     });
     trq = job.then(function () { return new Promise(function (r) { setTimeout(r, 340); }); }, function () { return new Promise(function (r) { setTimeout(r, 340); }); });
     return job.catch(function (e) { if (e && e.status === 429 && !k) return new Promise(function (r) { setTimeout(r, 1300); }).then(function () { return tron(path, body, 1); }); throw e; });
@@ -8629,10 +8630,18 @@ var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
   function balTrx(c) {
     var a = A.trx; if (!a) return Promise.resolve(null);
     var pvT = C.b.trx, rsT = C.res;   /* ph35menu B9 */
-    return tron('/v1/accounts/' + encodeURIComponent(a)).then(function (j) {
+    /* v1.9.36: when TronGrid's /v1/accounts fails (it rate-limits without a key), the balance is read from
+       /wallet/getaccount, which both TronGrid and PublicNode serve; that reply has no TRC-20 list, so pinned tokens
+       and tokens the wallet already held are read by balanceOf instead */
+    var fb = false;
+    return tron('/v1/accounts/' + encodeURIComponent(a)).catch(function () {
+      fb = true;
+      return tron('/wallet/getaccount', { address: a, visible: true }).then(function (d) { return { data: d && d.address ? [d] : [] }; });
+    }).then(function (j) {
       var d = (j.data || [])[0] || {}, o = { n: String(d.balance || 0), t: {}, at: Date.now(), active: !!(j.data || []).length };
       (d.trc20 || []).forEach(function (m) { Object.keys(m).forEach(function (k) { o.t[k] = String(m[k]); }); });
-      o.chk = tokList('trx').filter(function (t) { return t.pin && o.t[t.a] == null; });
+      var pv0 = (pvT || {}).t || {};
+      o.chk = tokList('trx').filter(function (t) { return o.t[t.a] == null && (t.pin || (fb && pv0[t.a] != null)); });
       /* Stake 2.0: staked per resource, pending unstakes, withdrawable now */
       var st = { ENERGY: 0n, BANDWIDTH: 0n }, un = [], wd = 0n, now = Date.now();
       (d.frozenV2 || []).forEach(function (f) { if (f.type === 'TRON_POWER') return; var k = f.type === 'ENERGY' ? 'ENERGY' : 'BANDWIDTH'; st[k] += BI(f.amount || 0); });
@@ -13180,7 +13189,7 @@ var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
   var KCAT = [
     ['wal', 'Wallets & pairing', KI.wallet], ['app', 'Appearance', KI.theme], ['snd', 'Sending & fees', 'M2.01 21 23 12 2.01 3 2 10l15 2-15 2z'],
     ['net', 'Network & VPN', 'M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8 3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4 2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z'],
-    ['brw', 'Browser', 'M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z'],
+    ['brw', 'Browser', 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.93 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a8.2 8.2 0 0 1 0-4h3.38a16.5 16.5 0 0 0 0 4H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.08 16zm2.95-8H5.08a7.99 7.99 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66a14.7 14.7 0 0 1 0-4h4.68a14.7 14.7 0 0 1 0 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14a16.5 16.5 0 0 0 0-4h3.38a8.2 8.2 0 0 1 0 4h-3.38z'],   /* v1.9.36: globe, so Browser no longer shares Security's shield */
     ['xmr', 'Monero', 'M12 2a10 10 0 0 0-9.5 13.1h3V7.6L12 14l6.5-6.4v7.5h3A10 10 0 0 0 12 2zm-1.5 14.2-2.8-2.8v5.3H3.6A10 10 0 0 0 12 22a10 10 0 0 0 8.4-4.3h-4.1v-5.3l-2.8 2.8L12 16.7z'],
     ['sec', 'Security & privacy', KI.shield], ['bg', 'Notifications & background', KI.bell], ['abt', 'About', KI.info]
     /* v1.8.17: the Support row and its page are gone; the donation card is back on the main Settings page */
@@ -13434,7 +13443,7 @@ var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
     /* v1.8.4: one-line summaries on the main page */
     var thN = th === 'light' ? 'Light' : 'Dark', uiN = (UIS.filter(function (x) { return x[0] === uiGet(); })[0] || UIS[0])[1].replace(' (default)', '');
     ksub('kws-c-wal', kwalSum());
-    try { var BS = window.hwBrShield; if (BS) { var bst = BS.state(); kflag('kws-blk', !!bst.on); ksub('kws-blk', BS.sum(bst)); ksub('kws-ua', BS.uaSum()); ksub('kws-trto', window.hwTr ? hwTr.name(hwTr.to()) : ''); ksub('kws-blu', bst.updated ? 'Updated ' + new Date(bst.updated).toLocaleDateString() : 'Weekly, in the background'); ksub('kws-c-brw', 'Ad blocker ' + (bst.on ? 'on' : 'off') + ' \u00b7 ' + BS.uaSum()); } } catch (e) {}
+    try { var BS = window.hwBrShield; if (BS) { var bst = BS.state(); kflag('kws-blk', !!bst.on); ksub('kws-blk', BS.sum(bst)); ksub('kws-ua', BS.uaSum()); ksub('kws-trto', window.hwTr ? hwTr.name(hwTr.to()) : ''); ksub('kws-blu', bst.updated ? 'Updated ' + new Date(bst.updated).toLocaleDateString() : 'Weekly, in the background'); ksub('kws-c-brw', 'Ad blocker ' + (bst.on ? 'on' : 'off') + ' \u00b7 User agent ' + (BS.uaSum() === 'Off' ? 'default' : BS.uaSum())); } } catch (e) {}
     ksub('kws-c-app', thN + ' \u00b7 ' + uiN + (md ? ' \u00b7 Material You' : ''));
     ksub('kws-c-snd', 'Fee speeds: ' + fpSum() + (simOn() ? ' \u00b7 Simulate on' : ''));
     vpnRead(); ksub('kws-c-net', capNetSub()); try { vpnPaint(); } catch (e) {}
