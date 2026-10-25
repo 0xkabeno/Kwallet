@@ -1,5 +1,10 @@
 # Changelog
 
+## Kwallet 3.99.36 / Hwallet 1.9.36
+
+- Hwallet: each seed shows only its own funds. A balance check that was still loading when you switched seeds used to land in the new seed and be saved there; results from a seed you switched away from are now dropped, the old seed's pending save goes to the old seed, and the new seed refreshes at once. Balances cached by 1.9.35 and earlier are cleared once and reread live.
+- Hwallet: no old payments as notifications. A seed switch sets a silent baseline for that seed's first balances, and Monero only notifies payments in the mempool or under 30 minutes old, so a rescan or catch-up never pushes old on-chain payments.
+
 ## Kwallet 3.99.35 / Hwallet 1.9.35
 
 - Hwallet: XRP Ledger reserve recovery in Home > Chains > ⋮, next to Solana and Sui. The row shows the live "XRP to reclaim" and the 1 XRP more that deleting the account frees. The sheet lists every trust line, open offer, check and ticket of the address, read live from the validated ledger. Keep / Remove trust line (balance 0: TrustSet with limit 0 and this side's defaults) / Burn and remove (under $0.10 or no live price: the balance goes back to the issuer, where it is destroyed) / Return and remove (with a warning that it gives the tokens back for nothing) / Cancel offer / Cancel check / Remove ticket. "XRP to reclaim" is counted per object from the reserve flags (a trust line only frees reserve when the reserve sits on your side) and the live reserve_inc. Each step is signed in Kwallet and waited for in a validated ledger before the next one.
