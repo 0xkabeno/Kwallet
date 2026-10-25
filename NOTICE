@@ -8,6 +8,10 @@ Monero engine (web/xmr/hwxmr.js, since v3.98; the same file ships in Hwallet as 
   hwxmr.js (axios, decimal.js, crypto-js, buffer, safe-buffer: MIT; ieee754: BSD-3-Clause).
   In Kwallet the engine runs with no network access: it only signs Monero transactions offline.
 
+Internet Computer actors in Hwallet (since Hwallet v1.9.33):
+  @dfinity/candid 2.4.1 and @dfinity/principal 2.4.1 (Hwallet's Plug actor API, encoding and decoding Internet Computer calls) - Apache License 2.0,
+  Copyright DFINITY Stiftung. Bundled unmodified (esm.sh build) inside hwallet/web/index.html; includes @noble/hashes (MIT, Paul Miller).
+
 Sui, Cardano and XRP Ledger dApp signing (since Kwallet v3.98.12), inlined in web/index.html as "KwVend17":
   @mysten/sui (BCS schemas of Sui transactions: @mysten/sui/bcs and @mysten/bcs) - Apache License 2.0,
     Copyright (c) Mysten Labs, Inc. - https://github.com/MystenLabs/ts-sdks

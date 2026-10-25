@@ -1,5 +1,13 @@
 # Changelog
 
+## Kwallet 3.99.33 / Hwallet 1.9.33
+
+- ICP: Plug's actor API in Hwallet (createActor, createAgent, agent, batchTransactions) with @dfinity/candid 2.4.1 bundled; query methods run as anonymous queries, update calls are signed in Kwallet. Fixes ICPSwap "Hwallet does not hand out an agent".
+- ICP: Kwallet reads canister calls itself and shows them in words: ICRC-1 sends, ICRC-2 approvals (spender, expiry, unlimited warning), ICPSwap deposit / swap / withdraw with token symbols and amounts, minimum received and route; other calls show their decoded arguments.
+- ICP: Hwallet is also announced as Bitfinity (window.ic.infinityWallet / bitfinityWallet) and, over ICRC-94, as NFID Wallet and OISY Wallet.
+- XRP: swap Batches (xrpl.to) read plainly: swap legs in the hero, live AMM estimate when the ledger cannot simulate, app fee row, trust line shown as "no limit", token names without issuer addresses.
+- XRP: Hwallet is also listed as Crossmark and GemWallet in XRPL Wallet Standard lists.
+
 ## Kwallet 3.99.32 / Hwallet 1.9.32
 - TON and XRP dApp sheets now work like Solana / Sui / EVM, live from the chain. TON: Hwallet emulates an unsigned copy of the TonConnect message on TonAPI (throwaway key, address_override = your wallet) before the sheet opens and every 4 s while it is open. Kwallet shows the real legs (for example -0.01 GRAM / +USD₮), Rate, Route (STON.fi, DeDust...), the real fee after the unused gas comes back, and TonAPI's plain lines. The raw messages and the attached GRAM move to Details, and Blind signing only shows when emulation fails.
 - XRP: rippled `simulate` (Ripple's s1/s2, then xrplcluster) gives your account's XRP and token balance changes, Route (XRPL DEX / AMM) and Min received, also live. Kwallet now reads Batch (XLS-56): mode in words (All or nothing...) instead of Flags 65536, every inner transaction as a plain step, and a warning for steps from another account. Payments to yourself with SendMax, and OfferCreate, are titled Swap.
