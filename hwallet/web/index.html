@@ -7882,7 +7882,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
+var APP_VERSION = '1.9.37';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8168,7 +8168,7 @@ var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
     });
     jset('hw-wallets', out); res.left = out.length;
     if (ids[wid]) jset('hw-wid', out[0] ? out[0].id : '');
-    try { var cm = jget('hw-chains-off-w', {}); if (cm && typeof cm === 'object') { res.ids.forEach(function (id) { delete cm[id]; }); jset('hw-chains-off-w', cm); } } catch (e) {}
+    try { var cm = jget('hw-chains-off-w', {}); if (cm && typeof cm === 'object') { res.ids.forEach(function (id) { delete cm[id]; }); jset('hw-chains-off-w', cm); } var co = coinOffMap(); res.ids.forEach(function (id) { delete co[id]; }); jset('hw-coinoff-w', co); } catch (e) {}
     try { var R = jget('hw-recips', []); if (Array.isArray(R)) jset('hw-recips', out.length ? R.filter(function (a) { return !rc[String(a).toLowerCase()]; }) : []); } catch (e) {}
     /* the sites in the Browser saw the erased wallet's addresses: they connect again when the user asks */
     if (res.active || !out.length) { try { jset('hw-br-sites', {}); BRSM = null; BRSMF = false; } catch (e) {} }
@@ -9351,7 +9351,16 @@ var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
   }
   /* v1.9.36: coins the user turned off (Home > Chains ⋮ > Coins). Ids match the Home rows: c:<chain> for a chain's own
      coin (c:eth = ETH on every network), t:eth:<network>:<key> for EVM tokens and other gas coins, t:<chain>::<key> for tokens */
-  function coinOff() { var a = jget('hw-coinoff', []); return Array.isArray(a) ? a : []; }
+  /* v1.9.37: per seed, like Chains (hw-chains-off-w): hiding a coin on one seed never touches another seed. The 1.9.36
+     global list moves to the seed that is open when it is first read. */
+  function coinOffMap() { var m = jget('hw-coinoff-w', {}); return m && typeof m === 'object' && !Array.isArray(m) ? m : {}; }
+  function coinOff() {
+    if (!WID) return [];
+    var m = coinOffMap(), a = m[WID];
+    if (a == null) { var g = jget('hw-coinoff', null); if (Array.isArray(g)) { m[WID] = g; jset('hw-coinoff-w', m); try { localStorage.removeItem('hw-coinoff'); } catch (e) {} return g; } return []; }
+    return Array.isArray(a) ? a : [];
+  }
+  function coinOffSet(a) { if (!WID) return; var m = coinOffMap(); m[WID] = a.slice(0, 500); jset('hw-coinoff-w', m); }
   function coinIdOf(ch, net, r) {
     if (ch === 'eth') { var n = net && EVMBY[net]; if (!net || (r.gas && n && n.sym === 'ETH')) return 'c:eth'; return 't:eth:' + net + ':' + r.key; }
     return r.gas || r.key === 'native' ? 'c:' + ch : 't:' + ch + '::' + r.key;
@@ -10120,7 +10129,7 @@ var APP_VERSION = '1.9.36';   /* v1.9.21: version bump */
       var rm = ov.querySelector('[data-rm]');
       rm.onclick = function () {
         if (rm.getAttribute('data-arm') !== '1') { rm.setAttribute('data-arm', '1'); rm.lastChild.textContent = ' Tap again to remove'; buzz([20, 30, 20]); return; }
-        W = W.filter(function (x) { return x.id !== id; }); saveWallets(); try { var cm = chOffMap(); delete cm[id]; jset('hw-chains-off-w', cm); } catch (e) {} ['hw-bal:', 'hw-acts:', 'hw-hist:', 'hw-swaps:'].forEach(function (k) { try { localStorage.removeItem(k + id); accts(w).forEach(function (n) { localStorage.removeItem(k + id + '~' + n); }); } catch (e) {} });
+        W = W.filter(function (x) { return x.id !== id; }); saveWallets(); try { var cm = chOffMap(); delete cm[id]; jset('hw-chains-off-w', cm); var co = coinOffMap(); delete co[id]; jset('hw-coinoff-w', co); } catch (e) {} ['hw-bal:', 'hw-acts:', 'hw-hist:', 'hw-swaps:'].forEach(function (k) { try { localStorage.removeItem(k + id); accts(w).forEach(function (n) { localStorage.removeItem(k + id + '~' + n); }); } catch (e) {} });
         close(); toast('Wallet removed'); buzz([10, 40, 10]);
         if (id === WID) { if (W.length) useWallet(W[0].id); else { useWallet(''); A = {}; } stack = []; V = W.length ? { v: 'wallets' } : { v: 'setup', first: 1 }; render('in'); refreshAll(); liveConfig(); }
         else render();
@@ -19934,6 +19943,8 @@ window.hwCrashPrompt = crashPrompt;
       if (c.id === 'eth') { EVM.forEach(function (n) { if (!chainOn('evm:' + n.id)) return; assets('eth', n.id).forEach(function (r) { add('eth', n.id, r); }); }); return; }
       assets(c.id).forEach(function (r) { add(c.id, null, r); });
     });
+    /* v1.9.37: only coins this seed holds (balance above 0); empty coins are not listed */
+    out = out.filter(function (x) { return U(x.r.raw) > 0n; });
     var g = out.filter(function (x) { return x.id.indexOf('c:') === 0; }), t = out.filter(function (x) { return x.id.indexOf('c:') !== 0; });
     t.sort(function (a, b) { var d = usdOf(b.r) - usdOf(a.r); if (d) return d; var fa = U(a.r.raw) > 0n, fb = U(b.r.raw) > 0n; if (fa !== fb) return fa ? -1 : 1; return String(a.r.s || '').localeCompare(String(b.r.s || '')); });
     return g.concat(t);
@@ -19946,15 +19957,15 @@ window.hwCrashPrompt = crashPrompt;
     }
     function body() {
       var v = L.map(function (x, i) { return [x, i]; }).filter(function (p) { var x = p[0]; return !q || (String(x.r.s || '') + ' ' + String(x.r.n || '') + ' ' + x.where).toLowerCase().indexOf(q) >= 0; });
-      return v.length ? v.map(function (p) { return row(p[0], p[1]); }).join('') : '<div class="ar"><span class="am"><span class="ap">Nothing found</span></span></div>';
+      return v.length ? v.map(function (p) { return row(p[0], p[1]); }).join('') : '<div class="ar"><span class="am"><span class="ap">' + (L.length ? 'Nothing found' : 'No coins with a balance yet') + '</span></span></div>';
     }
-    sheet('<h3>Coins</h3><p class="hint">Turn a coin off to hide it everywhere in Hwallet and leave it out of your total, even when it holds funds. Its chain keeps running.</p>' +
+    sheet('<h3>Coins</h3><p class="hint">Every coin this wallet holds, on every chain. Turn one off to hide it in this wallet and leave it out of its total. Other wallets are not affected, and the chain keeps running.</p>' +
       '<div class="srch">' + sv('search') + '<input data-cq placeholder="Search coins" autocomplete="off" spellcheck="false"></div><div class="lst" data-cl>' + body() + '</div>', function (ov) {
       var lst = ov.querySelector('[data-cl]'), inp = ov.querySelector('[data-cq]');
       inp.oninput = function () { q = String(inp.value || '').trim().toLowerCase(); lst.innerHTML = body(); };
       lst.addEventListener('click', function (e) {
         var b = e.target.closest('[data-ci]'); if (!b) return; var x = L[+b.getAttribute('data-ci')]; if (!x) return;
-        var a = coinOff(), k = a.indexOf(x.id); if (k >= 0) a.splice(k, 1); else a.unshift(x.id); jset('hw-coinoff', a.slice(0, 500));
+        var a = coinOff().slice(), k = a.indexOf(x.id); if (k >= 0) a.splice(k, 1); else a.unshift(x.id); coinOffSet(a);
         var tg = b.querySelector('.tg'); if (tg) tg.classList.toggle('on', k >= 0); buzz(6);
         try { lastSig = ''; update(); } catch (er) {}
       });
