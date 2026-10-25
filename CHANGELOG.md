@@ -1,5 +1,11 @@
 # Changelog
 
+## Kwallet 3.99.35 / Hwallet 1.9.35
+
+- Hwallet: XRP Ledger reserve recovery in Home > Chains > ⋮, next to Solana and Sui. The row shows the live "XRP to reclaim" and the 1 XRP more that deleting the account frees. The sheet lists every trust line, open offer, check and ticket of the address, read live from the validated ledger. Keep / Remove trust line (balance 0: TrustSet with limit 0 and this side's defaults) / Burn and remove (under $0.10 or no live price: the balance goes back to the issuer, where it is destroyed) / Return and remove (with a warning that it gives the tokens back for nothing) / Cancel offer / Cancel check / Remove ticket. "XRP to reclaim" is counted per object from the reserve flags (a trust line only frees reserve when the reserve sits on your side) and the live reserve_inc. Each step is signed in Kwallet and waited for in a validated ledger before the next one.
+- Hwallet: Delete account (AccountDelete) at the bottom of the XRP sheet. It needs a destination (and a tag when that account requires one) and shows the protocol's checks live: Sequence + 255 ≤ ledger index, deletion blockers (trust lines, checks, escrows, payment channels, NFT pages, MPTs and more), at most 1000 objects, the NFT mint rules, and a balance that covers the fee. Then you type DELETE to confirm. The fee is one owner reserve (0.2 XRP), set explicitly, and the transaction is submitted with fail_hard.
+- Kwallet: Hwallet's XRP cleanup steps keep their plain titles ("Remove trust line · USD · +0.2 XRP", "Cancel offer #12 · +0.2 XRP").
+
 ## Kwallet 3.99.34 / Hwallet 1.9.34
 
 - Hwallet browser: page translation now uses Google Translate instead of the on-phone Mozilla Bergamot engine. Whole pages and new content are translated in batches (3 requests at a time, retry with backoff when Google is busy), through Hwallet's own network layer so it follows the VPN. When Hwallet cannot tell a page's language, Google detects it. All Google languages are in the picker; Show original, Always translate and Never on this site work as before. Nothing is downloaded first. The Bergamot worker (tr/hwtr.js) and its download path are removed and the notices updated.
