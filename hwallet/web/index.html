@@ -8658,13 +8658,91 @@ var APP_VERSION = '1.9.37';   /* v1.9.21: version bump */
   }
   /* base58 T-address -> 20-byte hex (no 41 prefix) for ABI words */
   function trxHexA(t) { var v = 0n, A58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'; for (var i = 0; i < t.length; i++) v = v * 58n + BI(A58.indexOf(t[i])); var h = v.toString(16); while (h.length < 50) h = '0' + h; return h.slice(2, 42); }
+  /* v1.9.37: Sui's gRPC API over gRPC-web (plain fetch, binary protobuf, no library). PublicNode does not speak
+     gRPC-web, so the nodes are Mysten's fullnode and Suiscan's. Used as the second Sui balance source (raced with
+     GraphQL) and for the live stream. */
+  var SUIGW = ['https://fullnode.mainnet.sui.io', 'https://rpc-mainnet.suiscan.xyz'];
+  function pbVar(n) { var o = []; n = Math.floor(n); while (n > 127) { o.push((n & 127) | 128); n = Math.floor(n / 128); } o.push(n); return o; }
+  function pbLen(no, bytes) { return [].concat(pbVar(no * 8 + 2), pbVar(bytes.length), Array.prototype.slice.call(bytes)); }
+  function pbStr(no, t) { return pbLen(no, new TextEncoder().encode(String(t))); }
+  function pbFields(u) {   /* -> [[field, value]] ; value BigInt (varint) or Uint8Array (length-delimited) */
+    var i = 0, out = [];
+    function vr() { var r = 0n, sh = 0n, b; do { b = u[i++]; r |= BigInt(b & 127) << sh; sh += 7n; } while (b & 128 && i < u.length); return r; }
+    while (i < u.length) {
+      var k = Number(vr()), no = k >> 3, wt = k & 7;
+      if (wt === 0) out.push([no, vr()]);
+      else if (wt === 2) { var L = Number(vr()); out.push([no, u.subarray(i, i + L)]); i += L; }
+      else if (wt === 1) i += 8; else if (wt === 5) i += 4; else break;
+    }
+    return out;
+  }
+  function gwFrame(msg) { var m = Uint8Array.from(msg), f = new Uint8Array(5 + m.length); f[0] = 0; f[1] = (m.length >>> 24) & 255; f[2] = (m.length >>> 16) & 255; f[3] = (m.length >>> 8) & 255; f[4] = m.length & 255; f.set(m, 5); return f; }
+  /* reads gRPC-web frames out of a byte buffer; returns { msgs, rest, status } */
+  function gwSplit(buf) {
+    var msgs = [], i = 0, status = null;
+    while (buf.length - i >= 5) {
+      var fl = buf[i], L = (buf[i + 1] << 24 >>> 0) + (buf[i + 2] << 16) + (buf[i + 3] << 8) + buf[i + 4];
+      if (buf.length - i - 5 < L) break;
+      var body = buf.subarray(i + 5, i + 5 + L); i += 5 + L;
+      if (fl & 128) { var m = /grpc-status:\s*(\d+)/i.exec(new TextDecoder().decode(body)); status = m ? +m[1] : 0; } else msgs.push(body);
+    }
+    return { msgs: msgs, rest: buf.subarray(i), status: status };
+  }
+  function suiGw(host, path, msg, ms) {
+    var ac = new AbortController(), t = setTimeout(function () { ac.abort(); }, ms || 8000);
+    return fetch(host + path, { method: 'POST', headers: { 'Content-Type': 'application/grpc-web+proto', 'X-Grpc-Web': '1' }, body: gwFrame(msg), cache: 'no-store', signal: ac.signal, referrerPolicy: 'no-referrer' })
+      .then(function (r) { if (!r.ok) throw Object.assign(new Error('HTTP ' + r.status), { status: r.status }); return r.arrayBuffer(); })
+      .then(function (ab) { clearTimeout(t); var g = gwSplit(new Uint8Array(ab)); if (g.status) throw new Error('grpc-status ' + g.status); return g.msgs; }, function (e) { clearTimeout(t); throw e; });
+  }
+  function suiGrpcBalances(a) {
+    return race(SUIGW, function (h) {
+      return suiGw(h, '/sui.rpc.v2.StateService/ListBalances', pbStr(1, a).concat(pbVar(2 * 8), pbVar(1000)), 8000).then(function (msgs) {
+        if (!msgs.length) throw new Error('no reply');
+        var o = { n: '0', t: {}, at: Date.now() };
+        pbFields(msgs[0]).forEach(function (f) {
+          if (f[0] !== 1 || !(f[1] instanceof Uint8Array)) return;
+          var ty = '', bal = 0n; pbFields(f[1]).forEach(function (g) { if (g[0] === 1 && g[1] instanceof Uint8Array) ty = new TextDecoder().decode(g[1]); else if (g[0] === 3 && typeof g[1] === 'bigint') bal = g[1]; });
+          if (!ty) return; if (/^0x0*2::sui::SUI$/.test(ty)) o.n = String(bal); else o.t[ty.toLowerCase()] = String(bal);
+        });
+        return o;
+      });
+    });
+  }
   function balSui(c) {
     var a = A.sui; if (!a) return Promise.resolve(null);
-    return rpc(c.rpc, 'suix_getAllBalances', [a]).then(function (r) {
+    var gq = rpc(c.rpc, 'suix_getAllBalances', [a]).then(function (r) {
       var o = { n: '0', t: {}, at: Date.now() };
       (r || []).forEach(function (b) { var ty = String(b.coinType); if (/^0x0*2::sui::SUI$/.test(ty)) o.n = String(b.totalBalance); else o.t[ty.toLowerCase()] = String(b.totalBalance); });
       return o;
     });
+    if (!window.fetch || +window.__hwCap > 0) return gq;
+    return anyOf([gq, suiGrpcBalances(a)]);   /* v1.9.37: first of GraphQL and gRPC wins */
+  }
+  function suiLive(addr) {
+    var w = { dead: false, n: 0, hi: 0, ac: null }; w.s = { close: function () { w.dead = true; WSUP.sui = false; try { if (w.ac) w.ac.abort(); } catch (e) {} } };
+    var req = pbLen(1, pbStr(1, 'digest')).concat(pbLen(2, pbLen(1, pbLen(1, pbLen(3, pbStr(1, addr))))));
+    function again() { WSUP.sui = false; if (w.dead) return; w.n++; w.hi = (w.hi + 1) % SUIGW.length; setTimeout(conn, Math.min(30000, 1000 * Math.pow(2, Math.min(5, w.n)))); }
+    function conn() {
+      if (w.dead || A.sui !== addr) return;
+      var ac = w.ac = new AbortController(), buf = new Uint8Array(0);
+      fetch(SUIGW[w.hi] + '/sui.rpc.v2.SubscriptionService/SubscribeTransactions', { method: 'POST', headers: { 'Content-Type': 'application/grpc-web+proto', 'X-Grpc-Web': '1' }, body: gwFrame(req), cache: 'no-store', signal: ac.signal, referrerPolicy: 'no-referrer' }).then(function (r) {
+        if (!r.ok || !r.body) throw new Error('HTTP ' + r.status);
+        WSUP.sui = true; w.n = 0; wsHit('sui');   /* catch-up read for anything missed while disconnected */
+        var rd = r.body.getReader();
+        function pump() {
+          return rd.read().then(function (x) {
+            if (x.done || w.dead) return;
+            var nb = new Uint8Array(buf.length + x.value.length); nb.set(buf); nb.set(x.value, buf.length);
+            var g = gwSplit(nb); buf = g.rest.slice();
+            if (g.msgs.some(function (m) { return pbFields(m).some(function (f) { return f[0] === 1; }); })) wsHit('sui');
+            if (g.status != null) return;
+            return pump();
+          });
+        }
+        return pump();
+      }).then(again, again);
+    }
+    conn(); WS.push(w); return w;
   }
   function balXrp() {
     var a = A.xrp; if (!a) return Promise.resolve(null);
@@ -10081,6 +10159,7 @@ var APP_VERSION = '1.9.37';   /* v1.9.21: version bump */
     try { if (brInited) brProvPush(); } catch (e) {}
     /* P2a: keep = switched from a connect popup; stay on the screen (and Browser tab) the user is on */
     if (!keep) { stack = []; V = { v: 'home' }; render('in'); } refreshAll(); liveConfig();
+    try { wsStart(); } catch (e) {}   /* v1.9.37: the live streams follow the new seed at once (they stayed off until the app was reopened) */
   }
   /* v1.8.30: switch the live address number of a seed (only that one is live; the others stay dormant) */
   function acctSwitch(id, n) {
@@ -14253,6 +14332,38 @@ window.hwCrashPrompt = crashPrompt;
       return v.length ? String(v[Math.floor(v.length / 2)]) : '0';
     }, function () { return null; });
   }
+  /* v1.9.37: Cardano DEX orders (Minswap and other batcher DEXes). After a dApp transaction confirms, any output it sent
+     to a script address with an inline datum is an order: its History row reads "order open" until that output is spent
+     (the batcher filled it, or it was cancelled in the app), then "order filled or closed". Checked live on Koios every
+     30 s while the app is open, for up to 3 days. Kept per seed. */
+  function adaOrds() { var a = jget('hw-adaord', []); return Array.isArray(a) ? a : []; }
+  function adaOrdSave(a) { jset('hw-adaord', a.slice(0, 40)); }
+  function adaOrdAdd(h, site) {
+    if (!/^[0-9a-f]{64}$/i.test(String(h || ''))) return;
+    var a = adaOrds().filter(function (x) { return x.h !== h; }); a.unshift({ h: String(h).toLowerCase(), site: String((site && (site.name || site.host)) || ''), wid: WID, t: Date.now(), st: 'wait', refs: [] }); adaOrdSave(a);
+    setTimeout(adaOrdTick, 20000);
+  }
+  function adaOrdRow(o, txt) { var r = ACT.filter(function (x) { return x.ch === 'ada' && String(x.hash || '').toLowerCase() === o.h; })[0]; if (r) { r.amt = (o.site ? o.site + ' \u00b7 ' : '') + txt; r.ord = o.st; saveActs(); try { histRefresh(); } catch (e) {} } }
+  var adaOrdBusy = false;
+  function adaOrdTick() {
+    if (adaOrdBusy || document.visibilityState !== 'visible') return; var L = adaOrds(), now = Date.now();
+    var todo = L.filter(function (o) { return (o.st === 'wait' || o.st === 'open') && now - o.t < 3 * 864e5; }); if (!todo.length) return;
+    adaOrdBusy = true;
+    var waits = todo.filter(function (o) { return o.st === 'wait'; }), opens = todo.filter(function (o) { return o.st === 'open'; });
+    var p1 = waits.length ? koios('/tx_info', { _tx_hashes: waits.map(function (o) { return o.h; }), _inputs: false, _metadata: false, _assets: false, _withdrawals: false, _certs: false, _scripts: false, _bytecode: false }).then(function (j) {
+      (j || []).forEach(function (tx) {
+        var o = waits.filter(function (x) { return x.h === String(tx.tx_hash).toLowerCase(); })[0]; if (!o) return;
+        var refs = (tx.outputs || []).filter(function (u) { var b = String((u.payment_addr || {}).bech32 || ''); return /^addr1[zx2w]/.test(b) && u.inline_datum && b !== A.ada; }).map(function (u) { return o.h + '#' + u.tx_index; });
+        if (refs.length) { o.st = 'open'; o.refs = refs; adaOrdRow(o, 'order open'); } else o.st = 'none';
+      });
+    }) : Promise.resolve();
+    var p2 = opens.length ? koios('/utxo_info', { _utxo_refs: [].concat.apply([], opens.map(function (o) { return o.refs; })) }).then(function (j) {
+      var spent = {}; (j || []).forEach(function (u) { if (u.is_spent) spent[String(u.tx_hash).toLowerCase() + '#' + u.tx_index] = 1; });
+      opens.forEach(function (o) { if (o.refs.length && o.refs.every(function (r) { return spent[r]; })) { o.st = 'done'; adaOrdRow(o, 'order filled or closed'); if (o.wid === WID) { toast((o.site || 'Your') + ' order on Cardano is filled or closed'); hotChain('ada'); refreshChain('ada'); } } });
+    }) : Promise.resolve();
+    Promise.all([p1.catch(function () {}), p2.catch(function () {})]).then(function () { adaOrdSave(L); adaOrdBusy = false; }, function () { adaOrdBusy = false; });
+  }
+  setInterval(adaOrdTick, 30000);
   function dappLog(net, hash, site, swap, meta) {
     /* v1.8.9 (R17): called only after a node returned the tx id; actAdd refuses an entry without one */
     try { var ch = net === 'sol' || net === 'trx' || net === 'sui' || net === 'ada' || net === 'xrp' ? net : 'eth'; var o = Object.assign({ t: Date.now(), ch: ch, net: ch === 'eth' ? net : undefined, key: 'native', s: swap ? 'Swap' : 'App', amt: swap ? swap.text : String(site.name || site.host || '').slice(0, 60), site: String(site.name || site.host || '').slice(0, 60), origin: String(site.origin || site.host || '').slice(0, 200), to: '', hash: hash, st: 'pending', kind: swap ? 'swap' : 'dapp' }, meta || {}); if (actAdd(o) && !swap) watchTx(ch, ch === 'eth' ? net : null, hash); } catch (e) {}
@@ -19966,7 +20077,7 @@ window.hwCrashPrompt = crashPrompt;
       lst.addEventListener('click', function (e) {
         var b = e.target.closest('[data-ci]'); if (!b) return; var x = L[+b.getAttribute('data-ci')]; if (!x) return;
         var a = coinOff().slice(), k = a.indexOf(x.id); if (k >= 0) a.splice(k, 1); else a.unshift(x.id); coinOffSet(a);
-        var tg = b.querySelector('.tg'); if (tg) tg.classList.toggle('on', k >= 0); buzz(6);
+        var tg = b.querySelector('.tg'); if (tg) tg.classList.toggle('on', k >= 0); buzz(6); try { liveConfig(); } catch (er2) {}
         try { lastSig = ''; update(); } catch (er) {}
       });
     });
@@ -20663,7 +20774,7 @@ window.hwCrashPrompt = crashPrompt;
     if (m === 'cardano_signTx') { var atx = String(p.tx || '').toLowerCase(); return adaInputs(atx).then(function (ex) { return p17K(site, 'cardano', m, { tx: atx, partialSign: !!p.partialSign }, ex); }).then(function (r) { return r.witness; }); }
     if (m === 'cardano_signData') return p17K(site, 'cardano', m, { address: p.address, payload: p.payload }).then(function (r) { return { signature: r.signature, key: r.key }; });
     if (m === 'cardano_submitTx') return race(CHBY.ada.rest, function (u) { return http(u + '/submittx', { method: 'POST', body: String(p.tx || ''), ctype: 'application/cbor;hex', text: true, timeout: 15000 }); })
-      .then(function (t) { var h = String(t).replace(/"/g, '').trim(); try { dappLog('ada', h, site); } catch (e) {} return h; }, function (e) { throw dErr(-32603, 'Submit failed: ' + String(e && e.body || e && e.message || e).slice(0, 160)); });
+      .then(function (t) { var h = String(t).replace(/"/g, '').trim(); try { dappLog('ada', h, site); } catch (e) {} try { adaOrdAdd(h, site); } catch (e) {} return h; }, function (e) { throw dErr(-32603, 'Submit failed: ' + String(e && e.body || e && e.message || e).slice(0, 160)); });
     return Promise.reject(dErr(4200, 'Hwallet does not support ' + m));
   }
 
@@ -21279,10 +21390,27 @@ window.hwCrashPrompt = crashPrompt;
     });
     return out;
   }
+  /* v1.9.37: smarter polling. The timer loop (not a pull, a stream event or a send) skips a chain that was just read:
+     chains with a live stream open are re-read every 15 s as a safety net, keyless TronGrid at most every 3 s, and a
+     chain whose nodes all failed backs off 1, 2, 4 … 60 s. For 60 s after a payment in or out, a send or a stream
+     event, the chain polls at your full refresh speed again. */
+  var PACE = {}, WSUP = {}, HOT = {}, LOOPTICK = false;
+  function hotChain(id) { HOT[id] = Date.now() + 60000; }
+  function paceSkip(id) {
+    var now = Date.now(), p = PACE[id] || {};
+    if (p.next && now < p.next) return true;
+    if (HOT[id] > now) return false;
+    try { if (ACT.some(function (x) { return x.st === 'pending' && x.ch === id; })) return false; } catch (e) {}
+    var min = WSUP[id] ? 15000 : id === 'trx' && !hasKey('trongrid') ? 3000 : 0;
+    return !!(min && p.last && now - p.last < min);
+  }
+  function paceMark(id, ok) { var p = PACE[id] || (PACE[id] = { fail: 0 }), now = Date.now(); p.last = now; if (ok) { p.fail = 0; p.next = 0; } else { p.fail = Math.min(6, (p.fail || 0) + 1); p.next = now + Math.min(60000, 1000 * Math.pow(2, p.fail - 1)); } }
   function refreshChain(id) {
     if (busyR[id] || !A[id]) return busyR[id] || Promise.resolve();
+    if (LOOPTICK && paceSkip(id)) return Promise.resolve();
+    (PACE[id] || (PACE[id] = { fail: 0 })).last = Date.now();
     var before = snapOf(id);
-    var wid0 = curW() && curW().id, B0 = C.b, p = fetchChain(id).then(function () { if (C.b !== B0) return; if (id !== 'eth') refMark(id, true); saveCache(); incoming(id, before, wid0); }, function () { if (C.b !== B0) return; if (id !== 'eth') refMark(id, false); }).then(function () { if (busyR[id] === p) busyR[id] = null; update(); });
+    var wid0 = curW() && curW().id, B0 = C.b, p = fetchChain(id).then(function () { paceMark(id, true); if (C.b !== B0) return; if (id !== 'eth') refMark(id, true); saveCache(); incoming(id, before, wid0); }, function () { paceMark(id, false); if (C.b !== B0) return; if (id !== 'eth') refMark(id, false); }).then(function () { if (busyR[id] === p) busyR[id] = null; update(); });
     busyR[id] = p; return p;
   }
   function refreshAll(fast) { return Promise.all([fetchPrices(fast).then(update, function () {})].concat(CH.map(function (c) { return refreshChain(c.id); }))); }
@@ -21318,6 +21446,8 @@ window.hwCrashPrompt = crashPrompt;
       if (id === 'eth') { var p = k.split(':'); net = p[0]; r = assets('eth', net).filter(function (x) { return p[1] === 'native' ? x.gas : String(x.a).toLowerCase() === p[1]; })[0]; }
       else r = assets(id).filter(function (x) { return k === 'native' ? x.gas : x.key === k || String(x.a) === k; })[0];
       if (!r) return;
+      hotChain(id);
+      if (coinIsOff(id, net, r)) return;   /* v1.9.37: no notification for a coin turned off in Coins (this seed only) */
       if (ACT.some(function (x) { return x.st === 'pending' && x.ch === id && actShown(x); }) && k === 'native' && id !== 'btc') { /* change of our own send */ }
       var amt = fmtA(a1 - a0, r.d), where = id === 'eth' ? EVMBY[net].name : CHBY[id].name;
       toast('Received +' + amt + ' ' + r.s + ' on ' + where); buzz([12, 60, 12, 60, 24], 1); snd('seed');
@@ -21329,7 +21459,7 @@ window.hwCrashPrompt = crashPrompt;
     clearTimeout(loopT);
     var sec = Math.max(1, +jget('hw-refresh', 5) || 5) * (typeof adFactor === 'function' ? adFactor() : 1);   /* v1.8.10 (R3): Adaptive */
     loopT = setTimeout(function () {
-      if (document.visibilityState === 'visible' && started && !LIVE) { tickN++; refreshVisible().then(loop, loop); if (V.v === 'activity' && tickN % Math.max(1, Math.round(30 / sec)) === 0) histRefresh(); }
+      if (document.visibilityState === 'visible' && started && !LIVE) { tickN++; var rv; LOOPTICK = true; try { rv = refreshVisible(); } finally { LOOPTICK = false; } Promise.resolve(rv).then(loop, loop); if (V.v === 'activity' && tickN % Math.max(1, Math.round(30 / sec)) === 0) histRefresh(); }
       else loop();
     }, sec * 1000);
   }
@@ -21338,31 +21468,35 @@ window.hwCrashPrompt = crashPrompt;
   /* WebSockets while the app is open: new EVM blocks, Solana account changes, mempool.space address, XRPL account stream.
      Any event refreshes that chain at once (the polling loop keeps running as the fallback). */
   var WS = [];
-  function stopWs() { WS.forEach(function (w) { try { w.dead = true; w.s.close(); } catch (e) {} }); WS = []; }
-  function wsOne(url, onOpen, onMsg) {
+  function stopWs() { WS.forEach(function (w) { try { w.dead = true; w.s.close(); } catch (e) {} }); WS = []; WSUP = {}; }
+  function wsOne(url, onOpen, onMsg, id) {
     var w = { dead: false, n: 0 };
     function conn() {
       if (w.dead) return; var s; try { s = new WebSocket(url); } catch (e) { return; }
-      w.s = s; s.onopen = function () { w.n = 0; try { onOpen(s); } catch (e) {} };
+      w.s = s; s.onopen = function () { w.n = 0; if (id) { WSUP[id] = true; if (id !== 'eth') wsHit(id); } try { onOpen(s); } catch (e) {} };
       s.onmessage = function (e) { try { onMsg(JSON.parse(e.data)); } catch (x) {} };
-      s.onclose = function () { if (w.dead) return; w.n++; setTimeout(conn, Math.min(15000, 500 * Math.pow(2, w.n))); };
+      s.onclose = function () { if (id) WSUP[id] = false; if (w.dead) return; w.n++; setTimeout(conn, Math.min(15000, 500 * Math.pow(2, w.n))); };
       s.onerror = function () { try { s.close(); } catch (e) {} };
     }
     conn(); WS.push(w); return w;
   }
   var wsT = {};
-  function wsHit(id) { if (LIVE && LIVE.kick && LIVE.ch === id) LIVE.kick('ws'); if (wsT[id]) return; wsT[id] = setTimeout(function () { wsT[id] = 0; refreshChain(id); }, 250); }
+  function wsHit(id) { if (id !== 'eth') hotChain(id); if (LIVE && LIVE.kick && LIVE.ch === id) LIVE.kick('ws'); if (wsT[id]) return; wsT[id] = setTimeout(function () { wsT[id] = 0; refreshChain(id); }, 250); }
   function wsStart() {
     stopWs(); if (!hasAny() || !window.WebSocket) return;
     /* v1.4 (#53): the page's own WebSockets can't be counted by the native speed limit: while a cap is set the
        native live service (whose frames are counted) does the listening, the page keeps polling */
     if ((+jget('hw-cap', 0) || 0) > 0 && nat('setSpeed') && capOn()) return;
-    if (A.eth) EVM.forEach(function (n) { if (!n.ws || !(U((C.b['evm:' + n.id] || {}).n) > 0n || n.id === 'ethereum')) return; wsOne(n.ws, function (s) { s.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_subscribe', params: ['newHeads'] })); }, function (m) { if (m.method === 'eth_subscription') wsHit('eth'); }); });
-    if (A.sol) wsOne(CHBY.sol.ws, function (s) { s.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'accountSubscribe', params: [A.sol, { commitment: 'confirmed', encoding: 'base64' }] })); s.send(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'logsSubscribe', params: [{ mentions: [A.sol] }, { commitment: 'confirmed' }] })); }, function (m) { if (m.method === 'accountNotification' || m.method === 'logsNotification') wsHit('sol'); });
-    if (A.btc) wsOne('wss://mempool.space/api/v1/ws', function (s) { s.send(JSON.stringify({ 'track-address': A.btc })); }, function (m) { if (m['address-transactions'] || m['block-transactions']) wsHit('btc'); });
-    if (A.xrp) wsOne('wss://xrplcluster.com', function (s) { s.send(JSON.stringify({ id: 1, command: 'subscribe', accounts: [A.xrp] })); }, function (m) { if (m.type === 'transaction') wsHit('xrp'); });
+    if (A.eth) EVM.forEach(function (n) { if (!n.ws || !(U((C.b['evm:' + n.id] || {}).n) > 0n || n.id === 'ethereum')) return; wsOne(n.ws, function (s) { s.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_subscribe', params: ['newHeads'] })); }, function (m) { if (m.method === 'eth_subscription') wsHit('eth'); }, 'eth'); });
+    if (A.sol) wsOne(CHBY.sol.ws, function (s) { s.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'accountSubscribe', params: [A.sol, { commitment: 'confirmed', encoding: 'base64' }] })); s.send(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'logsSubscribe', params: [{ mentions: [A.sol] }, { commitment: 'confirmed' }] })); }, function (m) { if (m.method === 'accountNotification' || m.method === 'logsNotification') wsHit('sol'); }, 'sol');
+    if (A.btc) wsOne('wss://mempool.space/api/v1/ws', function (s) { s.send(JSON.stringify({ 'track-address': A.btc })); }, function (m) { if (m['address-transactions'] || m['block-transactions']) wsHit('btc'); }, 'btc');
+    if (A.xrp) wsOne('wss://xrplcluster.com', function (s) { s.send(JSON.stringify({ id: 1, command: 'subscribe', accounts: [A.xrp] })); }, function (m) { if (m.type === 'transaction') wsHit('xrp'); }, 'xrp');
     /* v1.9.36: TON live too (TonAPI's account stream); any transaction of the address refreshes TON at once */
-    if (A.ton && window.EventSource) try { var es = new EventSource('https://tonapi.io/v2/sse/accounts/transactions?accounts=' + encodeURIComponent(A.ton)); es.onmessage = function () { wsHit('ton'); }; WS.push({ dead: false, s: es }); } catch (e) {}
+    if (A.ton && window.EventSource) try { var es = new EventSource('https://tonapi.io/v2/sse/accounts/transactions?accounts=' + encodeURIComponent(A.ton)); es.onopen = function () { WSUP.ton = true; }; es.onerror = function () { WSUP.ton = false; }; es.onmessage = function () { wsHit('ton'); }; WS.push({ dead: false, s: es }); } catch (e) {}
+    /* v1.9.37: Sui live through Sui's gRPC SubscriptionService (gRPC-web over fetch): Mysten's fullnode, Suiscan's
+       node when it fails. Any transaction that touches the address refreshes Sui at once; each (re)connect does one
+       catch-up read, because a subscription starts at the chain tip and cannot resume. */
+    if (A.sui && window.fetch && window.ReadableStream) suiLive(A.sui);
   }
   /* v1.9.14: price alerts. Saved here, checked by the native live service once a minute (and on screen with every price
      update), fired once per crossing. */
@@ -21422,6 +21556,13 @@ window.hwCrashPrompt = crashPrompt;
     if (A.sui) w.push({ k: 'sui', id: 'sui', name: 'Sui', sym: 'SUI', dec: 9, rpc: CHBY.sui.rpc, addr: A.sui, tokens: tk('sui') });
     if (A.xrp) w.push({ k: 'xrp', id: 'xrp', name: 'XRP', sym: 'XRP', dec: 6, rpc: CHBY.xrp.rpc, ws: 'wss://xrplcluster.com', addr: A.xrp, tokens: tk('xrp') });
     if (A.ada) w.push({ k: 'ada', id: 'ada', name: 'Cardano', sym: 'ADA', dec: 6, rpc: CHBY.ada.rest, addr: A.ada, tokens: tk('ada') });
+    /* v1.9.37: coins turned off in Coins for this seed send no notifications: each watch entry lists its muted keys */
+    try { if (coinOff().length) w.forEach(function (e) {
+      var ch = e.k === 'evm' ? 'eth' : e.id, net = e.k === 'evm' ? e.id : null, mu = [];
+      if (coinIsOff(ch, net, { gas: 1, key: 'native' })) mu.push('native');
+      (e.tokens || []).forEach(function (t) { if (coinIsOff(ch, net, { key: t.a })) mu.push(String(t.a)); });
+      if (mu.length) e.mute = mu;
+    }); } catch (e) {}
     try { HwNative.setLive(JSON.stringify(cfg)); } catch (e) {}
   }
 
