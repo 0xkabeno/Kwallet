@@ -12963,7 +12963,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.33';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
+const APP_VERSION = '3.99.34';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -22184,19 +22184,19 @@ window.__KWLOGO={"gram":"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlna
      Works on finished text or html (only "0." followed by 3+ zeros and a digit is touched; addresses and hex are left alone). */
   var SUBD = '\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089';
   function subz(t) {
-    return String(t == null ? '' : t).replace(/(^|[^\w.,])0\.(0{3,})([1-9]\d*)/g, function (m, pre, z, rest) {
-      var n = String(z.length).split('').map(function (c) { return SUBD.charAt(+c); }).join('');
-      return pre + '0.0' + n + rest.slice(0, 4);
-    });
+    /* v3.99.34: no more subscript zero counts (0.0\u20846): tiny amounts stay plain decimals, cut to 4 significant digits */
+    return String(t == null ? '' : t).replace(/(^|[^\w.,])0\.(0{3,})([1-9]\d*)/g, function (m, pre, z, rest) { return pre + '0.' + z + rest.slice(0, 4); });
   }
+
   /* $ for any positive value: 2 decimals, or 3 significant digits with the subscript zeros under one cent */
   function tinyUsd(n, approx) {
+    /* v3.99.34: plain decimals, never subscript zeros; anything under a tenth of a cent reads "under $0.001" */
     n = +n; if (!(n > 0) || !isFinite(n)) return '';
     if (n >= 0.01) return (approx ? '\u2248 $' : '$') + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    if (n < 1e-12) return '< $0.0\u2081\u20821';
-    var s2 = Number(n.toPrecision(3)).toFixed(14).replace(/0+$/, '');
-    return (approx ? '\u2248 $' : '$') + subz(s2);
+    if (n < 0.001) return 'under $0.001';
+    return (approx ? '\u2248 $' : '$') + Number(n.toPrecision(2)).toFixed(4).replace(/0+$/, '');
   }
+
   function sv(d, cls) { return '<svg' + (cls ? ' class="' + cls + '"' : '') + ' viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="' + d + '"/></svg>'; }
   function letter(t) { return (String(t || '?').replace(/[^A-Za-z0-9]/g, '')[0] || '?').toUpperCase(); }
   function safeImg(src) { return /^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,/.test(String(src || '')) || /^https:\/\//.test(String(src || '')) || /^dapps\/[a-z0-9-]+\.png$/.test(String(src || '')); }
@@ -26242,7 +26242,15 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
          messages move to Details, the attached GRAM is shown there (the unused part comes back) */
       if (sim) {
         lines.forEach(function (t, i) { o.det += kv(i ? '' : 'Messages', esc(t), ''); });
-        lines = (Array.isArray(R.sim.lines) ? R.sim.lines : []).slice(0, 4).map(function (t) { return String(t).slice(0, 140); });
+        lines = [];
+        (Array.isArray(R.sim.lines) ? R.sim.lines : []).slice(0, 8).forEach(function (t) {
+          t = String(t).slice(0, 140);
+          /* v3.99.34: contract plumbing reads as plain words in Details, not as steps on the main view */
+          var pl = /execution of smart contract|smart ?contract (call|execution)|call(ing)? (a )?(smart )?contract/i.test(t) ? 'The app\u2019s contract runs your order'
+            : /deploy(ing)? (a |the )?contract|contract deploy/i.test(t) ? 'A contract wallet is created for this token (one time)'
+            : /^(transfer(ring)?|sending|send) [\d.,]+ (ton|gram)\b/i.test(t) && (rows || []).length > 1 ? 'GRAM attached for the contracts; the unused part comes back' : '';
+          if (pl) o.det += kv('Step', esc(pl), esc(t)); else if (lines.length < 4) lines.push(t);
+        });
         needBlind = false;
         o.det += kv('Attached', fmt(v.out || 0n, 9, 6) + ' GRAM', 'For the app\u2019s contracts \u00b7 the unused part comes back');
       }
@@ -26307,6 +26315,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (needBlind) o.warn.unshift(blind);
     var fv = c.fee != null ? '<span class="hp-nw">' + kSig(c.fee, dec, 6) + ' ' + esc(sym) + '</span>' : '\u2014', fs = c.fee != null ? usdTxt(c.fee, dec, gpx) : '';
     if (v.chain === 'sui' && v.sv && v.sv.owner !== v.sv.sender) fs = 'Paid by someone else';
+    if (v.chain === 'icp' && v.iv && v.iv.dec && v.iv.dec.feeTok && !(c.fee > 0n)) { var ftk = v.iv.dec.feeTok, ffr = v.iv.dec.feeRaw; fv = '<span class="hp-nw">' + kSig(ffr, +ftk.d, 6) + ' ' + esc(ftk.s) + '</span>'; fs = usdTxt(ffr, +ftk.d, +ftk.px || 0); fs = 'Token transfer fee' + (fs ? ' \u00b7 ' + fs : ''); }
     if (c.atMost) fs = 'At most' + (fs ? ' \u00b7 ' + fs : '');
     if (v.chain === 'ada') fs = (fs ? fs + ' \u00b7 ' : '') + 'Set by the Cardano protocol';
     else if (v.chain === 'btc') fs = 'Set by the app' + (fs ? ' \u00b7 ' + fs : '');
@@ -26316,11 +26325,17 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (rt17) cmp17.push(['Rate', esc(rt17)]);
       if (R.sim.route && (hS17.length || hR17.length)) cmp17.push(['Route', esc(String(R.sim.route).slice(0, 40))]);
       if (R.sim.min) cmp17.push(['Min received', esc(String(R.sim.min).slice(0, 60))]);
-      if (v.chain === 'ton' && U(R.sim.fee) != null) fs = (fs ? fs + ' \u00b7 ' : '') + 'After unused gas comes back';
+      if (v.chain === 'ton' && U(R.sim.fee) > 0n) fs = (fs ? fs + ' \u00b7 ' : '') + 'Unused gas comes back';
     }
     var lv17 = tx17 && R.sim && R.sim.live ? '<span class="hp-live hp-ldot" role="img" aria-label="Live from the chain"><i></i></span>' : '';
     if (tx17 && !sim && v.chain === 'xrp' && v.xv && v.xv.legs) { var rtX = kRate((rows || []).filter(function (r) { return r.sign === '-'; }), (rows || []).filter(function (r) { return r.sign !== '-'; })); if (rtX) cmp17.push(['Rate', esc(rtX)]); }
-    if (v.chain === 'xrp' && v.xv && v.xv.appFee) cmp17.push(['App fee', fmt(v.xv.appFee, 6, 6) + ' XRP', v.xv.appTo ? 'To ' + esc(short(v.xv.appTo)) : '']);
+    if (v.chain === 'xrp' && v.xv && v.xv.appFee) {
+      /* v3.99.34: the app fee as a share of what you swap (xrpl.to takes about 0.4%) */
+      var xsrc = R.sim && Array.isArray(R.sim.deltas) ? R.sim.deltas : (v.xv.legs || []), xin = 0n; xsrc.forEach(function (d) { if (d && d.nat && d.s === '-') xin += (typeof d.v === 'bigint' ? d.v : U(d.v)) || 0n; });
+      if (R.sim && Array.isArray(R.sim.deltas) && !R.sim.quote) xin -= v.xv.appFee;
+      var xpc = xin > 0n ? Number(v.xv.appFee * 100000n / xin) / 1000 : 0, xps = xpc > 0 && xpc < 50 ? ' \u00b7 ' + (xpc < 0.01 ? '<0.01' : String(Math.round(xpc * 100) / 100)) + '%' : '';
+      cmp17.push(['App fee', fmt(v.xv.appFee, 6, 6) + ' XRP' + xps, v.xv.appTo ? 'To ' + esc(short(v.xv.appTo)) : '']);
+    }
     cmp17.push(['Network fee' + lv17, fv, fs, { cls: 'hp-fee' }]);
     o.main += HWP.rows(cmp17);
     if (c.gbal != null) { var after = c.err ? null : c.gbal - c.amount - c.fee; o.det += kv('Balance', fmt(c.gbal, dec, 6) + ' ' + esc(sym), after != null && after >= 0n ? (c.atMost ? 'After: at least ' : 'After: about ') + fmt(after, dec, 6) + ' ' + esc(sym) : ''); }
@@ -26602,7 +26617,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var led = meta && meta.ledger, pool = meta && meta.pool;
     var amt = function (v, t) { var n = icpNat(v); if (n == null) return '?'; return t ? fmt(n, +t.d, 8) + ' ' + t.s : n.toString() + ' units'; };
     var tokOfA = function (addr) { if (!pool) return null; return pool.t0.a === addr ? pool.t0 : pool.t1.a === addr ? pool.t1 : null; };
-    var leg = function (sign, v, t, x) { var n = icpNat(v); if (n == null || !t) return; var o = { s: sign, v: n.toString(), t: t.a, sym: t.s, dec: +t.d, px: 0 }; if (t.a === 'ryjl3-tyaaa-aaaaa-aaaba-cai') { o = { s: sign, v: n.toString(), nat: 1 }; } d.deltas.push(Object.assign(o, x || {})); };
+    var leg = function (sign, v, t, x) { var n = icpNat(v); if (n == null || !t) return; var o = { s: sign, v: n.toString(), t: t.a, sym: t.s, dec: +t.d, px: +t.px > 0 ? +t.px : 0 }; if (typeof t.icon === 'string' && /^data:image\//.test(t.icon)) o.icon = t.icon; if (t.a === 'ryjl3-tyaaa-aaaaa-aaaba-cai') { o = { s: sign, v: n.toString(), nat: 1 }; } d.deltas.push(Object.assign(o, x || {})); };
     if (led && method === 'icrc1_transfer' && a0 && a0._r) {
       var to = icpAcctT(icpF(a0, 'to')); d.lines.push('Send ' + amt(icpF(a0, 'amount'), led) + ' to ' + (to === me ? 'yourself' : short(to))); leg('-', icpF(a0, 'amount'), led);
       d.rows.push(['To', to]); if (icpF(a0, 'fee') != null) d.rows.push(['Ledger fee', amt(icpF(a0, 'fee'), led)]); d.known = true;
@@ -26627,6 +26642,9 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       leg('-', icpF(a0, 'amountIn'), ti); if (mn != null) leg('+', mn, tout, { min: 1 });
       d.route = 'ICPSwap ' + pool.t0.s + '/' + pool.t1.s; d.min = amt(mn, tout); d.known = true;
     }
+    /* v3.99.34: the fee this call really costs is the token ledger's transfer fee (not 0 ICP) */
+    var ft = led || (pool && a0 && a0._r ? (tokOfA(icpF(a0, 'token')) || (icpF(a0, 'zeroForOne') != null ? (icpF(a0, 'zeroForOne') === true ? pool.t0 : pool.t1) : null)) : null);
+    if (ft) { var af = a0 && a0._r ? icpNat(icpF(a0, 'fee')) : null, tf = af != null ? af : /^\d{1,30}$/.test(String(ft.f || '')) ? BigInt(ft.f) : null; if (tf != null && tf > 0n) { d.feeTok = ft; d.feeRaw = tf; } }
     if (!d.known) { var args = A.map(function (x) { return icpShow(x, 0); }).join(', '); d.lines.push(method + '(' + (args.length > 400 ? args.slice(0, 400) + '\u2026' : args) + ')'); }
     return d;
   }
@@ -26649,7 +26667,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (!c.err && c.gbal != null && c.fee + c.amount > c.gbal) c.err = v.idx !== 0 ? 'Not enough SOL for this transaction.' : 'Not enough SOL for this transaction plus the network fee.';
     } else if (P17M[m] && v.p17tx) {
       c.fee = v.fee; c.amount = v.out || 0n; c.atMost = !!v.atMost; c.gbal = U(R.balance && R.balance.gas);
-      if (v.chain === 'ton' && R.sim && !R.sim.error && U(R.sim.fee) != null) c.fee = U(R.sim.fee);   /* v3.99.32: the real fee from Hwallet's live emulation */
+      if (v.chain === 'ton' && R.sim && !R.sim.error && U(R.sim.fee) > 0n) c.fee = U(R.sim.fee);   /* v3.99.32: the real fee from Hwallet's live emulation */
       if (v.chain === 'btc') { c.gbal = null; if (!v.bv.inKnown || v.fee == null) c.err = 'Kwallet cannot see the amount of every input, so it cannot check the fee and will not sign.'; else if (!v.bv.sign.length) c.err = 'Nothing in this PSBT is yours to sign.'; }
       else if (v.chain === 'ada' && !v.real) c.gbal = null;   /* v3.98.40: without the inputs Kwallet cannot know what you spend; never a false "not enough" */
       else if (c.gbal != null && c.fee != null && c.fee + c.amount > c.gbal) c.err = 'Not enough ' + DS.info.sym + ' for this transaction plus the network fee.';

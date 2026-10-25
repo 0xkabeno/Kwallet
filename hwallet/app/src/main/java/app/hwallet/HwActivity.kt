@@ -994,7 +994,6 @@ class HwActivity : FragmentActivity() {
                 if (request.url.host == "appassets.androidplatform.net" && (request.url.path ?: "").startsWith("/xmrnet/")) xmrServe((request.url.path ?: "").removePrefix("/xmrnet/"))
                 else if (request.url.host == "appassets.androidplatform.net" && (request.url.path ?: "").startsWith("/xmrq/")) xmrDirect(request.url)
                 else if (request.url.host == "appassets.androidplatform.net" && (request.url.path ?: "").startsWith("/kwres/")) kwResServe((request.url.path ?: "").removePrefix("/kwres/"))
-                else if (request.url.host == "appassets.androidplatform.net" && (request.url.path ?: "").startsWith("/hwdl/")) trDownload(request.url)
                 else if (request.url.host == "appassets.androidplatform.net") assets.shouldInterceptRequest(request.url)?.also { if (request.url.path?.endsWith(".js") == true) it.mimeType = "text/javascript" }
                 /* v1.9.19: VPN on but this WebView cannot be proxied (too old) or the tunnel has no port yet: nothing loads direct */
                 else if (HwVpn.webBlocked()) WebResourceResponse("text/plain", "utf-8", 503, "VPN reconnecting", mapOf("Cache-Control" to "no-store"), java.io.ByteArrayInputStream(ByteArray(0)))
@@ -1319,7 +1318,7 @@ class HwActivity : FragmentActivity() {
         val url = u.getQueryParameter("u") ?: ""
         if (!url.startsWith("https://")) return none(400, "Bad Request")
         val m = if (u.getQueryParameter("m") == "GET") "GET" else "POST"
-        val ct = if (u.getQueryParameter("ct") == "b") "application/octet-stream" else "application/json"
+        val ct = when (u.getQueryParameter("ct")) { "b" -> "application/octet-stream"; "f" -> "application/x-www-form-urlencoded"; else -> "application/json" }   // v1.9.34: f = form posts (Google Translate)
         return try {
             val b64 = u.getQueryParameter("b") ?: ""
             val bytes = if (b64.isEmpty()) ByteArray(0) else android.util.Base64.decode(b64, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING)
@@ -1332,23 +1331,6 @@ class HwActivity : FragmentActivity() {
             WebResourceResponse((r.header("Content-Type") ?: "application/octet-stream").substringBefore(';').trim().ifEmpty { "application/octet-stream" }, null, code,
                 r.message.ifBlank { if (code == 200) "OK" else "Error" }, hdr, body.byteStream())
         } catch (_: Throwable) { none(502, "Bad Gateway") }
-    }
-    /** v1.8.8 (R4): the translator's downloads (engine + language models) from Mozilla's public model registry, which sends
-     *  no CORS header. GET /hwdl/<token>?u=<https url>; only Mozilla's two translation hosts; streamed, never stored here. */
-    private fun trDownload(u: Uri): WebResourceResponse {
-        val hdr = mapOf("Cache-Control" to "no-store", "X-Hw" to "1")
-        val none = { code: Int -> WebResourceResponse("text/plain", "utf-8", code, if (code == 403) "Forbidden" else "Bad Gateway", hdr, java.io.ByteArrayInputStream(ByteArray(0))) }
-        if ((u.path ?: "").removePrefix("/hwdl/") != xmrToken) return none(403)
-        val url = u.getQueryParameter("u") ?: return none(403)
-        val host = try { Uri.parse(url).host ?: "" } catch (_: Exception) { "" }
-        if (!url.startsWith("https://") || (host != "firefox-settings-attachments.cdn.mozilla.net" && host != "firefox.settings.services.mozilla.com")) return none(403)
-        return try {
-            val r = HwNet.withTimeout(120000).newCall(okhttp3.Request.Builder().url(url).header("User-Agent", "Hwallet/" + BuildConfig.VERSION_NAME).build()).execute()
-            val body = r.body ?: run { r.close(); return none(502) }
-            if (r.code != 200) { r.close(); return none(502) }
-            val h = HashMap(hdr); r.header("Content-Length")?.let { h["Content-Length"] = it }
-            WebResourceResponse("application/octet-stream", null, 200, "OK", h, body.byteStream())
-        } catch (_: Throwable) { none(502) }
     }
     /** v1.8.8 (R11a): Kwallet's large answer, read once by the page and then deleted */
     private fun kwResServe(id: String): WebResourceResponse {

@@ -1,5 +1,12 @@
 # Changelog
 
+## Kwallet 3.99.34 / Hwallet 1.9.34
+
+- Hwallet browser: page translation now uses Google Translate instead of the on-phone Mozilla Bergamot engine. Whole pages and new content are translated in batches (3 requests at a time, retry with backoff when Google is busy), through Hwallet's own network layer so it follows the VPN. When Hwallet cannot tell a page's language, Google detects it. All Google languages are in the picker; Show original, Always translate and Never on this site work as before. Nothing is downloaded first. The Bergamot worker (tr/hwtr.js) and its download path are removed and the notices updated.
+- dApp sheets: token icons load through Hwallet's own network layer (no CORS needed, longer timeout, cached), so TON jettons (USD₮), XRP tokens (RLUSD, icons from XRPL Meta / xrpscan) and ICP tokens (ckUSDT, logo from the ICRC ledger metadata) show their real icons instead of a letter. A site without an icon (xrpl.to) falls back to its own apple-touch-icon or favicon.
+- ICP sheets: token amounts show a USD value (ICPSwap price; ckUSDC / ckUSDT count as $1 only when no price is found).
+- Fees read plainly in every sheet style: plain decimals instead of subscript zeros (0.0₄…), "under $0.001" for tiny dollar values. TON shows the real estimated network fee from the emulated trace instead of "0 GRAM", with "Unused gas comes back" in small text. ICPSwap and other ICP calls show the token's transfer fee instead of "0 ICP". The XRP app fee shows its share of the swap (about 0.4% on xrpl.to). STON.fi steps such as "Execution of smart contract" and "Deploying a contract" move to Details in plain words.
+
 ## Kwallet 3.99.33 / Hwallet 1.9.33
 
 - ICP: Plug's actor API in Hwallet (createActor, createAgent, agent, batchTransactions) with @dfinity/candid 2.4.1 bundled; query methods run as anonymous queries, update calls are signed in Kwallet. Fixes ICPSwap "Hwallet does not hand out an agent".

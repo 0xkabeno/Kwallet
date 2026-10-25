@@ -7381,19 +7381,19 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
      Works on finished text or html (only "0." followed by 3+ zeros and a digit is touched; addresses and hex are left alone). */
   var SUBD = '\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089';
   function subz(t) {
-    return String(t == null ? '' : t).replace(/(^|[^\w.,])0\.(0{3,})([1-9]\d*)/g, function (m, pre, z, rest) {
-      var n = String(z.length).split('').map(function (c) { return SUBD.charAt(+c); }).join('');
-      return pre + '0.0' + n + rest.slice(0, 4);
-    });
+    /* v3.99.34: no more subscript zero counts (0.0\u20846): tiny amounts stay plain decimals, cut to 4 significant digits */
+    return String(t == null ? '' : t).replace(/(^|[^\w.,])0\.(0{3,})([1-9]\d*)/g, function (m, pre, z, rest) { return pre + '0.' + z + rest.slice(0, 4); });
   }
+
   /* $ for any positive value: 2 decimals, or 3 significant digits with the subscript zeros under one cent */
   function tinyUsd(n, approx) {
+    /* v3.99.34: plain decimals, never subscript zeros; anything under a tenth of a cent reads "under $0.001" */
     n = +n; if (!(n > 0) || !isFinite(n)) return '';
     if (n >= 0.01) return (approx ? '\u2248 $' : '$') + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    if (n < 1e-12) return '< $0.0\u2081\u20821';
-    var s2 = Number(n.toPrecision(3)).toFixed(14).replace(/0+$/, '');
-    return (approx ? '\u2248 $' : '$') + subz(s2);
+    if (n < 0.001) return 'under $0.001';
+    return (approx ? '\u2248 $' : '$') + Number(n.toPrecision(2)).toFixed(4).replace(/0+$/, '');
   }
+
   function sv(d, cls) { return '<svg' + (cls ? ' class="' + cls + '"' : '') + ' viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="' + d + '"/></svg>'; }
   function letter(t) { return (String(t || '?').replace(/[^A-Za-z0-9]/g, '')[0] || '?').toUpperCase(); }
   function safeImg(src) { return /^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,/.test(String(src || '')) || /^https:\/\//.test(String(src || '')) || /^dapps\/[a-z0-9-]+\.png$/.test(String(src || '')); }
@@ -7882,7 +7882,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.33';   /* v1.9.21: version bump */
+var APP_VERSION = '1.9.34';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -13780,7 +13780,26 @@ window.hwCrashPrompt = crashPrompt;
   function siteLetter(site) { return '<span class="lg lt md">' + esc(String(site.name || site.host || '?').slice(0, 1).toUpperCase()) + '</span>'; }
   function siteIcon(site) { return site.icon && /^(https:|data:image\/)/.test(site.icon) ? '<img class="lg md dsi" alt="" src="' + esc(site.icon) + '" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\'lg lt md\',textContent:\'' + esc(String(site.name || '?').slice(0, 1).toUpperCase()) + '\'}))">' : siteLetter(site); }
   /* the site's icon travels to Kwallet only as a small data: image (Kwallet is offline) */
+  /* v1.9.34: sheet icons come through Hwallet's own network layer first (works without CORS headers), 8 s, cached in memory
+     and on the phone (last 120 icons); the old in-page image path stays as the fallback */
+  var ICOC = null;
+  function icoCache() { if (!ICOC) { ICOC = jget('hw-icoc', {}) || {}; } return ICOC; }
+  function icoPut(u, d) { var c = icoCache(); c[u] = { d: d, t: Date.now() }; var ks = Object.keys(c); if (ks.length > 120) ks.sort(function (a, b) { return c[a].t - c[b].t; }).slice(0, ks.length - 120).forEach(function (k) { delete c[k]; }); try { jset('hw-icoc', c); } catch (e) {} }
   function iconData(url) {
+    url = String(url || '');
+    if (/^https:\/\//.test(url) && url.length < 600) {
+      var hit = icoCache()[url]; if (hit && (hit.d || Date.now() - hit.t < 3600000)) return Promise.resolve(hit.d || '');
+      return Promise.race([logoData(url), new Promise(function (r) { setTimeout(function () { r(''); }, 8000); })]).then(function (d) { return d || iconImg(url); }).then(function (d) { icoPut(url, d || ''); return d || ''; });
+    }
+    return iconImg(url);
+  }
+  /* a site's icon: its own icon, else apple-touch-icon / favicon from the site itself (xrpl.to and others give none) */
+  function siteIcon(site) {
+    var h = String((site && site.host) || '').replace(/[^a-z0-9.-]/gi, ''), list = [site && site.icon].concat(h ? ['https://' + h + '/apple-touch-icon.png', 'https://' + h + '/favicon.ico', 'https://' + h + '/favicon.png'] : []).filter(Boolean), i = 0;
+    function next() { if (i >= list.length) return Promise.resolve(''); return iconData(list[i++]).then(function (d) { return d || next(); }, next); }
+    return next();
+  }
+  function iconImg(url) {
     return new Promise(function (res) {
       /* P2a: the P1 icon cache gives data: images and bundled dapps/*.png; both travel as they are or via canvas */
       if (/^data:image\/(png|jpeg|webp|gif);base64,/.test(String(url || ''))) return res(url.length < 90000 ? url : '');
@@ -13788,7 +13807,7 @@ window.hwCrashPrompt = crashPrompt;
       var svg = /^data:image\/svg\+xml[;,]/.test(String(url || ''));
       if (/^dapps\/[a-z0-9-]+\.png$/.test(String(url || ''))) { try { url = new URL(url, location.href).href; } catch (e) { return res(''); } }
       if (!url || !(svg || /^https:/.test(url))) return res('');
-      var im = new Image(); if (!svg) im.crossOrigin = 'anonymous'; var t = setTimeout(function () { res(''); }, 1200);
+      var im = new Image(); if (!svg) im.crossOrigin = 'anonymous'; var t = setTimeout(function () { res(''); }, 4000);
       im.onload = function () { clearTimeout(t); try { var c = document.createElement('canvas'); c.width = c.height = 64; c.getContext('2d').drawImage(im, 0, 0, 64, 64); res(c.toDataURL('image/png')); } catch (e) { res(''); } };
       im.onerror = function () { clearTimeout(t); res(''); }; im.src = url;
     });
@@ -14013,9 +14032,9 @@ window.hwCrashPrompt = crashPrompt;
       if (!ok) throw dErr(5000, 'User rejected the request');
       /* v1.7.2 (S4): the site icon never holds up the sheet for more than 450 ms */
       /* v1.8.9 (R21): the icon loads alongside the request preparation (it lands in base.site before the sheet opens) */
-      var icP = iconData(site.icon).then(function (ic) { if (ic) base.site.icon = ic; }, function () {});
+      var icP = siteIcon(site).then(function (ic) { if (ic) base.site.icon = ic; }, function () {});
       if (/Transaction$/.test(m)) return;   /* a transaction's preparation takes longer than the icon anyway */
-      return Promise.race([icP, new Promise(function (r) { setTimeout(r, 450); })]);
+      return Promise.race([icP, new Promise(function (r) { setTimeout(r, 900); })]);
     }).then(function () {
       if (ns === 'eip155') {
         if (!A.eth || !(A.paired && A.paired.eth)) throw dErr(4100, 'This wallet is watch only. Pair it with Kwallet first');
@@ -15248,7 +15267,7 @@ window.hwCrashPrompt = crashPrompt;
       (window.HwNative && HwNative.brShield ? '<div class="lbl">Privacy</div><div class="lst br-tgl"><button class="br-row br-sw2' + (shState().on ? ' on' : '') + '" data-shs><span class="br-ri">' + brSvg(SHI) + '</span><span class="am"><span class="an">Ad blocker</span><span class="ap">uBlock Origin lists \u00b7 ' + esc(shSum()) + '</span></span><span class="kws-sw" aria-hidden="true"></span></button>' +
         '<button class="br-row" data-shu><span class="br-ri">' + sv('reload') + '</span><span class="am"><span class="an">Update filter lists</span><span class="ap">' + (shState().updated ? 'Updated ' + new Date(shState().updated).toLocaleDateString() : 'Weekly, in the background') + '</span></span></button>' +
         '<button class="br-row" data-uas><span class="br-ri">' + brSvg(UAI) + '</span><span class="am"><span class="an">User agent</span><span class="ap">' + esc(uaSum()) + '</span></span></button></div>' : '') +
-      (window.hwTr && window.HwNative && HwNative.brEval ? '<div class="lbl">Translation</div><div class="lst br-tgl"><div class="br-row br-trr"><span class="br-ri">' + brSvg(hwTr.icon) + '</span><span class="am"><span class="an">Translate pages to</span><span class="ap">On the phone \u00b7 Mozilla Bergamot</span></span>' + hwTr.selHtml('br-trto2') + '</div></div>' : '') +
+      (window.hwTr && window.HwNative && HwNative.brEval ? '<div class="lbl">Translation</div><div class="lst br-tgl"><div class="br-row br-trr"><span class="br-ri">' + brSvg(hwTr.icon) + '</span><span class="am"><span class="an">Translate pages to</span><span class="ap">Google Translate</span></span>' + hwTr.selHtml('br-trto2') + '</div></div>' : '') +
       '<div class="lbl">History</div><div class="lst"><button class="br-row" data-hclr><span class="br-ri">' + sv('hist') + '</span><span class="am"><span class="an">Clear browsing history</span><span class="ap">' + esc(omSum()) + '</span></span></button></div>' +
       '<div class="lbl">Saved inputs</div><div class="lst"><button class="br-row" data-sin><span class="br-ri">' + brSvg('M12.65 10A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z') + '</span><span class="am"><span class="an">Saved inputs</span><span class="ap">' + esc(typeof sinSum === 'function' ? sinSum() : '') + '</span></span></button></div>' +
       '<div class="lbl">Search engine</div><div class="seg br-eng">' + Object.keys(BR_ENG).map(function (k) { return '<button data-eng="' + k + '"' + (k === e0 ? ' class="on"' : '') + '>' + BR_ENG[k][0] + '</button>'; }).join('') + '</div>' +
@@ -18884,9 +18903,10 @@ window.hwCrashPrompt = crashPrompt;
      the page is translated in place (spinner while the model downloads or works), new content keeps being translated;
      tap again = the original text comes back and the icon flashes again. Options (target language, Always translate X,
      Never on this site) are a quiet inline row in the menu and in the settings.
-     Engine: a fork of Mozilla's Firefox Translations (Bergamot, MPL-2.0) in a worker (tr/hwtr.js), fully on the phone;
-     the engine and one model per language pair are downloaded once from Mozilla's model registry and cached. */
-  var TR_REG = 'https://firefox.settings.services.mozilla.com/v1/buckets/main/collections/translations-models/records';
+     Engine (v1.9.34): Google Translate (translate.googleapis.com, the same free endpoint Chrome's page translation
+     uses), called through Hwallet's own native network layer (/xmrq/) so it works for every page and follows the VPN.
+     Text goes out in batches (3 requests at a time, retry with backoff on 429 / 5xx); Google detects the language when
+     Hwallet's own on-phone detection is unsure. Nothing is downloaded or installed. */
   var TRS = {}, TRW = { w: null, ready: null, q: {}, n: 0 }, TRE = { seq: 0, q: {} }, TRX = { key: '', job: null };
   function trTo() { var v = jget('hw-br-tr-to', ''); if (v) return v; var n = String((navigator.languages && navigator.languages[0]) || navigator.language || 'en'); return trNorm(n) || 'en'; }
   function trNorm(l) {
@@ -18902,66 +18922,59 @@ window.hwCrashPrompt = crashPrompt;
   function trPref(k) { var o = jget('hw-br-tr', {}) || {}; return o[k] || {}; }
   function trPrefSet(k, key, on) { var o = jget('hw-br-tr', {}) || {}; o[k] = o[k] || {}; if (on) o[k][key] = 1; else delete o[k][key]; jset('hw-br-tr', o); }
 
-  /* ---------- the model registry (Mozilla's, the same files Firefox uses), kept for a day ---------- */
-  var TRIDX = null;
-  function trReg() {
-    var c = jget('hw-tr-reg', null);
-    if (c && c.idx && Date.now() - (c.at || 0) < 86400000) { TRIDX = c.idx; return Promise.resolve(c.idx); }
-    return fetch(TR_REG, { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('registry'); return r.json(); }).then(function (j) {
-      var idx = {}, vv = function (v) { var m = /^(\d+)\.(\d+)$/.exec(v || ''); return m && (+m[1] === 1 || +m[1] === 2) ? +m[1] * 1000 + +m[2] : -1; };
-      (j.data || []).forEach(function (r) {
-        var v = vv(r.version), a = r.attachment; if (v < 0 || !a || !r.fromLang || !r.toLang || !/^(model|lex|vocab|srcvocab|trgvocab)$/.test(r.fileType)) return;
-        var k = r.fromLang + '-' + r.toLang, e = idx[k] = idx[k] || {}, cur = e[r.fileType];
-        if (!cur || cur.v < v) e[r.fileType] = { v: v, loc: a.location, hash: a.hash, size: a.size, name: r.name || a.filename };
-      });
-      Object.keys(idx).forEach(function (k) { var e = idx[k]; if (!e.model || !(e.vocab || (e.srcvocab && e.trgvocab))) delete idx[k]; });
-      TRIDX = idx; jset('hw-tr-reg', { at: Date.now(), idx: idx }); return idx;
-    }).catch(function (e) { if (c && c.idx) { TRIDX = c.idx; return c.idx; } throw e; });
-  }
-  function trPlan(from, to) {
-    var I = TRIDX || {}; if (!from || !to || from === to) return null;
-    if (I[from + '-' + to]) return [from + '-' + to];
-    if (from !== 'en' && to !== 'en' && I[from + '-en'] && I['en-' + to]) return [from + '-en', 'en-' + to];
-    return null;
-  }
-  function trTargets() { var I = TRIDX || {}, s = { en: 1 }; Object.keys(I).forEach(function (k) { if (k.indexOf('en-') === 0) s[k.slice(3)] = 1; }); return Object.keys(s).sort(function (a, b) { return trName(a).localeCompare(trName(b)); }); }
-
-  /* ---------- the engine worker ---------- */
-  function trStart() {
-    if (TRW.ready) return TRW.ready;
-    TRW.ready = new Promise(function (res, rej) {
-      var done = false, w;
-      try { w = new Worker('tr/hwtr.js'); } catch (e) { rej(new Error('The translator could not start')); return; }
-      TRW.w = w;
-      w.onmessage = function (e) {
-        var m = e.data || {};
-        if (m.ev === 'ready') { if (!done) { done = true; w.postMessage({ id: 0, op: 'init', a: { tok: (function () { try { return HwNative.xmrTok(); } catch (x) { return ''; } })() } }); res(true); } return; }
-        if (m.ev === 'prog') { trProg(m.t); return; }
-        if (m.ev === 'dl') { var tk = ''; try { tk = HwNative.xmrTok(); } catch (x) {} fetch('/hwdl/' + tk + '?u=' + encodeURIComponent(m.url), { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('Download failed (' + r.status + ')'); return r.arrayBuffer(); }).then(function (b) { w.postMessage({ dl: m.dl, b: b }, [b]); }, function (er) { w.postMessage({ dl: m.dl, e: String(er && er.message || er) }); }); return; }
-        var q = TRW.q[m.id]; if (!q) return; delete TRW.q[m.id]; clearTimeout(q.t);
-        if (m.ok) q.res(m.r); else q.rej(new Error(m.e || 'Translator error'));
-      };
-      w.onerror = function (ev) { try { ev.preventDefault(); } catch (x) {} if (!done) { done = true; rej(new Error('The translator could not start')); } };
-      setTimeout(function () { if (!done) { done = true; rej(new Error('The translator did not start')); } }, 20000);
-    }).catch(function (e) { TRW.ready = null; try { TRW.w && TRW.w.terminate(); } catch (x) {} TRW.w = null; throw e; });
-    return TRW.ready;
-  }
-  function trw(op, a, ms) {
-    return trStart().then(function () {
-      return new Promise(function (res, rej) {
-        var id = ++TRW.n, q = { res: res, rej: rej };
-        q.t = setTimeout(function () { if (TRW.q[id]) { delete TRW.q[id]; rej(new Error('The translator timed out')); } }, ms || 120000);
-        TRW.q[id] = q; TRW.w.postMessage({ id: id, op: op, a: a || {} });
-      });
+  /* ---------- v1.9.34: Google Translate. Hwallet keeps its own language codes (zh, zh-Hant, nb, he...) and maps them ---------- */
+  var GT_LANGS = 'af sq am ar hy as ay az bm eu be bn bho bs bg ca ceb ny zh zh-Hant co hr cs da dv doi nl en eo et ee tl fi fr fy gl ka de el gn gu ht ha haw he hi hmn hu is ig ilo id ga it ja jv kn kk km rw gom ko kri ku ckb ky lo la lv ln lt lg lb mk mai mg ms ml mt mi mr mni lus mn my ne nb or om ps fa pl pt pa qu ro ru sm sa gd nso sr st sn sd si sk sl so es su sw sv tg ta tt te th ti ts tr tk ak uk ur ug uz vi cy xh yi yo zu'.split(' ');
+  var GT_MAP = { zh: 'zh-CN', 'zh-Hant': 'zh-TW', nb: 'no', he: 'iw', jv: 'jw', mni: 'mni-Mtei', fil: 'tl' };
+  var GT_BACK = { 'zh-cn': 'zh', 'zh-tw': 'zh-Hant', no: 'nb', iw: 'he', jw: 'jv', 'mni-mtei': 'mni', fil: 'tl' };
+  function gtCode(l) { return GT_MAP[l] || l || 'auto'; }
+  function gtNorm(g) { g = String(g || '').toLowerCase(); return GT_BACK[g] || trNorm(g) || ''; }
+  var TRIDX = { google: 1 };
+  function trReg() { return Promise.resolve(TRIDX); }
+  function trPlan(from, to) { return from && to && from !== to ? [from + '-' + to] : null; }
+  function trTargets() { return GT_LANGS.slice().sort(function (a, b) { return trName(a).localeCompare(trName(b)); }); }
+  function trLoad() { return Promise.resolve(true); }
+  /* one request: POST form q=..&q=.. to Google through the native layer; answers [t1, t2...] (or [[t, lang]...] with auto) */
+  function gtB64(str) { var u = unescape(encodeURIComponent(str)), b = btoa(u); return b.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function gtEsc(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function gtUnesc(t) { return String(t).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&'); }
+  function gtReq(texts, sl, tl) {
+    var url = 'https://translate.googleapis.com/translate_a/t?client=gtx&dt=t&sl=' + encodeURIComponent(sl) + '&tl=' + encodeURIComponent(tl);
+    var body = texts.map(function (t) { return 'q=' + encodeURIComponent(gtEsc(t)); }).join('&');
+    var tk = xmrTok(), go = function (n) {
+      var f = tk ? fetch('/xmrq/' + tk + '?m=POST&ct=f&u=' + encodeURIComponent(url) + '&b=' + gtB64(body), { cache: 'no-store' })
+                 : fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body, cache: 'no-store' });
+      return f.then(function (r) {
+        if (r.status === 429 || r.status >= 500) { if (n < 4) return new Promise(function (ok) { setTimeout(ok, 800 * Math.pow(2, n) + Math.random() * 400); }).then(function () { return go(n + 1); }); throw new Error(r.status === 429 ? 'Google Translate is busy, try again in a moment' : 'Google Translate did not answer (' + r.status + ')'); }
+        if (!r.ok) throw new Error('Google Translate error (' + r.status + ')');
+        return r.json();
+      }, function (e) { if (n < 2) return new Promise(function (ok) { setTimeout(ok, 1000 * (n + 1)); }).then(function () { return go(n + 1); }); throw new Error('No connection to Google Translate'); });
+    };
+    return go(0).then(function (j) {
+      if (typeof j === 'string') j = [j];
+      if (!Array.isArray(j)) throw new Error('Google Translate gave no text');
+      return j.map(function (x) { return Array.isArray(x) ? { t: gtUnesc(x[0]), l: gtNorm(x[1]) } : { t: gtUnesc(x), l: '' }; });
     });
   }
-  function trLoad(from, to) {
-    var plan = trPlan(from, to); if (!plan) return Promise.reject(new Error('No model for ' + trName(from) + ' to ' + trName(to)));
-    var key = plan.join('+'); if (TRX.key === key && TRX.job) return TRX.job;
-    TRX.key = key;
-    TRX.job = trw('load', { key: key, pairs: plan.map(function (k) { var e = TRIDX[k], f = {}; ['model', 'lex', 'vocab', 'srcvocab', 'trgvocab'].forEach(function (t) { if (e[t]) f[t] = { loc: e[t].loc, hash: e[t].hash, size: e[t].size, name: e[t].name }; }); return { from: k.split('-')[0], to: k.split('-').slice(1).join('-'), files: f }; }) }, 1800000);
-    TRX.job.catch(function () { TRX.key = ''; TRX.job = null; });
-    return TRX.job;
+  /* a whole batch: split into ~1800-character requests, 3 at a time; leading/trailing spaces are kept as they were */
+  function gtTr(texts, from, to) {
+    var out = new Array(texts.length), chunks = [], cur = [], len = 0;
+    texts.forEach(function (t, i) { var c = String(t || '').length; if (cur.length && (len + c > 1800 || cur.length >= 64)) { chunks.push(cur); cur = []; len = 0; } cur.push(i); len += c; });
+    if (cur.length) chunks.push(cur);
+    var k = 0, sl = from ? gtCode(from) : 'auto', tl = gtCode(to);
+    function next() {
+      if (k >= chunks.length) return Promise.resolve();
+      var idx = chunks[k++], src = idx.map(function (i) { var m = /^(\s*)([\s\S]*?)(\s*)$/.exec(String(texts[i] || '')); return m; });
+      return gtReq(src.map(function (m) { return m[2]; }), sl, tl).then(function (r) {
+        idx.forEach(function (i, n) { var m = src[n], v = r[n]; out[i] = v && v.t != null ? m[1] + v.t + m[3] : null; });
+        return next();
+      });
+    }
+    return Promise.all([next(), next(), next()]).then(function () { return out; });
+  }
+  /* Google's language detection for a page Hwallet could not read itself */
+  function gtDetect(text) {
+    text = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 600); if (text.length < 8) return Promise.resolve('');
+    return gtReq([text], 'auto', 'en').then(function (r) { return (r[0] && r[0].l) || ''; }, function () { return ''; });
   }
   var TRPT = '';
   function trProg(t) { TRPT = String(t || '').slice(0, 60); var b = document.querySelector('.br-trb'); if (b) b.setAttribute('aria-label', 'Translating \u00b7 ' + TRPT); var r = document.getElementById('br-trst'); if (r) r.textContent = TRPT; }
@@ -19080,7 +19093,7 @@ window.hwCrashPrompt = crashPrompt;
   function trCacheClear() { TRC = new Map(); TRB = {}; return trDb().then(function (d) { return new Promise(function (res) { var tx = d.transaction('u', 'readwrite'); tx.objectStore('u').clear(); tx.oncomplete = function () { res(true); }; tx.onerror = function () { res(false); }; }); }).catch(function () { return false; }); }
   /* the engine and the language model start loading as soon as a foreign page is seen, before any tap (not while the
      mobile-data limit is on: then only a tap downloads) */
-  function trWarm(from, to) { try { if (typeof capOn === 'function' && capOn()) return; if (window.hwLite && hwLite()) return; } catch (e) {} if (!trPlan(from, to)) return; trLoad(from, to).catch(function () {}); }
+  function trWarm() { /* v1.9.34: Google Translate needs nothing downloaded first */ }
   function trEval(id, js) {
     return new Promise(function (res) {
       var seq = ++TRE.seq; TRE.q[seq] = res;
@@ -19185,8 +19198,15 @@ window.hwCrashPrompt = crashPrompt;
     if (s.st === 'on') { s.job++; s.keep = ''; trEval(t.id, 'window.__hwTr?__hwTr.off():0'); s.st = s.lang && s.lang !== trTo() ? 'foreign' : 'none'; trPaint(); return; }
     if (s.st === 'busy') { s.job++; s.keep = ''; trEval(t.id, 'window.__hwTr?__hwTr.off():0'); s.st = 'foreign'; trPaint(); return; }
     if (s.st === 'foreign' || s.lang) { trGo(t.id); return; }
-    /* not detected: try anyway, once the language is known */
-    trCheck(t.id, t.url);
+    /* v1.9.34: not detected on the phone: Google detects it from the page's text, then the page is translated */
+    var job = s.job = (s.job || 0) + 1; s.st = 'busy'; s.err = ''; trPaint();
+    trEval(t.id, TR_DETECT).then(function (o) { return gtDetect(o && o.text); }).then(function (l) {
+      if (s.job !== job) return;
+      s.lang = l || ''; s.st = 'none';
+      if (!l) { s.err = 'Language not detected'; trPaint(); return; }
+      if (l === trTo()) { trPaint(); return; }
+      trGo(t.id);
+    });
   }
   function trGo(id) {
     var s = trSt(id), from = s.lang, to = trTo(), job = ++s.job; if (!from || from === to) return;
@@ -19216,7 +19236,7 @@ window.hwCrashPrompt = crashPrompt;
     s.idle = 0;
     var pre = to + '|' + from + '|', out = new Array(b.items.length), need = [], needI = [];
     b.items.forEach(function (x, i) { var h = trHash(x[1]), v = trcGet(pre + h); if (v !== undefined) out[i] = v; else { need.push(x[1]); needI.push(i); } });
-    var tp = need.length ? trw('tr', { texts: need }, 120000) : Promise.resolve([]);
+    var tp = need.length ? gtTr(need, from, to) : Promise.resolve([]);
     return tp.then(function (got) {
       if (s.job !== job) return;
       needI.forEach(function (i, k) { var v = got[k]; if (v == null) return; out[i] = v; var h = trHash(b.items[i][1]); trcSet(pre + h, v); if (B) B.m[h] = v; });
@@ -19454,12 +19474,13 @@ window.hwCrashPrompt = crashPrompt;
     if (!boc || !A.ton) return Promise.resolve(null);
     var me = tonRaw(A.ton);
     return http(TONA + '/wallet/emulate', { method: 'POST', body: JSON.stringify({ boc: boc, address_override: me }), timeout: 9000 }).then(function (j) {
-      return tonEmuRead(j && j.event, j && j.risk, me);
+      return tonEmuRead(j && j.event, j && j.risk, me, j && j.trace);
     }, function () {
       return http(TONA + '/accounts/' + encodeURIComponent(me) + '/events/emulate?ignore_signature_check=true', { method: 'POST', body: JSON.stringify({ boc: boc }), timeout: 9000 }).then(function (ev) { return tonEmuRead(ev, null, me); }, function () { return null; });
     });
   }
-  function tonEmuRead(ev, risk, me) {
+  function tonTraceFee(tr, dp) { if (!tr || dp > 40) return 0n; var f = 0n; try { f = bi32((tr.transaction || {}).total_fees || 0); } catch (e) {} (tr.children || []).forEach(function (c) { f += tonTraceFee(c, (dp || 0) + 1); }); return f; }
+  function tonEmuRead(ev, risk, me, tr) {
     if (!ev || !Array.isArray(ev.actions)) return null;
     var nat = 0n, tk = {}, meta = {}, route = '', lines = [], fail = '';
     function eq(a) { return !!a && tonRaw(a.address || a) === me; }
@@ -19484,6 +19505,8 @@ window.hwCrashPrompt = crashPrompt;
     });
     /* extra = what the actions do not explain: < 0 the real fee (after the unused gas came back), > 0 a refund */
     var ext = bi32(ev.extra), fee = 0n; if (ext > 0n) nat += ext; else fee = -ext;
+    /* v1.9.34: the fee every contract in the chain burns (from the emulated trace), when the refund hides it */
+    if (fee <= 0n) { var tf = tonTraceFee(tr, 0); if (tf > 0n) fee = tf; }
     var keys = Object.keys(tk).filter(function (k) { return tk[k] !== 0n; });
     var out = { live: 1, ton: 1, deltas: [], fee: String(fee), lines: lines.slice(0, 6) };
     if (route) out.route = route;
@@ -19580,7 +19603,25 @@ window.hwCrashPrompt = crashPrompt;
       return out;
     }, function () { return null; });
   }
-  function xrpSimQ(t) { return xrpSim(t).then(function (s) { return s || xrpQuote(t); }, function () { return xrpQuote(t); }); }
+  function xrpSimQ(t) { return xrpSim(t).then(function (s) { return s || xrpQuote(t); }, function () { return xrpQuote(t); }).then(xrpDecor); }
+  /* v1.9.34: XRP token icon + USD price (xrpscan's XRPL Meta, the same source as Add token), once per token per session */
+  var XRPTI = {};
+  function xrpTokInfo(k) {
+    if (XRPTI[k]) return XRPTI[k];
+    var pr = String(k).split('.'), id = xrpCode(pr[0]).length === 3 ? pr[0] + '.' + pr[1] : k;
+    var job = http('https://api.xrpscan.com/api/v1/token/' + encodeURIComponent(id), { timeout: 6000 }).then(function (t) {
+      t = t || {}; var m = (t.meta && t.meta.token) || {}, p = +t.price > 0 && +t.price < 1e9 ? +t.price * (px('ripple') || 0) : 0;
+      return (m.icon && /^https:\/\//.test(m.icon) ? iconData(String(m.icon)) : Promise.resolve('')).then(function (ic) { return { icon: ic || '', px: p }; });
+    }, function () { return { icon: '', px: 0 }; });
+    XRPTI[k] = job; return job;
+  }
+  function xrpDecor(out) {
+    if (!out || !Array.isArray(out.deltas)) return out;
+    return Promise.race([Promise.all(out.deltas.map(function (d) {
+      if (!d || d.nat || !d.t) return null;
+      return xrpTokInfo(d.t).then(function (i) { if (i.icon && !d.icon) d.icon = i.icon; if (!(d.px > 0) && i.px > 0) d.px = i.px; });
+    })), new Promise(function (r) { setTimeout(r, 7000); })]).then(function () { return out; }, function () { return out; });
+  }
   function xrpK(site, t) {
     return liveFirst(function () { return xrpSimQ(t); }, 6000).then(function (s0) {
       return p17K(site, 'xrpl', 'xrpl_signTransaction', { tx: t }, s0 ? { sim: s0 } : null, function (id) { return p17Live(id, function () { return xrpSimQ(t); }, s0); });
@@ -19644,7 +19685,7 @@ window.hwCrashPrompt = crashPrompt;
   function p17Base(site, via) {
     var b = { origin: String(site.origin || ('https://' + site.host)).slice(0, 200), via: via || 'browser', site: { name: String(site.name || site.host).slice(0, 60) } };
     if (site.trust && site.trust.cls) { b.trust = site.trust.cls; if (site.trust.t) b.trustText = String(site.trust.t).slice(0, 60); }
-    return iconData(site.icon).then(function (ic) { if (ic) b.site.icon = ic; return b; }, function () { return b; });
+    return Promise.race([siteIcon(site), new Promise(function (r) { setTimeout(function () { r(''); }, 9000); })]).then(function (ic) { if (ic) b.site.icon = ic; return b; }, function () { return b; });
   }
   function p17K(site, ns, method, params, extra, live) {
     if (!(window.HwNative && HwNative.sign)) return Promise.reject(dErr(5000, 'Signing needs the Hwallet app with Kwallet on the same phone'));
@@ -20425,17 +20466,39 @@ window.hwCrashPrompt = crashPrompt;
       return typeof sy === 'string' && de != null ? { a: cid, s: sy.replace(/[^\x20-\x7e]/g, '').slice(0, 16), d: Number(de) } : null;
     }, function () { return null; });
   }
+  /* v1.9.34: icon + transfer fee from the ICRC dashboard API, USD price from ICPSwap; a ck stablecoin counts as $1 only when
+     neither has a price */
+  var ICPTI = {};
+  function icpTokInfo(cid) {
+    if (ICPTI[cid]) return ICPTI[cid];
+    var meta = http('https://icrc-api.internetcomputer.org/api/v1/ledgers/' + cid, { timeout: 7000 }).then(function (j) { return (j && j.icrc1_metadata) || {}; }, function () { return {}; });
+    var price = http('https://api.icpswap.com/info/token/' + cid, { timeout: 7000 }).then(function (j) { var p = +((j && j.data) || {}).price; return p > 0 && p < 1e9 ? p : 0; }, function () { return 0; });
+    var job = Promise.all([meta, price]).then(function (x) {
+      var m = x[0], lg = String(m.icrc1_logo || ''), f = /^\d{1,30}$/.test(String(m.icrc1_fee || '')) ? String(m.icrc1_fee) : '';
+      var icP = /^data:image\/(png|jpeg|webp|gif);base64,/.test(lg) && lg.length < 60000 ? Promise.resolve(lg) : /^data:image\/svg/.test(lg) ? iconImg(lg) : /^https:\/\//.test(lg) ? iconData(lg) : Promise.resolve('');
+      return icP.then(function (ic) { return { icon: ic || '', px: x[1], f: f, sym: String(m.icrc1_symbol || '') }; });
+    });
+    ICPTI[cid] = job; return job;
+  }
+  function icpTokDecor(t) {
+    if (!t || t.a === ICP_LEDGER) { if (t && t.a === ICP_LEDGER) t.f = '10000'; return Promise.resolve(t); }
+    return Promise.race([icpTokInfo(t.a), new Promise(function (r) { setTimeout(function () { r(null); }, 3000); })]).then(function (i) {
+      if (i) { if (i.icon) t.icon = i.icon; if (i.px > 0) t.px = i.px; if (i.f) t.f = i.f; }
+      if (!(t.px > 0) && /^ck(USDC|USDT)$/i.test(String(t.s))) t.px = 1;
+      return t;
+    }, function () { return t; });
+  }
   function icpMeta(cid) {
     if (!cid) return Promise.resolve(null);
     if (ICPMETA[cid]) return ICPMETA[cid];
     var job = icpTokMeta(cid).then(function (t) {
-      if (t) return { ledger: t };
+      if (t) return icpTokDecor(t).then(function (x) { return { ledger: x }; });
       var b = icpPB(cid); if (!b) return null;
       return icpQuery(cid, b, 'metadata', IDL0).then(function (rp) {
         var v = idlRead(rp)[0], ok = v && v._v === idlHash('ok') ? v.v : null; if (!ok) return null;
         var t0 = ok['_' + idlHash('token0')], t1 = ok['_' + idlHash('token1')], ad = function (x) { return x && typeof x['_' + idlHash('address')] === 'string' ? x['_' + idlHash('address')] : ''; };
         if (!ad(t0) || !ad(t1)) return null;
-        return Promise.all([icpTokMeta(ad(t0)), icpTokMeta(ad(t1))]).then(function (z) { return z[0] && z[1] ? { pool: { t0: z[0], t1: z[1], fee: String(ok['_' + idlHash('fee')] != null ? ok['_' + idlHash('fee')] : '') } } : null; });
+        return Promise.all([icpTokMeta(ad(t0)).then(icpTokDecor), icpTokMeta(ad(t1)).then(icpTokDecor)]).then(function (z) { return z[0] && z[1] ? { pool: { t0: z[0], t1: z[1], fee: String(ok['_' + idlHash('fee')] != null ? ok['_' + idlHash('fee')] : '') } } : null; });
       });
     }).catch(function () { return null; });
     ICPMETA[cid] = job; job.then(function (r) { if (!r) delete ICPMETA[cid]; });
@@ -20452,7 +20515,7 @@ window.hwCrashPrompt = crashPrompt;
       return icpQuery(qc, qb, qm, iiU8(qa)).then(function (rp) { return { reply: p17Hex(rp) }; });
     }
     if (m === 'icp_call') {
-      return Promise.race([icpMeta(String(p.canisterId || '')), new Promise(function (r) { setTimeout(function () { r(null); }, 3500); })]).catch(function () { return null; }).then(function (meta) {
+      return Promise.race([icpMeta(String(p.canisterId || '')), new Promise(function (r) { setTimeout(function () { r(null); }, 6000); })]).catch(function () { return null; }).then(function (meta) {
       return p17K(site, 'icp', 'icp_call', { canisterId: p.canisterId, method: p.method, arg: String(p.arg || '').toLowerCase(), consent: String(p.consent || '').slice(0, 2000) }, { icp: { nowMs: Date.now(), meta: meta || null } });
       }).then(function (r) {   /* r.content: v3.99.12 Kwallet */
         return icpSubmit(p.canisterId, r.envelope).then(function (x) {
