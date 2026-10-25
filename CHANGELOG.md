@@ -1,5 +1,10 @@
 # Changelog
 
+## Kwallet 3.99.32 / Hwallet 1.9.32
+- TON and XRP dApp sheets now work like Solana / Sui / EVM, live from the chain. TON: Hwallet emulates an unsigned copy of the TonConnect message on TonAPI (throwaway key, address_override = your wallet) before the sheet opens and every 4 s while it is open. Kwallet shows the real legs (for example -0.01 GRAM / +USD₮), Rate, Route (STON.fi, DeDust...), the real fee after the unused gas comes back, and TonAPI's plain lines. The raw messages and the attached GRAM move to Details, and Blind signing only shows when emulation fails.
+- XRP: rippled `simulate` (Ripple's s1/s2, then xrplcluster) gives your account's XRP and token balance changes, Route (XRPL DEX / AMM) and Min received, also live. Kwallet now reads Batch (XLS-56): mode in words (All or nothing...) instead of Flags 65536, every inner transaction as a plain step, and a warning for steps from another account. Payments to yourself with SendMax, and OfferCreate, are titled Swap.
+- A changed live result re-arms Confirm, so it can't be approved in the instant it changes. If there's no live result, the sheet falls back to Kwallet's own decode, as before.
+
 ## Kwallet 3.99.31 / Hwallet 1.9.31
 - Old payments no longer come back as new: the background service (HwLiveService) keyed balances by chain only, so after a seed switch or import it compared the new seed with the previous one and pushed old on-chain funds as Received/Sent alerts. Balances are now keyed by wallet id + address; the first check of each chain after a switch, import or restart is a silent baseline; a check that started before the switch is dropped; legacy keys are discarded. History still loads silently in the background; only live payments notify.
 

@@ -12963,7 +12963,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.31';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
+const APP_VERSION = '3.99.32';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -22890,7 +22890,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   /* =========================== XRP Ledger =========================== */
   var XRP_KIND = { Payment: 'Payment', TrustSet: 'Trust line', OfferCreate: 'Trade offer', OfferCancel: 'Cancel offer', AMMDeposit: 'AMM deposit', AMMWithdraw: 'AMM withdraw', AMMCreate: 'Create AMM pool', AMMVote: 'AMM vote', AMMBid: 'AMM bid',
     NFTokenMint: 'Mint NFT', NFTokenBurn: 'Burn NFT', NFTokenCreateOffer: 'NFT offer', NFTokenAcceptOffer: 'Accept NFT offer', NFTokenCancelOffer: 'Cancel NFT offer', EscrowCreate: 'Escrow', EscrowFinish: 'Finish escrow', EscrowCancel: 'Cancel escrow',
-    CheckCreate: 'Check', CheckCash: 'Cash check', CheckCancel: 'Cancel check', AccountSet: 'Account settings', DepositPreauth: 'Deposit preauth', PaymentChannelCreate: 'Payment channel', PaymentChannelFund: 'Fund channel', PaymentChannelClaim: 'Channel claim', TicketCreate: 'Tickets' };
+    CheckCreate: 'Check', CheckCash: 'Cash check', CheckCancel: 'Cancel check', AccountSet: 'Account settings', DepositPreauth: 'Deposit preauth', PaymentChannelCreate: 'Payment channel', PaymentChannelFund: 'Fund channel', PaymentChannelClaim: 'Channel claim', TicketCreate: 'Tickets', Batch: 'Batch' };
   var XRP_DANGER = { SetRegularKey: 'gives another key <b>control of this account</b>', SignerListSet: 'changes who can <b>sign for this account</b>', AccountDelete: '<b>deletes this account</b> and sends its XRP away' };
   function xrpAmt(a) { if (a == null) return null; if (typeof a === 'string') return { xrp: true, v: BI(a), t: fmtU(BI(a), 6) + ' XRP' }; var cur = String(a.currency || ''); if (/^[0-9A-F]{40}$/i.test(cur)) { try { cur = new TextDecoder().decode(unhex(cur)).replace(/\0+$/, '') || cur; } catch (e) {} } return { xrp: false, v: a.value, t: String(a.value) + ' ' + cur + (a.issuer ? ' (' + short(a.issuer) + ')' : '') }; }
   /** decode the transaction JSON the app gave -> { kind, rows:[[label, value]], out (drops to others), fee (drops), warn } */
@@ -22908,12 +22908,34 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (tx.TakerGets) rows.push(['You give', xrpAmt(tx.TakerGets).t]);
     if (tx.TakerPays) rows.push(['You get', xrpAmt(tx.TakerPays).t]);
     if (tx.LimitAmount) rows.push(['Trust limit', xrpAmt(tx.LimitAmount).t]);
-    if (tx.Flags) rows.push(['Flags', String(tx.Flags)]);
+    /* v3.99.32: Batch (XLS-56): every inner transaction as one plain step, the batch mode in words (no raw flag number) */
+    var steps = [], swap = false;
+    if (T === 'Batch') {
+      var raw = Array.isArray(tx.RawTransactions) ? tx.RawTransactions : []; need(raw.length >= 1 && raw.length <= 8, 'A Batch must hold 1 to 8 transactions');
+      var BF = Number(tx.Flags || 0) >>> 0;
+      rows.push(['Mode', BF & 0x00010000 ? 'All or nothing' : BF & 0x00020000 ? 'Only the first that succeeds' : BF & 0x00040000 ? 'Until one fails' : BF & 0x00080000 ? 'Each on its own' : 'Not set']);
+      raw.forEach(function (w, i) {
+        var it = (w && w.RawTransaction) || w || {}, IT = String(it.TransactionType || '?'), d = XRP_KIND[IT] || IT;
+        var ia = xrpAmt(it.Amount), ig = xrpAmt(it.TakerGets), ip = xrpAmt(it.TakerPays), sm = xrpAmt(it.SendMax), dm = xrpAmt(it.DeliverMin);
+        if (it.Account !== from) warn.push('Step ' + (i + 1) + ' is from <b>another account</b> (' + short(String(it.Account || '')) + ').');
+        if (XRP_DANGER[IT]) warn.push('Step ' + (i + 1) + ' ' + XRP_DANGER[IT] + '.');
+        else if (!XRP_KIND[IT]) warn.push('Step ' + (i + 1) + ' has a transaction type Kwallet does not know (<b>' + IT.replace(/[^A-Za-z]/g, '').slice(0, 40) + '</b>).');
+        if (IT === 'Payment' && it.Destination === from && sm) { d = 'Swap ' + sm.t + ' for ' + (ia ? ia.t : '?') + (dm ? ' (at least ' + dm.t + ')' : ''); swap = true; }
+        else if (IT === 'Payment' && ia) d = 'Send ' + ia.t + (it.Destination ? ' to ' + short(it.Destination) : '');
+        else if (IT === 'OfferCreate' && ig && ip) { d = 'Trade ' + ig.t + ' for ' + ip.t; swap = true; }
+        else if (IT === 'TrustSet' && it.LimitAmount) d = 'Trust line ' + xrpAmt(it.LimitAmount).t;
+        steps.push(d);
+        if (ia && ia.xrp && it.Destination && it.Destination !== from && it.Account === from) out += ia.v;
+      });
+      rows.push(['Steps', String(raw.length)]);
+    } else if (tx.Flags) rows.push(['Flags', String(tx.Flags)]);
+    if (T === 'Payment' && tx.Destination === from && tx.SendMax) swap = true;
+    if (T === 'OfferCreate') swap = true;
     if (T === 'Payment' && tx.Paths) warn.push('This payment can go through other currencies (paths). Check the amounts.');
     if (T === 'Payment' && tx.Flags && (Number(tx.Flags) & 0x00020000)) warn.push('Partial payment: the receiver may get less than the amount shown.');
     var fee = tx.Fee != null ? BI(tx.Fee) : 0n; need(fee >= 0n && fee <= 2000000n, 'The network fee is too high (' + fmtU(fee, 6) + ' XRP)');
     if (tx.Memos) rows.push(['Memos', String(tx.Memos.length)]);
-    return { kind: T, title: XRP_KIND[T] || T, rows: rows, out: out, fee: fee, warn: warn, seq: tx.Sequence, lls: tx.LastLedgerSequence };
+    return { kind: T, title: swap ? 'Swap' : XRP_KIND[T] || T, rows: rows, out: out, fee: fee, warn: warn, seq: tx.Sequence, lls: tx.LastLedgerSequence, steps: steps, swap: swap };
   }
   function der(r, s) { function int(x) { var i = 0; while (i < x.length - 1 && x[i] === 0 && !(x[i + 1] & 0x80)) i++; x = x.slice(i); if (x[0] & 0x80) x = cat([0], x); return cat([2, x.length], x); } var b = cat(int(r), int(s)); return cat([0x30, b.length], b); }
   function xrpKey(privHex) {
@@ -26202,6 +26224,15 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
         else { lines.push('Contract call on ' + short(x.to) + (x.value > 0n ? ' with ' + amt : '') + (d.op != null ? ' \u00b7 op 0x' + ('0000000' + d.op.toString(16)).slice(-8) : '')); o.det += addrKv('Contract', x.to, amt); needBlind = true; }
       });
       v.warn.forEach(function (w) { o.warn.push(w); });
+      /* v3.99.32: Hwallet emulates this message live on TON (TonAPI): real amounts in and out, no blind signing; the raw
+         messages move to Details, the attached GRAM is shown there (the unused part comes back) */
+      if (sim) {
+        lines.forEach(function (t, i) { o.det += kv(i ? '' : 'Messages', esc(t), ''); });
+        lines = (Array.isArray(R.sim.lines) ? R.sim.lines : []).slice(0, 4).map(function (t) { return String(t).slice(0, 140); });
+        needBlind = false;
+        o.det += kv('Attached', fmt(v.out || 0n, 9, 6) + ' GRAM', 'For the app\u2019s contracts \u00b7 the unused part comes back');
+      }
+      if (R.sim && R.sim.risk === 'all') o.warn.push('<b>Can move your whole balance.</b> This transaction allows sending all your GRAM. Only confirm if you trust ' + esc(DS.site) + '.');
       o.det += kv('Messages', String(v.tv.msgs.length), 'One signed message \u00b7 ' + v.tv.ver + ' wallet');
     } else if (v.chain === 'icp') {
       var iv = v.iv;
@@ -26246,7 +26277,10 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (bv.rate != null) o.main += HWP.card(HWP.kv('Fee rate', '\u2248 ' + (Math.round(bv.rate * 10) / 10) + ' sat/vB', '\u2248 ' + bv.vsize + ' vB', { sm: true }));
     } else if (v.chain === 'xrp') {
       var xv = v.xv;
-      o.main += HWP.card(xv.rows.map(function (r) { return HWP.kv(esc(r[0]), esc(String(r[1])), '', { sm: true }); }).join(''));
+      /* v3.99.32: simulated live on the XRP Ledger: the balance changes lead, the raw fields go to Details */
+      if (sim) xv.rows.forEach(function (r) { o.det += kv(esc(r[0]), esc(String(r[1])), ''); });
+      else if (xv.rows.length) o.main += HWP.card(xv.rows.map(function (r) { return HWP.kv(esc(r[0]), esc(String(r[1])), '', { sm: true }); }).join(''));
+      (xv.steps || []).forEach(function (t, i) { if (sim) o.det += kv(i ? '' : 'Steps', esc(t), ''); else lines.push(t); });
       if (xv.seq != null) o.det += kv('Sequence', esc(String(xv.seq)), xv.lls != null ? 'Valid until ledger ' + esc(String(xv.lls)) : '');
       v.warn.forEach(function (w) { o.warn.push(w); });
       if (/does not know/.test(v.warn.join(' '))) needBlind = true;
@@ -26258,7 +26292,17 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (c.atMost) fs = 'At most' + (fs ? ' \u00b7 ' + fs : '');
     if (v.chain === 'ada') fs = (fs ? fs + ' \u00b7 ' : '') + 'Set by the Cardano protocol';
     else if (v.chain === 'btc') fs = 'Set by the app' + (fs ? ' \u00b7 ' + fs : '');
-    o.main += HWP.rows([['Network fee', fv, fs, { cls: 'hp-fee' }]]);
+    var cmp17 = [], tx17 = v.chain === 'ton' || v.chain === 'xrp';
+    if (tx17 && sim) {
+      var hS17 = (rows || []).filter(function (r) { return r.sign === '-'; }), hR17 = (rows || []).filter(function (r) { return r.sign !== '-'; }), rt17 = kRate(hS17, hR17);
+      if (rt17) cmp17.push(['Rate', esc(rt17)]);
+      if (R.sim.route && (hS17.length || hR17.length)) cmp17.push(['Route', esc(String(R.sim.route).slice(0, 40))]);
+      if (R.sim.min) cmp17.push(['Min received', esc(String(R.sim.min).slice(0, 60))]);
+      if (v.chain === 'ton' && U(R.sim.fee) != null) fs = (fs ? fs + ' \u00b7 ' : '') + 'After unused gas comes back';
+    }
+    var lv17 = tx17 && R.sim && R.sim.live ? '<span class="hp-live hp-ldot" role="img" aria-label="Live from the chain"><i></i></span>' : '';
+    cmp17.push(['Network fee' + lv17, fv, fs, { cls: 'hp-fee' }]);
+    o.main += HWP.rows(cmp17);
     if (c.gbal != null) { var after = c.err ? null : c.gbal - c.amount - c.fee; o.det += kv('Balance', fmt(c.gbal, dec, 6) + ' ' + esc(sym), after != null && after >= 0n ? (c.atMost ? 'After: at least ' : 'After: about ') + fmt(after, dec, 6) + ' ' + esc(sym) : ''); }
     o.det += kv('Network', esc(DS.info.name), 'Mainnet');
     return o;
@@ -26481,6 +26525,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (!c.err && c.gbal != null && c.fee + c.amount > c.gbal) c.err = v.idx !== 0 ? 'Not enough SOL for this transaction.' : 'Not enough SOL for this transaction plus the network fee.';
     } else if (P17M[m] && v.p17tx) {
       c.fee = v.fee; c.amount = v.out || 0n; c.atMost = !!v.atMost; c.gbal = U(R.balance && R.balance.gas);
+      if (v.chain === 'ton' && R.sim && !R.sim.error && U(R.sim.fee) != null) c.fee = U(R.sim.fee);   /* v3.99.32: the real fee from Hwallet's live emulation */
       if (v.chain === 'btc') { c.gbal = null; if (!v.bv.inKnown || v.fee == null) c.err = 'Kwallet cannot see the amount of every input, so it cannot check the fee and will not sign.'; else if (!v.bv.sign.length) c.err = 'Nothing in this PSBT is yours to sign.'; }
       else if (v.chain === 'ada' && !v.real) c.gbal = null;   /* v3.98.40: without the inputs Kwallet cannot know what you spend; never a false "not enough" */
       else if (c.gbal != null && c.fee != null && c.fee + c.amount > c.gbal) c.err = 'Not enough ' + DS.info.sym + ' for this transaction plus the network fee.';
@@ -26601,7 +26646,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var tcl = DS && DS.R && DS.R.via === 'clean' && DS.R.clean && typeof DS.R.clean.title === 'string' ? DS.R.clean.title : '';
     if (tcl && /^(Close|Burn|Clean up) /.test(tcl) && (DS.c !== 'sol' || /^(Burn|Close token accounts?)$/.test(String(v && v.op || '')))) return tcl.slice(0, 80);
     /* v3.98.14: a Sui transaction gets the same plain title as EVM / Solana / Tron, read from Hwallet's simulation */
-    if (m === 'sui_signTransaction') { var sd = DS.R.sim && Array.isArray(DS.R.sim.deltas) ? DS.R.sim.deltas : [], gb = v && v.fee != null ? U(v.fee) || 0n : 0n;
+    var tx32 = (m === 'ton_sendTransaction' || m === 'xrpl_signTransaction') && DS.R.sim && Array.isArray(DS.R.sim.deltas) && DS.R.sim.deltas.length;   /* v3.99.32 */
+    if (m === 'sui_signTransaction' || tx32) { var sd = DS.R.sim && Array.isArray(DS.R.sim.deltas) ? DS.R.sim.deltas : [], gb = !tx32 && v && v.fee != null ? U(v.fee) || 0n : 0n;
       var sn = sd.some(function (x) { return x.s === '-' && (!x.nat || (U(x.v) || 0n) > gb); }), rc = sd.some(function (x) { return x.s === '+'; });
       if (sn && rc) return 'Swap'; if (sn) return 'Send'; if (rc) return 'Receive'; }
     if (P17M[m]) return v && v.title ? v.title : P17M[m][1];
@@ -26864,6 +26910,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
        the shown one and Approve re-arms, so a changed result can never be approved in the same instant it appears */
     var pvChg = false;
     if (f.pv && typeof f.pv === 'object' && (f.pvLive || !R.pv || typeof R.pv !== 'object' || R.pv.partial)) { try { pvChg = !!f.pvLive && !!R.pv && JSON.stringify(R.pv) !== JSON.stringify(f.pv); } catch (e) { pvChg = true; } R.pv = f.pv; }
+    var simChg = false; if (f.sim && typeof f.sim === 'object' && f.sim.live) { try { simChg = !!R.sim && JSON.stringify(R.sim) !== JSON.stringify(f.sim); } catch (e) { simChg = true; } }   /* v3.99.32 */
     if (f.sim && typeof f.sim === 'object' && (!(R.sim && R.sim.error) || !f.sim.error)) R.sim = f.sim;   /* v3.98.22: a passing re-check clears an early failure */
     if (f.fee && f.fee.levels && Object.keys(f.fee.levels).length) { R.fee.levels = f.fee.levels; if (DS.level !== 'custom' && !R.fee.levels[DS.level]) DS.level = R.fee.levels.medium ? 'medium' : Object.keys(R.fee.levels)[0]; }
     if (f.balance) R.balance = f.balance; if (f.prices) R.prices = f.prices; if (f.feeMin) R.feeMin = f.feeMin;
@@ -26871,7 +26918,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var c = dappCalc(), key = DS.m === 'eth_sendTransaction' ? String(c.fee) + '|' + R.nonce : '';
     var fb = DS.feeBase != null ? DS.feeBase : (DS.last && DS.last.fee);
     if (key !== before && DS.last && c.fee != null && fb != null && c.fee * 100n > fb * 120n) { DS.feeBase = c.fee; notice = '<b>Network fee went up</b> to ' + kSig(c.fee, DS.gdec, 5) + ' ' + esc(DS.gsym) + '. Check it, then confirm again.'; buzz([12, 40, 12]); dappDraw(); arm(700); }
-    else { if (DS.feeBase == null && DS.last) DS.feeBase = DS.last.fee; dappDraw(); if (pvChg) arm(450); }
+    else { if (DS.feeBase == null && DS.last) DS.feeBase = DS.last.fee; dappDraw(); if (pvChg || simChg) arm(450); }
   }
   function slip10(seedHex, path) {
     var I = ethers.getBytes(ethers.computeHmac('sha512', ethers.toUtf8Bytes('ed25519 seed'), '0x' + seedHex));
