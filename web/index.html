@@ -12963,7 +12963,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.34';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
+const APP_VERSION = '3.99.35';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -26786,7 +26786,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* pd38tok F1/F2: Hwallet's token cleanup names its batch ("Close 3 token accounts \u00b7 +0.0061 SOL"); on Solana only
        when Kwallet's own decode agrees it closes / burns token accounts */
     var tcl = DS && DS.R && DS.R.via === 'clean' && DS.R.clean && typeof DS.R.clean.title === 'string' ? DS.R.clean.title : '';
-    if (tcl && /^(Close|Burn|Clean up) /.test(tcl) && (DS.c !== 'sol' || /^(Burn|Close token accounts?)$/.test(String(v && v.op || '')))) return tcl.slice(0, 80);
+    if (tcl && (/^(Close|Burn|Clean up) /.test(tcl) || (v && v.chain === 'xrp' && /^(Remove|Cancel|Return) /.test(tcl))) && (DS.c !== 'sol' || /^(Burn|Close token accounts?)$/.test(String(v && v.op || '')))) return tcl.slice(0, 80);
     /* v3.98.14: a Sui transaction gets the same plain title as EVM / Solana / Tron, read from Hwallet's simulation */
     var tx32 = (m === 'ton_sendTransaction' || m === 'xrpl_signTransaction') && DS.R.sim && Array.isArray(DS.R.sim.deltas) && DS.R.sim.deltas.length;   /* v3.99.32 */
     if (m === 'sui_signTransaction' || tx32) { var sd = DS.R.sim && Array.isArray(DS.R.sim.deltas) ? DS.R.sim.deltas : [], gb = !tx32 && v && v.fee != null ? U(v.fee) || 0n : 0n;
