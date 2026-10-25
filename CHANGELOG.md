@@ -4,6 +4,7 @@
 
 - Hwallet: each seed shows only its own funds. A balance check that was still loading when you switched seeds used to land in the new seed and be saved there; results from a seed you switched away from are now dropped, the old seed's pending save goes to the old seed, and the new seed refreshes at once. Balances cached by 1.9.35 and earlier are cleared once and reread live.
 - Hwallet: no old payments as notifications. A seed switch sets a silent baseline for that seed's first balances, and Monero only notifies payments in the mempool or under 30 minutes old, so a rescan or catch-up never pushes old on-chain payments.
+- Hwallet: faster fetching on every chain. When the two fastest nodes have not answered in 1.2 s (was 2.5 s) all backup nodes are asked at once instead of one by one, first answer wins; a failed read retries after 0.3 s. TON joins EVM, Solana, Bitcoin and XRP with a live stream (TonAPI), so a TON payment shows at once.
 
 ## Kwallet 3.99.35 / Hwallet 1.9.35
 
