@@ -406,6 +406,27 @@ class HwBrowser(
     fun afHide() { post { afp?.closeQuiet() } }
     private fun afDrop(id: String?) { val p = afp ?: return; if (id == null || p.tabId() == id) p.close() }
 
+    /* v1.9.38: Browser ⋮ as a drop-down over the live page. Hwallet's own WebView (host) is raised above the tab by Z
+       (translationZ, so no child is re-ordered and nothing has to be put back), made see-through, and paints only the bar
+       and the menu; the page under it stays on screen, undimmed. Off = back to Z 0 and the bars' colour. */
+    @Volatile var front = false
+    fun front(on: Boolean) {
+        post {
+            if (front == on) return@post
+            front = on
+            if (on) {
+                afDrop(null)
+                host.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                host.outlineProvider = null
+                host.translationZ = 10_000f
+            } else {
+                host.translationZ = 0f
+                host.outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
+                act.brFrontDone()
+            }
+        }
+    }
+
     fun hide() {
         post {
             afDrop(null)   // v1.8.35 (B13)
@@ -425,6 +446,7 @@ class HwBrowser(
 
     /** v1.7 (P1): Android Back while a page is on screen goes back in that page first (UI thread, from HwActivity) */
     fun back(): Boolean {
+        if (front) return false   // v1.9.38: Back closes the ⋮ drop-down (Hwallet's page) before the tab goes back
         if (afp?.isOpen == true) { afDrop(null); return true }   // v1.8.35 (B13): Back closes the autofill dropdown first
         pops.values.lastOrNull { it.shown && it.parent == visible && it.box.visibility == View.VISIBLE }?.let { p -> if (p.w.canGoBack()) p.w.goBack() else popClose(p); return true }   // v1.9.10
         val t = tabs[visible ?: return false] ?: return false
