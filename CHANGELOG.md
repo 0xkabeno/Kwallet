@@ -1,5 +1,13 @@
 # Changelog
 
+## Kwallet 3.99.39 / Hwallet 1.9.39
+
+- Hwallet Browser: tab groups work like Chrome. Press and hold a tab, then drag it onto another tab to make a group of the two, or onto a group to add it. Inside a group, drag a tab onto "Remove from group". The long-press sheet and ⋮ > Add tab to group are gone.
+- Hwallet Browser: the group card looks like Chrome and Kiwi: filled with the group's colour, titled "N tabs" (or its name) with ×, and a 2×2 preview. While you browse a grouped tab, a bottom strip shows ⌃ to open the group, each tab as a round icon (× on the open one) and + for a new tab in the group.
+- Hwallet Browser: Undo after closing a tab (× or swipe), a group or all tabs. A snackbar shows for 5 s; Undo puts the tabs back where they were, in their group.
+- Hwallet Browser: ⋮ is shorter. New tab (in the tab switcher), Desktop view (User agent), New incognito tab (in the tab switcher) and the translation rows (the translate icon, or a long-press on it) are no longer repeated there.
+- Internet Identity: Select passkey lists only the identities id.ai has for this seed's passkeys right now. Each sign-in waits for a live check of all 20 passkeys; an identity id.ai no longer reports is removed. Every read is saved to the seed it started on, so identities of another seed can no longer appear after a seed switch or a new pairing (the saved list is rebuilt once from id.ai). A seed with no identity on id.ai says so instead of offering a made-up "Passkey #1".
+
 ## Kwallet 3.99.38 / Hwallet 1.9.38
 
 - Hwallet Browser: ⋮ drops down from the button as a solid menu over the page, Chrome-style. The page stays on screen and is not dimmed or blacked out; tap outside or Back to close it. Sub-pages (Bookmarks, History, settings) still open as sheets.
