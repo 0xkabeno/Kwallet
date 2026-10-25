@@ -543,6 +543,9 @@ class HwActivity : FragmentActivity() {
         fun brDark(v: String) { if (v.length in 2..10) brw().dark(v) }
         @android.webkit.JavascriptInterface
         fun brHide() { br?.hide() }
+        /** v1.9.38: Browser ⋮ drop-down over the live page (see HwBrowser.front) */
+        @android.webkit.JavascriptInterface
+        fun brFront(on: Boolean) { brw().front(on) }
         @android.webkit.JavascriptInterface
         fun brLoad(id: String, url: String) { brw().load(id, url) }
         @android.webkit.JavascriptInterface
@@ -1242,9 +1245,11 @@ class HwActivity : FragmentActivity() {
         }
         curTop = top; curBot = bottom
     }
+    /** v1.9.38: the Browser ⋮ drop-down closed: Hwallet's WebView gets the bars' colour back */
+    fun brFrontDone() { runOnUiThread { try { if (::web.isInitialized) web.setBackgroundColor(curTop) } catch (_: Throwable) {} } }
     private fun paintBars(top: Int, bottom: Int) {
         if (::root.isInitialized) root.setBackgroundColor(bottom)
-        if (::web.isInitialized) web.setBackgroundColor(top)
+        if (::web.isInitialized && br?.front != true) web.setBackgroundColor(top)   // v1.9.38: see-through while the Browser ⋮ drop-down is open
         @Suppress("DEPRECATION")
         if (Build.VERSION.SDK_INT < 35) { window.statusBarColor = top; window.navigationBarColor = bottom }
         val c = WindowCompat.getInsetsController(window, window.decorView)
