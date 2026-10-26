@@ -1,6 +1,6 @@
 # Changelog
 
-## Hwallet 1.9.40
+## Kwallet 3.99.40 / Hwallet 1.9.40
 
 - Hwallet Browser ⋮: Back, Forward, Reload and Bookmark fill the top row as four equal tiles (no empty space on the right). The menu opens from the ⋮ with a short scale-and-fade, its rows following a moment later, and closes faster than it opens. The motion is reduced when the phone asks for less motion.
 
