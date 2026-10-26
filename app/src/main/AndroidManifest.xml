@@ -23,6 +23,8 @@
     <!-- v3.90: Kwallet checks that Hwallet is signed with the same key before it signs anything -->
     <queries>
         <package android:name="app.hwallet" />
+        <!-- TextAuth (passkeys + vault): signed with its own key, so Kwallet pins that certificate (SignActivity.TEXTAUTH_CERT) -->
+        <package android:name="app.textauth" />
     </queries>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />

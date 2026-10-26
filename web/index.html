@@ -24111,6 +24111,12 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if ((REQ.v !== 1 && REQ.v !== 2) || !/^[0-9a-f]{16,64}$/i.test(String(REQ.id || ''))) return fail('Unknown request format.', 'Update Hwallet and Kwallet to matching versions.');
     /* v3.98.16: no request deadline any more (REQ.expires is ignored, kept only so older pairs still parse). Kwallet and
        Hwallet listen to each other over the live link; only the user's decision (or Cancel in Hwallet) ends a request. */
+    /* TextAuth: pk_* only for the verified app.textauth, and app.textauth may ask for nothing else */
+    var cpk = kwCaller(), isTA = cpk === TEXTAUTH, isPk = REQ.action === 'dapp' && PKM.hasOwnProperty(String(REQ.method || ''));
+    if (isPk && !isTA) return fail('Only TextAuth can ask Kwallet for this.', 'Nothing was signed.');
+    if (isTA && !isPk) return fail('TextAuth can only ask Kwallet for passkeys and pairing.', 'Nothing was signed.');
+    if (isTA && REQ.air) return fail('Bad request.');
+    if (isTA && REQ.method === 'pk_pair') return pkPairPage();
     if (REQ.action === 'pair') return pairPage();
     if (REQ.action === 'sign') return signPage();
     if (REQ.action === 'dapp') return dappPage();
@@ -24118,6 +24124,10 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
 
   /* ---------- pair: send the public addresses of one paired seed (public data only, no PIN) ---------- */
+  /* TextAuth (pk_pair): Hwallet's pairing sheet as it is, titled 'Pair TextAuth with this seed', BIP-39 seeds only. On Pair
+     Kwallet asks for its own biometrics / PIN, then hands TextAuth the vault keys of that seed and address number. */
+  var PKPAIR = false;
+  function pkPairPage() { PKPAIR = true; return pairPage(); }
   function pairPage() {
     /* v3.98.28: every seed in Kwallet (vault opened once with PIN or biometrics), its type, ID and paired address
        numbers; the user picks the seed and the address number. Only that seed's public addresses go to Hwallet. */
@@ -24132,6 +24142,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       if (!sec) return finish({ status: 'rejected', error: 'auth' });
       var L = await scanSeeds(true);
       if (want) { L = L.filter(function (o) { return o.sid === want; }); if (!L.length) return finish({ status: 'rejected', error: 'nosid' }); }
+      if (PKPAIR) L = L.filter(function (o) { return (o.st || 'bip39') === 'bip39'; });   /* TextAuth: ICP keys need a BIP-39 seed */
       if (!L.length) return pairNone();
       pairPick(L);
     })().catch(function (e) { fail('Kwallet could not read its seeds.', (e && e.message) || 'Try again.'); });
@@ -24140,14 +24151,14 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   function ogChips(k) { return String(k || '').split(/\s+\+\s+|\s+\u00b7\s+/).filter(Boolean).map(function (p) { return '<u class="og-ch' + (/words|^monero|^polyseed/i.test(p) ? ' og-wc' : /passphrase/i.test(p) ? ' og-pp' : '') + '">' + esc(p) + '</u>'; }).join(''); }
   /* pk34 B17: the pairing sheets' one header row (OG Kwallet badge, title, close) and frame: header outside the scroller */
   /* pk38 B21: the pairing sheets are the Send sheet: Kwallet badge + chain chip, 'Request from Hwallet' + close, bold title */
-  function pairTop(t, ch) { return HWP.topBar(ch ? ch.n : '', ch ? ch.i : '') + HWP.headOwn('Request from Hwallet') + HWP.title(t || 'Pair'); }
+  function pairTop(t, ch) { return HWP.topBar(ch ? ch.n : '', ch ? ch.i : '') + HWP.headOwn(PKPAIR ? 'Request from TextAuth' : 'Request from Hwallet') + HWP.title(t || (PKPAIR ? 'Pair TextAuth with this seed' : 'Pair')); }
   /* v3.98.40: the Pair sheet's header is ONE row (Kwallet badge, 'Pair with Hwallet', close) and one muted line with the
      chains that get paired; no chain chip, no 'Request from Hwallet', no balance card (pairing covers every chain) */
   function pairHead(o) {
     var x = (HWP.headOwn('').match(/<button[\s\S]*<\/button>/) || [''])[0], xm = o && (o.st === 'xmr' || o.st === 'poly');
-    var ls = (xm ? ['monero'] : ['ethereum', 'solana', 'bitcoin', 'tron', 'sui', 'ripple', 'cardano', 'monero', 'near', 'internetcomputer', 'ton']).map(function (k) { return LOGO[k] ? '<img src="' + LOGO[k] + '" alt="" aria-hidden="true">' : ''; }).join('');
-    return HWP.topBar('', '').replace(/<\/div>$/, '<div class="kpr-tt">Pair with Hwallet</div>' + x + '</div>').replace('class="hp-top"', 'class="hp-top kpr-top"') +
-      '<div class="kpr-note" id="kpr-note"><span>Shares addresses only. Keys never leave Kwallet.</span><span class="kpr-ch">' + ls + '</span></div>';
+    var ls = (PKPAIR ? ['internetcomputer'] : xm ? ['monero'] : ['ethereum', 'solana', 'bitcoin', 'tron', 'sui', 'ripple', 'cardano', 'monero', 'near', 'internetcomputer', 'ton']).map(function (k) { return LOGO[k] ? '<img src="' + LOGO[k] + '" alt="" aria-hidden="true">' : ''; }).join('');
+    return HWP.topBar('', '').replace(/<\/div>$/, '<div class="kpr-tt">' + (PKPAIR ? 'Pair TextAuth with this seed' : 'Pair with Hwallet') + '</div>' + x + '</div>').replace('class="hp-top"', 'class="hp-top kpr-top"') +
+      '<div class="kpr-note" id="kpr-note"><span>' + (PKPAIR ? 'Gives TextAuth its vault key and ICP identity from this seed. The seed and wallet keys never leave Kwallet.' : 'Shares addresses only. Keys never leave Kwallet.') + '</span><span class="kpr-ch">' + ls + '</span></div>';
   }
   function pairSheet(inner, footHtml, t, ch) { return '<div class="hp-sheet kss-hp">' + HWP.sheet(pairTop(t, ch) + inner, footHtml) + '</div>'; }
   /* pk38 B21: 'BIP39 \u00b7 12 words' / 'Monero 25' / 'Polyseed' (the kind without '+ passphrase'); chip = where the seed pairs */
@@ -24212,7 +24223,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       return h; }
     function det() { var o = L[pick], id = sidFmt(o.sid), n = pairWords(o);
       return (id ? HWP.kv('Seed ID', '<span class="hp-mono">' + esc(id) + '</span>', '', { sm: true }) : '') + HWP.kv('Type', o.st === 'xmr' ? 'Monero' : o.st === 'poly' ? 'Polyseed' : 'BIP39', o.p ? 'With passphrase' : '', { sm: true }) + (n ? HWP.kv('Words', String(n), '', { sm: true }) : '') +
-        HWP.kv('Goes to Hwallet', 'Public addresses', 'Monero view key', { sm: true }); }
+        (PKPAIR ? HWP.kv('Goes to TextAuth', 'Vault key', 'Vault ICP identity \u00b7 ICP account', { sm: true }) : HWP.kv('Goes to Hwallet', 'Public addresses', 'Monero view key', { sm: true })); }
     var body = (hasCur ? '<div class="kpr-lb">Connected to Hwallet</div>' + HWP.card(opts(true), 'hp-cmp kss-ls kpr-curc', 'kss-pl0') + (L.length > 1 ? '<div class="kpr-lb">Other wallets</div>' : '') : '') + HWP.card(opts(), 'hp-cmp kss-ls', 'kss-pl') +
       HWP.card(HWP.kv('Address number', '<div class="kss-stp"><button type="button" data-ns="-1" aria-label="Previous">\u2212</button><input id="kss-n" type="number" min="0" inputmode="numeric" value="' + num + '" aria-label="Address number"><button type="button" data-ns="1" aria-label="Next">+</button></div>', '', { cls: 'hp-wr kss-nrr' })) +
       HWP.details(det(), false, 'kss-det');
@@ -24255,6 +24266,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
           if (!o.m) { if (!(await authOnce())) throw new Error('Unlock Kwallet to add a new address number'); var L2 = await scanSeeds(true), o2 = L2.filter(function (x) { return x.key === o.key || (o.sid && x.sid === o.sid); })[0]; if (!o2 || !o2.m) throw new Error('Kwallet could not open this seed'); o = o2; }
           r = await makePair(n, o.recs.length ? o.label : (/^Seed \d+$/.test(o.label) ? '' : o.label), { m: o.m, p: o.p, st: o.st });
         }
+        if (PKPAIR) { var vk = await pkVault(r); if (!vk) { going = false; if (go) { go.disabled = false; go.textContent = 'Pair'; } buzz(8); return; } success(Object.assign({ status: 'ok', method: 'pk_pair' }, vk), 'Paired with TextAuth'); return; }
         var pe = publicExport(r);
         if (pe.sid) pe.accts = pubList().filter(function (x) { return x.sid === pe.sid && (x.index | 0) !== (r.index | 0); }).map(function (x) { var e = publicExport(x); delete e.label; return e; });
         success({ status: 'paired', pair: pe }, 'Sent to Hwallet');
@@ -24263,6 +24275,24 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
         try { toast((e && e.message) || 'Could not pair'); } catch (x) {} buzz([30, 40, 30]);
       }
     };
+  }
+  /* TextAuth (pk_pair): vaultMaster = HKDF-SHA256(ikm = sha256('textauth-vault-master|' || icpKey), salt 'textauth-v1',
+     info 'vault-master', 32 B); vaultIdSk = sha256('textauth-vault-id|' || icpKey) (Ed25519 seed). icpKey = the seed's ICP
+     secp256k1 key at the paired address number (the same key KwPasskey derives from). Always asks for Kwallet's own unlock. */
+  async function pkVault(r) {
+    if (!r || !r.addrs || !r.addrs.icp) throw new Error('This seed has no ICP account');
+    if (!(await authOnce())) return null;
+    var sc = secretFor(load(), r.id);
+    if (!sc) { var L2 = await scanSeeds(true), o2 = L2.filter(function (x) { return r.sid && x.sid === r.sid && x.m; })[0]; if (o2) sc = { id: r.id, m: o2.m, p: o2.p || '', index: r.index | 0, seedType: o2.st || 'bip39' }; }
+    if (!sc || !sc.m) throw new Error('Kwallet could not open this seed');
+    var mn = String(sc.m).trim().toLowerCase().split(/\s+/).join(' '), pp = sc.p || '';
+    var ctx = FastCore.makeCtx({ net: 'icp', pathTpl: DEFAULT_PATH.icp, seedHex: getBip39SeedHex(mn, pp), adaEnt: null, pass: pp, seedType: 'bip39' });
+    var d = FastCore.derive(ctx, r.index | 0, true); sc = null; mn = '';
+    if (String(d.address) !== String(r.addrs.icp) || !d.privateKey) throw new Error('The seed no longer derives ' + short(r.addrs.icp) + '.');
+    var out = KwPasskey.vault(d.privateKey); d.privateKey = null; d.pem = null;
+    out.icpAccount = String(r.addrs.icp); if (r.icpAcct) out.icpAccountId = String(r.icpAcct);
+    if (r.sid) out.sid = String(r.sid); out.index = r.index | 0;
+    return out;
   }
   /* v3.98.4 (#B): no seed paired yet: clear steps instead of a dead end (the sign page has no seed on screen to pair) */
   function pairNone() {
@@ -25270,7 +25300,13 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* v3.98.16: Bitcoin message (legacy ECDSA or BIP-322 simple) and PSBT, with a full review sheet */
     btc_signMessage: ['btc', 'Sign message'], btc_signPsbt: ['btc', 'Review transaction'], btc_getPublicKey: ['btc', 'Share public key'],
     /* v3.99.0: NEAR (Sender / wallet-selector) and Internet Computer (Plug-style) requests */
-    near_signTransactions: ['near', 'Review transaction'], near_signMessage: ['near', 'Sign message'], icp_call: ['icp', 'Review transaction'], icp_signMessage: ['icp', 'Sign message'], ton_sendTransaction: ['ton', 'Review transaction'], ton_signData: ['ton', 'Sign data'], ton_proof: ['ton', 'Sign in'], icp_iiLogin: ['icp', 'Sign in with Internet Identity'], icp_passkey: ['icp', 'Internet Identity passkey'], icp_iiNames: ['icp', 'Restore identities'] };
+    near_signTransactions: ['near', 'Review transaction'], near_signMessage: ['near', 'Sign message'], icp_call: ['icp', 'Review transaction'], icp_signMessage: ['icp', 'Sign message'], ton_sendTransaction: ['ton', 'Review transaction'], ton_signData: ['ton', 'Sign data'], ton_proof: ['ton', 'Sign in'], icp_iiLogin: ['icp', 'Sign in with Internet Identity'], icp_passkey: ['icp', 'Internet Identity passkey'], icp_iiNames: ['icp', 'Restore identities'],
+    /* v3.99.N (TextAuth): passkeys for any site and pairing, asked by TextAuth (app.textauth) only. The caller is the package
+       SignActivity verified (package + pinned signing cert), read through KwSign.caller(); never a field of the request. */
+    pk_passkey: ['icp', 'Passkey'], pk_pair: ['icp', 'Pair TextAuth'] };
+  var PKM = { pk_passkey: 1, pk_pair: 1 }, TEXTAUTH = 'app.textauth';
+  /* the caller package SignActivity checked (callingActivity + signature / cert pin); '' on an older Kwallet shell */
+  function kwCaller() { try { return window.KwSign && typeof KwSign.caller === 'function' ? String(KwSign.caller() || '') : ''; } catch (e) { return ''; } }
   Object.keys(P17M).forEach(function (k) { DM[k] = P17M[k][1]; DCH[k] = P17M[k][0]; });
   var MAXU = (1n << 255n);
   /* known methods: the selector is computed from the signature, so nothing here is a magic number */
@@ -25740,7 +25776,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var rec = findPub(R.from, net);
     /* P2a: CI emulator build only (KwE2E exists only with -PkwE2E=true): a display-only wallet so the device check can open and cancel the sheet */
     try { if (!rec && window.KwE2E && KwE2E.on()) rec = { id: 'e2e', label: 'E2E test wallet', index: 0, e2e: true }; } catch (e) {}
-    if (!rec) return fail('No paired seed owns ' + short(R.from) + '.', 'Open Kwallet, go to <b>Settings &gt; Hwallet signer</b> and pair the seed that owns this address.');
+    if (!rec) return fail('No paired seed owns ' + short(R.from) + '.', PKM[m] ? 'Pair TextAuth with this seed again (TextAuth &gt; Settings &gt; Pairing).' : 'Open Kwallet, go to <b>Settings &gt; Hwallet signer</b> and pair the seed that owns this address.');
     DS = S = { dapp: true, R: R, c: c, m: m, info: inf, net: net, rec: rec, armed: false, site: host(R.origin) || 'this app', gsym: c === 'evm' ? inf.sym : inf.sym, gdec: c === 'evm' ? 18 : inf.dec, dec: c === 'evm' ? 18 : inf.dec, sym: inf.sym,
       level: c !== 'evm' ? 'auto' : R.fee && R.fee.levels ? (R.fee.levels[R.fee.level] ? R.fee.level : Object.keys(R.fee.levels)[0]) : 'medium' };
     dappCss();
@@ -25935,6 +25971,40 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   /* ---------- v3.98.12 (push 17): Sui / Cardano / XRP Ledger: decode, draw, sign ---------- */
   function p17Open(m, P) {
     var R = DS.R, D = window.KwD17;
+    if (m === 'pk_passkey') {   /* TextAuth: a passkey for any site (caller already checked in route) */
+      var rp = String(P.rpId || '').toLowerCase(), po = String(P.origin || '');
+      if (rp.length > 253 || !/^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,62}$/.test(rp)) return 'The passkey request names no valid site.';
+      var oh = (/^https:\/\/([a-z0-9.-]+)(:\d+)?$/i.exec(po) || [])[1], isApp = /^android:apk-key-hash:[A-Za-z0-9_-]{43}$/.test(po);
+      if (oh) { oh = oh.toLowerCase(); if (!(oh === rp || oh.slice(-(rp.length + 1)) === '.' + rp)) return 'This passkey request is for another site (' + esc(rp) + ').'; }
+      else if (!isApp) return 'The passkey request could not be read.';
+      var cdh = KwPasskey.ub64(P.clientDataHash); if (!cdh || cdh.length !== 32) return 'The passkey request could not be read.';
+      var cpg = String(P.callerPkg || '').slice(0, 128); if (cpg && !/^[A-Za-z0-9_.]+$/.test(cpg)) cpg = '';
+      DS.pkRp = rp; DS.pkOrigin = po; DS.pkApp = isApp ? (cpg || 'Android app') : ''; DS.pkCdh = cdh; DS.pkOp = P.op; DS.site = rp;
+      var clean = function (x, n) { return String(x == null ? '' : x).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, n); };
+      var slots = function (a) { return (Array.isArray(a) ? a : []).map(function (h) { var u = KwPasskey.ub64(h); return u ? { i: KwPasskey.idxOf(u), c: u } : null; }).filter(function (x) { return x && x.i >= 1 && x.i <= PK_N; }); };
+      if (P.op === 'create') {
+        var used = {};
+        (Array.isArray(P.usedSlots) ? P.usedSlots : []).forEach(function (i) { if ((i | 0) === +i && i >= 1 && i <= PK_N) used[i] = 1; });
+        slots(P.exclude).forEach(function (x) { used[x.i] = 1; });
+        var sl = 0; for (var si = 1; si <= PK_N; si++) if (!used[si]) { sl = si; break; }
+        if (!sl) return 'All ' + PK_N + ' passkeys of this seed for ' + esc(rp) + ' are in use. Delete one in TextAuth first.';
+        var uid = KwPasskey.ub64(P.userId);
+        DS.pkSlot = sl; DS.pkUser = { id: uid && uid.length <= 64 ? P.userId : '', name: clean(P.userName, 128), disp: clean(P.userDisplayName, 128) }; DS.pkRpName = clean(P.rpName, 64);
+        DS.view = { title: 'Create passkey' };
+      } else if (P.op === 'get') {
+        var ad = KwPasskey.ub64(P.authData);
+        /* Kwallet signs only a plain assertion authData for THIS site: rpIdHash, flags (UP set, no AT / ED), sign count */
+        if (!ad || ad.length !== 37 || KwPasskey.hex(ad.slice(0, 32)) !== KwPasskey.hex(KwPasskey._t.sha(new TextEncoder().encode(rp))) || !(ad[32] & 1) || (ad[32] & 0xc0)) return 'The passkey request could not be read.';
+        var tr = [];
+        if (P.credId != null && P.credId !== '') { tr = slots([P.credId]); if (!tr.length) return 'This passkey is not from Kwallet.'; }
+        else if (Array.isArray(P.allow) && P.allow.length) { tr = slots(P.allow); if (!tr.length) return 'The site asked for a passkey that is not in Kwallet.'; }
+        else if ((P.slot | 0) === +P.slot && P.slot >= 1 && P.slot <= PK_N) tr = [{ i: +P.slot, c: null }];
+        else return 'The passkey request names no passkey.';
+        DS.pkAd = ad; DS.pkTry = tr.slice(0, PK_N); DS.pkSlot = tr[0].i; DS.pkUser = { name: clean(P.userName, 128), disp: clean(P.userDisplayName, 128) };
+        DS.view = { title: 'Sign in' };
+      } else return 'The passkey request could not be read.';
+      return '';
+    }
     if (m === 'btc_getPublicKey') { DS.view = { title: '' }; return ''; }
     if (m === 'btc_signMessage' || m === 'btc_signPsbt') {
       try {
@@ -26144,6 +26214,16 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       o.main += HWP.card(HWP.kv(m === 'btc_getPublicKey' ? 'Bitcoin public key' : m === 'cardano_getPubKeys' ? 'Cardano DRep and stake public keys' : 'XRP Ledger public key', 'Public key only', 'No private key leaves Kwallet'));
       o.main += HWP.cap('Free \u00b7 sharing the public key sends no funds.');
       o.det += addrKv('Account', R.from, esc(DS.rec.label) + ' \u00b7 #' + DS.rec.index);
+      return o;
+    }
+    if (m === 'pk_passkey') {   /* TextAuth: same cards as the Internet Identity passkey sheet */
+      var un = DS.pkUser || {}, who = un.disp || un.name || '';
+      o.main += HWP.card(HWP.kv('Site', esc(DS.pkRpName && DS.pkOp === 'create' ? DS.pkRpName : DS.pkRp), DS.pkApp ? 'App ' + esc(DS.pkApp) : esc(DS.pkOrigin)) +
+        (who ? HWP.kv('Account', esc(who), un.name && un.disp && un.name !== un.disp ? esc(un.name) : '', { sm: true }) : '') +
+        HWP.kv('Passkey', '#' + DS.pkSlot, DS.pkOp === 'create' ? 'Restores with your seed' : 'From this seed', { sm: true }));
+      o.main += HWP.cap('Free \u00b7 no funds move.');
+      if (DS.pkApp) o.warn.push('An Android app asks for a passkey for <b>' + esc(DS.pkRp) + '</b>. TextAuth checked that the app belongs to this site.');
+      o.det += kv('Site', esc(DS.pkRp), 'Relying party') + kv('Origin', esc(DS.pkApp ? DS.pkOrigin.slice(0, 32) + '\u2026' : DS.pkOrigin), DS.pkApp ? esc(DS.pkApp) : '') + kv('Key', 'P-256 (ES256)', 'Never leaves Kwallet') + kv('Asked by', 'TextAuth', '');
       return o;
     }
     /* v3.99.12: Internet Identity passkeys get the same cards as every other request: what, which identity, and a free cap */
@@ -26481,7 +26561,36 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       var sg = sign(d, sha(cat([ad, sha(cd)]))); d = 0n;
       return { credId: hex(cred), clientData: hex(cd), authData: hex(ad), sig: hex(sg), cose: hex(cose(q)) };
     }
-    return { make: make, assert: assert, ids: ids, coseOf: coseOf, idxOf: idxOf, unhex: unhex, hex: hex, keyHex: keyHex, coseD: coseD, idD: idD, assertD: assertD, _t: { pub: pub, sign: sign, verify: verify, keyOf: keyOf, sha: sha } };
+    /* ---------- TextAuth (pk_passkey / pk_pair): the system's clientDataHash, TextAuth builds the WebAuthn response ---------- */
+    function ub64(s) { try { s = String(s == null ? '' : s); if (!/^[A-Za-z0-9_-]*={0,2}$/.test(s)) return null; s = s.replace(/=+$/, '').replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; } catch (e) { return null; } }
+    /* create: the passkey's public data only, nothing is signed (attestation none). authData: UP UV BE BS AT, sign count 0 */
+    function makeH(o) {
+      var d = keyOf(o.key, o.rpId, o.idx), q = pub(d), cred = credOf(o.rpId, o.idx, q); d = 0n;
+      var ad = cat([sha(te.encode(o.rpId)), new Uint8Array([o.uv === false ? 0x59 : 0x5d, 0, 0, 0, 0]), new Uint8Array(16), new Uint8Array([0, cred.length]), cred, cose(q)]);
+      var att = cat([new Uint8Array([0xa3]), cbText('fmt'), cbText('none'), cbText('attStmt'), new Uint8Array([0xa0]), cbText('authData'), cbBytes(ad)]);
+      return { credId: b64u(cred), x: b64u(q.x), y: b64u(q.y), publicKey: b64u(spki(q)), cose: b64u(cose(q)), authData: b64u(ad), attestationObject: b64u(att) };
+    }
+    /* get: ECDSA P-256 / SHA-256 over authData || clientDataHash. A given credential ID must be this seed's (else null) */
+    function assertH(o) {
+      var d = keyOf(o.key, o.rpId, o.idx), q = pub(d), cred = credOf(o.rpId, o.idx, q);
+      if (o.cred && hex(o.cred) !== hex(cred)) { d = 0n; return null; }
+      if (!o.authData || o.authData.length !== 37 || hex(o.authData.slice(0, 32)) !== hex(sha(te.encode(o.rpId))) || !o.cdh || o.cdh.length !== 32) { d = 0n; throw new Error('Bad passkey request'); }
+      var sg = sign(d, sha(cat([o.authData, o.cdh]))); d = 0n;
+      return { credId: b64u(cred), authData: b64u(o.authData), sig: b64u(sg) };
+    }
+    function hkdf(ikm, salt, info, L) {   /* RFC 5869, SHA-256 */
+      var prk = hmac(salt, ikm), t = new Uint8Array(0), okm = new Uint8Array(0);
+      for (var i = 1; okm.length < L; i++) { t = hmac(prk, cat([t, info, new Uint8Array([i])])); okm = cat([okm, t]); }
+      return okm.slice(0, L);
+    }
+    function vault(icpKeyHex) {
+      var k = unhex(String(icpKeyHex).replace(/^0x/i, ''));
+      var ikm = sha(cat([te.encode('textauth-vault-master|'), k])), vm = hkdf(ikm, te.encode('textauth-v1'), te.encode('vault-master'), 32);
+      var sk = sha(cat([te.encode('textauth-vault-id|'), k])), pk = KwChains.util.edPub(sk);
+      var r = { vaultMaster: b64u(vm), vaultIdSk: b64u(sk), vaultIdPk: b64u(pk) }; k.fill(0); ikm.fill(0); vm.fill(0); sk.fill(0);
+      return r;
+    }
+    return { make: make, assert: assert, ids: ids, coseOf: coseOf, idxOf: idxOf, unhex: unhex, hex: hex, keyHex: keyHex, coseD: coseD, idD: idD, assertD: assertD, makeH: makeH, assertH: assertH, vault: vault, ub64: ub64, b64u: b64u, _t: { pub: pub, sign: sign, verify: verify, keyOf: keyOf, sha: sha, hkdf: hkdf } };
   })();
   try { window.KwPasskey = KwPasskey; } catch (e) {}
   var PK_N = 20;   /* v3.99.12: passkeys #1..#20 of each relying party are looked up on II */
@@ -26567,6 +26676,14 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       r.ids = { rp: DS.pkRp, ids: KwPasskey.ids(pk, DS.pkRp, PK_N) };
       r.names = L.filter(function (e) { return e.rp === DS.pkRp && e.n; }).map(function (e) { return { i: e.i, n: e.n, a: e.a || '' }; }).slice(0, 50);
       if (P.op === 'get' && (DS.nmList || []).length) try { r.calls = kwIiCalls(pk, +P.nowMs); } catch (e) {}   /* v3.99.16 */
+    }
+    else if (m === 'pk_passkey') {   /* TextAuth */
+      if (P.op === 'create') { r = KwPasskey.makeH({ key: pk, rpId: DS.pkRp, idx: DS.pkSlot, uv: P.uv !== false }); r.slot = DS.pkSlot; }
+      else {
+        for (var ti = 0; ti < DS.pkTry.length && !r; ti++) { var tw = DS.pkTry[ti]; r = KwPasskey.assertH({ key: pk, rpId: DS.pkRp, idx: tw.i, cred: tw.c, authData: DS.pkAd, cdh: DS.pkCdh }); if (r) r.slot = tw.i; }
+        if (!r) throw new Error('This passkey belongs to another seed. Pair TextAuth with that seed in Kwallet and try again.');
+        r.userHandle = null;
+      }
     }
     else if (m === 'icp_iiNames') {   /* v3.99.12: one identity_info call per identity, signed by its passkey */
       r = { calls: kwIiCalls(pk, +P.nowMs), ids: { rp: DS.pkRp, ids: KwPasskey.ids(pk, DS.pkRp, PK_N) } };
@@ -26931,7 +27048,8 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var R = DS.R, m = DS.m, c = dappCalc(), P = R.prices || {}, gpx = +P.gasUsd || 0, v = DS.view || {}, ae = m === 'eth_sendTransaction' ? apprEff(R) : null;
     DS.last = c; DS.key = m === 'eth_sendTransaction' ? String(c.fee) + '|' + R.nonce : '';
     var sname = HWP.siteName(R.site && R.site.name, R.origin) || DS.site, url = String(R.origin || '').replace(/\/+$/, '') || DS.site;
-    var via = { walletconnect: 'WalletConnect', browser: 'Hwallet Browser', swap: 'Hwallet Swap', fees: 'Hwallet Fees accounts', clean: 'Hwallet Clean up' }[R.via] || 'Hwallet';
+    if (m === 'pk_passkey') { sname = DS.pkRp; url = DS.pkApp ? DS.pkApp : String(DS.pkOrigin || '').replace(/\/+$/, ''); }
+    var via = PKM[m] ? 'TextAuth' : { walletconnect: 'WalletConnect', browser: 'Hwallet Browser', swap: 'Hwallet Swap', fees: 'Hwallet Fees accounts', clean: 'Hwallet Clean up' }[R.via] || 'Hwallet';
     var p17 = !!P17M[m], isTx = !p17 && (m === 'eth_sendTransaction' || /signTransaction$/.test(m)), isMsg = !p17 && (m === 'personal_sign' || m === 'solana_signMessage' || m === 'tron_signMessage');
     var sym = DS.c === 'evm' ? DS.gsym : DS.c === 'sol' ? 'SOL' : 'TRX', fdec = DS.c === 'evm' ? 18 : DS.c === 'sol' ? 9 : 6;
     var warnsL = [], det = '', main = '', raw = '';
@@ -27149,6 +27267,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       } else if (P17M[m]) {
         var pk17 = deriveKey(sec, DS.c); sec = null;
         try { out.result = p17Sign(m, pk17, P, R.from); } finally { pk17 = null; ADAX = null; }
+        if (m === 'pk_passkey') { sec = null; return success(Object.assign({ status: 'ok', method: m, op: P.op }, out.result), P.op === 'create' ? 'Passkey created' : 'Signed in'); }
       } else if (DS.c === 'trx') {
         var ph = deriveKey(sec, 'trx'), key = new ethers.SigningKey('0x' + String(ph).replace(/^0x/, '')); ph = null;
         var tid = DS.view ? DS.view.id : '', nraw = null;

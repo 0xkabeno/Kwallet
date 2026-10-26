@@ -33,6 +33,9 @@ import org.json.JSONObject
 class SignActivity : KwActivity() {
     private var req = ""
     private var reqId = ""
+    /** TextAuth: the caller package this activity verified in callerOk() (app.hwallet, app.textauth, or Kwallet itself for the
+     *  QR air-gap). The sign page reads it through KwSign.caller(); a request can never set it. */
+    @Volatile private var callerPkg = ""
     /** v3.98.8 (push 13, R9a / R11a): Hwallet's handoff files (content:// with a one-shot grant); null = an older Hwallet */
     private var resUri: android.net.Uri? = null
     private var rid = ""
@@ -68,7 +71,7 @@ class SignActivity : KwActivity() {
     private val kLink = object : android.os.Binder() {
         override fun onTransact(code: Int, data: android.os.Parcel, rp: android.os.Parcel?, flags: Int): Boolean {
             if (code != LINK_CANCEL && code != LINK_PING) return super.onTransact(code, data, rp, flags)
-            if (!uidIsHwallet(android.os.Binder.getCallingUid())) return false
+            if (!uidIsCaller(android.os.Binder.getCallingUid())) return false
             if (code == LINK_CANCEL) {
                 val id = try { data.readString() ?: "" } catch (_: Exception) { "" }
                 if (id.isEmpty() || id == reqId) runOnUiThread {
@@ -85,6 +88,10 @@ class SignActivity : KwActivity() {
     private fun uidIsHwallet(uid: Int): Boolean = try {
         (packageManager.getPackagesForUid(uid) ?: emptyArray()).any { it == HWALLET } && packageManager.checkSignatures(packageName, HWALLET) == PackageManager.SIGNATURE_MATCH
     } catch (_: Exception) { false }
+    /** TextAuth: the live link's peer is the app that opened this request (Hwallet by signature match, TextAuth by cert pin) */
+    private fun uidIsCaller(uid: Int): Boolean = if (callerPkg == TEXTAUTH) try {
+        (packageManager.getPackagesForUid(uid) ?: emptyArray()).any { it == TEXTAUTH } && textAuthPinned(packageManager)
+    } catch (_: Exception) { false } else uidIsHwallet(uid)
     private var linkSentSelf = false
     /** one state to Hwallet (one-way, never blocks). st: received | sheet | waiting | signing | signed | rejected | error | stage */
     internal fun linkSend(st: String, detail: String = "") {
@@ -123,10 +130,15 @@ class SignActivity : KwActivity() {
         val caller = callingActivity?.packageName ?: return false
         /* v3.99.14: QR air-gap. Kwallet's own main screen hands over a request it scanned from Hwallet on another phone
            (startActivityForResult with air=true). callingActivity is set by the system, so no other app can pass as Kwallet. */
-        if (caller == packageName && intent.getBooleanExtra("air", false)) return true
+        if (caller == packageName && intent.getBooleanExtra("air", false)) { callerPkg = packageName; return true }
+        /* TextAuth (app.textauth) is signed with its own key: its signing certificate's SHA-256 must be TEXTAUTH_CERT */
+        if (caller == TEXTAUTH) { if (!textAuthPinned(packageManager)) return false; callerPkg = TEXTAUTH; return true }
         if (caller != HWALLET) return false
-        return try { packageManager.checkSignatures(packageName, caller) == PackageManager.SIGNATURE_MATCH } catch (_: Exception) { false }
+        val ok = try { packageManager.checkSignatures(packageName, caller) == PackageManager.SIGNATURE_MATCH } catch (_: Exception) { false }
+        if (ok) callerPkg = HWALLET
+        return ok
     }
+    internal fun callerPkgOf(): String = callerPkg
 
     override fun startUrl(): String = KwWarm.SIGN_URL
     /** wave A (P2a f): take the pre-loaded sign page if Kwallet was warmed (only after the caller check passed) */
@@ -161,7 +173,10 @@ class SignActivity : KwActivity() {
            Hwallet on this phone sends; and Kwallet's own hand-off always names its air-gap seed */
         val airIntent = callingActivity?.packageName == packageName
         if (ok && (if (rq == null) airIntent else rq.has("air") != airIntent)) { ok = false; callerChecked = false; req = "" }
-        setResult(RESULT_CANCELED, Intent().putExtra("res", if (ok) "{\"status\":\"rejected\"}" else "{\"status\":\"refused\",\"error\":\"Only Hwallet signed with the Kwallet key can ask Kwallet to sign\"}"))
+        /* TextAuth: passkeys (pk_passkey) and pairing (pk_pair) only; the sign page checks the same again */
+        if (ok && callerPkg == TEXTAUTH && (rq == null || rq.optString("action") != "dapp" || rq.optString("method") !in TEXTAUTH_METHODS)) { ok = false; callerChecked = false; req = "" }
+        if (!ok) callerPkg = ""
+        setResult(RESULT_CANCELED, Intent().putExtra("res", if (ok) "{\"status\":\"rejected\"}" else "{\"status\":\"refused\",\"error\":\"Only Hwallet signed with the Kwallet key (or TextAuth) can ask Kwallet to sign\"}"))
         super.onCreate(null)
         @Suppress("DEPRECATION") overridePendingTransition(0, 0)
         if (!ok) { replied = true; finish(); return }
@@ -213,8 +228,9 @@ class SignActivity : KwActivity() {
     private fun readReq(): String {
         rid = (intent.getStringExtra("rid") ?: "").take(64)
         val ru = intent.getStringExtra("resUri"); val qu = intent.getStringExtra("reqUri")
-        resUri = try { if (ru != null && ru.startsWith("content://app.hwallet.kwx/res/")) android.net.Uri.parse(ru) else null } catch (_: Exception) { null }
-        if (qu != null && qu.startsWith("content://app.hwallet.kwx/req/")) {
+        val hx = if (callerPkg == TEXTAUTH) "content://app.textauth.kwx/" else "content://app.hwallet.kwx/"
+        resUri = try { if (ru != null && ru.startsWith(hx + "res/")) android.net.Uri.parse(ru) else null } catch (_: Exception) { null }
+        if (qu != null && qu.startsWith(hx + "req/")) {
             try {
                 contentResolver.openInputStream(android.net.Uri.parse(qu))?.use { st ->
                     val b = st.readBytes()
@@ -230,7 +246,7 @@ class SignActivity : KwActivity() {
         replied = true
         try {
             val o = JSONObject(json); val st = o.optString("status", "rejected")
-            linkSend(if (st == "signed" || st == "paired") "signed" else if (st == "error") "error" else "rejected", o.optString("error", o.optString("stage", "")))
+            linkSend(if (st == "signed" || st == "paired" || st == "ok") "signed" else if (st == "error") "error" else "rejected", o.optString("error", o.optString("stage", "")))
         } catch (_: Exception) { linkSend("error", "unreadable answer") }
         /* v3.98.8 (R11a): a large answer (signed Monero set) goes back through Hwallet's answer file; a small one in the extra */
         var out = Intent().putExtra("res", "{\"status\":\"error\",\"error\":\"Kwallet could not hand the answer back. Try again\"}")
@@ -263,6 +279,21 @@ class SignActivity : KwActivity() {
 
     companion object {
         const val HWALLET = "app.hwallet"
+        /* TextAuth: package + SHA-256 of its APK signing certificate (TEXTAUTH_SIGNING in the TextAuth repo) */
+        const val TEXTAUTH = "app.textauth"
+        const val TEXTAUTH_CERT = "44D6BB326CD174943D0B8297F8551F5DA79EDA6E6AB539FA7B72EB6179F74C9A"
+        val TEXTAUTH_METHODS = setOf("pk_passkey", "pk_pair")
+        private fun hexBytes(h: String): ByteArray = ByteArray(h.length / 2) { i -> h.substring(i * 2, i * 2 + 2).toInt(16).toByte() }
+        /** app.textauth is installed and signed by exactly the pinned certificate (API 28+: the platform check, which follows
+         *  key rotation; older phones: the single signature's SHA-256, and a multi-signer APK is refused) */
+        fun textAuthPinned(pm: PackageManager): Boolean = try {
+            if (Build.VERSION.SDK_INT >= 28) {
+                pm.hasSigningCertificate(TEXTAUTH, hexBytes(TEXTAUTH_CERT), PackageManager.CERT_INPUT_SHA256)
+            } else {
+                @Suppress("DEPRECATION") val sigs = pm.getPackageInfo(TEXTAUTH, PackageManager.GET_SIGNATURES).signatures ?: emptyArray()
+                sigs.size == 1 && java.security.MessageDigest.getInstance("SHA-256").digest(sigs[0].toByteArray()).contentEquals(hexBytes(TEXTAUTH_CERT))
+            }
+        } catch (_: Exception) { false }
         const val FEED_ACTION = "app.kwallet.SIGN_FEED"
         const val FEED_PERM = "app.kwallet.permission.SIGN_FEED"
         /* v3.98.16 live link transaction codes (same numbers in Hwallet's HwActivity) */
@@ -278,6 +309,8 @@ class SignActivity : KwActivity() {
 class KwSignBridge(private val host: () -> SignActivity?) {
     @JavascriptInterface fun request(): String = host()?.reqJson() ?: ""
     @JavascriptInterface fun pending(): Boolean = host() == null
+    /** TextAuth: the caller package SignActivity verified ("" when none); the page gates pk_* requests on it */
+    @JavascriptInterface fun caller(): String = host()?.callerPkgOf() ?: ""
     @JavascriptInterface fun done(json: String) { val a = host() ?: return; a.runOnUiThread { a.replyFromPage(json) } }
     @JavascriptInterface fun ready() { val a = host() ?: return; a.runOnUiThread { a.onSheetReady() } }
     @JavascriptInterface fun sheet() { val a = host() ?: return; a.runOnUiThread { a.onSheetMode() } }
