@@ -16,6 +16,11 @@
     <!-- v3.91: live fee / balance updates from Hwallet to the open sign page. Only apps signed with the
          Kwallet key can hold this permission (Hwallet declares the same one, so install order does not matter). -->
     <permission android:name="app.kwallet.permission.SIGN_FEED" android:protectionLevel="signature" />
+    <!-- v3.99.43: the K <-> TextAuth link (KwTaLinkService). TextAuth is signed with its own key, so the permission is
+         signature|knownSigner: granted only to apps signed with Kwallet's key or with the pinned TextAuth certificate (Android 12+).
+         The service also checks the caller uid + pinned certificate on every call. -->
+    <permission android:name="app.kwallet.permission.TEXTAUTH_LINK" android:protectionLevel="signature|knownSigner"
+        android:knownCerts="@array/kw_textauth_certs" tools:targetApi="31" />
     <!-- v3.98.32: Kwallet tells Hwallet at once when a paired seed is removed or Kwallet is erased (an explicit broadcast to
          Hwallet's KwEventReceiver, which requires this permission from the sender) -->
     <uses-permission android:name="app.kwallet.permission.SIGN_FEED" />
@@ -73,6 +78,12 @@
         <!-- K-H link: the persistent K <-> H link. Hwallet binds it only while it is on screen (ping every ~5 s, warm the sign
              page, live fee / balance / price feed for the open sheet). Signature permission to bind + caller uid / signature
              check on every transaction. Not a foreground service; it starts nothing visible and uses no network. -->
+        <!-- v3.99.43: K <-> TextAuth link, same Binder protocol as the K-H link (ping, warm, feed, headless II names) -->
+        <service
+            android:name=".KwTaLinkService"
+            android:exported="true"
+            android:permission="app.kwallet.permission.TEXTAUTH_LINK" />
+
         <service
             android:name=".KwLinkService"
             android:exported="true"

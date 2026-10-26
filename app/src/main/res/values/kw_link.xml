@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- SHA-256 of TextAuth's (app.textauth) APK signing certificate, same as SignActivity.TEXTAUTH_CERT -->
+    <string-array name="kw_textauth_certs" translatable="false">
+        <item>44D6BB326CD174943D0B8297F8551F5DA79EDA6E6AB539FA7B72EB6179F74C9A</item>
+    </string-array>
+</resources>

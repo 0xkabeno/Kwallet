@@ -174,9 +174,11 @@ class SignActivity : KwActivity() {
         val airIntent = callingActivity?.packageName == packageName
         if (ok && (if (rq == null) airIntent else rq.has("air") != airIntent)) { ok = false; callerChecked = false; req = "" }
         /* TextAuth: passkeys (pk_passkey) and pairing (pk_pair) only; the sign page checks the same again */
-        if (ok && callerPkg == TEXTAUTH && (rq == null || rq.optString("action") != "dapp" || rq.optString("method") !in TEXTAUTH_METHODS)) { ok = false; callerChecked = false; req = "" }
+        /* v3.99.43: plus ICP payments (action sign, chain icp: Send / Top up storage) */
+        if (ok && callerPkg == TEXTAUTH && (rq == null || !((rq.optString("action") == "dapp" && rq.optString("method") in TEXTAUTH_METHODS) ||
+                (rq.optString("action") == "sign" && rq.optString("chain") == "icp")))) { ok = false; callerChecked = false; req = "" }
         if (!ok) callerPkg = ""
-        setResult(RESULT_CANCELED, Intent().putExtra("res", if (ok) "{\"status\":\"rejected\"}" else "{\"status\":\"refused\",\"error\":\"Only Hwallet signed with the Kwallet key (or TextAuth) can ask Kwallet to sign\"}"))
+        setResult(RESULT_CANCELED, Intent().putExtra("res", if (ok) "{\"status\":\"rejected\"}" else "{\"status\":\"refused\",\"error\":\"Kwallet did not accept this request. Update Kwallet and TextAuth, then try again.\"}"))
         super.onCreate(null)
         @Suppress("DEPRECATION") overridePendingTransition(0, 0)
         if (!ok) { replied = true; finish(); return }

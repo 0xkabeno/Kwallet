@@ -1,5 +1,13 @@
 # Changelog
 
+## Kwallet 3.99.43 / Hwallet 1.9.43
+
+- Kwallet: "Pair TextAuth with this seed" now also tells TextAuth the seed's name, its seed type and the public IDs of its Internet Identity passkeys, so TextAuth can show the seed name, the ICP logo and your id.ai identities.
+- Kwallet: TextAuth can send ICP and ICP tokens (Send, Top up storage). Every other chain stays refused for TextAuth. Clearer message when Kwallet refuses a request.
+- Kwallet: passkey create and sign-in sheets name the passkey (for example "you@site.com · #1") and show the site's icon fetched by TextAuth (letter only when there is none).
+- Kwallet: fast K <-> TextAuth link (bound service, same protocol as the K-H link): ping, warm-up of the sheet, live feed and headless identity-name reads. Guarded by a signature|knownSigner permission (Kwallet key or the pinned TextAuth certificate) and a caller check on every call.
+- Hwallet: version bump to pair with Kwallet 3.99.43.
+
 ## Kwallet 3.99.42 / Hwallet 1.9.42
 
 - Kwallet: TextAuth support. Kwallet now answers the TextAuth app (app.textauth), checked natively by package name and pinned signing certificate, never by anything in the request. TextAuth can only ask for two things: "Pair TextAuth with this seed" (pk_pair), which returns the seed's encrypted-vault keys after your biometrics or PIN, and passkeys for any website (pk_passkey), created and signed from your seed with the same derivation as Kwallet's Internet Identity passkeys. Kwallet only signs genuine 37-byte passkey sign-in data for the site shown on its sheet, and every create, sign-in and pairing needs the usual hold-to-confirm.
