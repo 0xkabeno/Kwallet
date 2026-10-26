@@ -1,5 +1,9 @@
 # Changelog
 
+## Hwallet 1.9.40
+
+- Hwallet Browser ⋮: Back, Forward, Reload and Bookmark fill the top row as four equal tiles (no empty space on the right). The menu opens from the ⋮ with a short scale-and-fade, its rows following a moment later, and closes faster than it opens. The motion is reduced when the phone asks for less motion.
+
 ## Kwallet 3.99.39 / Hwallet 1.9.39
 
 - Hwallet Browser: tab groups work like Chrome. Press and hold a tab, then drag it onto another tab to make a group of the two, or onto a group to add it. Inside a group, drag a tab onto "Remove from group". The long-press sheet and ⋮ > Add tab to group are gone.
