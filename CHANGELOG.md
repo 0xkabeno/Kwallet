@@ -1,5 +1,9 @@
 # Changelog
 
+## Hwallet 1.9.41
+
+- Sui: swaps and every Sui dapp transaction work again. Sui's protocol now has the SDK date each transaction it builds (valid this epoch and the next, on mainnet), which needs the current epoch and the genesis checkpoint. Hwallet's GraphQL bridge didn't answer those two reads, so building failed before Kwallet's sheet could open. It now answers them, plus the extra simulation fields the SDK's gas estimate reads.
+
 ## Kwallet 3.99.40 / Hwallet 1.9.40
 
 - Hwallet Browser ⋮: Back, Forward, Reload and Bookmark fill the top row as four equal tiles (no empty space on the right). The menu opens from the ⋮ with a short scale-and-fade, its rows following a moment later, and closes faster than it opens. The motion is reduced when the phone asks for less motion.
