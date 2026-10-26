@@ -7958,7 +7958,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.40';   /* v1.9.21: version bump */
+var APP_VERSION = '1.9.41';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;
@@ -8509,8 +8509,10 @@ var APP_VERSION = '1.9.40';   /* v1.9.21: version bump */
     if (method === 'sui_getTransactionBlock') return suiQ('query($d:String!){ transaction(digest:$d) { digest effects { ' + SUI_FX + ' } } }', { d: p[0] }).then(function (d) {
       var t = d.transaction; if (!t || !t.effects) return null; return { digest: t.digest, effects: { status: suiSt(t.effects), gasUsed: suiGas(t.effects) } };
     });
-    if (method === 'sui_dryRunTransactionBlock') return suiQ('query($b:String!){ simulateTransaction(transaction:{ bcs:{ value:$b } }) { effects { ' + SUI_FX + ' balanceChanges(first:50) { nodes { owner { address } coinType { repr } amount } } } } }', { b: p[0] }).then(function (d) {
-      var fx = d.simulateTransaction && d.simulateTransaction.effects; if (!fx) return null; var r = suiTxRow({ effects: fx }); return { effects: { status: suiSt(fx), gasUsed: suiGas(fx) }, balanceChanges: r.balanceChanges };
+    if (method === 'sui_dryRunTransactionBlock') return suiQ('query($b:String!){ simulateTransaction(transaction:{ bcs:{ value:$b } }) { effects { digest ' + SUI_FX + ' balanceChanges(first:50) { nodes { owner { address } coinType { repr } amount } } } } }', { b: p[0] }).then(function (d) {
+      var fx = d.simulateTransaction && d.simulateTransaction.effects; if (!fx) return null; var r = suiTxRow({ effects: fx });
+      /* v1.9.41: the fields the SDK's simulateTransaction reads too (its gas budget estimate runs on this answer) */
+      return { effects: { messageVersion: 'v1', status: suiSt(fx), gasUsed: suiGas(fx), transactionDigest: fx.digest || '', gasObject: { owner: { AddressOwner: '0x0' }, reference: { objectId: '0x0', version: '0', digest: '' } }, created: [], mutated: [], deleted: [], wrapped: [], unwrapped: [], sharedObjects: [], dependencies: [], executedEpoch: '0' }, balanceChanges: r.balanceChanges, objectChanges: [], events: [] };
     });
     if (method === 'sui_multiGetObjects') return suiQ('query($k:[ObjectKey!]!){ multiGetObjects(keys:$k) { address version digest storageRebate owner { __typename ... on AddressOwner { address { address } } ... on ObjectOwner { address { address } } ... on Shared { initialSharedVersion } ... on ConsensusAddressOwner { startVersion address { address } } } asMoveObject { contents { type { repr } } } } }', { k: (p[0] || []).map(function (x) { return { address: x }; }) }).then(function (d) {
       function own(w) { if (!w) return null; var t = w.__typename; if (t === 'AddressOwner') return { AddressOwner: w.address && w.address.address }; if (t === 'ObjectOwner') return { ObjectOwner: w.address && w.address.address }; if (t === 'Shared') return { Shared: { initial_shared_version: String(w.initialSharedVersion) } }; if (t === 'ConsensusAddressOwner') return { ConsensusAddressOwner: { start_version: String(w.startVersion), owner: w.address && w.address.address } }; return 'Immutable'; }
@@ -8524,6 +8526,18 @@ var APP_VERSION = '1.9.40';   /* v1.9.21: version bump */
         return { data: rows, hasNextPage: !!(tx.pageInfo && tx.pageInfo.hasPreviousPage), nextCursor: tx.pageInfo && tx.pageInfo.startCursor || null };
       });
     }
+    /* v1.9.41: the Sui SDK now dates every transaction it builds (a ValidDuring expiration: this epoch and the next, on this
+       chain) once Sui's protocol enabled it, and reads the current epoch and the genesis checkpoint for that. Without these two
+       every dapp and swap transaction failed to build ("Could not prepare the Sui transaction"). */
+    if (method === 'suix_getLatestSuiSystemState') return suiQ('{ epoch { epochId referenceGasPrice startTimestamp protocolConfigs { protocolVersion } } }').then(function (d) {
+      var e = d.epoch; if (!e || e.epochId == null) throw new Error('Sui epoch not available');
+      return { systemStateVersion: '2', epoch: String(e.epochId), protocolVersion: String(e.protocolConfigs && e.protocolConfigs.protocolVersion || ''), referenceGasPrice: String(e.referenceGasPrice || '1000'), epochStartTimestampMs: String(suiTs(e.startTimestamp) || Date.now()), epochDurationMs: '86400000', safeMode: false, safeModeStorageRewards: '0', safeModeComputationRewards: '0', safeModeStorageRebates: '0', safeModeNonRefundableStorageFee: '0', activeValidators: [] };
+    });
+    if (method === 'sui_getCheckpoint') { var cid = String(p[0] == null ? '0' : p[0]), byNo = /^\d+$/.test(cid);
+      return suiQ(byNo ? 'query($n:UInt53){ checkpoint(sequenceNumber:$n) { digest sequenceNumber epoch { epochId } } }' : 'query($d:String){ checkpoint(digest:$d) { digest sequenceNumber epoch { epochId } } }', byNo ? { n: +cid } : { d: cid }).then(function (d) {
+        var c = d.checkpoint; if (!c || !c.digest) throw new Error('Sui checkpoint not found');
+        return { digest: c.digest, sequenceNumber: String(c.sequenceNumber), epoch: String(c.epoch && c.epoch.epochId != null ? c.epoch.epochId : '0') };
+      }); }
     if (method === 'sui_getChainIdentifier') return suiQ('{ chainIdentifier }').then(function (d) { try { var b = b58d(String(d.chainIdentifier || '')), h = ''; for (var i = 0; i < 4; i++) h += ('0' + b[i].toString(16)).slice(-2); return h; } catch (e) { return '35834a8a'; } });
     if (method === 'sui_getProtocolConfig') return suiQ('{ protocolConfigs { protocolVersion configs { key value } featureFlags { key value } } }').then(function (d) {
       var c = d.protocolConfigs || {}, at = {}, ff = {};
