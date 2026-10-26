@@ -1,5 +1,10 @@
 # Changelog
 
+## Kwallet 3.99.42 / Hwallet 1.9.42
+
+- Kwallet: TextAuth support. Kwallet now answers the TextAuth app (app.textauth), checked natively by package name and pinned signing certificate, never by anything in the request. TextAuth can only ask for two things: "Pair TextAuth with this seed" (pk_pair), which returns the seed's encrypted-vault keys after your biometrics or PIN, and passkeys for any website (pk_passkey), created and signed from your seed with the same derivation as Kwallet's Internet Identity passkeys. Kwallet only signs genuine 37-byte passkey sign-in data for the site shown on its sheet, and every create, sign-in and pairing needs the usual hold-to-confirm.
+- Hwallet: version bump to pair with Kwallet 3.99.42.
+
 ## Kwallet 3.99.41 / Hwallet 1.9.41
 
 - Kwallet: version bump to pair with Hwallet 1.9.41.
