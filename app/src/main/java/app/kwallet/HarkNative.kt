@@ -79,6 +79,14 @@ class HarkNative(
     @JavascriptInterface
     fun kwWiped() { try { KwLinkState.wiped(ctx) } catch (_: Exception) {} }
 
+    /** v3.99.44: the page's lock / unlock, pushed to a listening TextAuth (KwTaLinkService LISTEN). Only these two names pass. */
+    @JavascriptInterface
+    fun kwTaEvent(ev: String?, json: String?) {
+        val e = ev.orEmpty()
+        if (e != "lock" && e != "unlock") return
+        try { KwTaLinkService.emit(e) } catch (_: Exception) {}
+    }
+
     /** Screen Wake Lock for the WebView (Chrome has navigator.wakeLock, WebView doesn't). */
     @JavascriptInterface
     fun keepAwake(on: Boolean) { onAwake(on) }

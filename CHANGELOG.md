@@ -1,5 +1,10 @@
 # Changelog
 
+## Kwallet 3.99.44 / Hwallet 1.9.44
+
+- Kwallet: live events for TextAuth 1.0.9. TextAuth keeps the K <-> TextAuth link bound all the time and registers a callback (new LISTEN call, same permission and caller check as the rest of the link). Kwallet tells it at once when seeds are added, renamed or removed, when Kwallet is erased, when it locks or unlocks, when a TextAuth request starts and ends, and when pairing with TextAuth goes through. Only public seed IDs, seed names and states are sent: never keys, addresses or request contents.
+- Hwallet: version bump to pair with Kwallet 3.99.44.
+
 ## Kwallet 3.99.43 / Hwallet 1.9.43
 
 - Kwallet: "Pair TextAuth with this seed" now also tells TextAuth the seed's name, its seed type and the public IDs of its Internet Identity passkeys, so TextAuth can show the seed name, the ICP logo and your id.ai identities.

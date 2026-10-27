@@ -77,6 +77,7 @@ object KwLinkState {
         if (json.length > 64_000) return
         val inp = try { JSONObject(json) } catch (_: Exception) { return }
         val gone: List<String>
+        var added: List<String> = emptyList()
         val renamed = JSONObject()
         synchronized(lock) {
             val old = mirror(c)
@@ -86,12 +87,17 @@ object KwLinkState {
             val o = JSONObject().put("sids", JSONArray(now.toList())).put("partial", inp.optBoolean("partial", false)).put("names", nm).put("at", System.currentTimeMillis())
             prefs(c).edit().putString("mirror", o.toString()).commit()
             gone = if (old == null) emptyList() else sidsOf(old).filter { it !in now }
+            added = if (old == null) emptyList() else now.filter { it !in sidsOf(old) }   // v3.99.44: for TextAuth's "seeds" event
             val was = namesOf(old, sidsOf(old))
             for (k in nm.keys()) if (was.optString(k, "") != nm.optString(k)) renamed.put(k, nm.optString(k))
         }
         if (gone.isNotEmpty()) notifyH(c, "gone", gone)
         if (renamed.length() > 0) notifyH(c, "names", renamed.keys().asSequence().toList(), renamed)
         push(c, if (gone.isNotEmpty()) "gone" else if (renamed.length() > 0) "names" else "pair")   // v3.99.24
+        /* v3.99.44: the same change, at once, to a listening TextAuth (KwTaLinkService LISTEN): public seed IDs and names only */
+        if (gone.isNotEmpty() || added.isNotEmpty() || renamed.length() > 0) try {
+            KwTaLinkService.emit("seeds", JSONObject().put("added", JSONArray(added)).put("gone", JSONArray(gone)).put("renamed", renamed))
+        } catch (_: Exception) {}
     }
 
     /** an in-app erase (Clear > Erase everything, the forgotten-PIN erase, Export + erase): new install id, empty mirror,
@@ -104,6 +110,7 @@ object KwLinkState {
         }
         notifyH(c, "wipe", old)
         push(c, "wipe")   // v3.99.24
+        try { KwTaLinkService.emit("wipe") } catch (_: Exception) {}   // v3.99.44
     }
 
     /* ---- v3.99.24: instant events over the K-H link. Hwallet (while on screen) hands us a Binder; every change here is sent to
