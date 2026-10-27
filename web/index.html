@@ -5371,6 +5371,7 @@ window.KwDB = (function () {
     /* pk33 B16: the sign-page overlay just hides; K's session, stamp and main UI are not touched */
     if (SIGNM) { locked = false; busy = false; cancelable = false; purpose = null; onCancel = null; onForgot = null; ATTL = false; ASUB = null; root.classList.add('kl-out'); root.style.display = 'none'; coinsLive = false; dots.classList.remove('kl-ok'); try { document.documentElement.style.overflow = ''; } catch (e) {} kLook(false); return; }
     root.classList.add('kl-out'); locked = false; busy = false; cancelable = false; purpose = null; stamp();
+    try { if (window.HarkNative && HarkNative.kwTaEvent) HarkNative.kwTaEvent('unlock', ''); } catch (e) {}   /* v3.99.44: TextAuth's live link */
     try { document.documentElement.style.overflow = ''; } catch (e) {}
     setTimeout(function () {
       if (locked) return;
@@ -5381,6 +5382,7 @@ window.KwDB = (function () {
   /* show the PIN screen again (resume after the grace period, or creating a PIN from settings) */
   function lockNow(opts) {
     if (locked || !window.crypto || !crypto.subtle) return;
+    try { if (window.HarkNative && HarkNative.kwTaEvent) HarkNative.kwTaEvent('lock', ''); } catch (e) {}   /* v3.99.44: TextAuth's live link */
     locked = true; cancelable = !!(opts && opts.cancelable); onCancel = opts && opts.onCancel || null; ATTL = !!(opts && opts.attl); ASUB = opts && opts.asub || null;
     onOk = opts && opts.onOk || null; purpose = opts && opts.purpose || null; first = ''; entry = ''; newKind = (opts && opts.kind) || curKind(); noBioOnce = !!(opts && opts.noBio);
     root.style.display = ''; void root.offsetWidth;
@@ -12963,7 +12965,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.43';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
+const APP_VERSION = '3.99.44';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
