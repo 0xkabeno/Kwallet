@@ -40,6 +40,8 @@ class SignActivity : KwActivity() {
     private var resUri: android.net.Uri? = null
     private var rid = ""
     private var replied = false
+    /* v3.99.44: method of TextAuth's open request, for the LISTEN "sign" events */
+    private var taMethod = ""
     private var feedOn = false
     private var wv: WebView? = null
     @Volatile private var sheetMode = false
@@ -189,6 +191,8 @@ class SignActivity : KwActivity() {
             hLink?.linkToDeath(hDeath, 0)
         } catch (e: Exception) { Log.w("KwSign", "no live link: $e"); hLink = null }
         linkSend("received")
+        /* v3.99.44: TextAuth's own requests are announced to a listening TextAuth (method only, never the request) */
+        if (callerPkg == TEXTAUTH) try { taMethod = if (rq != null) rq.optString("method", rq.optString("action", "")) else ""; KwTaLinkService.emit("sign", JSONObject().put("st", "start").put("method", taMethod)) } catch (_: Exception) {}
         try {
             ContextCompat.registerReceiver(this, feedRx, IntentFilter(FEED_ACTION), FEED_PERM, null, ContextCompat.RECEIVER_EXPORTED)
             feedOn = true
@@ -249,6 +253,11 @@ class SignActivity : KwActivity() {
         try {
             val o = JSONObject(json); val st = o.optString("status", "rejected")
             linkSend(if (st == "signed" || st == "paired" || st == "ok") "signed" else if (st == "error") "error" else "rejected", o.optString("error", o.optString("stage", "")))
+            /* v3.99.44: tell a listening TextAuth the request ended (status only); a pairing that went through is a "pair" event */
+            if (callerPkg == TEXTAUTH) {
+                KwTaLinkService.emit("sign", JSONObject().put("st", "done").put("method", taMethod).put("status", st))
+                if (taMethod == "pk_pair" && st == "ok") KwTaLinkService.emit("pair")
+            }
         } catch (_: Exception) { linkSend("error", "unreadable answer") }
         /* v3.98.8 (R11a): a large answer (signed Monero set) goes back through Hwallet's answer file; a small one in the extra */
         var out = Intent().putExtra("res", "{\"status\":\"error\",\"error\":\"Kwallet could not hand the answer back. Try again\"}")
@@ -269,6 +278,7 @@ class SignActivity : KwActivity() {
         dogH.removeCallbacksAndMessages(null)
         try { hLink?.unlinkToDeath(hDeath, 0) } catch (_: Exception) {}
         if (!replied) linkSend("rejected", "Kwallet closed the sheet")
+        if (!replied && callerPkg == TEXTAUTH) try { KwTaLinkService.emit("sign", JSONObject().put("st", "done").put("method", taMethod).put("status", "rejected")) } catch (_: Exception) {}   // v3.99.44
         hLink = null
         if (open === this) open = null
         if (feedOn) { try { unregisterReceiver(feedRx) } catch (_: Exception) {}; feedOn = false }
