@@ -1,5 +1,11 @@
 # Changelog
 
+## Kwallet 3.99.49 / Hwallet 1.9.49
+
+- Kwallet: pairing with TextAuth now also hands over the seed's standard Nostr key (NIP-06, path m/44'/1237'/<address number>'/0/0, the same key other NIP-06 apps derive from this seed): `nostrSk` (private key, 64-char hex) and `nostrPk` (x-only public key, 64-char hex). Every other field of the pairing answer is unchanged. The pairing sheet's "Goes to TextAuth" line now lists "Nostr key".
+- CI: new Nostr key check runs Kwallet's own derivation in headless Chrome against the NIP-06 test vector.
+- Hwallet: version bump only, no code changes.
+
 ## Kwallet 3.99.48 / Hwallet 1.9.48
 
 - Kwallet: both Network fee pickers on the sign sheet (Send and dApp / sign requests, Custom row included) mark the selected fee the same way Hwallet 1.9.47 does and the "Sign in with passkey" sheet marks the selected Identity: a filled green dot at the left with a soft green ring that beats, and the row tinted green. Other rows show the same grey outline circle as that sheet. The old check inside the beating ring is gone. The dot restarts its beat whenever the selection moves, and the pulse styles are added wherever the picker opens.
