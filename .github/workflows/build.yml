@@ -33,6 +33,10 @@ jobs:
       - name: Boot check (headless Chrome)
         run: bash ci/boot_check.sh
 
+      # v3.99.49: the NIP-06 Nostr key Kwallet gives TextAuth on pairing matches the NIP-06 test vector
+      - name: Nostr key check (NIP-06 vector, headless Chrome)
+        run: bash ci/nostr_check.sh
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

@@ -6955,8 +6955,16 @@ function __fastCoreFactory(G) {
     return null;
   }
 
+  /* v3.99.49: NIP-06 Nostr key of a BIP-39 seed: m/44'/1237'/<account>'/0/0 (BIP-32 secp256k1, the same code as ETH/BTC).
+     sk = the 32-byte private key, pk = the BIP-340 x-only public key (the x coordinate), both 64-char lowercase hex */
+  function nostrKey(seedHex, account) {
+    var a = account | 0; if (a < 0) throw new Error('bad Nostr account');
+    var n = makeWalker(secpRoot(hexToBytes(String(seedHex).replace(/^0x/i, ''))), secpChild)("m/44'/1237'/" + a + "'/0/0");
+    return { sk: bytesToHex(n.kb).toLowerCase(), pk: bytesToHex(n.pc.subarray(1, 33)).toLowerCase() };
+  }
+
   return {
-    makeCtx: makeCtx, derive: derive, pathFromTpl: pathFromTpl, engine: engine, parseFullAddress: parseFullAddress,
+    makeCtx: makeCtx, derive: derive, pathFromTpl: pathFromTpl, engine: engine, parseFullAddress: parseFullAddress, nostrKey: nostrKey,
     xmrAccount: xmrAccount, xmrAddr: xmrAddr, btcKindForPath: btcKindForPath,
     icp: { sha224: sha224, crc32: crc32, prin: icpPrin, text: icpText, acct: icpAcct, pem: icpPem }, nearAddr: nearAddr, ton: { addr: tonAddr, hash: tonHash, wallet: tonWallet, verOf: tonVerOf, verAddr: tonVerAddr, nativeSeed: tonNativeSeed, edPub: edPub },
     _t: { segwitEncode: segwitEncode, segwitDecode: segwitDecode, base58: base58, base58decode: base58decode, b58check: b58check,
@@ -12968,7 +12976,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.48';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
+const APP_VERSION = '3.99.49';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -24247,7 +24255,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       return h; }
     function det() { var o = L[pick], id = sidFmt(o.sid), n = pairWords(o);
       return (id ? HWP.kv('Seed ID', '<span class="hp-mono">' + esc(id) + '</span>', '', { sm: true }) : '') + HWP.kv('Type', o.st === 'xmr' ? 'Monero' : o.st === 'poly' ? 'Polyseed' : 'BIP39', o.p ? 'With passphrase' : '', { sm: true }) + (n ? HWP.kv('Words', String(n), '', { sm: true }) : '') +
-        (PKPAIR ? HWP.kv('Goes to TextAuth', 'Vault key', 'Vault ICP identity \u00b7 ICP account', { sm: true }) : HWP.kv('Goes to Hwallet', 'Public addresses', 'Monero view key', { sm: true })); }
+        (PKPAIR ? HWP.kv('Goes to TextAuth', 'Vault key', 'Vault ICP identity \u00b7 ICP account \u00b7 Nostr key', { sm: true }) : HWP.kv('Goes to Hwallet', 'Public addresses', 'Monero view key', { sm: true })); }
     var body = (hasCur ? '<div class="kpr-lb">Connected to Hwallet</div>' + HWP.card(opts(true), 'hp-cmp kss-ls kpr-curc', 'kss-pl0') + (L.length > 1 ? '<div class="kpr-lb">Other wallets</div>' : '') : '') + HWP.card(opts(), 'hp-cmp kss-ls', 'kss-pl') +
       HWP.card(HWP.kv('Address number', '<div class="kss-stp"><button type="button" data-ns="-1" aria-label="Previous">\u2212</button><input id="kss-n" type="number" min="0" inputmode="numeric" value="' + num + '" aria-label="Address number"><button type="button" data-ns="1" aria-label="Next">+</button></div>', '', { cls: 'hp-wr kss-nrr' })) +
       HWP.details(det(), false, 'kss-det');
@@ -24311,7 +24319,9 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     if (!sc || !sc.m) throw new Error('Kwallet could not open this seed');
     var mn = String(sc.m).trim().toLowerCase().split(/\s+/).join(' '), pp = sc.p || '';
     var ctx = FastCore.makeCtx({ net: 'icp', pathTpl: DEFAULT_PATH.icp, seedHex: getBip39SeedHex(mn, pp), adaEnt: null, pass: pp, seedType: 'bip39' });
-    var d = FastCore.derive(ctx, r.index | 0, true); sc = null; mn = '';
+    var d = FastCore.derive(ctx, r.index | 0, true);
+    /* v3.99.49: + the seed's standard NIP-06 Nostr key at the same address number (m/44'/1237'/<index>'/0/0) */
+    var nk = FastCore.nostrKey(getBip39SeedHex(mn, pp), r.index | 0); sc = null; mn = '';
     if (String(d.address) !== String(r.addrs.icp) || !d.privateKey) throw new Error('The seed no longer derives ' + short(r.addrs.icp) + '.');
     var out = KwPasskey.vault(d.privateKey);
     /* v3.99.43: TextAuth shows the seed's name, its ICP logo and its id.ai identities: label, seedType and the public
@@ -24321,6 +24331,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     out.label = String(r.label || '').slice(0, 24); out.seedType = String(r.seedType || 'bip39');
     out.icpAccount = String(r.addrs.icp); if (r.icpAcct) out.icpAccountId = String(r.icpAcct);
     if (r.sid) out.sid = String(r.sid); out.index = r.index | 0;
+    out.nostrSk = nk.sk; out.nostrPk = nk.pk; nk = null;
     return out;
   }
   /* v3.98.4 (#B): no seed paired yet: clear steps instead of a dead end (the sign page has no seed on screen to pair) */
