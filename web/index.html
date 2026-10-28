@@ -12965,7 +12965,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.44';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
+const APP_VERSION = '3.99.45';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -25989,6 +25989,10 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       var cdh = KwPasskey.ub64(P.clientDataHash); if (!cdh || cdh.length !== 32) return 'The passkey request could not be read.';
       var cpg = String(P.callerPkg || '').slice(0, 128); if (cpg && !/^[A-Za-z0-9_.]+$/.test(cpg)) cpg = '';
       DS.pkRp = rp; DS.pkOrigin = po; DS.pkApp = isApp ? (cpg || 'Android app') : ''; DS.pkCdh = cdh; DS.pkOp = P.op; DS.site = rp;
+      /* v3.99.45: PRF salts (32 bytes each, first and optional second): the default pair, and pairs for given credential IDs */
+      var prfS = function (o) { if (!o || typeof o !== 'object') return null; var a = KwPasskey.ub64(o.first); if (!a || a.length !== 32) return null; var out = [a]; if (o.second != null && o.second !== '') { var b = KwPasskey.ub64(o.second); if (!b || b.length !== 32) return null; out.push(b); } return out; };
+      DS.pkPrf = prfS(P.prf); DS.pkPrfBy = {};
+      if (P.prfByCred && typeof P.prfByCred === 'object') Object.keys(P.prfByCred).slice(0, PK_N).forEach(function (k) { var v = prfS(P.prfByCred[k]); if (v && /^[A-Za-z0-9_-]{1,64}$/.test(k)) DS.pkPrfBy[k] = v; });
       var clean = function (x, n) { return String(x == null ? '' : x).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, n); };
       var slots = function (a) { return (Array.isArray(a) ? a : []).map(function (h) { var u = KwPasskey.ub64(h); return u ? { i: KwPasskey.idxOf(u), c: u } : null; }).filter(function (x) { return x && x.i >= 1 && x.i <= PK_N; }); };
       if (P.op === 'create') {
@@ -26589,6 +26593,15 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       var sg = sign(d, sha(cat([o.authData, o.cdh]))); d = 0n;
       return { credId: b64u(cred), authData: b64u(o.authData), sig: b64u(sg) };
     }
+    /* v3.99.45: WebAuthn PRF (hmac-secret) for TextAuth passkeys. Each passkey gets its own PRF secret from the seed
+       (domain-separated from its signing key, so no existing passkey, credential ID or Internet Identity data changes).
+       TextAuth sends the 32-byte salts already hashed as WebAuthn says (SHA-256('WebAuthn PRF' || 0x00 || input));
+       each output = HMAC-SHA256(secret, salt). */
+    function prfH(key, rpId, idx, salts) {
+      var cr = sha(cat([te.encode('kwallet-passkey-prf-v1|' + rpId + '|' + idx + '|'), unhex(String(key).replace(/^0x/i, ''))]));
+      var o = salts.map(function (sl) { return b64u(hmac(cr, sl)); }); cr.fill(0);
+      return o;
+    }
     function hkdf(ikm, salt, info, L) {   /* RFC 5869, SHA-256 */
       var prk = hmac(salt, ikm), t = new Uint8Array(0), okm = new Uint8Array(0);
       for (var i = 1; okm.length < L; i++) { t = hmac(prk, cat([t, info, new Uint8Array([i])])); okm = cat([okm, t]); }
@@ -26601,7 +26614,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       var r = { vaultMaster: b64u(vm), vaultIdSk: b64u(sk), vaultIdPk: b64u(pk) }; k.fill(0); ikm.fill(0); vm.fill(0); sk.fill(0);
       return r;
     }
-    return { make: make, assert: assert, ids: ids, coseOf: coseOf, idxOf: idxOf, unhex: unhex, hex: hex, keyHex: keyHex, coseD: coseD, idD: idD, assertD: assertD, makeH: makeH, assertH: assertH, vault: vault, ub64: ub64, b64u: b64u, _t: { pub: pub, sign: sign, verify: verify, keyOf: keyOf, sha: sha, hkdf: hkdf } };
+    return { make: make, assert: assert, ids: ids, coseOf: coseOf, idxOf: idxOf, unhex: unhex, hex: hex, keyHex: keyHex, coseD: coseD, idD: idD, assertD: assertD, makeH: makeH, assertH: assertH, prfH: prfH, vault: vault, ub64: ub64, b64u: b64u, _t: { pub: pub, sign: sign, verify: verify, keyOf: keyOf, sha: sha, hkdf: hkdf } };
   })();
   try { window.KwPasskey = KwPasskey; } catch (e) {}
   var PK_N = 20;   /* v3.99.12: passkeys #1..#20 of each relying party are looked up on II */
@@ -26695,6 +26708,10 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
         if (!r) throw new Error('This passkey belongs to another seed. Pair TextAuth with that seed in Kwallet and try again.');
         r.userHandle = null;
       }
+      /* v3.99.45: PRF outputs when the site asked (TextAuth turns them into clientExtensionResults.prf) */
+      var prfIn = (DS.pkPrfBy && r.credId && DS.pkPrfBy[r.credId]) || DS.pkPrf;
+      if (prfIn) { var po2 = KwPasskey.prfH(pk, DS.pkRp, r.slot, prfIn); r.prf = { first: po2[0] }; if (po2[1]) r.prf.second = po2[1]; }
+      if (P.prfOn === true || prfIn) r.prfOn = true;   /* this Kwallet answers PRF for the passkey (TextAuth: prf.enabled on create) */
     }
     else if (m === 'icp_iiNames') {   /* v3.99.12: one identity_info call per identity, signed by its passkey */
       r = { calls: kwIiCalls(pk, +P.nowMs), ids: { rp: DS.pkRp, ids: KwPasskey.ids(pk, DS.pkRp, PK_N) } };
