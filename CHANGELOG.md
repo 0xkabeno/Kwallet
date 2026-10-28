@@ -1,5 +1,10 @@
 # Changelog
 
+## Kwallet 3.99.46 / Hwallet 1.9.46
+
+- Hwallet: the Network fee picker (Send and dApp requests, Custom row included) marks the selected fee with the same plain check as the app's other pickers. The blurry green ring around the check is gone, so it no longer crowds the amount.
+- Kwallet: version bump only, no code changes.
+
 ## Kwallet 3.99.45 / Hwallet 1.9.45
 
 - Kwallet: TextAuth passkeys support the WebAuthn PRF extension, so sites that derive keys from a passkey (for example Anoma) work. Each passkey gets its own PRF secret from the seed, kept apart from its signing key: existing passkeys, their credential IDs and Internet Identity data don't change. Kwallet returns the PRF outputs only when the site asks, on the same hold-to-confirm sheet.
