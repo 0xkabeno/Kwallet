@@ -1,5 +1,10 @@
 # Changelog
 
+## Kwallet 3.99.47 / Hwallet 1.9.47
+
+- Hwallet: every Network fee picker (Send on every chain, dApp and sign requests, swaps, Custom row included) marks the selected fee the same way the "Sign in with passkey" sheet marks the selected Identity: a filled green dot at the left with a soft green ring that beats, and the row tinted green. Other rows show the same grey outline circle as that sheet. The dot restarts its beat whenever the selection moves, and the pulse styles are added wherever the picker opens. Other pickers (Chain, Translate, XRP actions, VPN location) are unchanged.
+- Kwallet: version bump only, no code changes.
+
 ## Kwallet 3.99.46 / Hwallet 1.9.46
 
 - Hwallet: the Network fee picker (Send and dApp requests, Custom row included) marks the selected fee with the same plain check as the app's other pickers. The blurry green ring around the check is gone, so it no longer crowds the amount.
