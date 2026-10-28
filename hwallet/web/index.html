@@ -3187,13 +3187,14 @@ html:not(#s41_0):not(#s41_1):not(#s41_2):not(#s41_3):not(#s41_4):not(#s41_5):not
    indicator pulses; layout never moves. Off with reduce-motion. */
 @keyframes kwBeat{0%{box-shadow:0 0 0 0 rgba(168,240,122,.75);transform:scale(1)}50%{transform:scale(1.08)}100%{box-shadow:0 0 0 10px rgba(168,240,122,0);transform:scale(1)}}
 @keyframes kwBeatIco{0%{box-shadow:0 0 0 2px var(--md-sc-low,#fff),0 0 0 4px var(--md-primary,#223348),0 0 0 4px color-mix(in srgb,var(--acc,var(--accent,#ddf869)) 70%,transparent)}100%{box-shadow:0 0 0 2px var(--md-sc-low,#fff),0 0 0 4px var(--md-primary,#223348),0 0 0 14px transparent}}
-.kwd-opt.on .kwd-r,.xn-r.on .xn-rd,.kw-beatd,.hp-pr.on .hp-prc,
+.kwd-opt.on .kwd-r,.xn-r.on .xn-rd,.kw-beatd,
 [role="radio"][aria-checked="true"]>.kw-beat,
 .kws-seg span.on,.xh2-seg button[aria-checked="true"]{animation:kwBeat 1.4s ease-out infinite!important}
 /* fix: the selected tick sits in a true circle (the box was 28x24, so the pulse ring was an oval with the tick off-centre) */
 .hp-pr .hp-prc{width:28px;height:28px;flex:0 0 28px;padding:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;line-height:0}
 .hp-pr .hp-prc svg{width:20px;height:20px;margin:0;display:block;flex:0 0 auto}
-.hp-pr.on .hp-prc{border-radius:50%}
+/* v1.9.46: the picker's selected tick is the plain tick of the app's other pickers (.pick1 .ic): no pulse ring, no badge */
+.hp-pr .hp-prc svg.ic{width:24px;height:24px;margin:0;color:var(--up)}
 .kwd-opt.on .kwd-r{background:var(--accent);border-color:var(--accent)}.kwd-opt.on .kwd-r::after{display:none}
 .kws-ico span.on{animation:kwBeatIco 1.4s ease-out infinite!important}
 </style>
@@ -7661,7 +7662,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
       return '<button type="button" class="hp-pr' + (r.on ? ' on' : '') + '" data-pk="' + esc(r.k) + '" role="radio" aria-checked="' + (r.on ? 'true' : 'false') + '">' +
         '<span class="hp-prl"><b>' + esc(r.l) + '</b>' + (r.sub ? '<small>' + esc(r.sub) + '</small>' : '') + '</span>' +
         '<span class="hp-prv"><b>' + esc(r.v || '') + '</b>' + (r.vs ? '<small>' + esc(r.vs) + '</small>' : '') + '</span>' +
-        (o.dot ? pkDot(r.on) : '<span class="hp-prc">' + (r.on ? sv(P.ok) : '') + '</span>') + '</button>';
+        (o.dot ? pkDot(r.on) : '<span class="hp-prc">' + (r.on ? sv(P.ok, 'ic') : '') + '</span>') + '</button>';
     }).join('');
     /* v3.97 (#108-#110): Jupiter "Manual" style Custom section: Transaction landing Max Cap | Exact Fee, then rows
        with a label, an optional on/off switch, an amount field (or a preset dropdown) in the coin and its $ value,
@@ -7670,7 +7671,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
     var MN = o.manual, mnH = '';
     if (MN) {
       var mode0 = MN.mode === 'exact' ? 'exact' : 'cap';
-      mnH = '<button type="button" class="hp-pr hp-prcu' + (MN.on ? ' on' : '') + '" data-pkc><span class="hp-prl"><b>Custom</b><small>' + esc(MN.on && MN.sub ? MN.sub : 'Set your own fee') + '</small></span><span class="hp-prv"></span><span class="hp-prc">' + (MN.on ? sv(P.ok) : sv(P.chev, 'hp-prch')) + '</span></button>' +
+      mnH = '<button type="button" class="hp-pr hp-prcu' + (MN.on ? ' on' : '') + '" data-pkc><span class="hp-prl"><b>Custom</b><small>' + esc(MN.on && MN.sub ? MN.sub : 'Set your own fee') + '</small></span><span class="hp-prv"></span><span class="hp-prc">' + (MN.on ? sv(P.ok, 'ic') : sv(P.chev, 'hp-prch')) + '</span></button>' +
         '<div class="hp-pcu hp-mn" hidden>' +
         (MN.seg ? '<div class="hp-mnl"><span>Transaction landing</span><div class="hp-mnseg" role="radiogroup"><button type="button" data-mm="cap"' + (mode0 === 'cap' ? ' class="on"' : '') + '>Max Cap</button><button type="button" data-mm="exact"' + (mode0 === 'exact' ? ' class="on"' : '') + '>Exact Fee</button></div></div><div class="hp-mnh" id="hp-mnh"></div>' : '') +
         '<div class="hp-mnc">' + (MN.fields || []).map(function (f) {
@@ -7684,7 +7685,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
         '<div class="hp-mntot"><span>Network fee</span><span><b id="hp-mntv">\u2014</b><small id="hp-mnts"></small></span></div>' +
         '<div class="hp-pch" id="hp-pch">' + esc(MN.hint || '') + '</div><button type="button" class="hp-btn hp-ok hp-pcok" id="hp-pcok">Use this fee</button></div>';
     }
-    var cu = MN ? null : o.custom, cuH = MN ? mnH : cu ? '<button type="button" class="hp-pr hp-prcu' + (cu.on ? ' on' : '') + '" data-pkc><span class="hp-prl"><b>Custom</b><small>' + esc(cu.on && cu.value ? 'Up to ' + cu.value + ' ' + cu.unit : 'Set your own maximum') + '</small></span><span class="hp-prv"></span><span class="hp-prc">' + (cu.on ? sv(P.ok) : sv(P.chev, 'hp-prch')) + '</span></button>' +
+    var cu = MN ? null : o.custom, cuH = MN ? mnH : cu ? '<button type="button" class="hp-pr hp-prcu' + (cu.on ? ' on' : '') + '" data-pkc><span class="hp-prl"><b>Custom</b><small>' + esc(cu.on && cu.value ? 'Up to ' + cu.value + ' ' + cu.unit : 'Set your own maximum') + '</small></span><span class="hp-prv"></span><span class="hp-prc">' + (cu.on ? sv(P.ok, 'ic') : sv(P.chev, 'hp-prch')) + '</span></button>' +
       '<div class="hp-pcu" hidden><label class="hp-pcl">' + esc(cu.label) + '</label><div class="hp-pcf"><input id="hp-pcin" inputmode="decimal" autocomplete="off" spellcheck="false" value="' + esc(cu.value || '') + '"><em>' + esc(cu.unit) + '</em></div>' +
       '<div class="hp-pch" id="hp-pch">' + esc(cu.hint || '') + '</div><button type="button" class="hp-btn hp-ok hp-pcok" id="hp-pcok">Use this fee</button></div>' : '';
     ov.innerHTML = '<div class="hp-dim"></div><div class="hp-sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.title || 'Network fee') + '"><div class="hp-grab"></div><div class="hp-scroll">' +
@@ -7958,7 +7959,7 @@ ${String(r)}`);Qn(t);for(let s=0;s<t.callbacks.length;s++){let i=r[s];i instance
    Holds public addresses only (plus the Monero view key). Reads balances from free public nodes,
    builds one transfer request at a time and asks Kwallet (offline, same phone) to sign it, then
    broadcasts. While Kwallet's sign page is open, Hwallet streams live fee / balance / price data to it. */
-var APP_VERSION = '1.9.45';   /* v1.9.21: version bump */
+var APP_VERSION = '1.9.46';   /* v1.9.21: version bump */
 (function () {
   'use strict';
   var BI = window.BigInt;
