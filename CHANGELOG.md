@@ -1,5 +1,10 @@
 # Changelog
 
+## Kwallet 3.99.45 / Hwallet 1.9.45
+
+- Kwallet: TextAuth passkeys support the WebAuthn PRF extension, so sites that derive keys from a passkey (for example Anoma) work. Each passkey gets its own PRF secret from the seed, kept apart from its signing key: existing passkeys, their credential IDs and Internet Identity data don't change. Kwallet returns the PRF outputs only when the site asks, on the same hold-to-confirm sheet.
+- Hwallet: version bump only, no code changes.
+
 ## Kwallet 3.99.44 / Hwallet 1.9.44
 
 - Kwallet: live events for TextAuth 1.0.9. TextAuth keeps the K <-> TextAuth link bound all the time and registers a callback (new LISTEN call, same permission and caller check as the rest of the link). Kwallet tells it at once when seeds are added, renamed or removed, when Kwallet is erased, when it locks or unlocks, when a TextAuth request starts and ends, and when pairing with TextAuth goes through. Only public seed IDs, seed names and states are sent: never keys, addresses or request contents.
