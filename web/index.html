@@ -26711,6 +26711,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       /* v3.99.45: PRF outputs when the site asked (TextAuth turns them into clientExtensionResults.prf) */
       var prfIn = (DS.pkPrfBy && r.credId && DS.pkPrfBy[r.credId]) || DS.pkPrf;
       if (prfIn) { var po2 = KwPasskey.prfH(pk, DS.pkRp, r.slot, prfIn); r.prf = { first: po2[0] }; if (po2[1]) r.prf.second = po2[1]; }
+      if (P.prfOn === true || prfIn) r.prfOn = true;   /* this Kwallet answers PRF for the passkey (TextAuth: prf.enabled on create) */
     }
     else if (m === 'icp_iiNames') {   /* v3.99.12: one identity_info call per identity, signed by its passkey */
       r = { calls: kwIiCalls(pk, +P.nowMs), ids: { rp: DS.pkRp, ids: KwPasskey.ids(pk, DS.pkRp, PK_N) } };
