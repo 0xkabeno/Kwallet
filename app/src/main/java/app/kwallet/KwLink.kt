@@ -92,6 +92,7 @@ object KwLinkState {
             for (k in nm.keys()) if (was.optString(k, "") != nm.optString(k)) renamed.put(k, nm.optString(k))
         }
         if (gone.isNotEmpty()) notifyH(c, "gone", gone)
+        if (gone.isNotEmpty() && !inp.optBoolean("partial", false)) try { KwEngine.forget(c, gone) } catch (_: Exception) {}   // v3.99.50: a removed seed's TextAuth keys go too
         if (renamed.length() > 0) notifyH(c, "names", renamed.keys().asSequence().toList(), renamed)
         push(c, if (gone.isNotEmpty()) "gone" else if (renamed.length() > 0) "names" else "pair")   // v3.99.24
         /* v3.99.44: the same change, at once, to a listening TextAuth (KwTaLinkService LISTEN): public seed IDs and names only */
@@ -110,6 +111,7 @@ object KwLinkState {
         }
         notifyH(c, "wipe", old)
         push(c, "wipe")   // v3.99.24
+        try { KwEngine.forget(c, null) } catch (_: Exception) {}   // v3.99.50: every TextAuth key Kwallet keeps
         try { KwTaLinkService.emit("wipe") } catch (_: Exception) {}   // v3.99.44
     }
 

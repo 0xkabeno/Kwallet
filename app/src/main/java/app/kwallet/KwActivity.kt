@@ -142,6 +142,7 @@ open class KwActivity : FragmentActivity() {
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
         )
         super.onCreate(savedInstanceState)
+        KwSecure.activity(this)   // v3.99.50: no capture, no recents thumbnail, no overlays, in every state (sign page included)
         KwCrash.install(applicationContext)   // v3.98.38: local crash report, offered on the next launch
         if (BuildConfig.DEBUG || BuildConfig.E2E) WebView.setWebContentsDebuggingEnabled(true) // v3.97 P0: emulator check only
         // Material You chosen in Settings: the window behind the page uses the wallpaper colour, never a lime flash
@@ -173,7 +174,8 @@ open class KwActivity : FragmentActivity() {
 
         val pre = if (signPage) adoptWeb() else null
         adopted = pre != null
-        web = pre ?: WebView(this)
+        web = pre ?: KwWebView(this)   // v3.99.50: keyboards in incognito (no personalized learning)
+        KwSecure.view(web)
         web.setBackgroundColor(LIME)
         if (!adopted) kwWebSettings(web)
         if (adopted) pageReady = true
@@ -430,6 +432,8 @@ open class KwActivity : FragmentActivity() {
     }
 
     override fun onPause() { super.onPause(); web.onPause() }
+    override fun onStart() { super.onStart(); KwSecure.start(this) }   // v3.99.50
+    override fun onStop() { KwSecure.stop(this); super.onStop() }
     override fun onResume() { super.onResume(); web.onResume(); if (::web.isInitialized) tuneWebView(this, web) }  // OEMs drop back to 60 Hz after resume
     override fun onDestroy() { try { scanner?.release() } catch (_: Throwable) {}; scanner = null; web.destroy(); super.onDestroy() }
 }

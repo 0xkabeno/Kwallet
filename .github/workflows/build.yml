@@ -155,6 +155,11 @@ jobs:
       - name: Hwallet unit tests (data speed limit)
         run: gradle --no-daemon :hwallet:testReleaseUnitTest
 
+      # v3.99.50: Kwallet unit tests: the TextAuth engine (record binding, anti-downgrade, BIP-340 / Ed25519 vectors, what may
+      # leave the engine, rate limit), capture / clipboard / paste source rules, no keys in the pairing answer
+      - name: Kwallet unit tests (TextAuth engine, no-capture rules)
+        run: gradle --no-daemon :app:testReleaseUnitTest
+
       - name: Verify signature
         run: |
           APKSIGNER=$(ls $ANDROID_HOME/build-tools/*/apksigner | sort -V | tail -1)

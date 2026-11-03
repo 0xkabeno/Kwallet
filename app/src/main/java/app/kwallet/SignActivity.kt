@@ -141,6 +141,8 @@ class SignActivity : KwActivity() {
         return ok
     }
     internal fun callerPkgOf(): String = callerPkg
+    /** v3.99.50: a TextAuth pairing request is open on this page (the only time the page may hand keys to the engine) */
+    internal fun taPairOpen(): Boolean = callerPkg == TEXTAUTH && taMethod == "pk_pair" && !replied
 
     override fun startUrl(): String = KwWarm.SIGN_URL
     /** wave A (P2a f): take the pre-loaded sign page if Kwallet was warmed (only after the caller check passed) */
@@ -165,8 +167,7 @@ class SignActivity : KwActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         tCreate = SystemClock.uptimeMillis(); tAsk = intent.getLongExtra("t0", 0L)
         // nothing on this page may be captured, recorded or drawn over (the CI emulator build, -PkwE2E=true, must screenshot it)
-        if (!BuildConfig.E2E) window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
-        if (Build.VERSION.SDK_INT >= 31) window.setHideOverlayWindows(true)
+        KwSecure.window(window)   // v3.99.50: same rule as every Kwallet window (FLAG_SECURE except the CI emulator build, no overlays)
         var ok = callerOk(); callerChecked = ok
         req = if (ok) readReq() else ""   /* v3.98: a Monero request carries the unsigned set + exported outputs; v3.98.8: from a file when large */
         val rq = try { JSONObject(req) } catch (_: Exception) { null }
@@ -331,5 +332,16 @@ class KwSignBridge(private val host: () -> SignActivity?) {
     /** v3.98.16: live state for Hwallet (waiting | signing), and an immediate answer when the page crashed before drawing */
     @JavascriptInterface fun state(st: String, detail: String) { val a = host() ?: return; a.onState(st.take(24), detail.take(200)) }
     @JavascriptInterface fun crashed(why: String) { val a = host() ?: return; a.onEarlyCrash(why.take(200)) }
+    /** v3.99.50: the pairing page hands TextAuth's keys (vault master, vault ICP identity key: base64url; Nostr key: hex) to
+     *  Kwallet's engine instead of to TextAuth. Only while a verified TextAuth pk_pair request is open. */
+    @JavascriptInterface fun engineKeep(slot: String, m: String, i: String, n: String): Boolean {
+        val a = host() ?: return false
+        if (!a.taPairOpen()) return false
+        val f = android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP
+        val mb = try { android.util.Base64.decode(m, f) } catch (_: Exception) { return false }
+        val ib = try { android.util.Base64.decode(i, f) } catch (_: Exception) { mb.fill(0); return false }
+        val nb = if (Regex("^[0-9a-fA-F]{64}$").matches(n)) KwEngineCore.unhex(n.lowercase()) else null
+        return try { KwEngine.keep(a.applicationContext, slot, mb, ib, nb) } finally { mb.fill(0); ib.fill(0); nb?.fill(0) }
+    }
 }
 class KwE2EFlag { @JavascriptInterface fun on(): Boolean = true }
