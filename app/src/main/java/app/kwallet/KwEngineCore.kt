@@ -135,7 +135,7 @@ object KwEngineCore {
         val k = hkdf(master, info); try { return gcmOpen(k, b, 0, aad) } finally { k.fill(0) }
     }
     fun derive(master: ByteArray, info: String, n: Int): ByteArray {
-        if (!deriveOk(info) || n !in 1..64) throw Refused("not allowed")
+        if (!deriveOk(info) || n !in 1..1024) throw Refused("not allowed")   // seed passwords take 512 bytes per try
         return hkdf(master, info, n)
     }
     fun mac(master: ByteArray, info: String, msg: ByteArray): ByteArray {
@@ -209,8 +209,21 @@ object KwEngineCore {
      */
     class Limits(private val perMin: Int = PER_MIN, private val clock: () -> Long = { System.currentTimeMillis() }) {
         private val listed = HashSet<String>()
+        private val listAt = HashMap<String, Long>()
+        private val listN = HashMap<String, Int>()
         private val win = HashMap<String, ArrayDeque<Long>>()
-        @Synchronized fun list(slot: String): Boolean = listed.add(slot)
+        @Synchronized fun list(slot: String, n: Int = 0): Boolean {
+            if (!listed.add(slot)) return false
+            listAt[slot] = clock(); listN[slot] = n; return n <= LIST_MAX
+        }
+        /** the rest of the same whole-cache read, sent in more than one call (large vaults): within 2 minutes of its start,
+         *  up to LIST_MAX records in all */
+        @Synchronized fun listMore(slot: String, n: Int): Boolean {
+            val at = listAt[slot] ?: return false
+            if (clock() - at > 120_000L) return false
+            val t = (listN[slot] ?: 0) + n; if (t > LIST_MAX) return false
+            listN[slot] = t; return true
+        }
         @Synchronized fun take(slot: String, n: Int): Boolean {
             val now = clock(); val q = win.getOrPut(slot) { ArrayDeque() }
             while (q.isNotEmpty() && now - q.first() >= 60_000L) q.removeFirst()
@@ -218,7 +231,7 @@ object KwEngineCore {
             repeat(n) { q.addLast(now) }
             return true
         }
-        @Synchronized fun reset() { listed.clear(); win.clear() }
+        @Synchronized fun reset() { listed.clear(); listAt.clear(); listN.clear(); win.clear() }
         companion object { const val PER_MIN = 600; const val LIST_MAX = 20000 }
     }
 }

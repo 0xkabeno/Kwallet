@@ -50,7 +50,7 @@ class KwTaLinkService : Service() {
 
     private val link = object : Binder() {
         override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
-            if (code != SVC_PING && code != SVC_WARM && code != SVC_FEED && code != SVC_QUIET && code != SVC_LISTEN && code != SVC_ENGINE) return super.onTransact(code, data, reply, flags)
+            if (code != SVC_PING && code != SVC_WARM && code != SVC_FEED && code != SVC_QUIET && code != SVC_LISTEN && code != SVC_ENGINE && code != SVC_ENGINE_BIG) return super.onTransact(code, data, reply, flags)
             if (!callerOk(Binder.getCallingUid())) return false
             when (code) {
                 SVC_PING -> {
@@ -78,6 +78,15 @@ class KwTaLinkService : Service() {
                     val body = try { data.readString() ?: "" } catch (_: Exception) { "" }
                     reply?.writeString(if (body.isEmpty() || body.length > 900_000) "{\"v\":1,\"err\":\"bad\"}" else KwEngine.handle(applicationContext, body))
                 }
+                SVC_ENGINE_BIG -> {   /* v3.99.50: one file part in shared memory (sealPart / openPart) */
+                    if (android.os.Build.VERSION.SDK_INT < 27) { reply?.writeString("{\"err\":\"bad\"}"); reply?.writeInt(0); return true }
+                    val head = try { data.readString() ?: "" } catch (_: Exception) { "" }
+                    val inp = try { readShm(data) } catch (_: Exception) { null }
+                    val r = if (head.isEmpty() || inp == null || inp.size > 4_000_000) Pair("{\"err\":\"bad\"}", null) else KwEngine.handleBig(applicationContext, head, inp)
+                    reply?.writeString(r.first)
+                    val ob = r.second
+                    if (ob == null || reply == null) reply?.writeInt(0) else { reply.writeInt(1); writeShm(reply, ob) }
+                }
                 SVC_LISTEN -> {   /* v3.99.44 */
                     val cb = try { data.readStrongBinder() } catch (_: Exception) { null }
                     reply?.writeInt(if (cb != null && listen(cb)) 1 else 0)
@@ -101,6 +110,19 @@ class KwTaLinkService : Service() {
         const val SVC_LISTEN = IBinder.FIRST_CALL_TRANSACTION + 25
         /* v3.99.50: the engine (TextAuth KwLink SVC_ENGINE) */
         const val SVC_ENGINE = IBinder.FIRST_CALL_TRANSACTION + 26
+        const val SVC_ENGINE_BIG = IBinder.FIRST_CALL_TRANSACTION + 27
+
+        @androidx.annotation.RequiresApi(27)
+        private fun readShm(p: Parcel): ByteArray {
+            val m = android.os.SharedMemory.CREATOR.createFromParcel(p)
+            try { val bb = m.mapReadOnly(); try { return ByteArray(bb.remaining()).also { bb.get(it) } } finally { android.os.SharedMemory.unmap(bb) } } finally { m.close() }
+        }
+        @androidx.annotation.RequiresApi(27)
+        private fun writeShm(p: Parcel, b: ByteArray) {
+            val m = android.os.SharedMemory.create("kweng", maxOf(1, b.size))
+            val bb = m.mapReadWrite(); try { bb.put(b) } finally { android.os.SharedMemory.unmap(bb) }
+            m.writeToParcel(p, 0); m.close()
+        }
         const val EVT = IBinder.FIRST_CALL_TRANSACTION + 1
         private const val MAX_LISTENERS = 4
 

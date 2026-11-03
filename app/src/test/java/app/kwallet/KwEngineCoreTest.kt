@@ -117,7 +117,11 @@ class KwEngineCoreTest {
         assertTrue("other address has its own cap", L.take("1234567890.1", 1))
         now += 30_000; assertFalse(L.take("1234567890.0", 1))
         now += 30_001; assertTrue(L.take("1234567890.0", 1))
-        L.reset(); assertTrue("a new unlock allows one list again", L.list("1234567890.0"))
+        L.reset(); assertTrue("a new unlock allows one list again", L.list("1234567890.0", 100))
+        assertTrue("the rest of the same read", L.listMore("1234567890.0", 100))
+        assertFalse("no read past the cap", L.listMore("1234567890.0", KwEngineCore.Limits.LIST_MAX))
+        now += 120_001; assertFalse("the rest must come within 2 minutes", L.listMore("1234567890.0", 1))
+        assertFalse("a list never started can't continue", L.listMore("9999999999.0", 1))
     }
 
     @Test fun clipboardAutoClearOnlyClearsItsOwnCopy() {

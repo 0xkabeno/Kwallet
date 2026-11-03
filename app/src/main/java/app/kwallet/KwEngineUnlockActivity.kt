@@ -38,7 +38,8 @@ class KwEngineUnlockActivity : FragmentActivity() {
         @Suppress("DEPRECATION") overridePendingTransition(0, 0)
         if (!callerOk()) { answer(JSONObject().put("status", "refused")); return }
         if (KwEngine.slots(this).isEmpty()) { answer(JSONObject().put("status", "nopair")); return }
-        if (KwEngine.isOpen()) { answer(JSONObject().put("status", "ok").put("n", KwEngine.slots(this).size)); return }
+        /* fresh = TextAuth needs a new unlock (a second whole-vault read): ask again even while the session is open */
+        if (KwEngine.isOpen() && !intent.getBooleanExtra("fresh", false)) { answer(JSONObject().put("status", "ok").put("n", KwEngine.slots(this).size)); return }
         val why = intent.getStringExtra("why")?.take(80)?.takeIf { it.isNotBlank() } ?: "Unlock your TextAuth vault"
         if (!KwEngine.needsAuth(this)) {
             /* no screen lock on this phone: the keys are wrapped by a Keystore key without user auth; ask for a tap */

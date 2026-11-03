@@ -175,6 +175,29 @@ object KwEngine {
         return out.put("open", open.isNotEmpty()).put("res", res).toString()
     }
 
+    /**
+     * A file part (up to 1.8 MB) is too large for one Binder call as JSON, so it travels in shared memory (KwTaLinkService
+     * SVC_ENGINE_BIG): head = {"op":"sealPart"|"openPart","slot","id","idx"}, bytes = the part. -> (answer head, bytes or null)
+     */
+    @Synchronized fun handleBig(c: Context, head: String, data: ByteArray): Pair<String, ByteArray?> {
+        expire()
+        val o = try { JSONObject(head) } catch (_: Exception) { return Pair("{\"err\":\"bad\"}", null) }
+        val slot = o.optString("slot")
+        if (!slotOk(slot)) return Pair("{\"err\":\"bad\"}", null)
+        if (!file(c, slot).exists()) return Pair("{\"err\":\"noslot\"}", null)
+        val k = open[slot] ?: return Pair("{\"err\":\"locked\"}", null)
+        return try {
+            val id = o.getString("id"); val idx = o.getInt("idx")
+            val out = when (o.optString("op")) {
+                "sealPart" -> KwEngineCore.sealPart(k.m, id, idx, data)
+                "openPart" -> KwEngineCore.openPart(k.m, id, idx, data)
+                else -> return Pair("{\"err\":\"bad\"}", null)
+            }
+            usedAt = System.currentTimeMillis()
+            Pair("{\"ok\":true}", out)
+        } catch (e: Exception) { Pair("{\"err\":\"refused\"}", null) }
+    }
+
     private fun op(c: Context, o: JSONObject): JSONObject {
         val name = o.optString("op")
         if (name == "st") return JSONObject().put("open", open.isNotEmpty()).put("slots", JSONArray(slots(c))).put("sb", strongBox)
@@ -199,8 +222,9 @@ object KwEngine {
                 JSONObject().put("pt", b64(r.pt)).put("f", r.format)
             }
             "openList" -> {
-                if (!limits.list(slot)) return err("relock")
                 val L = o.getJSONArray("recs"); if (L.length() > KwEngineCore.Limits.LIST_MAX) return err("bad")
+                /* first part of a whole-cache read: once per address per unlock; its later parts (cont) within 2 minutes */
+                if (!(if (o.optBoolean("cont")) limits.listMore(slot, L.length()) else limits.list(slot, L.length()))) return err("relock")
                 val mig = migOf(c, slot); val a = JSONArray()
                 for (j in 0 until L.length()) {
                     val e = L.getJSONObject(j)
