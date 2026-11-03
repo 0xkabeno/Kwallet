@@ -12976,7 +12976,7 @@ let currentNetwork = 'eth';
 let currentMnemonic = '';
 let currentSeedType = 'bip39'; // 'bip39' | 'xmr' | 'poly'
 let currentPassphrase = ''; // optional BIP39 passphrase ("25th word"); '' = standard wallet
-const APP_VERSION = '3.99.49';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
+const APP_VERSION = '3.99.50';   /* v1.9.21: version bump (gradle derives versionName 3.99.22 / versionCode 39922 from this) */
 const APP_BUILD = '2026-10-15';
 let derivedRows = [];
 let copiedState = {};
@@ -16878,6 +16878,9 @@ function esc(s) {
 
 function copyToClipboard(text) {
   return new Promise(resolve => {
+    /* v3.99.50: on the phone the copy is marked sensitive and cleared after the auto-clear time (60 s when it is off), only if
+       the clipboard still holds it */
+    try { if (window.HarkNative && HarkNative.copySecret && HarkNative.copySecret(String(text), ((typeof __clip === 'object' && __clip.sec) || 60) * 1000) !== false) { window.__clipNative = Date.now(); resolve(); return; } } catch (e) {}
     if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
       navigator.clipboard.writeText(text).then(resolve).catch(() => classicCopy(text, resolve));
       return;
@@ -17031,6 +17034,7 @@ function __clipWipeNow() {
 }
 function __clipSchedule() {
   if (!__clip.sec) return;
+  if (window.__clipNative && Date.now() - window.__clipNative < 5000) return;   /* v3.99.50: native clears only its own copy */
   clearTimeout(__clip.tm);
   __clip.due = Date.now() + __clip.sec * 1000;
   __clip.tm = setTimeout(function () { if (document.hasFocus && !document.hasFocus()) return; __clipWipeNow(); }, __clip.sec * 1000);
@@ -24159,7 +24163,14 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   /* TextAuth (pk_pair): Hwallet's pairing sheet as it is, titled 'Pair TextAuth with this seed', BIP-39 seeds only. On Pair
      Kwallet asks for its own biometrics / PIN, then hands TextAuth the vault keys of that seed and address number. */
   var PKPAIR = false;
-  function pkPairPage() { PKPAIR = true; return pairPage(); }
+  /* v3.99.50: Kwallet is TextAuth's crypto engine and never hands TextAuth a key. TextAuth 1.0.44+ asks with params.eng = 1;
+     an older TextAuth still expects the vault keys in the answer, so it gets a clear 'update TextAuth' error instead. */
+  var PK_UPDATE = 'Update TextAuth: this Kwallet keeps TextAuth\u2019s keys and does its encryption itself. Install TextAuth 1.0.44 or newer, then pair again.';
+  function pkPairPage() {
+    var pr = REQ.params || {};
+    if (!(+pr.eng >= 1)) { fail('Update TextAuth to pair it with this Kwallet.', 'Kwallet now keeps TextAuth\u2019s keys and no longer hands them out. Install TextAuth 1.0.44 or newer, then pair again.'); try { $('kss-close').onclick = page.querySelector('[data-hp-x]').onclick = function () { finish({ status: 'error', error: PK_UPDATE, update: 'textauth' }); }; } catch (e) {} return; }
+    PKPAIR = true; return pairPage();
+  }
   function pairPage() {
     /* v3.98.28: every seed in Kwallet (vault opened once with PIN or biometrics), its type, ID and paired address
        numbers; the user picks the seed and the address number. Only that seed's public addresses go to Hwallet. */
@@ -24190,7 +24201,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     var x = (HWP.headOwn('').match(/<button[\s\S]*<\/button>/) || [''])[0], xm = o && (o.st === 'xmr' || o.st === 'poly');
     var ls = (PKPAIR ? ['internetcomputer'] : xm ? ['monero'] : ['ethereum', 'solana', 'bitcoin', 'tron', 'sui', 'ripple', 'cardano', 'monero', 'near', 'internetcomputer', 'ton']).map(function (k) { return LOGO[k] ? '<img src="' + LOGO[k] + '" alt="" aria-hidden="true">' : ''; }).join('');
     return HWP.topBar('', '').replace(/<\/div>$/, '<div class="kpr-tt">' + (PKPAIR ? 'Pair TextAuth with this seed' : 'Pair with Hwallet') + '</div>' + x + '</div>').replace('class="hp-top"', 'class="hp-top kpr-top"') +
-      '<div class="kpr-note" id="kpr-note"><span>' + (PKPAIR ? 'Gives TextAuth its vault key and ICP identity from this seed. The seed and wallet keys never leave Kwallet.' : 'Shares addresses only. Keys never leave Kwallet.') + '</span><span class="kpr-ch">' + ls + '</span></div>';
+      '<div class="kpr-note" id="kpr-note"><span>' + (PKPAIR ? 'TextAuth gets public IDs only. Kwallet keeps its vault, ICP and Nostr keys and does its encryption and signing.' : 'Shares addresses only. Keys never leave Kwallet.') + '</span><span class="kpr-ch">' + ls + '</span></div>';
   }
   function pairSheet(inner, footHtml, t, ch) { return '<div class="hp-sheet kss-hp">' + HWP.sheet(pairTop(t, ch) + inner, footHtml) + '</div>'; }
   /* pk38 B21: 'BIP39 \u00b7 12 words' / 'Monero 25' / 'Polyseed' (the kind without '+ passphrase'); chip = where the seed pairs */
@@ -24255,7 +24266,7 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
       return h; }
     function det() { var o = L[pick], id = sidFmt(o.sid), n = pairWords(o);
       return (id ? HWP.kv('Seed ID', '<span class="hp-mono">' + esc(id) + '</span>', '', { sm: true }) : '') + HWP.kv('Type', o.st === 'xmr' ? 'Monero' : o.st === 'poly' ? 'Polyseed' : 'BIP39', o.p ? 'With passphrase' : '', { sm: true }) + (n ? HWP.kv('Words', String(n), '', { sm: true }) : '') +
-        (PKPAIR ? HWP.kv('Goes to TextAuth', 'Vault key', 'Vault ICP identity \u00b7 ICP account \u00b7 Nostr key', { sm: true }) : HWP.kv('Goes to Hwallet', 'Public addresses', 'Monero view key', { sm: true })); }
+        (PKPAIR ? HWP.kv('Goes to TextAuth', 'Public IDs', 'Vault ICP identity \u00b7 ICP account \u00b7 Nostr public key', { sm: true }) : HWP.kv('Goes to Hwallet', 'Public addresses', 'Monero view key', { sm: true })); }
     var body = (hasCur ? '<div class="kpr-lb">Connected to Hwallet</div>' + HWP.card(opts(true), 'hp-cmp kss-ls kpr-curc', 'kss-pl0') + (L.length > 1 ? '<div class="kpr-lb">Other wallets</div>' : '') : '') + HWP.card(opts(), 'hp-cmp kss-ls', 'kss-pl') +
       HWP.card(HWP.kv('Address number', '<div class="kss-stp"><button type="button" data-ns="-1" aria-label="Previous">\u2212</button><input id="kss-n" type="number" min="0" inputmode="numeric" value="' + num + '" aria-label="Address number"><button type="button" data-ns="1" aria-label="Next">+</button></div>', '', { cls: 'hp-wr kss-nrr' })) +
       HWP.details(det(), false, 'kss-det');
@@ -24310,9 +24321,14 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
   }
   /* TextAuth (pk_pair): vaultMaster = HKDF-SHA256(ikm = sha256('textauth-vault-master|' || icpKey), salt 'textauth-v1',
      info 'vault-master', 32 B); vaultIdSk = sha256('textauth-vault-id|' || icpKey) (Ed25519 seed). icpKey = the seed's ICP
-     secp256k1 key at the paired address number (the same key KwPasskey derives from). Always asks for Kwallet's own unlock. */
+     secp256k1 key at the paired address number (the same key KwPasskey derives from). Always asks for Kwallet's own unlock.
+     v3.99.50: the keys stay in Kwallet. They go to the native engine (KwSign.engineKeep -> KwEngine, wrapped by a Keystore key
+     that needs the user's biometric / screen lock) and TextAuth gets public data only: the vault identity's public key, the
+     Nostr public key, the ICP account, the address number, names and the engine slot it asks for later. */
   async function pkVault(r) {
     if (!r || !r.addrs || !r.addrs.icp) throw new Error('This seed has no ICP account');
+    if (!r.sid || !/^[0-9A-Za-z_-]{1,40}$/.test(String(r.sid))) throw new Error('This seed has no seed ID yet. Open Kwallet once, then pair again');
+    if (!(window.KwSign && KwSign.engineKeep)) throw new Error('Kwallet could not reach its TextAuth engine');
     if (!(await authOnce())) return null;
     var sc = secretFor(load(), r.id);
     if (!sc) { var L2 = await scanSeeds(true), o2 = L2.filter(function (x) { return r.sid && x.sid === r.sid && x.m; })[0]; if (o2) sc = { id: r.id, m: o2.m, p: o2.p || '', index: r.index | 0, seedType: o2.st || 'bip39' }; }
@@ -24323,15 +24339,19 @@ Given value: ${n.toString()}`);this[e]=new mn(e,n,this.ordinalWidth),this[n.toSt
     /* v3.99.49: + the seed's standard NIP-06 Nostr key at the same address number (m/44'/1237'/<index>'/0/0) */
     var nk = FastCore.nostrKey(getBip39SeedHex(mn, pp), r.index | 0); sc = null; mn = '';
     if (String(d.address) !== String(r.addrs.icp) || !d.privateKey) throw new Error('The seed no longer derives ' + short(r.addrs.icp) + '.');
-    var out = KwPasskey.vault(d.privateKey);
+    var vk = KwPasskey.vault(d.privateKey), slot = String(r.sid) + '.' + (r.index | 0), out = { eng: 1, slot: slot, vaultIdPk: vk.vaultIdPk };
+    var kept = false;
+    try { kept = KwSign.engineKeep(slot, vk.vaultMaster, vk.vaultIdSk, String(nk.sk || '')) === true; } catch (e) { kept = false; }
+    vk.vaultMaster = ''; vk.vaultIdSk = ''; vk = null;
+    if (!kept) throw new Error('Kwallet could not store TextAuth\u2019s keys. Try again');
     /* v3.99.43: TextAuth shows the seed's name, its ICP logo and its id.ai identities: label, seedType and the public
        Internet Identity passkey IDs #1..#20 of this seed (TextAuth looks up the identity numbers / names on II live) */
     try { out.iiIds = KwPasskey.ids(d.privateKey, 'id.ai', 20); } catch (e) { out.iiIds = Array.isArray(r.iiIds) ? r.iiIds.slice(0, 20) : []; }
     d.privateKey = null; d.pem = null;
     out.label = String(r.label || '').slice(0, 24); out.seedType = String(r.seedType || 'bip39');
     out.icpAccount = String(r.addrs.icp); if (r.icpAcct) out.icpAccountId = String(r.icpAcct);
-    if (r.sid) out.sid = String(r.sid); out.index = r.index | 0;
-    out.nostrSk = nk.sk; out.nostrPk = nk.pk; nk = null;
+    out.sid = String(r.sid); out.index = r.index | 0;
+    out.nostrPk = String(nk.pk || ''); nk = null;
     return out;
   }
   /* v3.98.4 (#B): no seed paired yet: clear steps instead of a dead end (the sign page has no seed on screen to pair) */

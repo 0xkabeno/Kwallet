@@ -28,6 +28,11 @@ class HarkNative(
     private val devAuthCb: (String) -> Unit = { }
 ) {
 
+    /** v3.99.50: copy out of Kwallet: the clip is marked sensitive (no preview / no clipboard history, API 33+) and cleared
+     *  after ms, only if the clipboard still holds this copy. Pasting into Kwallet is never affected. */
+    @JavascriptInterface
+    fun copySecret(text: String, ms: Long): Boolean = KwSecure.copySecret(ctx.applicationContext, text.take(200000), ms)
+
     /** v3.90: the phone's own screen lock (fingerprint, face, PIN, pattern) for the sign page; result via window.kwDevDone. */
     @JavascriptInterface
     fun devAuth(title: String) { devAuthCb(title) }

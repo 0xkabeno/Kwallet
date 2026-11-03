@@ -36,7 +36,7 @@ object KwWarm {
         Log.i("KwSign", "warm received ($why) pre=${pre != null}")
         if (pre != null || host != null) return  // one spare page; none while a sheet is open (the next one loads after it)
         try {
-            val w = WebView(MutableContextWrapper(app))
+            val w = KwWebView(MutableContextWrapper(app))   // v3.99.50: incognito keyboard
             kwWebSettings(w)
             val assets = WebViewAssetLoader.Builder().addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(app)).build()
             w.webViewClient = object : WebViewClient() {

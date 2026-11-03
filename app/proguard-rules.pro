@@ -10,3 +10,7 @@
 -keepclassmembers class app.kwallet.KwScanBridge {
     @android.webkit.JavascriptInterface <methods>;
 }
+
+# v3.99.50: BouncyCastle (TextAuth engine: Ed25519 + secp256k1); only the referenced classes stay
+-dontwarn org.bouncycastle.**
+-dontwarn javax.naming.**

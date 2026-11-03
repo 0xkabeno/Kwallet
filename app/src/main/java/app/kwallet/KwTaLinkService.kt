@@ -30,6 +30,10 @@ import org.json.JSONObject
  *    JSON string {ev, at, ...}: "seeds" (added / gone / renamed seed IDs from the seed mirror, with names), "wipe", "lock",
  *    "unlock", "sign" (st start | done, for TextAuth's own requests only, with method and status), "pair" (pk_pair answered ok).
  *    Public IDs, names and states only: never keys, addresses or request contents.
+ *
+ * v3.99.50 (PROTO 3): SVC_ENGINE, Kwallet as TextAuth's crypto engine (KwEngine): seal / open records, file parts, keyed
+ *  blobs, IC request and Nostr event signatures, seed passwords. One JSON batch per call; the answer holds results only,
+ *  never a key. Same caller check as every call here.
  */
 class KwTaLinkService : Service() {
     private val ui = Handler(Looper.getMainLooper())
@@ -46,7 +50,7 @@ class KwTaLinkService : Service() {
 
     private val link = object : Binder() {
         override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
-            if (code != SVC_PING && code != SVC_WARM && code != SVC_FEED && code != SVC_QUIET && code != SVC_LISTEN) return super.onTransact(code, data, reply, flags)
+            if (code != SVC_PING && code != SVC_WARM && code != SVC_FEED && code != SVC_QUIET && code != SVC_LISTEN && code != SVC_ENGINE) return super.onTransact(code, data, reply, flags)
             if (!callerOk(Binder.getCallingUid())) return false
             when (code) {
                 SVC_PING -> {
@@ -70,6 +74,10 @@ class KwTaLinkService : Service() {
                     }
                     reply?.writeString(out)
                 }
+                SVC_ENGINE -> {   /* v3.99.50: TextAuth's crypto engine, one batched JSON call (KwEngine.handle); results only */
+                    val body = try { data.readString() ?: "" } catch (_: Exception) { "" }
+                    reply?.writeString(if (body.isEmpty() || body.length > 900_000) "{\"v\":1,\"err\":\"bad\"}" else KwEngine.handle(applicationContext, body))
+                }
                 SVC_LISTEN -> {   /* v3.99.44 */
                     val cb = try { data.readStrongBinder() } catch (_: Exception) { null }
                     reply?.writeInt(if (cb != null && listen(cb)) 1 else 0)
@@ -83,7 +91,7 @@ class KwTaLinkService : Service() {
     override fun onUnbind(intent: Intent?): Boolean { Log.i("KwTaLink", "TextAuth unbound the link"); return false }
 
     companion object {
-        const val PROTO = 2   /* v3.99.44: 2 = LISTEN + events */
+        const val PROTO = 3   /* v3.99.44: 2 = LISTEN + events; v3.99.50: 3 = SVC_ENGINE (TextAuth gets no keys) */
         /* same numbers in TextAuth's KwLink (KW_SVC_*) */
         const val SVC_PING = IBinder.FIRST_CALL_TRANSACTION + 21
         const val SVC_WARM = IBinder.FIRST_CALL_TRANSACTION + 22
@@ -91,6 +99,8 @@ class KwTaLinkService : Service() {
         const val SVC_QUIET = IBinder.FIRST_CALL_TRANSACTION + 24
         /* v3.99.44: TextAuth's event callback (TextAuth KwLink SVC_LISTEN) and the code Kwallet calls on it (KwLink EVT) */
         const val SVC_LISTEN = IBinder.FIRST_CALL_TRANSACTION + 25
+        /* v3.99.50: the engine (TextAuth KwLink SVC_ENGINE) */
+        const val SVC_ENGINE = IBinder.FIRST_CALL_TRANSACTION + 26
         const val EVT = IBinder.FIRST_CALL_TRANSACTION + 1
         private const val MAX_LISTENERS = 4
 

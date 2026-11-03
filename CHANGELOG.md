@@ -1,5 +1,16 @@
 # Changelog
 
+## Kwallet 3.99.50 / Hwallet 1.9.50
+
+- Kwallet is now TextAuth's crypto engine. TextAuth no longer receives any key: pairing stores the vault key, the vault ICP identity key and the Nostr key inside Kwallet, wrapped by an Android Keystore key (StrongBox when the phone has one) that opens only after your fingerprint, face or screen lock. TextAuth sends requests over its pinned link and gets results only: sealed / opened records, file parts, the outbox and cloud index, IC request signatures (request ids only), Nostr event signatures (TextAuth's sync kinds only) and seed passwords.
+- The pairing answer to TextAuth holds public data only (vault identity public key, Nostr public key, ICP account, address number, names). An older TextAuth that still asks for the keys gets a clear "Update TextAuth" error; key export is gone.
+- Engine session: unlocking TextAuth opens a time-limited session through Kwallet's own unlock sheet (15 minutes after last use, at most 4 hours). Opening a whole vault is allowed once per address per unlock, and single opens are capped per minute, so nothing can quietly read out the vault. Only the pinned TextAuth gets answers. The engine runs in Kwallet's own process, which has no internet permission.
+- New record format for TextAuth: each record is bound to its kind, id, version and deleted flag, so a server can't relabel or roll back a record. Old records stay readable until TextAuth has re-sealed an address; after that, older unbound records newer than that point are refused.
+- No screen capture: every Kwallet window (main app, sign sheets, unlock sheet, dialogs) blocks screenshots, recordings, casting and the recents thumbnail; other apps' overlays are hidden and covered touches refused; sensitive content is readable only by real accessibility tools such as TalkBack; the window goes black while a recording is visible (Android 15) and after a screenshot attempt (Android 14); keyboards run in incognito mode. Copies out of Kwallet are marked sensitive and cleared after the auto-clear time (60 s when off), only if the clipboard still holds that copy. Pasting into Kwallet works as before.
+- A removed seed's TextAuth keys, and all of them on an erase, are deleted with it.
+- CI: Kwallet unit tests for the engine (record binding and tampering, anti-downgrade, BIP-340 and Ed25519 vectors, what may leave the engine, rate limit), the no-capture rules, clipboard and paste.
+- Hwallet: blocks screenshots, recordings and the recents thumbnail.
+
 ## Kwallet 3.99.49 / Hwallet 1.9.49
 
 - Kwallet: pairing with TextAuth now also hands over the seed's standard Nostr key (NIP-06, path m/44'/1237'/<address number>'/0/0, the same key other NIP-06 apps derive from this seed): `nostrSk` (private key, 64-char hex) and `nostrPk` (x-only public key, 64-char hex). Every other field of the pairing answer is unchanged. The pairing sheet's "Goes to TextAuth" line now lists "Nostr key".

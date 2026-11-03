@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- v3.90: the sign page hides other apps' overlays (anti-tapjacking, Android 12+) -->
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
+    <!-- v3.99.50: screenshot (API 34) and screen recording (API 35) notices, so Kwallet covers its window while capture runs -->
+    <uses-permission android:name="android.permission.DETECT_SCREEN_CAPTURE" />
+    <uses-permission android:name="android.permission.DETECT_SCREEN_RECORDING" />
 
     <!-- v3.91: live fee / balance updates from Hwallet to the open sign page. Only apps signed with the
          Kwallet key can hold this permission (Hwallet declares the same one, so install order does not matter). -->
@@ -63,6 +66,17 @@
             android:launchMode="standard"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|smallestScreenSize|uiMode|density"
             android:windowSoftInputMode="adjustResize" />
+
+        <!-- v3.99.50: TextAuth's engine unlock sheet (biometric / screen lock, then the engine session opens). Only the pinned
+             TextAuth may open it (checked in code against callingActivity). -->
+        <activity
+            android:name=".KwEngineUnlockActivity"
+            android:exported="true"
+            android:theme="@style/Theme.KwSign"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="standard"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|smallestScreenSize|uiMode|density" />
 
         <!-- P2a (#97a): Hwallet wakes Kwallet's process (and loads the WebView engine) just before it may ask for a signature,
              so the sign sheet opens fast. Only apps signed with the Kwallet key may send it; it starts nothing visible. -->

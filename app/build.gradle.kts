@@ -57,7 +57,8 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { buildConfig = true }
     lint { abortOnError = false; checkReleaseBuilds = false }
-    packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+    packaging { resources.excludes += listOf("/META-INF/{AL2.0,LGPL2.1}", "META-INF/versions/9/OSGI-INF/MANIFEST.MF") }
+    testOptions { unitTests.isReturnDefaultValues = true }
 }
 
 dependencies {
@@ -72,4 +73,8 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.4")
     implementation("androidx.camera:camera-view:1.3.4")
     implementation("com.google.zxing:core:3.5.3")
+    // v3.99.50: TextAuth engine signatures (Ed25519 for the vault ICP identity, secp256k1 for BIP-340 Nostr), pure Java, offline
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
+    // v3.99.50: JVM unit tests of the engine (KwEngineCoreTest) and the capture / clipboard source rules
+    testImplementation("junit:junit:4.13.2")
 }

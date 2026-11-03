@@ -941,6 +941,12 @@ class HwActivity : FragmentActivity() {
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
         )
         super.onCreate(savedInstanceState)
+        /* v1.9.50: no screenshots, recordings or recents thumbnail of Hwallet (the CI emulator build keeps capture on for its
+           screenshots) */
+        if (!BuildConfig.E2E) {
+            window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
+            if (Build.VERSION.SDK_INT >= 33) try { setRecentsScreenshotEnabled(false) } catch (_: Throwable) {}
+        }
         try { HwNet.load(this) } catch (_: Throwable) {}
         // Material You chosen in Settings: the window behind the page uses the wallpaper colour, never a lime flash
         val kwp = getSharedPreferences("kw", MODE_PRIVATE)
